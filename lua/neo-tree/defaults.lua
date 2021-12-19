@@ -1,70 +1,15 @@
 local config = {
-    defaultSource = "fileSource",
-    fileSource = {
+    defaultSource = "filesystem",
+    filesystem = {
         window = {
             position = "left",
             width = 40,
             mappings = {
-                ["?"] = function(state)
-                    print(vim.inspect(state))
-                end,
-                ["<space>"] = function(state)
-                    local tree = state.tree
-                    local node = tree:get_node()
-                    local updated = false
-                    if node:is_expanded() then
-                        updated = node:collapse()
-                    else
-                        updated = node:expand()
-                    end
-                    if updated then
-                        tree:render()
-                    else
-                        tree:render()
-                    end
-                end,
-                ["j"] = function(state)
-                    local tree = state.tree
-                    local node = tree:get_node()
-                    local updated = false
-                    updated = node:expand()
-                    if updated then
-                        tree:render()
-                    else
-                        tree:render()
-                    end
-                end,
-                ["k"] = function(state)
-                    local tree = state.tree
-                    local node = tree:get_node()
-                    local updated = false
-                    updated = node:collapse()
-                    if updated then
-                        tree:render()
-                    else
-                        tree:render()
-                    end
-                end,
-                ["<cr>"] = function(state)
-                    local tree = state.tree
-                    local node = tree:get_node()
-                    if node:has_children() then
-                        local updated = false
-                        if node:is_expanded() then
-                            updated = node:collapse()
-                        else
-                            updated = node:expand()
-                        end
-                        if updated then
-                            tree:render()
-                        else
-                            tree:render()
-                        end
-                    else
-                        vim.cmd("wincmd p")
-                        vim.cmd("e " .. node.id)
-                    end
-                end,
+                ["<cr>"] = "open",
+                ["<bs>"] = "up",
+                ["."] = "setRoot",
+                ["H"] = "toggleHidden",
+                ["I"] = "toggleGitIgnore"
             }
         },
         filters = {

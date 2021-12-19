@@ -41,6 +41,9 @@ M.createNodes = function(sourceItems, state, level)
     local nodeData = {
       id = item.id,
       line = line,
+      path = item.path,
+      type = item.type,
+      loaded = item.loaded,
     }
 
     local nodeChildren = nil
@@ -54,10 +57,10 @@ M.createNodes = function(sourceItems, state, level)
   return nodes
 end
 
----Draws the given nodes to the given window.
+---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
---@param state table The current state of the plugin.
-M.draw = function(nodes, state)
+--@param state table The current state of the source.
+M.draw = function(nodes, state, parentId)
   if state.split == nil then
     state.split = NuiSplit({
       relative = "editor",
@@ -73,6 +76,9 @@ M.draw = function(nodes, state)
     state.tree = NuiTree({
       winid = state.split.winid,
       nodes = nodes,
+      get_node_id = function(node)
+        return node.id
+      end,
       prepare_node = function(data)
         return data.line
       end,
@@ -81,13 +87,21 @@ M.draw = function(nodes, state)
     local map_options = { noremap = true, nowait = true }
     local mappings = utils.getValue(state, "window.mappings", {})
     for cmd, func in pairs(mappings) do
+      if type(func) == "string" then
+        func = state.commands[func]
+      end
       state.split:map('n', cmd, function()
         print("neo-tree mapping: " .. cmd)
         func(state)
       end, map_options)
     end
   else
-    state.tree.nodes = nodes
+    state.tree:set_nodes(nodes, parentId)
+    if parentId ~= nil then
+      local node = state.tree:get_node(parentId)
+      node.loaded = true
+      node:expand()
+    end
   end
 
   state.tree:render()
@@ -97,10 +111,16 @@ end
 --output of createNodes() to draw().
 --@param sourceItems table The list of items to transform.
 --@param state table The current state of the plugin.
-M.showNodes = function(sourceItems, state)
-  local nodes = M.createNodes(sourceItems, state)
-  print(vim.inspect(nodes))
-  M.draw(nodes, state)
+--@param parentId string Optional. The id of the parent node to display these nodes
+--at; defaults to nil.
+M.showNodes = function(sourceItems, state, parentId)
+  local level = 0
+  if parentId ~= nil then
+    local parent = state.tree:get_node(parentId)
+    level = parent:get_depth()
+  end
+  local nodes = M.createNodes(sourceItems, state, level)
+  M.draw(nodes, state, parentId)
 end
 
 return M

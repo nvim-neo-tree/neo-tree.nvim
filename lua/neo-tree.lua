@@ -7,6 +7,7 @@ local M = {
 
 M.setup = function (config)
   M.state.config = utils.tableMerge(defaults, config or {})
+  require('neo-tree.sources.filesystem').setup(M.state.config.filesystem)
 end
 
 M.show = function (sourceName)
