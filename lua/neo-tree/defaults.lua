@@ -21,23 +21,25 @@ local config = {
         end,
         functions = {
             icon = function(config, node, state)
-                local icon = config.icon
+                local icon = config.default or " "
                 local highlight = config.highlight
-                if not icon then
-                    if node.type == "directory" then
-                        highlight = "NvimTreeFolderIcon"
-                        if node.open then
-                            icon = config.folder_open or "-"
-                        else
-                            icon = config.folder_closed or "+"
-                        end
-                    elseif node.type == "file" then
-                        icon = config.file or " "
+                if node.type == "directory" then
+                    highlight = "NvimTreeFolderIcon"
+                    if node:is_expanded() then
+                        icon = config.folder_open or "-"
+                    else
+                        icon = config.folder_closed or "+"
+                    end
+                elseif node.type == "file" then
+                    local success, web_devicons = pcall(require, 'nvim-web-devicons')
+                    if success then
+                        icon, highlight = web_devicons.get_icon(node.name, node.ext)
+                    else
                         highlight = "NvimTreeFileIcon"
                     end
                 end
                 return {
-                    text = icon .. " ",
+                    text = icon .. config.padding,
                     highlight = highlight
                 }
             end,
@@ -50,11 +52,20 @@ local config = {
         },
         renderers = {
             directory = {
-                { "icon" },
+                {
+                    "icon",
+                    folder_closed = "",
+                    folder_open = "",
+                    padding = " ",
+                },
                 { "name", highlight = "NvimTreeDirectory" }
             },
             file = {
-                { "icon" },
+                {
+                    "icon",
+                    default = "*",
+                    padding = " ",
+                },
                 { "name" }
             }
         }

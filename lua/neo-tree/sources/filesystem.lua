@@ -76,7 +76,7 @@ local function getItemsAsync(parentId)
     respect_gitignore = myState.respectGitIgnore or false,
     search_pattern = myState.searchPattern or nil,
     add_dirs = true,
-    depth = 3,
+    depth = 4,
     on_insert = function(path, _type)
       local parentPath, name = utils.splitPath(path)
       local item = {
@@ -101,7 +101,23 @@ local function getItemsAsync(parentId)
     end,
     on_exit = vim.schedule_wrap(function()
       deepSort(items)
-      renderer.showNodes(items, myState, parentId)
+      if parentId == nil then
+        local parentPath, name = utils.splitPath(myState.path)
+        local root = {
+          id = myState.path,
+          path = parentPath,
+          name = name,
+          type = 'directory',
+          children = items,
+          loaded = true,
+          _is_expanded = true
+        }
+        myState.expanded_nodes = myState.expanded_nodes or {}
+        myState.expanded_nodes[myState.path] = true
+        renderer.showNodes({ root }, myState)
+      else
+        renderer.showNodes(items, myState, parentId)
+      end
     end)
   })
 end

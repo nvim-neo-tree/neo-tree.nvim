@@ -29,21 +29,27 @@ M.createNodes = function(sourceItems, state, level)
   end
 
   for _, item in ipairs(sourceItems) do
-    local line = NuiLine()
-    line:append(indent, highlights.NORMAL)
-
-    local renderer = state.renderers[item.type]
-    for _,component in ipairs(renderer) do
-      local componentData = state.functions[component[1]](component, item, state)
-      line:append(componentData.text, componentData.highlight)
+    local existing = state.tree and state.tree:get_node(item.id)
+    if existing then
+      state.expanded_nodes = state.expanded_nodes or {}
+      if existing:is_expanded() then
+        state.expanded_nodes[item.id] = true
+      else
+        if state.expanded_nodes[item.id] then
+          state.expanded_nodes[item.id] = nil
+        end
+      end
     end
 
     local nodeData = {
       id = item.id,
-      line = line,
+      ext = item.ext,
+      _is_expanded = existing and existing:is_expanded(),
+      name = item.name,
       path = item.path,
       type = item.type,
       loaded = item.loaded,
+      indent = indent
     }
 
     local nodeChildren = nil
@@ -52,9 +58,35 @@ M.createNodes = function(sourceItems, state, level)
     end
 
     local node = NuiTree.Node(nodeData, nodeChildren)
+    if item._is_expanded then
+      node:expand()
+    end
     table.insert(nodes, node)
   end
   return nodes
+end
+
+local prepare_node = function(item, state)
+    local line = NuiLine()
+    line:append(item.indent, highlights.NORMAL)
+
+    local renderer = state.renderers[item.type]
+    for _,component in ipairs(renderer) do
+      local componentData = state.functions[component[1]](component, item, state)
+      line:append(componentData.text, componentData.highlight)
+    end
+    return line
+end
+
+local restoreExpandedNodes = function(state)
+  for id, is_expanded in pairs(state.expanded_nodes or {}) do
+    if is_expanded then
+      local node = state.tree:get_node(id)
+      if node ~= nil then
+        node:expand()
+      end
+    end
+  end
 end
 
 ---Draws the given nodes on the screen.
@@ -80,9 +112,10 @@ M.draw = function(nodes, state, parentId)
         return node.id
       end,
       prepare_node = function(data)
-        return data.line
+        return prepare_node(data, state)
       end,
     })
+    restoreExpandedNodes(state)
 
     local map_options = { noremap = true, nowait = true }
     local mappings = utils.getValue(state, "window.mappings", {})
@@ -91,7 +124,6 @@ M.draw = function(nodes, state, parentId)
         func = state.commands[func]
       end
       state.split:map('n', cmd, function()
-        print("neo-tree mapping: " .. cmd)
         func(state)
       end, map_options)
     end
@@ -101,6 +133,8 @@ M.draw = function(nodes, state, parentId)
       local node = state.tree:get_node(parentId)
       node.loaded = true
       node:expand()
+    else
+      restoreExpandedNodes(state)
     end
   end
 
