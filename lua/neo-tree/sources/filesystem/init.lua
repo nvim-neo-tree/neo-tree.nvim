@@ -12,6 +12,9 @@ end
 M.navigate = function(path)
   myState.path = path
   lib.getItemsAsync(myState)
+  if myState.bind_to_cwd then
+    vim.api.nvim_command("tcd " .. path)
+  end
 end
 
 M.navigateUp = function()
@@ -20,13 +23,26 @@ M.navigateUp = function()
 end
 
 M.refresh = function()
-  M.navigate(myState.path)
+  if myState.path then
+    M.navigate(myState.path)
+  end
 end
 
 M.setup = function(config)
   if myState == nil then
     myState = utils.tableCopy(config)
     myState.commands = require("neo-tree.sources.filesystem.commands")
+    local autocmds = {}
+    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
+    table.insert(autocmds, "augroup neotreefilesystem")
+    table.insert(autocmds, "autocmd!")
+    table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
+    if myState.bind_to_cwd then
+      table.insert(autocmds, "autocmd DirChanged * " .. refresh_cmd)
+    end
+    table.insert(autocmds, "augroup END")
+    vim.cmd(table.concat(autocmds, "\n"))
   end
 end
 
