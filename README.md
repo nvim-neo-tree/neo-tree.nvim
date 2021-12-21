@@ -1,14 +1,20 @@
 # neo-tree.nvim 
 
-Neo-tree is (or rather, will be) a Neovim plugin to browse the file system and
-other tree like structures in a sidebar. THIS IS NOT YET FUNCTIONAL!
+Neo-tree is a Neovim plugin to browse the file system and other tree like
+structures in a sidebar. 
+
+## Status
+
+This is currently functional as a basic file browser but definitely not
+complete. The biggest issue is that there is no documentation at all! I plan on
+adding that when I get close to the first release.
 
 The first version of this plugin will provide a source for the file system and
 an interface to add user defined sources. Other sources that may be used include
 things like tags, treesitter or lsp document structures, git status, open
 buffers list, etc.
 
-# Why?
+## Why?
 
 There are many tree plugins for (neo)vim, so why make another one? Well, I
 wanted something that was:
@@ -17,14 +23,13 @@ wanted something that was:
 2. Stable.
 3. Easy to customize.
 
-## Easy to maintain and enhance
+### Easy to maintain and enhance
 
 This plugin will be designed from the begining to be asynchronous and have an
 architecture that can handle all of the features you would want of a mature tree
 plugin. Modules will be as small, decoupled, and generic as possible. We will
-prefer functional over OOP. Renderers will not know about the items it is
-rendering, and item sources should not know anything about how they will be
-rendered. Code will be written to be easily read by other humans.
+prefer functional over OOP. These choices should make it easier to keep adding
+features without adding complexity.
 
 One big difference between this plugin and the ones that came before it, which
 is also what finally pushed me over the edge into making a new plugin, is that
@@ -33,7 +38,7 @@ were created. Most notably, [nui.nvim](https://github.com/MunifTanjim/nui.nvim)
 and [plenary.nvm](https://github.com/nvim-lua/plenary.nvim). Building upon
 shared libraries will go a long way in making neo-tree easy to maintain.
 
-## Stable
+### Stable
 
 This project will have releases and release tags that follow Semantic
 Versioning. The quickstart instructions will always refer to the latest stable
@@ -45,7 +50,7 @@ There will never be a breaking change within a major version (1.x, 2.x, etc.) If
 a breaking change is needed, there will be depracation warnings in the prior
 major version, and the breaking change will happen in the next major version.
 
-## Easy to Customize
+### Easy to Customize
 
 This will follow in the spirit of plugins like
 [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) and
