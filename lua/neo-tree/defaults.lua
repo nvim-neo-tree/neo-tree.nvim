@@ -1,21 +1,24 @@
 local config = {
-    defaultSource = "filesystem",
+    default_source = "filesystem",
     filesystem = {
         window = {
             position = "left",
             width = 40,
             mappings = {
                 ["<cr>"] = "open",
+                ["<2-LeftMouse>"] = "open",
                 ["<bs>"] = "up",
-                ["."] = "setRoot",
-                ["H"] = "toggleHidden",
-                ["I"] = "toggleGitIgnore"
+                ["."] = "set_root",
+                ["H"] = "toggle_hidden",
+                ["I"] = "toggle_gitignore",
+                ["R"] = "refresh",
             }
         },
         filters = {
-            showHidden = false,
-            respectGitIgnore = true
+            show_hidden = false,
+            respect_gitignore = true
         },
+        bind_to_cwd = true,
         before_render = function(state)
 
         end,
@@ -33,7 +36,9 @@ local config = {
                 elseif node.type == "file" then
                     local success, web_devicons = pcall(require, 'nvim-web-devicons')
                     if success then
-                        icon, highlight = web_devicons.get_icon(node.name, node.ext)
+                        devicon, hl = web_devicons.get_icon(node.name, node.ext)
+                        icon = devicon or icon
+                        highlight = hl or highlight
                     else
                         highlight = "NvimTreeFileIcon"
                     end

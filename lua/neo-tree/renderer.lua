@@ -15,7 +15,6 @@ local highlights = {
 --the given source, but they must contain at least an id field.
 ---@param state table The current state of the plugin.
 ---@param level integer Optional. The current level of the tree, defaults to 0.
----@param nodes table Optional. The current collection of nodes, defaults to {}.
 ---@return table A collection of TreeNodes.
 M.createNodes = function(sourceItems, state, level)
   level = level or 0
@@ -29,22 +28,9 @@ M.createNodes = function(sourceItems, state, level)
   end
 
   for _, item in ipairs(sourceItems) do
-    local existing = state.tree and state.tree:get_node(item.id)
-    if existing then
-      state.expanded_nodes = state.expanded_nodes or {}
-      if existing:is_expanded() then
-        state.expanded_nodes[item.id] = true
-      else
-        if state.expanded_nodes[item.id] then
-          state.expanded_nodes[item.id] = nil
-        end
-      end
-    end
-
     local nodeData = {
       id = item.id,
       ext = item.ext,
-      _is_expanded = existing and existing:is_expanded(),
       name = item.name,
       path = item.path,
       type = item.type,
@@ -78,44 +64,73 @@ local prepare_node = function(item, state)
     return line
 end
 
-local restoreExpandedNodes = function(state)
-  for id, is_expanded in pairs(state.expanded_nodes or {}) do
-    if is_expanded then
-      local node = state.tree:get_node(id)
-      if node ~= nil then
-        node:expand()
+local function get_expanded_nodes(tree)
+  local node_ids = {}
+
+  local function process(node)
+    if node:is_expanded() then
+      local id = node:get_id()
+      table.insert(node_ids, id)
+
+      if node:has_children() then
+        for _, child in ipairs(tree:get_nodes(id)) do
+          process(child)
+        end
       end
+    end
+  end
+
+  for _, node in ipairs(tree:get_nodes()) do
+    process(node)
+  end
+  return node_ids
+end
+
+local set_expanded_nodes = function(tree, expanded_nodes)
+  for _, id in ipairs(expanded_nodes or {}) do
+    local node = tree:get_node(id)
+    if node ~= nil then
+      node:expand()
     end
   end
 end
 
----Draws the given nodes on the screen.
---@param nodes table The nodes to draw.
---@param state table The current state of the source.
-M.draw = function(nodes, state, parentId)
-  if state.split == nil then
+local createTree = function(state)
+  state.tree = NuiTree({
+    winid = state.split.winid,
+    get_node_id = function(node)
+      return node.id
+    end,
+    prepare_node = function(data)
+      return prepare_node(data, state)
+    end,
+  })
+end
+
+local createWindow = function(state)
     state.split = NuiSplit({
       relative = "editor",
       position = utils.getValue(state, "window.position", "left"),
       size = utils.getValue(state, "window.size", 40),
+      win_options = {
+        number = false,
+        wrap = false,
+      },
+      buf_options = {
+        bufhidden = "delete",
+        buftype = "nowrite",
+        modifiable = false,
+        swapfile = false,
+        filetype = "neo-tree",
+      }
     })
     state.split:mount()
+    local winid = state.split.winid
+    state.bufid = vim.api.nvim_win_get_buf(winid)
     state.split:on({ "BufDelete" }, function()
       state.split:unmount()
       state.split = nil
     end, { once = true })
-
-    state.tree = NuiTree({
-      winid = state.split.winid,
-      nodes = nodes,
-      get_node_id = function(node)
-        return node.id
-      end,
-      prepare_node = function(data)
-        return prepare_node(data, state)
-      end,
-    })
-    restoreExpandedNodes(state)
 
     local map_options = { noremap = true, nowait = true }
     local mappings = utils.getValue(state, "window.mappings", {})
@@ -127,17 +142,52 @@ M.draw = function(nodes, state, parentId)
         func(state)
       end, map_options)
     end
-  else
-    state.tree:set_nodes(nodes, parentId)
-    if parentId ~= nil then
-      local node = state.tree:get_node(parentId)
-      node.loaded = true
-      node:expand()
-    else
-      restoreExpandedNodes(state)
-    end
+    return state.split
+end
+
+---Draws the given nodes on the screen.
+--@param nodes table The nodes to draw.
+--@param state table The current state of the source.
+M.draw = function(nodes, state, parentId)
+  -- If we are going to redraw, preserve the current set of expanded nodes.
+  local expanded_nodes = {}
+  if parentId == nil and state.tree ~= nil then
+    expanded_nodes = get_expanded_nodes(state.tree)
+  end
+  for _, id in ipairs(state.default_expanded_nodes) do
+    table.insert(expanded_nodes, id)
   end
 
+  -- ensure window exists
+  local window_exists
+  if state.split == nil then
+    print("state.split is nil")
+    window_exists = false
+  else
+    local isvalid = vim.api.nvim_win_is_valid(state.split.winid)
+    window_exists = isvalid and (vim.api.nvim_win_get_number(state.split.winid) > 0)
+    if not window_exists then
+      print("Tree window is invalid")
+      if vim.api.nvim_buf_is_valid(state.bufid) then
+        vim.api.nvim_buf_delete(state.bufid, {force = true})
+      end
+    end
+  end
+  if not window_exists then
+    createWindow(state)
+    createTree(state)
+  end
+
+  -- draw the given nodes
+  state.tree:set_nodes(nodes, parentId)
+  if parentId ~= nil then
+    -- this is a dynamic fetch of children that were not previously loaded
+    local node = state.tree:get_node(parentId)
+    node.loaded = true
+    node:expand()
+  else
+    set_expanded_nodes(state.tree, expanded_nodes)
+  end
   state.tree:render()
 end
 
