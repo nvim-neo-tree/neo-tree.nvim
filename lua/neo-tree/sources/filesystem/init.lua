@@ -10,6 +10,9 @@ M.loadChildren = function(id)
 end
 
 M.navigate = function(path)
+  if path == nil then
+    path = vim.fn.getcwd()
+  end
   myState.path = path
   lib.getItemsAsync(myState)
   if myState.bind_to_cwd then
@@ -39,7 +42,7 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
     if myState.bind_to_cwd then
-      table.insert(autocmds, "autocmd DirChanged * " .. refresh_cmd)
+      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').navigate()")
     end
     table.insert(autocmds, "augroup END")
     vim.cmd(table.concat(autocmds, "\n"))
@@ -47,9 +50,6 @@ M.setup = function(config)
 end
 
 M.show = function()
-  if myState.path == nil then
-    myState.path = vim.fn.getcwd()
-  end
   M.navigate(myState.path)
 end
 
