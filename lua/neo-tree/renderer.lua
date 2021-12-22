@@ -145,20 +145,10 @@ local createWindow = function(state)
     return state.split
 end
 
----Draws the given nodes on the screen.
---@param nodes table The nodes to draw.
---@param state table The current state of the source.
-M.draw = function(nodes, state, parentId)
-  -- If we are going to redraw, preserve the current set of expanded nodes.
-  local expanded_nodes = {}
-  if parentId == nil and state.tree ~= nil then
-    expanded_nodes = get_expanded_nodes(state.tree)
-  end
-  for _, id in ipairs(state.default_expanded_nodes) do
-    table.insert(expanded_nodes, id)
-  end
-
-  -- ensure window exists
+---Determines of the window exists and is valid.
+---@param state table The current state of the plugin.
+---@return boolean True if the window exists and is valid, false otherwise.
+M.window_exists = function(state)
   local window_exists
   if state.split == nil then
     print("state.split is nil")
@@ -173,7 +163,24 @@ M.draw = function(nodes, state, parentId)
       end
     end
   end
-  if not window_exists then
+  return window_exists
+end
+
+---Draws the given nodes on the screen.
+--@param nodes table The nodes to draw.
+--@param state table The current state of the source.
+M.draw = function(nodes, state, parentId)
+  -- If we are going to redraw, preserve the current set of expanded nodes.
+  local expanded_nodes = {}
+  if parentId == nil and state.tree ~= nil then
+    expanded_nodes = get_expanded_nodes(state.tree)
+  end
+  for _, id in ipairs(state.default_expanded_nodes) do
+    table.insert(expanded_nodes, id)
+  end
+
+  -- Create the tree if it doesn't exist.
+  if not M.window_exists(state) then
     createWindow(state)
     createTree(state)
   end

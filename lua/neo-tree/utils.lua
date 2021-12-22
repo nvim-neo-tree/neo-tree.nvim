@@ -60,6 +60,9 @@ end
 ---@param path string The path to split.
 ---@return table table parentPath, name
 M.splitPath = function(path)
+  if not path then
+    return nil, nil
+  end
   local parts = M.split(path, M.pathSeparator)
   local name = table.remove(parts)
   local parentPath = table.concat(parts, M.pathSeparator)

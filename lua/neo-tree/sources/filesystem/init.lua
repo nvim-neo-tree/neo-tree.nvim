@@ -1,12 +1,15 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local lib = require("neo-tree.sources.filesystem.lib")
+local renderer = require("neo-tree.renderer")
 
 local M = {}
 local myState = nil
 
-M.loadChildren = function(id)
-  lib.getItemsAsync(myState, id)
+M.dir_changed = function()
+  if myState.path and renderer.window_exists(myState) then
+    M.navigate()
+  end
 end
 
 M.navigate = function(path)
@@ -20,13 +23,13 @@ M.navigate = function(path)
   end
 end
 
-M.navigateUp = function()
+M.navigate_up = function()
   local parentPath, _ = utils.splitPath(myState.path)
   M.navigate(parentPath)
 end
 
 M.refresh = function()
-  if myState.path then
+  if myState.path and renderer.window_exists(myState) then
     M.navigate(myState.path)
   end
 end
@@ -42,7 +45,7 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
     if myState.bind_to_cwd then
-      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').navigate()")
+      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
     end
     table.insert(autocmds, "augroup END")
     vim.cmd(table.concat(autocmds, "\n"))
@@ -51,6 +54,10 @@ end
 
 M.show = function()
   M.navigate(myState.path)
+end
+
+M.toggle_directory = function ()
+  lib.toggle_directory(myState)
 end
 
 M.toggle_hidden = function()
@@ -63,9 +70,8 @@ M.toggle_gitignore = function()
   M.show()
 end
 
-M.search = function(pattern)
-  myState.search_pattern = pattern
-  M.show()
+M.search = function()
+  require("neo-tree.sources.filesystem.search").show_search(myState)
 end
 
 return M

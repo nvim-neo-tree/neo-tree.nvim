@@ -12,6 +12,7 @@ local config = {
                 ["H"] = "toggle_hidden",
                 ["I"] = "toggle_gitignore",
                 ["R"] = "refresh",
+                ["/"] = "search",
             }
         },
         filters = {
