@@ -1,35 +1,27 @@
 -- This file holds all code for the search function.
 
-local Input = require("nui.input")
+local vim = vim
+local Input = require("neo-tree.custom_input")
 local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")
+local inputs = require("neo-tree.inputs")
+
 local M = {}
 
 M.show_search = function(state)
   local width = vim.fn.winwidth(0) - 2
   local row = vim.api.nvim_win_get_height(0) - 2
-  local popup_options = {
+  local popup_options = inputs.popup_options("Enter Search Pattern:", width, {
     relative = "win",
     position = {
       row = row,
       col = 0
     },
     size = width,
-    border = {
-      style = "rounded",
-      highlight = "FloatBorder",
-      text = {
-        top = "[ Search ]",
-        top_align = "left",
-      },
-    },
-    win_options = {
-      winhighlight = "Normal:Normal",
-    },
-  }
+  })
 
   local input = Input(popup_options, {
-    prompt = "> ",
+    prompt = " ",
     default_value = state.search_pattern,
     on_close = function()
       state.search_pattern = nil
@@ -56,16 +48,7 @@ M.show_search = function(state)
     end,
   })
 
-  input:mount()
-
-  input:map("i", "<esc>", function(bufnr)
-    input:unmount()
-  end, { noremap = true })
-  local event = require("nui.utils.autocmd").event
-
-  input:on({ event.BufLeave, event.BufDelete }, function()
-    input:unmount()
-  end, { once = true })
+  inputs.show_input(input)
 end
 
 return M

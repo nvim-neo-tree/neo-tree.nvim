@@ -10,34 +10,6 @@ local renderer = require("neo-tree.renderer")
 local M = {}
 local myState = nil
 
----Marks node as copied, so that it can be pasted somewhere else.
-M.copy_to_clipboard = function()
-  local node = myState.tree:get_node()
-  myState.clipboard = myState.clipboard or {}
-  local existing = myState.clipboard[node.id]
-  if existing and existing.action == "copy" then
-    myState.clipboard[node.id] = nil
-  else
-    myState.clipboard[node.id] = { action = "copy", node = node }
-    print("Copied " .. node.name .. " to clipboard")
-  end
-  M.redraw()
-end
-
----Marks node as cut, so that it can be pasted (moved) somewhere else.
-M.cut_to_clipboard = function()
-  local node = myState.tree:get_node()
-  myState.clipboard = myState.clipboard or {}
-  local existing = myState.clipboard[node.id]
-  if existing and existing.action == "cut" then
-    myState.clipboard[node.id] = nil
-  else
-    myState.clipboard[node.id] = { action = "cut", node = node }
-    print("Cut " .. node.name .. " to clipboard")
-  end
-  M.redraw()
-end
-
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function()
   local cwd = vim.fn.getcwd()
@@ -62,12 +34,6 @@ M.navigate = function(path)
   end
 end
 
----Navigate up one level.
-M.navigate_up = function()
-  local parentPath, _ = utils.splitPath(myState.path)
-  M.navigate(parentPath)
-end
-
 M.show_new_children = function(node)
   if not node then
     node = myState.tree:get_node()
@@ -83,34 +49,6 @@ M.show_new_children = function(node)
       local new_node = myState.tree:get_node(node:get_id())
       M.toggle_directory(new_node)
     end)
-  end
-end
-
----Pastes all items from the clipboard to the current directory.
-M.paste_from_clipboard = function()
-  if myState.clipboard then
-    local at_node = myState.tree:get_node()
-    local folder = at_node.path
-    if at_node.type == "file" then
-      folder = at_node.parentPath
-    end
-    for _, item in pairs(myState.clipboard) do
-      if item.action == "copy" then
-        fs_actions.copy_node(item.node.path, folder .. utils.pathSeparator .. item.node.name)
-      elseif item.action == "cut" then
-        fs_actions.move_node(item.node.path, folder .. utils.pathSeparator .. item.node.name)
-      end
-    end
-    myState.clipboard = nil
-    M.refresh()
-
-    -- open the folder so the user can see the new files
-    local node = myState.tree:get_node(folder)
-    if not node then
-      print("Could not find node for " .. folder)
-      return
-    end
-    M.show_new_children(node)
   end
 end
 
@@ -180,24 +118,6 @@ M.toggle_directory = function (node)
       tree:render()
     end
   end
-end
-
-
----Toggles whether hidden files are shown or not.
-M.toggle_hidden = function()
-  myState.show_hidden = not myState.show_hidden
-  M.show()
-end
-
----Toggles whether the tree is filtered by gitignore or not.
-M.toggle_gitignore = function()
-  myState.respect_gitignore = not myState.respect_gitignore
-  M.show()
-end
-
----Shows the search input, which will filter the tree.
-M.search = function()
-  require("neo-tree.sources.filesystem.search").show_search(myState)
 end
 
 return M

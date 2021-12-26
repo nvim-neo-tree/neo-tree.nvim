@@ -4,13 +4,14 @@
 -- https://github.com/mhartington/dotfiles
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
---
 local vim = vim
 local api = vim.api
 local loop = vim.loop
 local scan = require('plenary.scandir')
 local utils = require('neo-tree.utils')
 local inputs = require('neo-tree.inputs')
+
+local M = {}
 
 local function clear_buffer(path)
     for _, buf in pairs(api.nvim_list_bufs()) do
@@ -21,7 +22,7 @@ local function clear_buffer(path)
 end
 
 -- Move Node
-local function move_node(source, destination, callback)
+M.move_node = function(source, destination, callback)
     -- If aleady exists
     if loop.fs_stat(destination) then
         print(destination, " already exists")
@@ -41,7 +42,7 @@ local function move_node(source, destination, callback)
 end
 
 -- Copy Node
-local function copy_node(source, destination, callback)
+M.copy_node = function(source, destination, callback)
     if loop.fs_stat(destination) then
         print("Node already exists")
         return
@@ -62,14 +63,13 @@ local function copy_node(source, destination, callback)
 end
 
 -- Create Node
-local function create_node(in_directory, callback)
-    inputs.input('Create File/Dir (dirs end with a "/")', "", function(name)
+M.create_node = function(in_directory, callback)
+    inputs.input('Enter name for new file or directory (dirs end with a "/"):', "", function(name)
         if not name or name == "" then
             return
         end
         local destination = in_directory .. utils.pathSeparator .. name
         if loop.fs_stat(destination) then
-            clear_prompt()
             print("File already exists")
             return
         end
@@ -95,9 +95,9 @@ local function create_node(in_directory, callback)
 end
 
 -- Delete Node
-local function delete_node(path, callback)
+M.delete_node = function(path, callback)
     local parentPath, name = utils.splitPath(path)
-    local msg = string.format("Delete '%s'?", name)
+    local msg = string.format("Are you sure you want to delete '%s'?", name)
 
     local stat = loop.fs_stat(path)
     local _type = stat.type
@@ -117,7 +117,7 @@ local function delete_node(path, callback)
             depth = 1,
         })
         if #children > 0 then
-            msg = "Directory is not empty, are you sure you want to delete?"
+            msg = msg .. "\nWARNING: Directory is not empty!"
         end
     end
 
@@ -176,9 +176,9 @@ local function delete_node(path, callback)
 end
 
 -- Rename Node
-local function rename_node(path, callback)
+M.rename_node = function(path, callback)
     local parentPath, name = utils.splitPath(path)
-    local msg = string.format('Rename "%s"', name)
+    local msg = string.format('Enter new name for "%s":', name)
 
     inputs.input(msg, name, function (new_name)
         -- If cancelled
@@ -213,10 +213,4 @@ local function rename_node(path, callback)
     end)
 end
 
-return {
-    move_node = move_node,
-    copy_node = copy_node,
-    rename_node = rename_node,
-    create_node = create_node,
-    delete_node = delete_node,
-}
+return M

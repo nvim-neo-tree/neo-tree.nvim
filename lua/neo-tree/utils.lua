@@ -70,6 +70,9 @@ M.splitPath = function(path)
   if not path then
     return nil, nil
   end
+  if path == M.pathSeparator then
+    return nil, M.pathSeparator
+  end
   local parts = M.split(path, M.pathSeparator)
   local name = table.remove(parts)
   local parentPath = table.concat(parts, M.pathSeparator)
