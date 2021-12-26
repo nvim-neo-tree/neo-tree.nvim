@@ -1,3 +1,28 @@
+-- Copied from https://github.com/MunifTanjim/nui.nvim/blob/96f600b58f128bde4a78a56c0a64d55664a43955/lua/nui/input/init.lua
+-- with some modifications to support adding a message to the buffer.
+--
+-- MIT License
+--
+-- Copyright (c) 2021 Munif Tanjim
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in all
+-- copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+
 local Popup = require("nui.popup")
 local Text = require("nui.text")
 local defaults = require("nui.utils").defaults
@@ -18,8 +43,10 @@ local function init(class, popup_options, options)
 
   popup_options.size.height = 1
   if popup_options.message then
-    local _, count = popup_options.message:gsub('\n', '\n')
-    popup_options.size.height = count + 2
+    if type(popup_options.message) ~= "table" then
+      popup_options.message = { popup_options.message }
+    end
+    popup_options.size.height = #popup_options.message + 1
   end
 
   local self = class.super.init(class, popup_options)
@@ -104,7 +131,9 @@ function Input:mount()
   end
 
   if props.message then
-    vim.api.nvim_buf_set_lines(self.bufnr, 0, 0, false, { props.message })
+    for linenr, line in ipairs(props.message) do
+      line:render(self.bufnr, -1, linenr, linenr)
+    end
   end
   vim.fn.prompt_setprompt(self.bufnr, props.prompt:content())
   if props.prompt:length() > 0 then

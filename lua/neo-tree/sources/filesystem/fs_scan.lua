@@ -1,7 +1,7 @@
 -- This files holds code for scanning the filesystem to build the tree.
 
 local vim = vim
-local renderer = require("neo-tree.renderer")
+local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local scan = require('plenary.scandir')
 
@@ -57,7 +57,7 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
   folders[root.path] = root
   if myState.search_pattern then
     root.name = 'Search: ' .. myState.search_pattern .. " in " .. root.name
-    depth = myState.search_depth or nil
+    depth = myState.search_depth or 3
   end
   myState.default_expanded_nodes = { myState.path }
 

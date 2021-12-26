@@ -3,11 +3,9 @@ local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local NuiSplit = require("nui.split")
 local utils = require("neo-tree.utils")
+local highlights = require("neo-tree.ui.highlights")
 
 local M = {}
-local highlights = {
-  NORMAL = "NvimTreeNormal"
-}
 
 ---Transforms a list of items into a collection of TreeNodes.
 ---@param sourceItems table The list of items to transform. The expected

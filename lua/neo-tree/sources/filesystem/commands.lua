@@ -29,7 +29,7 @@ M.copy_to_clipboard = function(state)
     state.clipboard[node.id] = { action = "copy", node = node }
     print("Copied " .. node.name .. " to clipboard")
   end
-  M.redraw()
+  fs.redraw()
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
@@ -81,6 +81,11 @@ M.delete = function(state)
   fs_actions.delete_node(node.path, fs.refresh)
 end
 
+---Shows the filter input, which will filter the tree.
+M.filter = function(state)
+  require("neo-tree.sources.filesystem.filter").show_filter(state)
+end
+
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parentPath, _ = utils.splitPath(state.path)
@@ -109,11 +114,6 @@ M.rename = function(state)
   local tree = state.tree
   local node = tree:get_node()
   fs_actions.rename_node(node.path, fs.refresh)
-end
-
----Shows the search input, which will filter the tree.
-M.search = function(state)
-  require("neo-tree.sources.filesystem.search").show_search(state)
 end
 
 M.set_root = function(state)

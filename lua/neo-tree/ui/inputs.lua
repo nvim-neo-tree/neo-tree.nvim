@@ -1,17 +1,26 @@
 local vim = vim
-local Input = require("neo-tree.custom_input")
+local Input = require("neo-tree.ui.custom_input")
+local NuiLine = require("nui.line")
+local highlights= require("neo-tree.ui.highlights")
 
 local M = {}
 
 M.popup_options = function(message, min_width, override_options)
   local min_width = min_width or 30
-  local width = string.len(message) + 4
+  local width = string.len(message) + 2
+  local right_padding = " "
   if width < min_width then
+    right_padding = string.rep(" ", min_width - width + 1)
     width = min_width
   end
 
+  local msgLine = NuiLine()
+  msgLine:append(" " .. message .. right_padding, highlights.TITLE_BAR)
+
   local popup_options = {
-    message = " " .. message,
+    message = {
+      msgLine
+    },
     relative = "cursor",
     position = {
       row = 1,
@@ -24,8 +33,8 @@ M.popup_options = function(message, min_width, override_options)
       --  left        = "│",                      right = "│",
       --  bottom_left = "╰", bottom = "─", bottom_right = "╯",
       --},
-      style = { " ", "▁", " ", "▏", " ", "▔", " ", "▕" },
-      highlight = "FloatBorder",
+      style = { " ", " ", " ", "▏", " ", "▔", " ", "▕" },
+      highlight = highlights.FLOAT_BORDER,
     },
     win_options = {
       winhighlight = "Normal:Normal",

@@ -9,7 +9,7 @@ local api = vim.api
 local loop = vim.loop
 local scan = require('plenary.scandir')
 local utils = require('neo-tree.utils')
-local inputs = require('neo-tree.inputs')
+local inputs = require('neo-tree.ui.inputs')
 
 local M = {}
 

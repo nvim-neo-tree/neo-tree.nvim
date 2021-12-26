@@ -5,7 +5,7 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local fs_scan = require("neo-tree.sources.filesystem.fs_scan")
 local fs_actions = require("neo-tree.sources.filesystem.fs_actions")
-local renderer = require("neo-tree.renderer")
+local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 local myState = nil
