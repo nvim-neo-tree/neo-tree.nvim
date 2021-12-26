@@ -13,6 +13,12 @@ local config = {
                 ["I"] = "toggle_gitignore",
                 ["R"] = "refresh",
                 ["/"] = "search",
+                ["a"] = "add",
+                ["c"] = "copy_to_clipboard",
+                ["d"] = "delete",
+                ["p"] = "paste_from_clipboard",
+                ["r"] = "rename",
+                ["x"] = "cut_to_clipboard",
             }
         },
         filters = {
@@ -55,6 +61,17 @@ local config = {
                     highlight = config.highlight or "NvimTreeNormal"
                 }
             end,
+            clipboard = function(config, node, state)
+                local clipboard = state.clipboard or {}
+                local clipboard_state = clipboard[node:get_id()]
+                if not clipboard_state then
+                    return {}
+                end
+                return {
+                    text = " (".. clipboard_state.action .. ")",
+                    highlight = config.highlight or "Comment"
+                }
+            end,
         },
         renderers = {
             directory = {
@@ -64,7 +81,11 @@ local config = {
                     folder_open = "",
                     padding = " ",
                 },
-                { "name", highlight = "NvimTreeDirectory" }
+                { "name", highlight = "NvimTreeDirectory" },
+                {
+                    "clipboard",
+                    highlight = "Comment"
+                }
             },
             file = {
                 {
@@ -72,8 +93,12 @@ local config = {
                     default = "*",
                     padding = " ",
                 },
-                { "name" }
-            }
+                { "name" },
+                {
+                    "clipboard",
+                    highlight = "Comment"
+                }
+            },
         }
     }
 }

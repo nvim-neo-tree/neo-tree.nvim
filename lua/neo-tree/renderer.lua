@@ -57,14 +57,19 @@ local prepare_node = function(item, state)
     line:append(item.indent, highlights.NORMAL)
 
     local renderer = state.renderers[item.type]
-    for _,component in ipairs(renderer) do
-      local componentData = state.functions[component[1]](component, item, state)
-      line:append(componentData.text, componentData.highlight)
+    if not renderer then
+      line:append(item.type .. ': ', "Comment")
+      line:append(item.name, highlights.NORMAL)
+    else
+      for _,component in ipairs(renderer) do
+        local componentData = state.functions[component[1]](component, item, state)
+        line:append(componentData.text, componentData.highlight)
+      end
     end
     return line
 end
 
-local function get_expanded_nodes(tree)
+M.get_expanded_nodes = function(tree)
   local node_ids = {}
 
   local function process(node)
@@ -86,7 +91,7 @@ local function get_expanded_nodes(tree)
   return node_ids
 end
 
-local set_expanded_nodes = function(tree, expanded_nodes)
+M.set_expanded_nodes = function(tree, expanded_nodes)
   for _, id in ipairs(expanded_nodes or {}) do
     local node = tree:get_node(id)
     if node ~= nil then
@@ -173,7 +178,7 @@ M.draw = function(nodes, state, parentId)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
   if parentId == nil and state.tree ~= nil then
-    expanded_nodes = get_expanded_nodes(state.tree)
+    expanded_nodes = M.get_expanded_nodes(state.tree)
   end
   for _, id in ipairs(state.default_expanded_nodes) do
     table.insert(expanded_nodes, id)
@@ -193,7 +198,7 @@ M.draw = function(nodes, state, parentId)
     node.loaded = true
     node:expand()
   else
-    set_expanded_nodes(state.tree, expanded_nodes)
+    M.set_expanded_nodes(state.tree, expanded_nodes)
   end
   state.tree:render()
 end

@@ -36,6 +36,13 @@ M.getValue = function(sourceObject, valuePath, defaultValue)
     return currentTable or value
 end
 
+function M.reduce(list, memo, func)
+  for _, i in ipairs(list) do
+    memo = func(memo, i)
+  end
+  return memo
+end
+
 ---The file system path separator for the current platform.
 M.pathSeparator = "/"
 local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win32unix') == 1

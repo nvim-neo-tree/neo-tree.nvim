@@ -1,0 +1,222 @@
+-- This file is for functions that mutate the filesystem.
+
+-- This code started out as a copy from:
+-- https://github.com/mhartington/dotfiles
+-- and modified to fit neo-tree's api.
+-- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
+--
+local vim = vim
+local api = vim.api
+local loop = vim.loop
+local scan = require('plenary.scandir')
+local utils = require('neo-tree.utils')
+local inputs = require('neo-tree.inputs')
+
+local function clear_buffer(path)
+    for _, buf in pairs(api.nvim_list_bufs()) do
+        if api.nvim_buf_get_name(buf) == path then
+            api.nvim_command(":bwipeout! " .. buf)
+        end
+    end
+end
+
+-- Move Node
+local function move_node(source, destination, callback)
+    -- If aleady exists
+    if loop.fs_stat(destination) then
+        print(destination, " already exists")
+        return
+    end
+
+    --create_dirs_if_needed(destination)
+    loop.fs_rename(source, destination, function(err)
+        if err then
+            print("Could not move the files")
+            return
+        end
+        if callback then
+            vim.schedule_wrap(callback)()
+        end
+    end)
+end
+
+-- Copy Node
+local function copy_node(source, destination, callback)
+    if loop.fs_stat(destination) then
+        print("Node already exists")
+        return
+    end
+
+    loop.fs_copyfile(source, destination)
+    local handle
+    handle = loop.spawn( "cp", {args = {"-r",source, destination}}, function(code)
+        handle:close()
+        if code ~= 0 then
+            print("copy failed")
+            return
+        end
+        if callback then
+            vim.schedule_wrap(callback)()
+        end
+    end)
+end
+
+-- Create Node
+local function create_node(in_directory, callback)
+    inputs.input('Create File/Dir (dirs end with a "/")', "", function(name)
+        if not name or name == "" then
+            return
+        end
+        local destination = in_directory .. utils.pathSeparator .. name
+        if loop.fs_stat(destination) then
+            clear_prompt()
+            print("File already exists")
+            return
+        end
+
+        if vim.endswith(destination, "/") then
+            loop.fs_mkdir(destination, 493)
+        else
+            --create_dirs_if_needed(parentPath)
+            local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
+            local fd = loop.fs_open(destination, "w", open_mode)
+            if not fd then
+                api.nvim_err_writeln("Could not create file " .. name)
+                return
+            end
+            loop.fs_chmod(destination, 420)
+            loop.fs_close(fd)
+        end
+
+        if callback then
+            vim.schedule_wrap(callback)()
+        end
+    end)
+end
+
+-- Delete Node
+local function delete_node(path, callback)
+    local parentPath, name = utils.splitPath(path)
+    local msg = string.format("Delete '%s'?", name)
+
+    local stat = loop.fs_stat(path)
+    local _type = stat.type
+    if _type == 'link' then
+        local link_to = loop.fs_readlink(path)
+        if not link_to then
+            print("Could not read link")
+            return
+        end
+        _type = loop.fs_stat(link_to)
+    end
+    if _type == 'directory' then
+        local children = scan.scan_dir(path, {
+            hidden = true,
+            respect_gitignore = false,
+            add_dirs = true,
+            depth = 1,
+        })
+        if #children > 0 then
+            msg = "Directory is not empty, are you sure you want to delete?"
+        end
+    end
+
+    inputs.confirm(msg, function(confirmed)
+        if not confirmed then
+            return
+        end
+
+        local function delete_dir(dir_path)
+            local handle = loop.fs_scandir(dir_path)
+            if type(handle) == "string" then
+                return api.nvim_err_writeln(handle)
+            end
+
+            while true do
+                local child_name, t = loop.fs_scandir_next(handle)
+                if not child_name then
+                    break
+                end
+
+                local child_path = dir_path .. "/" .. child_name
+                if t == "directory" then
+                    local success = delete_dir(child_path)
+                    if not success then
+                        print("failed to delete ", child_path)
+                        return false
+                    end
+                else
+                    clear_buffer(child_path)
+                    local success = loop.fs_unlink(child_path)
+                    if not success then
+                        return false
+                    end
+                end
+            end
+            return loop.fs_rmdir(dir_path)
+        end
+
+        if _type == "directory" then
+            local success = delete_dir(path)
+            if not success then
+                return api.nvim_err_writeln("Could not remove directory: " .. path)
+            end
+        else
+            local success = loop.fs_unlink(path)
+            if not success then
+                return api.nvim_err_writeln("Could not remove file: " .. path)
+            end
+            clear_buffer(path)
+        end
+
+        if callback then
+            vim.schedule_wrap(callback)()
+        end
+    end)
+end
+
+-- Rename Node
+local function rename_node(path, callback)
+    local parentPath, name = utils.splitPath(path)
+    local msg = string.format('Rename "%s"', name)
+
+    inputs.input(msg, name, function (new_name)
+        -- If cancelled
+        if not new_name or new_name == "" then
+            print("Operation canceled")
+            return
+        end
+
+        local destination = parentPath .. utils.pathSeparator .. new_name
+        -- If aleady exists
+        if loop.fs_stat(destination) then
+            print(destination, " already exists")
+            return
+        end
+
+        local complete = vim.schedule_wrap( function()
+            if callback then
+                callback()
+            end
+            print("Renamed " .. new_name .. " successfully")
+        end)
+
+        loop.fs_rename(path, destination, function(err)
+            if err then
+                print("Could not rename the files")
+                return
+            else
+                print("Renamed " .. name .. " successfully")
+                complete()
+            end
+        end)
+    end)
+end
+
+return {
+    move_node = move_node,
+    copy_node = copy_node,
+    rename_node = rename_node,
+    create_node = create_node,
+    delete_node = delete_node,
+}
