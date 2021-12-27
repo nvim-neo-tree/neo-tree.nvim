@@ -8,39 +8,60 @@ local fs_actions = require("neo-tree.sources.filesystem.fs_actions")
 local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
-local myState = nil
+local default_config = nil
+local state_by_tab = {}
+
+local get_state = function()
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  if not state_by_tab[tabnr] then
+    state_by_tab[tabnr] = utils.tableCopy(default_config)
+  end
+  return state_by_tab[tabnr]
+end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function()
+  local state = get_state()
   local cwd = vim.fn.getcwd()
-  if myState.path and cwd == myState.path then
+  if state.path and cwd == state.path then
     return
   end
-  if myState.path and renderer.window_exists(myState) then
+  if state.path and renderer.window_exists(state) then
     M.navigate(cwd)
   end
 end
 
----Naviagte to the given path.
+M.focus = function()
+  local state = get_state()
+  if renderer.window_exists(state) then
+    vim.api.nvim_set_current_win(state.split.winid)
+  else
+    M.navigate(state.path)
+  end
+end
+
+---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(path)
+  local state = get_state()
   local pathChanged = false
   if path == nil then
     path = vim.fn.getcwd()
   end
-  if path ~= myState.path then
-    myState.path = path
+  if path ~= state.path then
+    state.path = path
     pathChanged = true
   end
-  fs_scan.getItemsAsync(myState)
-  if pathChanged and myState.bind_to_cwd then
+  fs_scan.getItemsAsync(state)
+  if pathChanged and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
   end
 end
 
 M.show_new_children = function(node)
+  local state = get_state()
   if not node then
-    node = myState.tree:get_node()
+    node = state.tree:get_node()
   end
   if node.type ~= 'directory' then
     return
@@ -49,8 +70,8 @@ M.show_new_children = function(node)
   if node:is_expanded() then
     M.refresh()
   else
-    fs_scan.getItemsAsync(myState, nil, false, function()
-      local new_node = myState.tree:get_node(node:get_id())
+    fs_scan.getItemsAsync(state, nil, false, function()
+      local new_node = state.tree:get_node(node:get_id())
       M.toggle_directory(new_node)
     end)
   end
@@ -60,15 +81,17 @@ end
 -- making changes to the nodes that would affect how their components are
 -- rendered.
 M.redraw = function()
-  if renderer.window_exists(myState) then
-    myState.tree:render()
+  local state = get_state()
+  if renderer.window_exists(state) then
+    state.tree:render()
   end
 end
 
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function()
-  if myState.path and renderer.window_exists(myState) then
-    M.navigate(myState.path)
+  local state = get_state()
+  if state.path and renderer.window_exists(state) then
+    M.navigate(state.path)
   end
 end
 
@@ -76,16 +99,16 @@ end
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config)
-  if myState == nil then
-    myState = utils.tableCopy(config)
-    myState.commands = require("neo-tree.sources.filesystem.commands")
+  if default_config == nil then
+    default_config = config
+    default_config.commands = require("neo-tree.sources.filesystem.commands")
     local autocmds = {}
     local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
     table.insert(autocmds, "augroup neotreefilesystem")
     table.insert(autocmds, "autocmd!")
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
-    if myState.bind_to_cwd then
+    if default_config.bind_to_cwd then
       table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
     end
     table.insert(autocmds, "augroup END")
@@ -95,12 +118,14 @@ end
 
 ---Opens the tree and displays the current path or cwd.
 M.show = function()
-  M.navigate(myState.path)
+  local state = get_state()
+  M.navigate(state.path)
 end
 
 ---Expands or collapses the current node.
 M.toggle_directory = function (node)
-  local tree = myState.tree
+  local state = get_state()
+  local tree = state.tree
   if not node then
     node = tree:get_node()
   end
@@ -108,7 +133,7 @@ M.toggle_directory = function (node)
     return
   end
   if node.loaded == false then
-    fs_scan.getItemsAsync(myState, node.id, true)
+    fs_scan.getItemsAsync(state, node.id, true)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then

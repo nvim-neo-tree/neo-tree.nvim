@@ -52,7 +52,7 @@ M.get_git_status = function ()
       return new_path
     end)
   end
-  print(vim.inspect(git_status))
+
   return git_status
 end
 

@@ -5,6 +5,12 @@ local M = {
   state = {}
 }
 
+M.focus = function(source_name)
+  source_name = source_name or M.state.config.default_source
+  local source = require('neo-tree.sources.' .. source_name)
+  source.focus()
+end
+
 M.setup = function (config)
   M.state.config = utils.tableMerge(defaults, config or {})
   require('neo-tree.sources.filesystem').setup(M.state.config.filesystem)
@@ -13,8 +19,7 @@ end
 M.show = function (source_name)
   source_name = source_name or M.state.config.default_source
   local source = require('neo-tree.sources.' .. source_name)
-  M.state.config.currentSource = source
-  source.show(M.state)
+  source.show()
 end
 
 return M

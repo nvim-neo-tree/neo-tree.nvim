@@ -56,7 +56,7 @@ local float_border_hl = set_hl_group( 'NeoTreeFloatBorder',
 
 set_hl_group("NeoTreeTitleBar",
   {},
-  dec_to_hex(float_border_hl.background))
+  dec_to_hex(float_border_hl.foreground), nil)
 
 set_hl_group("NeoTreeGitAdded",
   { "GitGutterAdd", "GitSignsAdd" },

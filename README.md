@@ -1,9 +1,9 @@
-# neo-tree.nvim 
+# Neo-tree.nvim
 
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar. 
 
-# Quickstart
+## Quickstart
 
 Example for packer:
 ```

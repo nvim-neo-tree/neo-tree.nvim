@@ -47,25 +47,25 @@ local function createItem(path, _type)
   return item
 end
 
-M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
-  local depth = myState.depth or 1
+M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
+  local depth = state.depth or 1
   local folders = {}
 
   -- Create root folder
-  local root = createItem(parentId or myState.path, 'directory')
+  local root = createItem(parentId or state.path, 'directory')
   root.loaded = true
   folders[root.path] = root
-  if myState.search_pattern then
-    root.search_pattern = myState.search_pattern
-    depth = myState.search_depth or nil
+  if state.search_pattern then
+    root.search_pattern = state.search_pattern
+    depth = state.search_depth or nil
   end
-  myState.default_expanded_nodes = { myState.path }
+  state.default_expanded_nodes = { state.path }
 
   -- In the case of a refresh or navigating up, we need to make sure that all
   -- open folders are loaded.
   local paths_to_load = {}
-  if depth and parentId == nil and myState.tree then
-    paths_to_load = renderer.get_expanded_nodes(myState.tree)
+  if depth and parentId == nil and state.tree then
+    paths_to_load = renderer.get_expanded_nodes(state.tree)
   end
 
   -- function to set (or create) parent folder
@@ -83,8 +83,8 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
     if parent == nil then
       parent = createItem(item.parentPath, 'directory')
       folders[parent.id] = parent
-      if myState.search_pattern then
-        table.insert(myState.default_expanded_nodes, parent.id)
+      if state.search_pattern then
+        table.insert(state.default_expanded_nodes, parent.id)
       end
       set_parents(parent)
     end
@@ -95,9 +95,9 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
   -- this is the actual work of collecting items
   local function do_scan(path_to_scan)
     scan.scan_dir_async(path_to_scan, {
-      hidden = myState.show_hidden or false,
-      respect_gitignore = myState.respect_gitignore or false,
-      search_pattern = myState.search_pattern or nil,
+      hidden = state.show_hidden or false,
+      respect_gitignore = state.respect_gitignore or false,
+      search_pattern = state.search_pattern or nil,
       add_dirs = true,
       depth = depth,
       on_insert = function(path, _type)
@@ -110,7 +110,10 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
         set_parents(item)
       end,
       on_exit = vim.schedule_wrap(function()
-        folders[path_to_scan].loaded = true
+        local scanned_folder = folders[path_to_scan]
+        if scanned_folder then
+          scanned_folder.loaded = true
+        end
         -- check to see if there are more folders to load
         local next_path = nil
         while #paths_to_load > 0 and not next_path do
@@ -136,11 +139,11 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
           deepSort(root.children)
           if isLazyLoad then
             -- lazy loading a child folder
-            renderer.showNodes(root.children, myState, parentId)
+            renderer.showNodes(root.children, state, parentId)
           else
             -- full render of the tree
-            myState.before_render(myState)
-            renderer.showNodes({ root }, myState)
+            state.before_render(state)
+            renderer.showNodes({ root }, state)
           end
           if callback then
             callback()
@@ -149,7 +152,7 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
       end)
     })
   end
-  do_scan(parentId or myState.path)
+  do_scan(parentId or state.path)
 end
 
 return M
