@@ -25,11 +25,11 @@ wanted something that was:
 
 ### Easy to maintain and enhance
 
-This plugin will be designed from the begining to be asynchronous and have an
-architecture that can handle all of the features you would want of a mature tree
-plugin. Modules will be as small, decoupled, and generic as possible. We will
-prefer functional over OOP. These choices should make it easier to keep adding
-features without adding complexity.
+This plugin is designed from the start to eventually have all the features that 
+any one can want from a mature tree plugin. This is not a "lite" or "simple"
+plugin, although that does not mean it's not fast and efficient. It should mean
+that it will be easier to continually add new features, and hopefully new
+contributors will find it easy to work with.
 
 One big difference between this plugin and the ones that came before it, which
 is also what finally pushed me over the edge into making a new plugin, is that
@@ -56,4 +56,5 @@ This will follow in the spirit of plugins like
 [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) and
 [nvim-cokeline](https://github.com/noib3/nvim-cokeline). Everything will be
 configurable and take either strings, tables, or functions. You can take sane
-defaults or build your tree items from scratch.
+defaults or build your tree items from scratch. There should be the ability to
+add any features you can think of through existing hooks in the setup function.

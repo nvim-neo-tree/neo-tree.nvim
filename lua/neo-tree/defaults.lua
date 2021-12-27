@@ -1,9 +1,15 @@
 local config = {
+    -- The default_source is the one used when calling require('neo-tree').show()
+    -- without a source argument.
     default_source = "filesystem",
     filesystem = {
         window = {
             position = "left",
             width = 40,
+            -- Mappings for tree window. See https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/sources/filesystem/commands.lua
+            -- for built-in commands. You can also create your own commands by
+            -- providing a function instead of a string. See the built-in
+            -- commands for examples.
             mappings = {
                 ["<cr>"] = "open",
                 ["<2-LeftMouse>"] = "open",
@@ -26,10 +32,16 @@ local config = {
             show_hidden = false,
             respect_gitignore = true
         },
-        bind_to_cwd = true,
+        bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
+        search_depth = 4, -- How deep to search for files, nil for infinite
         before_render = function(state)
-
+            -- This function is called after the file system has been scanned,
+            -- but before the tree is rendered. You can use this to gather extra
+            -- data that can be used in the renderers.
+            local utils = require("neo-tree.utils")
+            state.git_status_lookup = utils.get_git_status()
         end,
+        -- This section provides the functions that may be called by the renderers below.
         functions = {
             icon = function(config, node, state)
                 local icon = config.default or " "
@@ -73,6 +85,28 @@ local config = {
                     highlight = config.highlight or "Comment"
                 }
             end,
+            git_status = function(config, node, state)
+                local git_status_lookup = state.git_status_lookup
+                if not git_status_lookup then
+                    return {}
+                end
+                local git_status = git_status_lookup[node.path]
+                if not git_status then
+                    return {}
+                end
+
+                local highlight = "Comment"
+                if git_status:match("M") then
+                    highlight = "NeoTreeGitModified"
+                elseif git_status:match("[ACR]") then
+                    highlight = "NeoTreeGitAdded"
+                end
+
+                return {
+                    text = " [" .. git_status .. "]",
+                    highlight = highlight
+                }
+            end,
             filter = function(config, node, state)
                 local filter = node.search_pattern or ""
                 if filter == "" then
@@ -84,6 +118,12 @@ local config = {
                 }
             end,
         },
+        -- This section provides the renderers that will be used to render the tree.
+        -- The first level is the node type.
+        -- For each node type, you can specify a list of components to render.
+        -- Components are rendered in the order they are specified.
+        -- The first field in each component is the name of the function to call.
+        -- The rest of the fields are passed to the function as the "config" argument.
         renderers = {
             directory = {
                 {
@@ -112,7 +152,8 @@ local config = {
                 {
                     "clipboard",
                     highlight = "Comment"
-                }
+                },
+                { "git_status" }
             },
         }
     }

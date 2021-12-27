@@ -90,12 +90,10 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
     end
     table.insert(parent.children, item)
     existing_items[item.id] = true
-    --parent.loaded = true
   end
 
   -- this is the actual work of collecting items
   local function do_scan(path_to_scan)
-    print(string.format("do_scan: %s, %s, %s", path_to_scan, myState.search_pattern, depth))
     scan.scan_dir_async(path_to_scan, {
       hidden = myState.show_hidden or false,
       respect_gitignore = myState.respect_gitignore or false,

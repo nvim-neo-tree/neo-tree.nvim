@@ -1,4 +1,34 @@
+local vim = vim
 local M = {}
+
+---Parse "git status" output for the current working directory.
+---@return table table Table with the path as key and the status as value.
+M.get_git_status = function ()
+  local project_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+  local git_output = vim.fn.systemlist("git status --porcelain")
+  local git_status = {}
+  local codes = "[ACDMRTU!%?]+"
+
+  for _, line in ipairs(git_output) do
+    local status = line:match("^(" .. codes .. ")%s")
+    local relative_path = line:match("^" .. codes .. '%s+(.+)$')
+    if not relative_path then
+      print("Error parsing git status for: " .. line)
+      break
+    end
+    local renamed = line:match("^" .. codes .. "%s+.*%s->%s(.*)$")
+    if renamed then
+      relative_path = renamed
+    end
+    if relative_path:sub(1, 1) == '"' then
+      -- path was quoted, remove quoting
+      relative_path = relative_path:match('^"(.+)".*')
+    end
+    local file_path = project_root .. M.pathSeparator .. relative_path
+    git_status[file_path] = status
+  end
+  return git_status
+end
 
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
