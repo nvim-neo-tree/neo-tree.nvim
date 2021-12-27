@@ -69,9 +69,14 @@ local config = {
                 }
             end,
             name = function(config, node, state)
+                local highlight = config.highlight or "NvimTreeNormal"
+                local git_status = state.functions.git_status(config, node, state)
+                if git_status then
+                    highlight = git_status.highlight
+                end
                 return {
                     text = node.name,
-                    highlight = config.highlight or "NvimTreeNormal"
+                    highlight = highlight
                 }
             end,
             clipboard = function(config, node, state)
@@ -140,7 +145,8 @@ local config = {
                 {
                     "clipboard",
                     highlight = "Comment"
-                }
+                },
+                --{ "git_status" },
             },
             file = {
                 {
@@ -153,7 +159,7 @@ local config = {
                     "clipboard",
                     highlight = "Comment"
                 },
-                { "git_status" }
+                --{ "git_status" },
             },
         }
     }

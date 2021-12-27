@@ -7,7 +7,9 @@ M.get_git_status = function ()
   local project_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
   local git_output = vim.fn.systemlist("git status --porcelain")
   local git_status = {}
-  local codes = "[ACDMRTU!%?]+"
+  local codes = "[ACDMRTU!%?%s]"
+  codes = codes .. codes
+
 
   for _, line in ipairs(git_output) do
     local status = line:match("^(" .. codes .. ")%s")
@@ -26,7 +28,31 @@ M.get_git_status = function ()
     end
     local file_path = project_root .. M.pathSeparator .. relative_path
     git_status[file_path] = status
+
+    -- Now bubble this status up to the parent directories
+    status = status:sub(#status, #status) -- only working tree status
+    local parts = M.split(file_path, M.pathSeparator)
+    M.reduce(parts, "", function (acc, part)
+      local new_path = acc .. M.pathSeparator .. part
+      local path_status = git_status[new_path]
+      if not path_status then
+        git_status[new_path] = status
+      elseif path_status ~= "M" then
+        -- Prioritze M then A over all others
+        if status == "M" then
+         git_status[new_path] = "M"
+        elseif status:match("[ACR]") then
+         git_status[new_path] = "A"
+        elseif path_status == "!" then
+          git_status[new_path] = "!"
+        else
+          git_status[new_path] = status
+        end
+      end
+      return new_path
+    end)
   end
+  print(vim.inspect(git_status))
   return git_status
 end
 
