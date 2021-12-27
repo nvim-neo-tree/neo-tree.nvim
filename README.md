@@ -3,6 +3,25 @@
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar. 
 
+# Quickstart
+
+Example for packer:
+```
+    use {
+        "nvim-neo-tree/neo-tree.nvim",
+        branch = "main",
+        requires = { "MunifTanjim/nui.nvim" },
+        config = function ()
+            require("neo-tree").setup()
+            vim.cmd([[nnoremap \ :lua require("neo-tree").show()<cr>]])
+        end
+    }
+```
+
+For a configuration example and default mappings, see [defaults.lua](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/defaults.lua).
+Anything passed to the setup() function will be merged with those default values.
+Proper documentation is coming soon.
+
 ## Status
 
 This is currently functional as a basic file browser but definitely not
@@ -10,9 +29,9 @@ complete. The biggest issue is that there is no documentation at all! I plan on
 adding that when I get close to the first release.
 
 The first version of this plugin will provide a source for the file system and
-an interface to add user defined sources. Other sources that may be used include
-things like tags, treesitter or lsp document structures, git status, open
-buffers list, etc.
+establish the interface for other sources. Other sources that may include things
+like tags, treesitter or lsp document structures, git status, open buffers 
+list, etc.
 
 ## Why?
 
