@@ -23,12 +23,12 @@ M.show_filter = function(state)
   local input = Input(popup_options, {
     prompt = " ",
     default_value = state.search_pattern,
-    on_close = function()
-      if state.search_pattern then
-        state.search_pattern = nil
-        fs.refresh()
-      end
-    end,
+    --on_close = function()
+    --  if state.search_pattern then
+    --    state.search_pattern = nil
+    --    fs.refresh()
+    --  end
+    --end,
     on_submit = function(value)
       if value == "" then
         state.search_pattern = nil

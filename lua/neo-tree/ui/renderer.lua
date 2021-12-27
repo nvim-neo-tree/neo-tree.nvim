@@ -31,6 +31,7 @@ M.createNodes = function(sourceItems, state, level)
       ext = item.ext,
       name = item.name,
       path = item.path,
+      search_pattern = item.search_pattern,
       type = item.type,
       loaded = item.loaded,
       indent = indent

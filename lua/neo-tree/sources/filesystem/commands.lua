@@ -46,6 +46,10 @@ M.cut_to_clipboard = function(state)
   fs.redraw()
 end
 
+M.show_debug_info = function(state)
+  print(vim.inspect(state))
+end
+
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
   if state.clipboard then

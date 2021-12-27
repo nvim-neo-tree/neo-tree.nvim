@@ -19,6 +19,7 @@ local config = {
                 ["p"] = "paste_from_clipboard",
                 ["r"] = "rename",
                 ["x"] = "cut_to_clipboard",
+                ["???"] = "show_debug_info"
             }
         },
         filters = {
@@ -72,6 +73,16 @@ local config = {
                     highlight = config.highlight or "Comment"
                 }
             end,
+            filter = function(config, node, state)
+                local filter = node.search_pattern or ""
+                if filter == "" then
+                    return {}
+                end
+                return {
+                    text = string.format('Filter "%s" in ', filter),
+                    highlight = config.highlight or "Comment"
+                }
+            end,
         },
         renderers = {
             directory = {
@@ -81,7 +92,11 @@ local config = {
                     folder_open = "",
                     padding = " ",
                 },
-                { "name", highlight = "NvimTreeDirectory" },
+                { "filter" },
+                {
+                    "name",
+                    highlight = "NvimTreeDirectory"
+                },
                 {
                     "clipboard",
                     highlight = "Comment"

@@ -43,7 +43,7 @@ local function init(class, popup_options, options)
 
   popup_options.size.height = 1
   if popup_options.message then
-    if type(popup_options.message) ~= "table" then
+    if not is_type("table", popup_options.message) then
       popup_options.message = { popup_options.message }
     end
     popup_options.size.height = #popup_options.message + 1

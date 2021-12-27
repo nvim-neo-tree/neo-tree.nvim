@@ -56,8 +56,8 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
   root.loaded = true
   folders[root.path] = root
   if myState.search_pattern then
-    root.name = 'Search: ' .. myState.search_pattern .. " in " .. root.name
-    depth = myState.search_depth or 3
+    root.search_pattern = myState.search_pattern
+    depth = myState.search_depth or nil
   end
   myState.default_expanded_nodes = { myState.path }
 
@@ -69,7 +69,13 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
   end
 
   -- function to set (or create) parent folder
+  local existing_items = {}
   local function set_parents(item)
+    -- we can get duplicate items if we navigate up with open folders
+    -- this is probably hacky, but it works
+    if existing_items[item.id] then
+      return
+    end
     if not item.parentPath then
       return
     end
@@ -83,11 +89,13 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
       set_parents(parent)
     end
     table.insert(parent.children, item)
-    parent.loaded = true
+    existing_items[item.id] = true
+    --parent.loaded = true
   end
 
   -- this is the actual work of collecting items
   local function do_scan(path_to_scan)
+    print(string.format("do_scan: %s, %s, %s", path_to_scan, myState.search_pattern, depth))
     scan.scan_dir_async(path_to_scan, {
       hidden = myState.show_hidden or false,
       respect_gitignore = myState.respect_gitignore or false,
@@ -104,6 +112,7 @@ M.getItemsAsync = function(myState, parentId, isLazyLoad, callback)
         set_parents(item)
       end,
       on_exit = vim.schedule_wrap(function()
+        folders[path_to_scan].loaded = true
         -- check to see if there are more folders to load
         local next_path = nil
         while #paths_to_load > 0 and not next_path do

@@ -24,12 +24,16 @@ end
 ---Naviagte to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(path)
+  local pathChanged = false
   if path == nil then
     path = vim.fn.getcwd()
   end
-  myState.path = path
+  if path ~= myState.path then
+    myState.path = path
+    pathChanged = true
+  end
   fs_scan.getItemsAsync(myState)
-  if myState.bind_to_cwd then
+  if pathChanged and myState.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
   end
 end
