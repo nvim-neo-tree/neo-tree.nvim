@@ -96,7 +96,7 @@ end
 
 -- Delete Node
 M.delete_node = function(path, callback)
-    local parent_path, name = utils.splitPath(path)
+    local parent_path, name = utils.split_path(path)
     local msg = string.format("Are you sure you want to delete '%s'?", name)
 
     local stat = loop.fs_stat(path)
@@ -177,7 +177,7 @@ end
 
 -- Rename Node
 M.rename_node = function(path, callback)
-    local parent_path, name = utils.splitPath(path)
+    local parent_path, name = utils.split_path(path)
     local msg = string.format('Enter new name for "%s":', name)
 
     inputs.input(msg, name, function (new_name)

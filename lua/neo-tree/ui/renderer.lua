@@ -53,12 +53,12 @@ end
 
 local prepare_node = function(item, state)
     local line = NuiLine()
-    line:append(item.indent, highlights.NORMAL)
+    line:append(item.indent)
 
     local renderer = state.renderers[item.type]
     if not renderer then
       line:append(item.type .. ': ', "Comment")
-      line:append(item.name, highlights.NORMAL)
+      line:append(item.name)
     else
       for _,component in ipairs(renderer) do
         local component_data = state.functions[component[1]](component, item, state)
