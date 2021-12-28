@@ -1,6 +1,23 @@
 local vim = vim
 local M = {}
 
+
+M.CURSOR_LINE = "NeoTreeCursorLine"
+M.DIRECTORY_NAME = "NeoTreeDirectoryName"
+M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
+M.FILE_ICON = "NeoTreeFileIcon"
+M.FILE_NAME = "NeoTreeFileName"
+M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
+M.FLOAT_BORDER = "NeoTreeFloatBorder"
+M.GIT_ADDED = "NeoTreeGitAdded"
+M.GIT_CONFLICT = "NeoTreeGitConflict"
+M.GIT_MODIFIED = "NeoTreeGitModified"
+M.NORMAL = "NeoTreeNormal"
+M.NORMALNC = "NeoTreeNormalNC"
+M.ROOT_NAME = "NeoTreeRootName"
+M.TITLE_BAR = "NeoTreeTitleBar"
+
+
 function dec_to_hex(n)
   local hex = string.format("%06x", n)
   if n < 16 then
@@ -11,14 +28,14 @@ end
 
 ---If the given highlight group is not defined, define it.
 ---@param hl_group_name string The name of the highlight group.
----@param link_to_if_exists table A list of highlight groups to link to, in 
+---@param link_to_if_exists table A list of highlight groups to link to, in
 --order of priority. The first one that exists will be used.
 ---@param background string The background color to use, in hex, if the highlight group
 --is not defined and it is not linked to another group.
 ---@param foreground string The foreground color to use, in hex, if the highlight group
 --is not defined and it is not linked to another group.
 ---@return table table The highlight group values.
-local function set_hl_group(hl_group_name, link_to_if_exists, background, foreground)
+local function create_highlight_group(hl_group_name, link_to_if_exists, background, foreground, gui)
   local success, hl_group = pcall(vim.api.nvim_get_hl_by_name, hl_group_name, true)
   if not success or not hl_group.foreground or not hl_group.background then
     for _, link_to in ipairs(link_to_if_exists) do
@@ -29,6 +46,13 @@ local function set_hl_group(hl_group_name, link_to_if_exists, background, foregr
       end
     end
 
+    if type(background) == "number" then
+      background = dec_to_hex(background)
+    end
+    if type(foreground) == "number" then
+      foreground = dec_to_hex(foreground)
+    end
+
     local cmd = "highlight " .. hl_group_name
     if background then
       cmd = cmd .. " guibg=#" .. background
@@ -36,7 +60,11 @@ local function set_hl_group(hl_group_name, link_to_if_exists, background, foregr
     if foreground then
       cmd = cmd .. " guifg=#" .. foreground
     end
+    if gui then
+      cmd = cmd .. " gui=" .. gui
+    end
     vim.cmd(cmd)
+
     return {
       background = background and tonumber(background, 16) or nil,
       foreground = foreground and tonumber(foreground, 16) or nil,
@@ -44,30 +72,35 @@ local function set_hl_group(hl_group_name, link_to_if_exists, background, foregr
   end
 end
 
-local normal_hl = vim.api.nvim_get_hl_by_name('Normal', true)
-local success, normalnc_hl = pcall(vim.api.nvim_get_hl_by_name, 'NormalNC', true)
-if not success then
-  normalnc_hl = normal_hl
-end
+local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
+local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
 
-local float_border_hl = set_hl_group( 'NeoTreeFloatBorder',
+local float_border_hl = create_highlight_group(M.FLOAT_BORDER,
   { 'FloatBorder' },
-  dec_to_hex(normalnc_hl.background), '444444')
+  normalnc_hl.background, '444444')
 
-set_hl_group("NeoTreeTitleBar",
+create_highlight_group(M.TITLE_BAR,
   {},
-  dec_to_hex(float_border_hl.foreground), nil)
+  float_border_hl.foreground, nil)
 
-set_hl_group("NeoTreeGitAdded",
+create_highlight_group(M.GIT_ADDED,
   { "GitGutterAdd", "GitSignsAdd" },
   nil, '5faf5f')
 
-set_hl_group("NeoTreeGitModified",
+create_highlight_group(M.GIT_CONFLICT,
+  { "GitGutterDelete", "GitSignsDelete" },
+  nil, 'ff5900')
+
+create_highlight_group(M.GIT_MODIFIED,
   { "GitGutterChange", "GitSignsChange"  },
   nil, 'd7af5f')
 
-M.NORMAL = "NvimTreeNormal"
-M.FLOAT_BORDER = "NeoTreeFloatBorder"
-M.TITLE_BAR = "NeoTreeTitleBar"
+create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
+create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
+create_highlight_group(M.DIRECTORY_ICON, { "TabLineSel" }, nil, "#73cef4")
+create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
+create_highlight_group(M.FILE_NAME, {}, "NONE", "NONE")
+create_highlight_group(M.FILE_NAME_OPENED, {}, nil, nil, "bold")
+create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
 
 return M

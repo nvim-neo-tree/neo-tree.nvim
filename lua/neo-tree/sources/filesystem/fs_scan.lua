@@ -25,11 +25,11 @@ local function deep_sort(tbl)
 end
 
 local function create_item(path, _type)
-  local parentPath, name = utils.split_path(path)
+  local parent_path, name = utils.split_path(path)
   local item = {
     id = path,
     name = name,
-    parentPath = parentPath,
+    parent_path = parent_path,
     path = path,
     type = _type,
   }

@@ -60,9 +60,9 @@ M.paste_from_clipboard = function(state)
     end
     for _, item in pairs(state.clipboard) do
       if item.action == "copy" then
-        fs_actions.copy_node(item.node.path, folder .. utils.pathSeparator .. item.node.name)
+        fs_actions.copy_node(item.node.path, folder .. utils.path_separator .. item.node.name)
       elseif item.action == "cut" then
-        fs_actions.move_node(item.node.path, folder .. utils.pathSeparator .. item.node.name)
+        fs_actions.move_node(item.node.path, folder .. utils.path_separator .. item.node.name)
       end
     end
     state.clipboard = nil
@@ -92,7 +92,7 @@ end
 
 ---Navigate up one level.
 M.navigate_up = function(state)
-  local parent_path, _ = utils.splitPath(state.path)
+  local parent_path, _ = utils.split_path(state.path)
   fs.navigate(parent_path)
 end
 

@@ -14,7 +14,7 @@ local state_by_tab = {}
 local get_state = function()
   local tabnr = vim.api.nvim_get_current_tabpage()
   if not state_by_tab[tabnr] then
-    state_by_tab[tabnr] = utils.tableCopy(default_config)
+    state_by_tab[tabnr] = utils.table_copy(default_config)
   end
   return state_by_tab[tabnr]
 end

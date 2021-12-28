@@ -69,10 +69,17 @@ local config = {
                 }
             end,
             name = function(config, node, state)
-                local highlight = config.highlight or "NvimTreeNormal"
-                local git_status = state.functions.git_status(config, node, state)
-                if git_status then
-                    highlight = git_status.highlight
+                local highlight = config.highlight or "NeoTreeFileName"
+                if node.type == "directory" then
+                    highlight = "NeoTreeDirectoryName"
+                end
+                if node:get_depth() == 1 then
+                    highlight = "NeoTreeRootName"
+                else
+                    local git_status = state.functions.git_status(config, node, state)
+                    if git_status and git_status.highlight then
+                        highlight = git_status.highlight
+                    end
                 end
                 return {
                     text = node.name,
@@ -140,7 +147,7 @@ local config = {
                 { "filter" },
                 {
                     "name",
-                    highlight = "NvimTreeDirectory"
+                    highlight = "NeoTreeDirectoryName"
                 },
                 {
                     "clipboard",

@@ -146,7 +146,7 @@ local table_merge_internal = function(base_table, override_table)
     for k,v in pairs(override_table) do
         if type(v) == "table" then
             if type(base_table[k] or false) == "table" then
-                tableMerge(base_table[k] or {}, override_table[k] or {})
+                table_merge_internal(base_table[k] or {}, override_table[k] or {})
             else
                 base_table[k] = v
             end

@@ -112,41 +112,46 @@ local create_tree = function(state)
 end
 
 local create_window = function(state)
-    state.split = NuiSplit({
-      relative = "editor",
-      position = utils.get_value(state, "window.position", "left"),
-      size = utils.get_value(state, "window.size", 40),
-      win_options = {
-        number = false,
-        wrap = false,
-      },
-      buf_options = {
-        bufhidden = "delete",
-        buftype = "nowrite",
-        modifiable = false,
-        swapfile = false,
-        filetype = "neo-tree",
-      }
-    })
-    state.split:mount()
-    local winid = state.split.winid
-    state.bufid = vim.api.nvim_win_get_buf(winid)
-    state.split:on({ "BufDelete" }, function()
-      state.split:unmount()
-      state.split = nil
-    end, { once = true })
+  local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
+    highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
+  print(winhl)
 
-    local map_options = { noremap = true, nowait = true }
-    local mappings = utils.get_value(state, "window.mappings", {})
-    for cmd, func in pairs(mappings) do
-      if type(func) == "string" then
-        func = state.commands[func]
-      end
-      state.split:map('n', cmd, function()
-        func(state)
-      end, map_options)
+  state.split = NuiSplit({
+    relative = "editor",
+    position = utils.get_value(state, "window.position", "left"),
+    size = utils.get_value(state, "window.size", 40),
+    win_options = {
+      number = false,
+      wrap = false,
+      winhighlight = winhl,
+    },
+    buf_options = {
+      bufhidden = "delete",
+      buftype = "nowrite",
+      modifiable = false,
+      swapfile = false,
+      filetype = "neo-tree",
+    }
+  })
+  state.split:mount()
+  local winid = state.split.winid
+  state.bufid = vim.api.nvim_win_get_buf(winid)
+  state.split:on({ "BufDelete" }, function()
+    state.split:unmount()
+    state.split = nil
+  end, { once = true })
+
+  local map_options = { noremap = true, nowait = true }
+  local mappings = utils.get_value(state, "window.mappings", {})
+  for cmd, func in pairs(mappings) do
+    if type(func) == "string" then
+      func = state.commands[func]
     end
-    return state.split
+    state.split:map('n', cmd, function()
+      func(state)
+    end, map_options)
+  end
+  return state.split
 end
 
 ---Determines of the window exists and is valid.
