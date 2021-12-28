@@ -8,24 +8,24 @@ local highlights = require("neo-tree.ui.highlights")
 local M = {}
 
 ---Transforms a list of items into a collection of TreeNodes.
----@param sourceItems table The list of items to transform. The expected
+---@param source_items table The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for
 --the given source, but they must contain at least an id field.
 ---@param state table The current state of the plugin.
 ---@param level integer Optional. The current level of the tree, defaults to 0.
 ---@return table A collection of TreeNodes.
-M.createNodes = function(sourceItems, state, level)
+M.create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
   local indent = ""
-  local indentSize = state.indentSize or 2
+  local indent_size = state.indent_size or 2
   for _ = 1, level do
-    for _ = 1, indentSize do
+    for _ = 1, indent_size do
       indent = indent .. " "
     end
   end
 
-  for _, item in ipairs(sourceItems) do
+  for _, item in ipairs(source_items) do
     local nodeData = {
       id = item.id,
       ext = item.ext,
@@ -37,12 +37,12 @@ M.createNodes = function(sourceItems, state, level)
       indent = indent
     }
 
-    local nodeChildren = nil
+    local node_children = nil
     if item.children ~= nil then
-      nodeChildren = M.createNodes(item.children, state, level + 1)
+      node_children = M.create_nodes(item.children, state, level + 1)
     end
 
-    local node = NuiTree.Node(nodeData, nodeChildren)
+    local node = NuiTree.Node(nodeData, node_children)
     if item._is_expanded then
       node:expand()
     end
@@ -61,8 +61,8 @@ local prepare_node = function(item, state)
       line:append(item.name, highlights.NORMAL)
     else
       for _,component in ipairs(renderer) do
-        local componentData = state.functions[component[1]](component, item, state)
-        line:append(componentData.text, componentData.highlight)
+        local component_data = state.functions[component[1]](component, item, state)
+        line:append(component_data.text, component_data.highlight)
       end
     end
     return line
@@ -99,7 +99,7 @@ M.set_expanded_nodes = function(tree, expanded_nodes)
   end
 end
 
-local createTree = function(state)
+local create_tree = function(state)
   state.tree = NuiTree({
     winid = state.split.winid,
     get_node_id = function(node)
@@ -111,11 +111,11 @@ local createTree = function(state)
   })
 end
 
-local createWindow = function(state)
+local create_window = function(state)
     state.split = NuiSplit({
       relative = "editor",
-      position = utils.getValue(state, "window.position", "left"),
-      size = utils.getValue(state, "window.size", 40),
+      position = utils.get_value(state, "window.position", "left"),
+      size = utils.get_value(state, "window.size", 40),
       win_options = {
         number = false,
         wrap = false,
@@ -137,7 +137,7 @@ local createWindow = function(state)
     end, { once = true })
 
     local map_options = { noremap = true, nowait = true }
-    local mappings = utils.getValue(state, "window.mappings", {})
+    local mappings = utils.get_value(state, "window.mappings", {})
     for cmd, func in pairs(mappings) do
       if type(func) == "string" then
         func = state.commands[func]
@@ -173,10 +173,10 @@ end
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
 --@param state table The current state of the source.
-M.draw = function(nodes, state, parentId)
+M.draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
-  if parentId == nil and state.tree ~= nil then
+  if parent_id == nil and state.tree ~= nil then
     expanded_nodes = M.get_expanded_nodes(state.tree)
   end
   for _, id in ipairs(state.default_expanded_nodes) do
@@ -185,15 +185,15 @@ M.draw = function(nodes, state, parentId)
 
   -- Create the tree if it doesn't exist.
   if not M.window_exists(state) then
-    createWindow(state)
-    createTree(state)
+    create_window(state)
+    create_tree(state)
   end
 
   -- draw the given nodes
-  state.tree:set_nodes(nodes, parentId)
-  if parentId ~= nil then
+  state.tree:set_nodes(nodes, parent_id)
+  if parent_id ~= nil then
     -- this is a dynamic fetch of children that were not previously loaded
-    local node = state.tree:get_node(parentId)
+    local node = state.tree:get_node(parent_id)
     node.loaded = true
     node:expand()
   else
@@ -208,13 +208,13 @@ end
 --@param state table The current state of the plugin.
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
-M.showNodes = function(sourceItems, state, parentId)
+M.show_nodes = function(sourceItems, state, parentId)
   local level = 0
   if parentId ~= nil then
     local parent = state.tree:get_node(parentId)
     level = parent:get_depth()
   end
-  local nodes = M.createNodes(sourceItems, state, level)
+  local nodes = M.create_nodes(sourceItems, state, level)
   M.draw(nodes, state, parentId)
 end
 

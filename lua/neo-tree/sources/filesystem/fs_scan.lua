@@ -7,7 +7,7 @@ local scan = require('plenary.scandir')
 
 local M = {}
 
-local function sortItems(a, b)
+local function sort_items(a, b)
   if a.type == b.type then
     return a.path < b.path
   else
@@ -15,17 +15,17 @@ local function sortItems(a, b)
   end
 end
 
-local function deepSort(tbl)
-  table.sort(tbl, sortItems)
+local function deep_sort(tbl)
+  table.sort(tbl, sort_items)
   for _, item in pairs(tbl) do
     if item.type == 'directory' then
-      deepSort(item.children)
+      deep_sort(item.children)
     end
   end
 end
 
-local function createItem(path, _type)
-  local parentPath, name = utils.splitPath(path)
+local function create_item(path, _type)
+  local parentPath, name = utils.split_path(path)
   local item = {
     id = path,
     name = name,
@@ -47,12 +47,13 @@ local function createItem(path, _type)
   return item
 end
 
-M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
+M.get_items_async = function(state, parent_id, is_lazy_load, callback)
   local depth = state.depth or 1
   local folders = {}
 
   -- Create root folder
-  local root = createItem(parentId or state.path, 'directory')
+  local root = create_item(parent_id or state.path, 'directory')
+  root.name = vim.fn.fnamemodify(root.path, ':~')
   root.loaded = true
   folders[root.path] = root
   if state.search_pattern then
@@ -64,7 +65,7 @@ M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
   -- In the case of a refresh or navigating up, we need to make sure that all
   -- open folders are loaded.
   local paths_to_load = {}
-  if depth and parentId == nil and state.tree then
+  if depth and parent_id == nil and state.tree then
     paths_to_load = renderer.get_expanded_nodes(state.tree)
   end
 
@@ -76,12 +77,12 @@ M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
     if existing_items[item.id] then
       return
     end
-    if not item.parentPath then
+    if not item.parent_path then
       return
     end
-    local parent = folders[item.parentPath]
+    local parent = folders[item.parent_path]
     if parent == nil then
-      parent = createItem(item.parentPath, 'directory')
+      parent = create_item(item.parent_path, 'directory')
       folders[parent.id] = parent
       if state.search_pattern then
         table.insert(state.default_expanded_nodes, parent.id)
@@ -101,7 +102,7 @@ M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
       add_dirs = true,
       depth = depth,
       on_insert = function(path, _type)
-        local item = createItem(path, _type)
+        local item = create_item(path, _type)
         if _type == 'directory' then
           folders[path] = item
         else
@@ -136,14 +137,14 @@ M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
           do_scan(next_path)
         else
             -- if there are no more folders to load, then we can sort the items
-          deepSort(root.children)
-          if isLazyLoad then
+          deep_sort(root.children)
+          if is_lazy_load then
             -- lazy loading a child folder
-            renderer.showNodes(root.children, state, parentId)
+            renderer.show_nodes(root.children, state, parent_id)
           else
             -- full render of the tree
             state.before_render(state)
-            renderer.showNodes({ root }, state)
+            renderer.show_nodes({ root }, state)
           end
           if callback then
             callback()
@@ -152,7 +153,7 @@ M.getItemsAsync = function(state, parentId, isLazyLoad, callback)
       end)
     })
   end
-  do_scan(parentId or state.path)
+  do_scan(parent_id or state.path)
 end
 
 return M

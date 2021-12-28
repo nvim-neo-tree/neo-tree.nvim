@@ -68,7 +68,7 @@ M.create_node = function(in_directory, callback)
         if not name or name == "" then
             return
         end
-        local destination = in_directory .. utils.pathSeparator .. name
+        local destination = in_directory .. utils.path_separator .. name
         if loop.fs_stat(destination) then
             print("File already exists")
             return
@@ -77,7 +77,7 @@ M.create_node = function(in_directory, callback)
         if vim.endswith(destination, "/") then
             loop.fs_mkdir(destination, 493)
         else
-            --create_dirs_if_needed(parentPath)
+            --create_dirs_if_needed(parent_path)
             local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
             local fd = loop.fs_open(destination, "w", open_mode)
             if not fd then
@@ -96,7 +96,7 @@ end
 
 -- Delete Node
 M.delete_node = function(path, callback)
-    local parentPath, name = utils.splitPath(path)
+    local parent_path, name = utils.splitPath(path)
     local msg = string.format("Are you sure you want to delete '%s'?", name)
 
     local stat = loop.fs_stat(path)
@@ -177,7 +177,7 @@ end
 
 -- Rename Node
 M.rename_node = function(path, callback)
-    local parentPath, name = utils.splitPath(path)
+    local parent_path, name = utils.splitPath(path)
     local msg = string.format('Enter new name for "%s":', name)
 
     inputs.input(msg, name, function (new_name)
@@ -187,7 +187,7 @@ M.rename_node = function(path, callback)
             return
         end
 
-        local destination = parentPath .. utils.pathSeparator .. new_name
+        local destination = parent_path .. utils.path_separator .. new_name
         -- If aleady exists
         if loop.fs_stat(destination) then
             print(destination, " already exists")

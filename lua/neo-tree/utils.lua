@@ -26,14 +26,14 @@ M.get_git_status = function ()
       -- path was quoted, remove quoting
       relative_path = relative_path:match('^"(.+)".*')
     end
-    local file_path = project_root .. M.pathSeparator .. relative_path
+    local file_path = project_root .. M.path_separator .. relative_path
     git_status[file_path] = status
 
     -- Now bubble this status up to the parent directories
     status = status:sub(#status, #status) -- only working tree status
-    local parts = M.split(file_path, M.pathSeparator)
+    local parts = M.split(file_path, M.path_separator)
     M.reduce(parts, "", function (acc, part)
-      local new_path = acc .. M.pathSeparator .. part
+      local new_path = acc .. M.path_separator .. part
       local path_status = git_status[new_path]
       if not path_status then
         git_status[new_path] = status
@@ -75,7 +75,7 @@ end
 ---@param valuePath string The path to the value to get.
 ---@param defaultValue any The default value to return if the value is nil.
 ---@return table table The value at the path or the default value.
-M.getValue = function(sourceObject, valuePath, defaultValue)
+M.get_value = function(sourceObject, valuePath, defaultValue)
     local value = defaultValue or {}
     if sourceObject == nil then
         return value
@@ -100,10 +100,10 @@ function M.reduce(list, memo, func)
 end
 
 ---The file system path separator for the current platform.
-M.pathSeparator = "/"
+M.path_separator = "/"
 local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win32unix') == 1
 if is_windows == true then
-  M.pathSeparator = "\\"
+  M.path_separator = "\\"
 end
 
 ---Split string into a table of strings using a separator.
@@ -122,55 +122,55 @@ end
 ---Split a path into a parentPath and a name.
 ---@param path string The path to split.
 ---@return table table parentPath, name
-M.splitPath = function(path)
+M.split_path = function(path)
   if not path then
     return nil, nil
   end
-  if path == M.pathSeparator then
-    return nil, M.pathSeparator
+  if path == M.path_separator then
+    return nil, M.path_separator
   end
-  local parts = M.split(path, M.pathSeparator)
+  local parts = M.split(path, M.path_separator)
   local name = table.remove(parts)
-  local parentPath = table.concat(parts, M.pathSeparator)
-  if M.pathSeparator == '/' then
+  local parentPath = table.concat(parts, M.path_separator)
+  if M.path_separator == '/' then
     parentPath = '/' .. parentPath
   end
   return parentPath, name
 end
 
 ---Merges overrideTable into baseTable. This mutates baseTable.
----@param baseTable table The base table that provides default values.
----@param overrideTable table The table to override the base table with.
+---@param base_table table The base table that provides default values.
+---@param override_table table The table to override the base table with.
 ---@return table table The merged table.
-local tableMergeInternal = function(baseTable, overrideTable)
-    for k,v in pairs(overrideTable) do
+local table_merge_internal = function(base_table, override_table)
+    for k,v in pairs(override_table) do
         if type(v) == "table" then
-            if type(baseTable[k] or false) == "table" then
-                tableMerge(baseTable[k] or {}, overrideTable[k] or {})
+            if type(base_table[k] or false) == "table" then
+                tableMerge(base_table[k] or {}, override_table[k] or {})
             else
-                baseTable[k] = v
+                base_table[k] = v
             end
         else
-            baseTable[k] = v
+            base_table[k] = v
         end
     end
-    return baseTable
+    return base_table
 end
 
 ---Creates a deep copy of a table.
----@param sourceTable table The table to copy.
+---@param source_table table The table to copy.
 ---@return table table The copied table.
-M.tableCopy = function (sourceTable)
-    return tableMergeInternal({}, sourceTable)
+M.table_copy = function (source_table)
+    return table_merge_internal({}, source_table)
 end
 
 ---Returns a new table that is the result of a deep merge two tables.
----@param baseTable table The base table that provides default values.
----@param overrideTable table The table to override the base table with.
+---@param base_table table The base table that provides default values.
+---@param override_table table The table to override the base table with.
 ---@return table table The merged table.
-M.tableMerge = function(baseTable, overrideTable)
-    local mergedTable = tableMergeInternal({}, baseTable)
-    return tableMergeInternal(mergedTable, overrideTable)
+M.table_merge = function(base_table, override_table)
+    local merged_table = table_merge_internal({}, base_table)
+    return table_merge_internal(merged_table, override_table)
 end
 
 return M

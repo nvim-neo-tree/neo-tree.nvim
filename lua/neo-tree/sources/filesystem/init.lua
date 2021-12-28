@@ -44,16 +44,16 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(path)
   local state = get_state()
-  local pathChanged = false
+  local path_changed = false
   if path == nil then
     path = vim.fn.getcwd()
   end
   if path ~= state.path then
     state.path = path
-    pathChanged = true
+    path_changed = true
   end
-  fs_scan.getItemsAsync(state)
-  if pathChanged and state.bind_to_cwd then
+  fs_scan.get_items_async(state)
+  if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
   end
 end
@@ -70,7 +70,7 @@ M.show_new_children = function(node)
   if node:is_expanded() then
     M.refresh()
   else
-    fs_scan.getItemsAsync(state, nil, false, function()
+    fs_scan.get_items_async(state, nil, false, function()
       local new_node = state.tree:get_node(node:get_id())
       M.toggle_directory(new_node)
     end)
@@ -133,7 +133,7 @@ M.toggle_directory = function (node)
     return
   end
   if node.loaded == false then
-    fs_scan.getItemsAsync(state, node.id, true)
+    fs_scan.get_items_async(state, node.id, true)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then

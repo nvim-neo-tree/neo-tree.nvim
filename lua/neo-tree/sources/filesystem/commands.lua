@@ -56,7 +56,7 @@ M.paste_from_clipboard = function(state)
     local at_node = state.tree:get_node()
     local folder = at_node.path
     if at_node.type == "file" then
-      folder = at_node.parentPath
+      folder = at_node.parent_path
     end
     for _, item in pairs(state.clipboard) do
       if item.action == "copy" then
@@ -92,8 +92,8 @@ end
 
 ---Navigate up one level.
 M.navigate_up = function(state)
-  local parentPath, _ = utils.splitPath(state.path)
-  fs.navigate(parentPath)
+  local parent_path, _ = utils.splitPath(state.path)
+  fs.navigate(parent_path)
 end
 
 M.open = function(state)
