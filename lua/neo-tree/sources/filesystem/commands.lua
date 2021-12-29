@@ -54,9 +54,9 @@ end
 M.paste_from_clipboard = function(state)
   if state.clipboard then
     local at_node = state.tree:get_node()
-    local folder = at_node.path
+    local folder = at_node:get_id()
     if at_node.type == "file" then
-      folder = at_node.parent_path
+      folder = at_node:get_parent_id()
     end
     for _, item in pairs(state.clipboard) do
       if item.action == "copy" then

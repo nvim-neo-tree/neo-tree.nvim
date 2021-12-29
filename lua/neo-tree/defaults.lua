@@ -2,6 +2,7 @@ local config = {
     -- The default_source is the one used when calling require('neo-tree').show()
     -- without a source argument.
     default_source = "filesystem",
+    popup_border_style = "rounded",
     filesystem = {
         window = {
             position = "left",
