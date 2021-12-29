@@ -13,7 +13,9 @@ local config = {
             -- commands for examples.
             mappings = {
                 ["<cr>"] = "open",
-                ["<2-LeftMouse>"] = "open",
+                ["<LeftMouse>"] = "open",
+                ["S"] = "open_split",
+                ["s"] = "open_vsplit",
                 ["<bs>"] = "navigate_up",
                 ["."] = "set_root",
                 ["H"] = "toggle_hidden",

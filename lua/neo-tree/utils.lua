@@ -1,4 +1,5 @@
 local vim = vim
+
 local M = {}
 
 ---Parse "git status" output for the current working directory.
@@ -26,12 +27,12 @@ M.get_git_status = function ()
       -- path was quoted, remove quoting
       relative_path = relative_path:match('^"(.+)".*')
     end
-    local file_path = project_root .. M.path_separator .. relative_path
-    git_status[file_path] = status
+    local absolute_path = project_root .. M.path_separator .. relative_path
+    git_status[absolute_path] = status
 
     -- Now bubble this status up to the parent directories
     status = status:sub(#status, #status) -- only working tree status
-    local parts = M.split(file_path, M.path_separator)
+    local parts = M.split(absolute_path, M.path_separator)
     M.reduce(parts, "", function (acc, part)
       local new_path = acc .. M.path_separator .. part
       local path_status = git_status[new_path]

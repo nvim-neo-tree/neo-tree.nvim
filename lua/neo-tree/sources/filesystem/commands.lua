@@ -96,21 +96,33 @@ M.navigate_up = function(state)
   fs.navigate(parent_path)
 end
 
-M.open = function(state)
+local open_with_cmd = function(state, open_cmd)
   local tree = state.tree
   local node = tree:get_node()
   if node.type == 'directory' then
     fs.toggle_directory()
+    return nil
   else
     if state.window.position == "right" then
       vim.cmd("wincmd t")
     else
       vim.cmd("wincmd w")
     end
-    vim.cmd("e " .. node.id)
+    vim.cmd(open_cmd .. " " .. node:get_id())
   end
 end
 
+M.open = function(state)
+  open_with_cmd(state, "e")
+end
+
+M.open_split = function(state)
+  open_with_cmd(state, "split")
+end
+
+M.open_vsplit = function(state)
+  open_with_cmd(state, "vsplit")
+end
 
 M.refresh = fs.refresh
 
