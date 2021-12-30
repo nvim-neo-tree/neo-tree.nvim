@@ -1,6 +1,6 @@
 local vim = vim
 local Input = require("nui.input")
-local NuiLine = require("nui.line")
+local NuiText = require("nui.text")
 local highlights= require("neo-tree.ui.highlights")
 local nt = require("neo-tree")
 
@@ -30,20 +30,21 @@ M.popup_options = function(message, min_width, override_options)
       highlight = highlights.FLOAT_BORDER,
     },
     win_options = {
-      winhighlight = "Normal:Normal",
+      winhighlight = "Normal:Normal,FloatBorder:" .. highlights.FLOAT_BORDER,
     },
   }
 
   if nt.config.popup_border_style == "NC" then
-    --local msgLine = NuiLine()
-    --msgLine:append(" " .. message .. right_padding, highlights.TITLE_BAR)
-    --popup_options.message = {
-    --  msgLine
-    --}
-    --popup_options.border = {
-    --  style = { " ", " ", " ", "▏", " ", "▔", " ", "▕" },
-    --  highlight = highlights.FLOAT_BORDER,
-    --}
+    local blank = NuiText(" ", highlights.TITLE_BAR)
+    local title = NuiText(" " .. message .. " ", highlights.TITLE_BAR)
+    popup_options.border = {
+      style = { "▕", blank, "▏", "▏", " ", "▔", " ", "▕" },
+      highlight = highlights.FLOAT_BORDER,
+      text = {
+        top = title,
+        top_align = "left"
+      },
+    }
   end
 
   if override_options then

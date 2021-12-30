@@ -2,7 +2,8 @@ local config = {
     -- The default_source is the one used when calling require('neo-tree').show()
     -- without a source argument.
     default_source = "filesystem",
-    popup_border_style = "rounded",
+    popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+                               -- "NC" is a special style that works well with NormalNC set
     filesystem = {
         window = {
             position = "left",
@@ -34,12 +35,12 @@ local config = {
             }
         },
         --find_command = "fd",
+        search_limit = 50, -- max number of search results when using filters
         filters = {
             show_hidden = false,
             respect_gitignore = true,
         },
         bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
-        search_depth = 4, -- How deep to search for files, nil for infinite
         before_render = function(state)
             -- This function is called after the file system has been scanned,
             -- but before the tree is rendered. You can use this to gather extra
