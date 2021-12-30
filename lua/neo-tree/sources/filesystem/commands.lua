@@ -18,6 +18,10 @@ M.add = function(state)
   end)
 end
 
+M.clear_filter = function(state)
+  fs.reset_search(true)
+end
+
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   local node = state.tree:get_node()
@@ -86,13 +90,21 @@ M.delete = function(state)
 end
 
 ---Shows the filter input, which will filter the tree.
-M.filter = function(state)
-  require("neo-tree.sources.filesystem.filter").show_filter(state)
+M.filter_as_you_type = function(state)
+  require("neo-tree.sources.filesystem.filter").show_filter(state, true)
+end
+
+---Shows the filter input, which will filter the tree.
+M.filter_on_submit = function(state)
+  require("neo-tree.sources.filesystem.filter").show_filter(state, false)
 end
 
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
+  if state.search_pattern then
+    fs.reset_search(false)
+  end
   fs.navigate(parent_path)
 end
 
@@ -136,6 +148,9 @@ M.set_root = function(state)
   local tree = state.tree
   local node = tree:get_node()
   if node.type == 'directory' then
+    if state.search_pattern then
+      fs.reset_search(false)
+    end
     fs.navigate(node.id)
   end
 end

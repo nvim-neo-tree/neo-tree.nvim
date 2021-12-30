@@ -93,7 +93,15 @@ M.get_value = function(sourceObject, valuePath, defaultValue)
     return currentTable or value
 end
 
-function M.reduce(list, memo, func)
+M.map = function(tbl, fn)
+    local t = {}
+    for k,v in pairs(tbl) do
+        t[k] = fn(v)
+    end
+    return t
+end
+
+M.reduce = function(list, memo, func)
   for _, i in ipairs(list) do
     memo = func(memo, i)
   end

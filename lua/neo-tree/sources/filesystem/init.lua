@@ -52,9 +52,25 @@ M.navigate = function(path)
     state.path = path
     path_changed = true
   end
+
   fs_scan.get_items_async(state)
+
   if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
+  end
+end
+
+
+M.reset_search = function(refresh)
+  if refresh == nil then
+    refresh = true
+  end
+  local state = get_state()
+  renderer.set_expanded_nodes(state.tree, state.open_folders_before_search)
+  state.open_folders_before_search = nil
+  state.search_pattern = nil
+  if refresh then
+    M.refresh()
   end
 end
 

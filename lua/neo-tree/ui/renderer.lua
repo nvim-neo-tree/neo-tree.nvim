@@ -90,7 +90,23 @@ M.get_expanded_nodes = function(tree)
   return node_ids
 end
 
+M.collapse_all_nodes = function(tree)
+  local function collapse_all(parent_node)
+    if parent_node:has_children() then
+      for _, child in ipairs(tree:get_nodes(parent_node:get_id())) do
+        child:collapse()
+      end
+      parent_node:collapse()
+    end
+  end
+
+  for _, node in ipairs(tree:get_nodes()) do
+    collapse_all(node)
+  end
+end
+
 M.set_expanded_nodes = function(tree, expanded_nodes)
+  M.collapse_all_nodes(tree)
   for _, id in ipairs(expanded_nodes or {}) do
     local node = tree:get_node(id)
     if node ~= nil then

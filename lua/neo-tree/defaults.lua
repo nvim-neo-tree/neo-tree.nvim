@@ -13,7 +13,7 @@ local config = {
             -- commands for examples.
             mappings = {
                 ["<cr>"] = "open",
-                ["<LeftMouse>"] = "open",
+                ["<2-LeftMouse>"] = "open",
                 ["S"] = "open_split",
                 ["s"] = "open_vsplit",
                 ["<bs>"] = "navigate_up",
@@ -21,7 +21,9 @@ local config = {
                 ["H"] = "toggle_hidden",
                 ["I"] = "toggle_gitignore",
                 ["R"] = "refresh",
-                ["/"] = "filter",
+                ["/"] = "filter_as_you_type",
+                ["f"] = "filter_on_submit",
+                ["<C-x>"] = "clear_filter",
                 ["a"] = "add",
                 ["c"] = "copy_to_clipboard",
                 ["d"] = "delete",
@@ -31,9 +33,10 @@ local config = {
                 ["???"] = "show_debug_info"
             }
         },
+        --find_command = "fd",
         filters = {
             show_hidden = false,
-            respect_gitignore = true
+            respect_gitignore = true,
         },
         bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
         search_depth = 4, -- How deep to search for files, nil for infinite
