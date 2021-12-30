@@ -130,7 +130,6 @@ end
 local create_window = function(state)
   local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
-  print(winhl)
 
   state.split = NuiSplit({
     relative = "editor",
@@ -150,8 +149,10 @@ local create_window = function(state)
     }
   })
   state.split:mount()
+  vim.api.nvim_buf_set_name(state.split.bufnr, "neo-tree")
   local winid = state.split.winid
   state.bufid = vim.api.nvim_win_get_buf(winid)
+
   state.split:on({ "BufDelete" }, function()
     state.split:unmount()
     state.split = nil
@@ -176,13 +177,11 @@ end
 M.window_exists = function(state)
   local window_exists
   if state.split == nil then
-    print("state.split is nil")
     window_exists = false
   else
     local isvalid = vim.api.nvim_win_is_valid(state.split.winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(state.split.winid) > 0)
     if not window_exists then
-      print("Tree window is invalid")
       if vim.api.nvim_buf_is_valid(state.bufid) then
         vim.api.nvim_buf_delete(state.bufid, {force = true})
       end

@@ -16,7 +16,11 @@ M.get_git_status = function ()
     local status = line:match("^(" .. codes .. ")%s")
     local relative_path = line:match("^" .. codes .. '%s+(.+)$')
     if not relative_path then
-      print("Error parsing git status for: " .. line)
+      if line:match("fatal: not a git repository") then
+        return {}
+      else
+        print("Error parsing git status for: " .. line)
+      end
       break
     end
     local renamed = line:match("^" .. codes .. "%s+.*%s->%s(.*)$")
