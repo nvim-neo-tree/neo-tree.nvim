@@ -6,7 +6,7 @@ structures in a sidebar.
 ## Quickstart
 
 Example for packer:
-```
+```lua
     use {
         "nvim-neo-tree/neo-tree.nvim",
         branch = "main",
