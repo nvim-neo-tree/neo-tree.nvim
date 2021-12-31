@@ -39,3 +39,6 @@ luac.out
 *.x86_64
 *.hex
 
+# Vim tag files
+doc/tags
+

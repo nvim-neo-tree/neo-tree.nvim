@@ -37,14 +37,14 @@ To override the defaults or add new functionality, call the setup() function
 with your overrides. For example, to add your own mappings in 'lua':
 >
 require("neo-tree").setup({
-	filesystem = {
-		window = {
-			mappings = {
-				["<F5>"] = "refresh",
-				["o"] = "open",
-			}
-		}
-	}
+  filesystem = {
+    window = {
+      mappings = {
+        ["<F5>"] = "refresh",
+        ["o"] = "open",
+      }
+    }
+  }
 })
 >
 For a complete example of all the settings that can be changed, see the
@@ -99,4 +99,4 @@ f     = filter_on_submit:   Same as above, but does not search until you hit
 <C-x> = clear_filter:       Removes the filter.
 
 
-vim:tw=80:ts=2:noet:ft=help:norl:
+vim:tw=80:ts=2:et:ft=help:
