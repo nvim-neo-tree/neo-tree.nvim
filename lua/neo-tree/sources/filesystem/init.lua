@@ -13,10 +13,13 @@ local state_by_tab = {}
 
 local get_state = function()
   local tabnr = vim.api.nvim_get_current_tabpage()
-  if not state_by_tab[tabnr] then
-    state_by_tab[tabnr] = utils.table_copy(default_config)
+  local state = state_by_tab[tabnr]
+  if not state then
+    state = utils.table_copy(default_config)
+    state.tabnr = tabnr
+    state_by_tab[tabnr] = state
   end
-  return state_by_tab[tabnr]
+  return state
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.

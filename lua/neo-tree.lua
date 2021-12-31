@@ -1,8 +1,14 @@
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
+local components = require("neo-tree.ui.components")
+
 
 local M = {
-  config = {}
+  config = utils.table_merge(defaults, {
+    filesystem = {
+      components = components
+    }
+  })
 }
 
 M.focus = function(source_name)
@@ -12,7 +18,9 @@ M.focus = function(source_name)
 end
 
 M.setup = function(config)
-  M.config = utils.table_merge(defaults, config or {})
+  --print("config: ", vim.inspect(config))
+  M.config = utils.table_merge(M.config, config or {})
+  --print("merged config: ", vim.inspect(M.config))
   require('neo-tree.sources.filesystem').setup(M.config.filesystem)
 end
 

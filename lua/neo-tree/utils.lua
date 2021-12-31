@@ -151,11 +151,12 @@ M.split_path = function(path)
   return parentPath, name
 end
 
+local table_merge_internal
 ---Merges overrideTable into baseTable. This mutates baseTable.
 ---@param base_table table The base table that provides default values.
 ---@param override_table table The table to override the base table with.
 ---@return table table The merged table.
-local table_merge_internal = function(base_table, override_table)
+table_merge_internal = function(base_table, override_table)
     for k,v in pairs(override_table) do
         if type(v) == "table" then
             if type(base_table[k] or false) == "table" then

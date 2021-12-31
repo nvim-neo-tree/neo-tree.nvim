@@ -61,14 +61,26 @@ local prepare_node = function(item, state)
       line:append(item.name)
     else
       for _,component in ipairs(renderer) do
-        local component_data = state.functions[component[1]](component, item, state)
-        if component_data[1] then
-          -- a list of text objects
-          for _,data in ipairs(component_data) do
-            line:append(data.text, data.highlight)
+        local component_func = state.components[component[1]]
+        if component_func then
+          local success, component_data = pcall(component_func, component, item, state)
+          if success then
+            if component_data[1] then
+              -- a list of text objects
+              for _,data in ipairs(component_data) do
+                line:append(data.text, data.highlight)
+              end
+            else
+              line:append(component_data.text, component_data.highlight)
+            end
+          else
+            local name = component[1] or "[missing_name]"
+            local msg = string.format(
+              "Error rendering component %s: %s", name, component_data)
+            line:append(msg, highlights.NORMAL)
           end
         else
-          line:append(component_data.text, component_data.highlight)
+          print("Neo-tree: Component " .. component[1] .. " not found.")
         end
       end
     end
@@ -156,7 +168,7 @@ local create_window = function(state)
     }
   })
   state.split:mount()
-  vim.api.nvim_buf_set_name(state.split.bufnr, "neo-tree")
+  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree[%s]", state.tabnr))
   local winid = state.split.winid
   state.bufid = vim.api.nvim_win_get_buf(winid)
 

@@ -50,102 +50,18 @@ local config = {
             local utils = require("neo-tree.utils")
             state.git_status_lookup = utils.get_git_status()
         end,
-        -- This section provides the functions that may be called by the renderers below.
-        functions = {
-            icon = function(config, node, state)
-                local icon = config.default or " "
-                local highlight = config.highlight or highlights.FILE_ICON
-                if node.type == "directory" then
-                    highlight = highlights.DIRECTORY_ICON
-                    if node:is_expanded() then
-                        icon = config.folder_open or "-"
-                    else
-                        icon = config.folder_closed or "+"
-                    end
-                elseif node.type == "file" then
-                    local success, web_devicons = pcall(require, 'nvim-web-devicons')
-                    if success then
-                        local devicon, hl = web_devicons.get_icon(node.name, node.ext)
-                        icon = devicon or icon
-                        highlight = hl or highlight
-                    end
+        -- This section provides custom functions that may be called by the renderers below.
+        components = {
+            hello_node = function (config, node, state)
+                local text = "Hello " .. node.name
+                if state.search_term then
+                    text = string.format("Hello '%s' in %s", state.search_term, node.name)
                 end
                 return {
-                    text = icon .. config.padding,
-                    highlight = highlight
+                    text = text,
+                    highlight = config.highlight or highlights.FILE_NAME,
                 }
-            end,
-            name = function(config, node, state)
-                local highlight = config.highlight or highlights.FILE_NAME
-                if node.type == "directory" then
-                    highlight = highlights.DIRECTORY_NAME
-                end
-                if node:get_depth() == 1 then
-                    highlight = highlights.ROOT_NAME
-                else
-                    local git_status = state.functions.git_status(config, node, state)
-                    if git_status and git_status.highlight then
-                        highlight = git_status.highlight
-                    end
-                end
-                return {
-                    text = node.name,
-                    highlight = highlight
-                }
-            end,
-            clipboard = function(config, node, state)
-                local clipboard = state.clipboard or {}
-                local clipboard_state = clipboard[node:get_id()]
-                if not clipboard_state then
-                    return {}
-                end
-                return {
-                    text = " (".. clipboard_state.action .. ")",
-                    highlight = config.highlight or "Comment"
-                }
-            end,
-            git_status = function(config, node, state)
-                local git_status_lookup = state.git_status_lookup
-                if not git_status_lookup then
-                    return {}
-                end
-                local git_status = git_status_lookup[node.path]
-                if not git_status then
-                    return {}
-                end
-
-                local highlight = "Comment"
-                if git_status:match("M") then
-                    highlight = highlights.GIT_MODIFIED
-                elseif git_status:match("[ACR]") then
-                    highlight = highlights.GIT_ADDED
-                end
-
-                return {
-                    text = " [" .. git_status .. "]",
-                    highlight = highlight
-                }
-            end,
-            filter = function(config, node, state)
-                local filter = node.search_pattern or ""
-                if filter == "" then
-                    return {}
-                end
-                return {
-                    {
-                        text = 'Find ',
-                        highlight = "Comment"
-                    },
-                    {
-                        text = string.format('"%s"', filter),
-                        highlight = config.highlight or highlights.FILE_NAME
-                    },
-                    {
-                        text = " in ",
-                        highlight = "Comment"
-                    },
-                }
-            end,
+            end
         },
         -- This section provides the renderers that will be used to render the tree.
         -- The first level is the node type.
@@ -161,7 +77,7 @@ local config = {
                     folder_open = "",
                     padding = " ",
                 },
-                { "filter" },
+                { "current_filter" },
                 {
                     "name",
                     highlight = "NeoTreeDirectoryName"
@@ -178,7 +94,11 @@ local config = {
                     default = "*",
                     padding = " ",
                 },
-                { "name" },
+                --{ "hello_node", highlight = "Normal" },
+                {
+                    "name",
+                    highlight = "NeoTreeFileName"
+                },
                 {
                     "clipboard",
                     highlight = "Comment"
