@@ -60,6 +60,10 @@ M.git_status = function(config, node, state)
     local highlight = highlights.FILE_NAME
     if git_status:match("?$") then
         highlight = highlights.GIT_UNTRACKED
+    elseif git_status:match("U") then
+        highlight = highlights.GIT_CONFLICT
+    elseif git_status == "AA" then
+        highlight = highlights.GIT_CONFLICT
     elseif git_status:match("M") then
         highlight = highlights.GIT_MODIFIED
     elseif git_status:match("[ACRT]") then

@@ -4,7 +4,9 @@ local M = {}
 
 local function get_simple_git_status_code(status)
   -- Prioritze M then A over all others
-  if status:match("M") then
+  if status:match("U") or status == "AA" or status == "DD" then
+    return "U"
+  elseif status:match("M") then
     return "M"
   elseif status:match("[ACR]") then
     return "A"
@@ -21,6 +23,24 @@ local function get_simple_git_status_code(status)
       end
       len = len - 1
     end
+    return status
+  end
+end
+
+local function get_priority_git_status_code(status, other_status)
+  if not status then
+    return other_status
+  elseif not other_status then
+    return status
+  elseif status == "U" or other_status == "U" then
+    return "U"
+  elseif status == "?" or other_status == "?" then
+    return "?"
+  elseif status == "M" or other_status == "M" then
+    return "M"
+  elseif status == "A" or other_status == "A" then
+    return "A"
+  else
     return status
   end
 end
@@ -61,15 +81,11 @@ M.get_git_status = function ()
     local parts = M.split(absolute_path, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
     M.reduce(parts, "", function (acc, part)
-      local new_path = acc .. M.path_separator .. part
-      local path_status = git_status[new_path]
-      local ss = get_simple_git_status_code(status)
-      if not path_status then
-        git_status[new_path] = ss
-      elseif path_status ~= "M" then
-        git_status[new_path] = ss
-      end
-      return new_path
+      local path = acc .. M.path_separator .. part
+      local path_status = git_status[path]
+      local file_status = get_simple_git_status_code(status)
+      git_status[path] = get_priority_git_status_code(path_status, file_status)
+      return path
     end)
   end
 
