@@ -62,7 +62,14 @@ local prepare_node = function(item, state)
     else
       for _,component in ipairs(renderer) do
         local component_data = state.functions[component[1]](component, item, state)
-        line:append(component_data.text, component_data.highlight)
+        if component_data[1] then
+          -- a list of text objects
+          for _,data in ipairs(component_data) do
+            line:append(data.text, data.highlight)
+          end
+        else
+          line:append(component_data.text, component_data.highlight)
+        end
       end
     end
     return line

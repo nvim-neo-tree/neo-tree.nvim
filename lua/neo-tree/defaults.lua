@@ -1,3 +1,5 @@
+local highlights = require('neo-tree.ui.highlights')
+
 local config = {
     -- The default_source is the one used when calling require('neo-tree').show()
     -- without a source argument.
@@ -52,9 +54,9 @@ local config = {
         functions = {
             icon = function(config, node, state)
                 local icon = config.default or " "
-                local highlight = config.highlight
+                local highlight = config.highlight or highlights.FILE_ICON
                 if node.type == "directory" then
-                    highlight = "NvimTreeFolderIcon"
+                    highlight = highlights.DIRECTORY_ICON
                     if node:is_expanded() then
                         icon = config.folder_open or "-"
                     else
@@ -63,11 +65,9 @@ local config = {
                 elseif node.type == "file" then
                     local success, web_devicons = pcall(require, 'nvim-web-devicons')
                     if success then
-                        devicon, hl = web_devicons.get_icon(node.name, node.ext)
+                        local devicon, hl = web_devicons.get_icon(node.name, node.ext)
                         icon = devicon or icon
                         highlight = hl or highlight
-                    else
-                        highlight = "NvimTreeFileIcon"
                     end
                 end
                 return {
@@ -76,12 +76,12 @@ local config = {
                 }
             end,
             name = function(config, node, state)
-                local highlight = config.highlight or "NeoTreeFileName"
+                local highlight = config.highlight or highlights.FILE_NAME
                 if node.type == "directory" then
-                    highlight = "NeoTreeDirectoryName"
+                    highlight = highlights.DIRECTORY_NAME
                 end
                 if node:get_depth() == 1 then
-                    highlight = "NeoTreeRootName"
+                    highlight = highlights.ROOT_NAME
                 else
                     local git_status = state.functions.git_status(config, node, state)
                     if git_status and git_status.highlight then
@@ -116,9 +116,9 @@ local config = {
 
                 local highlight = "Comment"
                 if git_status:match("M") then
-                    highlight = "NeoTreeGitModified"
+                    highlight = highlights.GIT_MODIFIED
                 elseif git_status:match("[ACR]") then
-                    highlight = "NeoTreeGitAdded"
+                    highlight = highlights.GIT_ADDED
                 end
 
                 return {
@@ -132,8 +132,18 @@ local config = {
                     return {}
                 end
                 return {
-                    text = string.format('Filter "%s" in ', filter),
-                    highlight = config.highlight or "Comment"
+                    {
+                        text = 'Find ',
+                        highlight = "Comment"
+                    },
+                    {
+                        text = string.format('"%s"', filter),
+                        highlight = config.highlight or highlights.FILE_NAME
+                    },
+                    {
+                        text = " in ",
+                        highlight = "Comment"
+                    },
                 }
             end,
         },
