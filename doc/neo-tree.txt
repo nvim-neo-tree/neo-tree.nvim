@@ -1,0 +1,102 @@
+*neo-tree.txt*    Plugin to browse the file system and other tree like structures
+
+CONTENTS
+Introduction ........ |Neo-tree|
+Basic Usage ......... |Neo-tree-Basic-Usage|
+Configuration ....... |Neo-tree-Configruation|
+Mappings
+  Navigation ........ |Neo-tree-Navigation|
+  View Changes ...... |Neo-tree-View-Changes|
+  File Actions ...... |Neo-tree-File-Actions|
+  Filter ............ |Neo-tree-Filter|
+
+
+INTRODUCTION                                                         *neo-tree*
+
+Neo-tree is a plugin for nvim that can display tree structures in a sidebar.
+The current version supports one source, which is a filesystem browser. Future
+versions will add suport for other sources.
+
+
+BASIC USAGE                                              *Neo-tree-Basic-Usage*
+
+Neo-tree does not define any default commands or keybindings for nvim. The
+suggested keybinding is:
+
+nnoremap / lua require('neo-tree').focus()
+
+`focus()` will open the sidebar and focus it if it is closed, and just switch to
+the neo-tree window if it is already open. You can also use `show()` which will
+do the same if it is closed, but won't switch to the neo-tree window if it is
+already open.
+
+
+CONFIGURATION                                          *Neo-tree-Configruation*
+
+To override the defaults or add new functionality, call the setup() function
+with your overrides. For example, to add your own mappings in 'lua':
+>
+require("neo-tree").setup({
+	filesystem = {
+		window = {
+			mappings = {
+				["<F5>"] = "refresh",
+				["o"] = "open",
+			}
+		}
+	}
+})
+>
+For a complete example of all the settings that can be changed, see the
+defaults.lua file for the version you are using at: 
+https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/defaults.lua
+
+
+===============================================================================
+MAPPINGS
+===============================================================================
+
+NAVIGATION                                                *Neo-tree-Navigation*
+
+Within the neo-tree window, the following mappings are defined by default.
+Note: The "selected" item is the line the cursor is currently on.
+
+<2-LeftMouse> = open:        Expand or collapse a folder. If a file is selected,
+                             open it in the window closest to the tree.
+<cr>          = open:        Same as above.
+S             = open_split:  Same as open, but opens in a new horizontal split.
+s             = open_vsplit: Same as open, but opens in a vertical split
+<bs>          = navigate_up: Moves the root directory up one level.
+.             = set_root:    Changes the root directory to the currently 
+                             selected folder.
+
+
+FILE ACTIONS                                            *Neo-tree-File-Actions*
+a    = add:                  Create a new file or directory.
+d    = delete:               Delete the selected file or directory.
+r    = rename:               Rename the selected file or directory.
+c    = copy_to_clipboard:    Mark file to be copied.
+x    = cut_to_clipboard:     Mark file to be cut (moved).
+p    = paste_from_clipboard: Copy/move each marked file in the to the
+                             selected folder.
+
+
+VIEW CHANGES                                            *Neo-tree-View-Changes*
+H = toggle_hidden:    Toggle whether hidden files (.*) are shown or not.
+I = toggle_gitignore: Toggle whether the gitignore file is
+                      respected.
+R = refresh:          Rescan the filesystem and redraw the tree. Changes
+                      made within nvim should be detected automatically, but
+                      this is useful for changes made elsewhere.
+
+
+FILTER                                                        *Neo-tree-Filter*
+/     = filter_as_you_type: Filter the tree recursively, searching for
+                            files and folders that contain the specified term as
+                            you type. This will fd if it is installed, or find.
+f     = filter_on_submit:   Same as above, but does not search until you hit
+                            enter. Useful if filter_as_you_type is too slow.
+<C-x> = clear_filter:       Removes the filter.
+
+
+vim:tw=80:ts=2:noet:ft=help:norl:
