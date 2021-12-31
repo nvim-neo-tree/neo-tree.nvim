@@ -103,7 +103,10 @@ local config = {
                     "clipboard",
                     highlight = "Comment"
                 },
-                --{ "git_status" },
+                {
+                    "git_status",
+                    highlight = "Comment"
+                }
             },
         }
     }

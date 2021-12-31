@@ -2,6 +2,29 @@ local vim = vim
 
 local M = {}
 
+local function get_simple_git_status_code(status)
+  -- Prioritze M then A over all others
+  if status:match("M") then
+    return "M"
+  elseif status:match("[ACR]") then
+    return "A"
+  elseif status:match("!$") then
+    return "!"
+  elseif status:match("?$") then
+    return "?"
+  else
+    local len = #status
+    while len> 0 do
+      local char = status:sub(len, len)
+      if char ~= " " then
+        return char
+      end
+      len = len - 1
+    end
+    return status
+  end
+end
+
 ---Parse "git status" output for the current working directory.
 ---@return table table Table with the path as key and the status as value.
 M.get_git_status = function ()
@@ -35,24 +58,16 @@ M.get_git_status = function ()
     git_status[absolute_path] = status
 
     -- Now bubble this status up to the parent directories
-    status = status:sub(#status, #status) -- only working tree status
     local parts = M.split(absolute_path, M.path_separator)
+    table.remove(parts) -- pop the last part so we don't override the file's status
     M.reduce(parts, "", function (acc, part)
       local new_path = acc .. M.path_separator .. part
       local path_status = git_status[new_path]
+      local ss = get_simple_git_status_code(status)
       if not path_status then
-        git_status[new_path] = status
+        git_status[new_path] = ss
       elseif path_status ~= "M" then
-        -- Prioritze M then A over all others
-        if status == "M" then
-         git_status[new_path] = "M"
-        elseif status:match("[ACR]") then
-         git_status[new_path] = "A"
-        elseif path_status == "!" then
-          git_status[new_path] = "!"
-        else
-          git_status[new_path] = status
-        end
+        git_status[new_path] = ss
       end
       return new_path
     end)

@@ -8,10 +8,12 @@ M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
 M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
+M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
 M.GIT_MODIFIED = "NeoTreeGitModified"
+M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
@@ -87,7 +89,7 @@ create_highlight_group(M.GIT_ADDED,
   { "GitGutterAdd", "GitSignsAdd" },
   nil, '5faf5f')
 
-create_highlight_group(M.GIT_CONFLICT,
+local conflict = create_highlight_group(M.GIT_CONFLICT,
   { "GitGutterDelete", "GitSignsDelete" },
   nil, 'ff5900')
 
@@ -95,12 +97,17 @@ create_highlight_group(M.GIT_MODIFIED,
   { "GitGutterChange", "GitSignsChange"  },
   nil, 'd7af5f')
 
+create_highlight_group(M.GIT_UNTRACKED,
+  { },
+  nil, conflict.foreground, 'italic')
+
 create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
 create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
 create_highlight_group(M.DIRECTORY_ICON, { "TabLineSel" }, nil, "#73cef4")
 create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
 create_highlight_group(M.FILE_NAME, {}, "NONE", "NONE")
 create_highlight_group(M.FILE_NAME_OPENED, {}, nil, nil, "bold")
+create_highlight_group(M.FILTER_TERM, { "SpecialChar", "Normal" })
 create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
 
 return M

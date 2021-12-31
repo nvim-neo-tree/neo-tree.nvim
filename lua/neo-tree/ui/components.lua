@@ -38,7 +38,7 @@ M.current_filter = function(config, node, state)
         },
         {
             text = string.format('"%s"', filter),
-            highlight = config.highlight or highlights.FILE_NAME
+            highlight = config.highlight or highlights.FILTER_TERM
         },
         {
             text = " in ",
@@ -57,16 +57,18 @@ M.git_status = function(config, node, state)
         return {}
     end
 
-    local highlight = "Comment"
-    if git_status:match("M") then
+    local highlight = highlights.FILE_NAME
+    if git_status:match("?$") then
+        highlight = highlights.GIT_UNTRACKED
+    elseif git_status:match("M") then
         highlight = highlights.GIT_MODIFIED
-    elseif git_status:match("[ACR]") then
+    elseif git_status:match("[ACRT]") then
         highlight = highlights.GIT_ADDED
     end
 
     return {
         text = " [" .. git_status .. "]",
-        highlight = highlight
+        highlight = config.highlight or highlight
     }
 end
 
@@ -103,7 +105,7 @@ M.name = function(config, node, state)
     if node:get_depth() == 1 then
         highlight = highlights.ROOT_NAME
     else
-        local git_status = state.components.git_status(config, node, state)
+        local git_status = state.components.git_status({}, node, state)
         if git_status and git_status.highlight then
             highlight = git_status.highlight
         end
