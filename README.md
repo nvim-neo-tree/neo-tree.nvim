@@ -9,7 +9,7 @@ Example for packer:
 ```lua
     use {
         "nvim-neo-tree/neo-tree.nvim",
-        branch = "main",
+        branch = "v1.x",
         requires = { "MunifTanjim/nui.nvim" },
         config = function ()
             require("neo-tree").setup()
@@ -81,11 +81,10 @@ shared libraries will go a long way in making neo-tree easy to maintain.
 
 ### Stable
 
-This project will have releases and release tags that follow Semantic
-Versioning. The quickstart instructions will always refer to the latest stable
-major version. Following the 'main' branch is for contributors and those that
-always want bleeding edge. There will be 1.x, 1.1.x, and 1.1.1 releases, so each
-user can choose what level of updates they wish to receive.
+This project has releases and release tags that follow Semantic Versioning. The
+quickstart instructions refer to the latest stable major version. Following the
+'main' branch is for contributors and those that always want bleeding edge. The
+current major version is v1.x and most users should pull that.
 
 There will never be a breaking change within a major version (1.x, 2.x, etc.) If
 a breaking change is needed, there will be depracation warnings in the prior
