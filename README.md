@@ -21,9 +21,6 @@ Example for packer:
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
 
-For a configuration example and default mappings, see [defaults.lua](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/defaults.lua).
-Anything passed to the setup() function will be merged with those default values.
-
 ## Status
 
 This is currently functional as a basic file browser with navigation, mutation,
@@ -69,11 +66,10 @@ wanted something that was:
 
 ### Easy to maintain and enhance
 
-This plugin is designed from the start to support all the features that 
-any one can want from a mature tree plugin. This is accomplished by making the
-code as decoupled and stateless as possible. It shouldn't be necessary to touch
-any of the core plumbing to add new functionality. Aside from bug fixes, the
-code outside of the `sources` directory should not be touched to add new 
+This plugin is designed to grow and be flexible. This is accomplished by making
+the code as decoupled and functional as possible. It shouldn't be necessary to
+touch any of the core plumbing to add new functionality. Aside from bug fixes,
+the code outside of the `sources` directory should not be touched to add new
 features. Hopefully new contributors will find it easy to work with.
 
 One big difference between this plugin and the ones that came before it, which

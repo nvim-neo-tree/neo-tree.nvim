@@ -4,7 +4,7 @@ local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local scan = require('plenary.scandir')
-local filter_external = require("neo-tree.sources.filesystem.filter_external")
+local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local Job = require("plenary.job")
 
 local M = {}

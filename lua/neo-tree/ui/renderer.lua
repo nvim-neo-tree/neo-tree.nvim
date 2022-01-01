@@ -28,13 +28,15 @@ M.create_nodes = function(source_items, state, level)
   for _, item in ipairs(source_items) do
     local nodeData = {
       id = item.id,
-      ext = item.ext,
       name = item.name,
-      path = item.path,
-      search_pattern = item.search_pattern,
       type = item.type,
       loaded = item.loaded,
-      indent = indent
+      indent = indent,
+      -- TODO: The below properties are not universal and should not be here.
+      -- Maybe they should be moved to a a "data" or "extra" field?
+      path = item.path,
+      ext = item.ext,
+      search_pattern = item.search_pattern,
     }
 
     local node_children = nil

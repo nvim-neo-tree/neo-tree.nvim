@@ -2,8 +2,9 @@
 
 local vim = vim
 local fs = require('neo-tree.sources.filesystem')
-local fs_actions = require('neo-tree.sources.filesystem.fs_actions')
-local utils      = require('neo-tree.utils')
+local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
+local utils = require('neo-tree.utils')
+local filter = require("neo-tree.sources.filesystem.lib.filter")
 
 local M = {}
 
@@ -91,12 +92,12 @@ end
 
 ---Shows the filter input, which will filter the tree.
 M.filter_as_you_type = function(state)
-  require("neo-tree.sources.filesystem.filter").show_filter(state, true)
+  filter.show_filter(state, true)
 end
 
 ---Shows the filter input, which will filter the tree.
 M.filter_on_submit = function(state)
-  require("neo-tree.sources.filesystem.filter").show_filter(state, false)
+  filter.show_filter(state, false)
 end
 
 ---Navigate up one level.

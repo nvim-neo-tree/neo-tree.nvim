@@ -3,7 +3,6 @@
 
 local vim = vim
 local utils = require("neo-tree.utils")
-local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
@@ -19,18 +18,6 @@ local get_state = function()
     state_by_tab[tabnr] = state
   end
   return state
-end
-
----Called by autocmds when the cwd dir is changed. This will change the root.
-M.dir_changed = function()
-  local state = get_state()
-  local cwd = vim.fn.getcwd()
-  if state.path and cwd == state.path then
-    return
-  end
-  if state.path and renderer.window_exists(state) then
-    M.navigate(cwd)
-  end
 end
 
 M.focus = function()
@@ -54,45 +41,30 @@ M.navigate = function(path)
     state.path = path
     path_changed = true
   end
-
-  fs_scan.get_items_async(state)
-
-  if path_changed and state.bind_to_cwd then
-    vim.api.nvim_command("tcd " .. path)
-  end
-end
-
-
-M.reset_search = function(refresh)
-  if refresh == nil then
-    refresh = true
-  end
-  local state = get_state()
-  renderer.set_expanded_nodes(state.tree, state.open_folders_before_search)
-  state.open_folders_before_search = nil
-  state.search_pattern = nil
-  if refresh then
-    M.refresh()
-  end
-end
-
-M.show_new_children = function(node)
-  local state = get_state()
-  if not node then
-    node = state.tree:get_node()
-  end
-  if node.type ~= 'directory' then
-    return
-  end
-
-  if node:is_expanded() then
-    M.refresh()
-  else
-    fs_scan.get_items_async(state, nil, false, function()
-      local new_node = state.tree:get_node(node:get_id())
-      M.toggle_directory(new_node)
-    end)
-  end
+  -- Do something useful here to get items
+  local items = {
+    {
+      id = "1",
+      name = "root",
+      children = {
+        {
+          id = "1.1",
+          name = "child1",
+          children = {
+            {
+              id = "1.1.1",
+              name = "child1.1",
+            },
+            {
+              id = "1.1.2",
+              name = "child1.2",
+            }
+          }
+        }
+      }
+    }
+  }
+  renderer.show_nodes(state, items)
 end
 
 ---Redraws the tree without scanning the filesystem again. Use this after
@@ -119,18 +91,6 @@ end
 M.setup = function(config)
   if default_config == nil then
     default_config = config
-    default_config.commands = require("neo-tree.sources.filesystem.commands")
-    local autocmds = {}
-    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
-    table.insert(autocmds, "augroup neotreefilesystem")
-    table.insert(autocmds, "autocmd!")
-    table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
-    table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
-    if default_config.bind_to_cwd then
-      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
-    end
-    table.insert(autocmds, "augroup END")
-    vim.cmd(table.concat(autocmds, "\n"))
   end
 end
 
@@ -151,7 +111,9 @@ M.toggle_directory = function (node)
     return
   end
   if node.loaded == false then
-    fs_scan.get_items_async(state, node.id, true)
+    -- lazy load this node and pass the children to the renderer
+    local children = {}
+    renderer.show_nodes(state, children, node:get_id())
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then

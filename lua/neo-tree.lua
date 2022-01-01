@@ -1,7 +1,12 @@
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
-local components = require("neo-tree.ui.components")
 
+-- If you add a new source, you need to add it to the sources table.
+-- Each source should have a defaults module that contains the default values
+-- for the source config, and a setup function that takes that config.
+local sources = {
+  "filesystem",
+}
 
 local M = { }
 
@@ -19,13 +24,24 @@ M.focus = function(source_name)
 end
 
 M.setup = function(config)
-  local default_config = utils.table_merge(defaults, {
-    filesystem = {
-      components = components
-    }
-  })
+  -- setup the default values for all sources
+  local sd = {}
+  for _, source_name in ipairs(sources) do
+    local mod_root = "neo-tree.sources." .. source_name
+    sd[source_name] = require(mod_root .. ".defaults")
+    sd[source_name].components = require(mod_root .. ".components")
+    sd[source_name].commands = require(mod_root .. ".commands")
+  end
+  local default_config = utils.table_merge(defaults, sd)
+
+  -- apply the users config
   M.config = utils.table_merge(default_config, config or {})
-  require('neo-tree.sources.filesystem').setup(M.config.filesystem)
+
+  -- setup the sources with the combined config
+  for _, source_name in ipairs(sources) do
+    local source = require('neo-tree.sources.' .. source_name)
+    source.setup(M.config[source_name])
+  end
 end
 
 M.show = function(source_name)
