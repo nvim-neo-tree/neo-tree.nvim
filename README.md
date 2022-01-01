@@ -21,7 +21,7 @@ Example for packer:
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)
 
-Documentationn example configuration for the filesystem source with proper 
+Documentation example configuration for the filesystem source with proper 
 syntax highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
 
 ## Status
@@ -121,7 +121,7 @@ This project relies upon these two excellent libraries:
 
 The design is heavily inspired by these excellent plugins:
 - [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
-- [nvim-cokeline](https://github.com/noib3/nvim-cokeline).
+- [nvim-cokeline](https://github.com/noib3/nvim-cokeline)
 
 Everything I know about writing a tree control in lua, I learned from:
 - [nvim-tree.lua](https://github.com/kyazdani42/nvim-tree.lua)
