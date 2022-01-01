@@ -19,7 +19,10 @@ Example for packer:
 ```
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online
-at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
+at [neo-tree.txt](/doc/neo-tree.txt)
+
+Documentationn example configuration for the filesystem source with proper 
+syntax highlighting can also be viewed at the [filesytem README](/lua/neo-tree/sources/filesystem/README.md)
 
 ## Status
 
