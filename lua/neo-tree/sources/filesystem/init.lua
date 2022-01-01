@@ -119,7 +119,6 @@ end
 M.setup = function(config)
   if default_config == nil then
     default_config = config
-    default_config.commands = require("neo-tree.sources.filesystem.commands")
     local autocmds = {}
     local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
     table.insert(autocmds, "augroup neotreefilesystem")
