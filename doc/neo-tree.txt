@@ -102,7 +102,7 @@ require("neo-tree").setup({
     }
   }
 })
->
+<
 Below is a complete skeleton of all of the configuration options, ready for
 copy and paste into your lua config file.
 
@@ -224,7 +224,6 @@ require("neo-tree").setup({
   }
 })
 <
->
 
 HIGHLIGHTS                                                 *Neo-tree-Highlights*
 
