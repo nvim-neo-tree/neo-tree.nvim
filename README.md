@@ -22,7 +22,7 @@ Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)
 
 Documentationn example configuration for the filesystem source with proper 
-syntax highlighting can also be viewed at the [filesytem README](/lua/neo-tree/sources/filesystem/README.md)
+syntax highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
 
 ## Status
 
@@ -84,11 +84,17 @@ shared libraries will go a long way in making neo-tree easy to maintain.
 
 ### Stable
 
-This project will have releases and release tags that follow Semantic
-Versioning. The quickstart instructions will always refer to the latest stable
-major version. Following the 'main' branch is for contributors and those that
-always want bleeding edge. There will be 1.x, 1.1.x, and 1.1.1 releases, so each
-user can choose what level of updates they wish to receive.
+This project will have releases and release tags that follow a simplified
+Semantic Versioning scheme. The quickstart instructions will always refer to
+the latest stable major version. Following the **main** branch is for
+contributors and those that always want bleeding edge. There will be branches
+for **v1.x**, **v2.x**, etc which will receive updates after a short testing
+period in **main**. You should be safe to follow those branches and be sure
+your tree won't break in an update. There will also be tags for each release
+pushed to those branches named **v1.1**, **v1.2**, etc. If stability is
+critical to you, or a bug accidentally make it into **v1.x**, you can use those
+tags instead. It's possible we may backport bug fixes to those tags, but no
+garauntees on that.
 
 There will never be a breaking change within a major version (1.x, 2.x, etc.) If
 a breaking change is needed, there will be depracation warnings in the prior
@@ -102,3 +108,20 @@ This will follow in the spirit of plugins like
 configurable and take either strings, tables, or functions. You can take sane
 defaults or build your tree items from scratch. There should be the ability to
 add any features you can think of through existing hooks in the setup function.
+
+## Contributions
+
+Contributions are encouraged. Please see [CONTRIBUTING](CONTRIBUTING.md) for more details.
+
+## Acknowledgements
+
+This project relies upon these two excellent libraries:
+- [nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI components, including the tree!
+- [plenary.nvm](https://github.com/nvim-lua/plenary.nvim) for backend utilities, such as scanning the filesystem.
+
+The design is heavily inspired by these excellent plugins:
+- [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
+- [nvim-cokeline](https://github.com/noib3/nvim-cokeline).
+
+Everything I know about writing a tree control in lua, I learned from:
+- [nvim-tree.lua](https://github.com/kyazdani42/nvim-tree.lua)
