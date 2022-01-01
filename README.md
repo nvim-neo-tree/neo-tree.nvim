@@ -18,20 +18,45 @@ Example for packer:
     }
 ```
 
+Complete documentation can be find in the vim help file `:h neo-tree` or online
+at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
+
 For a configuration example and default mappings, see [defaults.lua](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/defaults.lua).
 Anything passed to the setup() function will be merged with those default values.
-Proper documentation is coming soon.
 
 ## Status
 
-This is currently functional as a basic file browser but definitely not
-complete. The biggest issue is that there is no documentation at all! I plan on
-adding that when I get close to the first release.
+This is currently functional as a basic file browser with navigation, mutation,
+git status, and filtering.
 
-The first version of this plugin will provide a source for the file system and
-establish the interface for other sources. Other sources that may include things
-like tags, treesitter or lsp document structures, git status, open buffers 
-list, etc.
+The file system source can serve as an example of how to create other sources.
+Other sources that may include things like tags, treesitter or lsp document
+structures, git status, open buffers list, etc.
+
+## Configuration and Customization
+
+This is designed to be flexible. The way that is acheived is by making
+everything a function, or a reference to a built-in function. All of the
+built-in functions can be replaced with your own implimentation, or you can 
+add new ones.
+
+Each node in the tree is created from the renderer specified for the given node
+type, and each renderer is a list of component configs. Each component is a
+function, either built-in or specified in your own the setup() config. Those 
+functions are called with the config, node, and state of the plugin, and return
+the text and highlight group for the component.
+
+Additionally, each source has a `before_render()` function that you can override 
+and use to gather any additonal information you want to use in your components.
+This function is currently used to gather the git status for the tree. If you 
+want to skip that, override the function and leave that part out. If you want
+to show LSP diagnostics, gather them in `before_render()`, create a component
+to display them, and reference that component in the renderer for the `file`
+and/or `directory` type.
+
+Details on how to configure everything is in the help file at `:h neo-tree` or
+online at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
+
 
 ## Why?
 
@@ -44,11 +69,12 @@ wanted something that was:
 
 ### Easy to maintain and enhance
 
-This plugin is designed from the start to eventually have all the features that 
-any one can want from a mature tree plugin. This is not a "lite" or "simple"
-plugin, although that does not mean it's not fast and efficient. It should mean
-that it will be easier to continually add new features, and hopefully new
-contributors will find it easy to work with.
+This plugin is designed from the start to support all the features that 
+any one can want from a mature tree plugin. This is accomplished by making the
+code as decoupled and stateless as possible. It shouldn't be necessary to touch
+any of the core plumbing to add new functionality. Aside from bug fixes, the
+code outside of the `sources` directory should not be touched to add new 
+features. Hopefully new contributors will find it easy to work with.
 
 One big difference between this plugin and the ones that came before it, which
 is also what finally pushed me over the edge into making a new plugin, is that

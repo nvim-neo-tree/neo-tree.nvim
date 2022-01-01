@@ -40,5 +40,5 @@ luac.out
 *.hex
 
 # Vim tag files
-doc/tags
+tags
 

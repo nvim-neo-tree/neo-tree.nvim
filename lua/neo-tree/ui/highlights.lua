@@ -89,17 +89,17 @@ create_highlight_group(M.GIT_ADDED,
   { "GitGutterAdd", "GitSignsAdd" },
   nil, '5faf5f')
 
-local conflict = create_highlight_group(M.GIT_CONFLICT,
+create_highlight_group(M.GIT_CONFLICT,
   { "GitGutterDelete", "GitSignsDelete" },
   nil, 'ff5900')
 
-create_highlight_group(M.GIT_MODIFIED,
+local modified = create_highlight_group(M.GIT_MODIFIED,
   { "GitGutterChange", "GitSignsChange"  },
   nil, 'd7af5f')
 
 create_highlight_group(M.GIT_UNTRACKED,
   { },
-  nil, conflict.foreground, 'italic')
+  nil, modified.foreground, 'italic')
 
 create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
 create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")

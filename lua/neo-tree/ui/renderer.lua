@@ -180,12 +180,14 @@ local create_window = function(state)
   local map_options = { noremap = true, nowait = true }
   local mappings = utils.get_value(state, "window.mappings", {})
   for cmd, func in pairs(mappings) do
-    if type(func) == "string" then
-      func = state.commands[func]
+    if func then
+      if type(func) == "string" then
+        func = state.commands[func]
+      end
+      state.split:map('n', cmd, function()
+        func(state)
+      end, map_options)
     end
-    state.split:map('n', cmd, function()
-      func(state)
-    end, map_options)
   end
   return state.split
 end
