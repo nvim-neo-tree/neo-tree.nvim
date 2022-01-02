@@ -47,11 +47,21 @@ M.setup = function(config)
   end
 end
 
-M.show = function(source_name)
+M.show = function(source_name, do_not_focus)
   ensure_config()
   source_name = source_name or M.config.default_source
   local source = require('neo-tree.sources.' .. source_name)
-  source.show()
+  if not source then
+    error("Source " .. source_name .. " not found.")
+  end
+  if do_not_focus then
+    local current_win = vim.api.nvim_get_current_win()
+    source.show(function ()
+      vim.api.nvim_set_current_win(current_win)
+    end)
+  else
+    source.show()
+  end
 end
 
 return M

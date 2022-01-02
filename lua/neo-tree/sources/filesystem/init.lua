@@ -23,7 +23,7 @@ local get_state = function()
 end
 
 local expand_to_root
-expand_to_root = function(tree, from_node) 
+expand_to_root = function(tree, from_node)
   local parent_id = from_node:get_parent_id()
   if not parent_id then
     return
@@ -89,15 +89,16 @@ end
 
 ---Focus the window, opening it if it is not already open.
 ---@param path_to_reveal string Node to focus after the items are loaded.
-M.focus = function(path_to_reveal)
+---@param callback function Callback to call after the items are loaded.
+M.focus = function(path_to_reveal, callback)
   local state = get_state()
   if path_to_reveal then
-    M.navigate(state.path, path_to_reveal)
+    M.navigate(state.path, path_to_reveal, callback)
   else
     if renderer.window_exists(state) then
       vim.api.nvim_set_current_win(state.split.winid)
     else
-      M.navigate(state.path)
+      M.navigate(state.path, nil, callback)
     end
   end
 end
@@ -105,7 +106,8 @@ end
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
-M.navigate = function(path, path_to_reveal)
+---@param callback function Callback to call after the items are loaded.
+M.navigate = function(path, path_to_reveal, callback)
   local state = get_state()
   local path_changed = false
   if path == nil then
@@ -122,9 +124,12 @@ M.navigate = function(path, path_to_reveal)
       if not found then
         print("Could not find " .. path_to_reveal)
       end
+      if callback then
+        callback()
+      end
     end)
   else
-    fs_scan.get_items_async(state)
+    fs_scan.get_items_async(state, nil, nil, callback)
   end
 
   if path_changed and state.bind_to_cwd then
@@ -229,9 +234,10 @@ M.setup = function(config)
 end
 
 ---Opens the tree and displays the current path or cwd.
-M.show = function()
+---@param callback function Callback to call after the items are loaded.
+M.show = function(callback)
   local state = get_state()
-  M.navigate(state.path)
+  M.navigate(state.path, nil, callback)
 end
 
 ---Expands or collapses the current node.

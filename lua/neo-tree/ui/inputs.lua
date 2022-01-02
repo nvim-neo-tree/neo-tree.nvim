@@ -2,7 +2,6 @@ local vim = vim
 local Input = require("nui.input")
 local NuiText = require("nui.text")
 local highlights= require("neo-tree.ui.highlights")
-local nt = require("neo-tree")
 
 local M = {}
 
@@ -34,6 +33,7 @@ M.popup_options = function(message, min_width, override_options)
     },
   }
 
+  local nt = require("neo-tree")
   if nt.config.popup_border_style == "NC" then
     local blank = NuiText(" ", highlights.TITLE_BAR)
     local title = NuiText(" " .. message .. " ", highlights.TITLE_BAR)

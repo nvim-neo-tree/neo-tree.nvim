@@ -31,7 +31,19 @@ suggested keybinding is:
 `focus()` will open the sidebar and focus it if it is closed, and just switch to
 the neo-tree window if it is already open. You can also use `show()` which will
 do the same if it is closed, but won't switch to the neo-tree window if it is
-already open.
+already open. 
+
+NOTE: Both focus and show take an argument for `source`, which will default to
+the `default_source` specified in your config. There is currently only one
+source, the "filesystem", so there's no need to use it yet.
+
+    nnoremap / lua require('neo-tree').show("filesystem", false)
+
+To show the window without focusing it, you can include the second parameter to
+the function, called `do_not_focus`.
+
+    nnoremap / lua require('neo-tree').show(nil, true)
+    
 
 Another useful mapping is:                                    *Neo-tree-reveal*
 
