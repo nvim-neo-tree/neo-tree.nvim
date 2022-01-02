@@ -139,7 +139,7 @@ local function do_scan(context, path_to_scan)
   })
 end
 
-M.get_items_async = function(state, parent_id, is_lazy_load, callback)
+M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   local context = {
     state = state,
     folders = {},
@@ -156,7 +156,7 @@ M.get_items_async = function(state, parent_id, is_lazy_load, callback)
 
   context.job_complete = function()
     deep_sort(root.children)
-    if is_lazy_load then
+    if parent_id then
       -- lazy loading a child folder
       renderer.show_nodes(root.children, state, parent_id)
     else
@@ -189,9 +189,27 @@ M.get_items_async = function(state, parent_id, is_lazy_load, callback)
   else
     -- In the case of a refresh or navigating up, we need to make sure that all
     -- open folders are loaded.
+    local path = parent_id or state.path
     context.paths_to_load = {}
-    if parent_id == nil and state.tree then
-      context.paths_to_load = renderer.get_expanded_nodes(state.tree)
+    if parent_id == nil then
+      if state.tree then
+        context.paths_to_load = renderer.get_expanded_nodes(state.tree)
+      end
+      if path_to_reveal then
+        -- be sure to load all of the folders leading up to the path to reveal
+        local path_to_reveal_parts = utils.split(path_to_reveal, utils.path_separator)
+        table.remove(path_to_reveal_parts) -- remove the file name
+        -- add all parent folders to the list of paths to load
+        utils.reduce(path_to_reveal_parts, "", function(acc, part)
+          local current_path = acc .. utils.path_separator .. part
+          if #current_path > #path then -- within current root
+            table.insert(context.paths_to_load, current_path)
+            table.insert(state.default_expanded_nodes, current_path)
+          end
+          return current_path
+        end)
+        context.paths_to_load = utils.unique(context.paths_to_load)
+      end
     end
     do_scan(context, parent_id or state.path)
   end

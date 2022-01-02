@@ -13,16 +13,24 @@ Example for packer:
         requires = { "MunifTanjim/nui.nvim" },
         config = function ()
             require("neo-tree").setup()
-            vim.cmd([[nnoremap \ :lua require("neo-tree").show()<cr>]])
+            vim.cmd([[nnoremap \ :lua require("neo-tree").fs.reveal_current_file()<cr>]])
         end
     }
 ```
 
+Other common commands include:
+
+`:lua require("neo-tree").fs.show()`
+Which will show and focus the window if it is not open, but do nothing if it is.
+
+`require("neo-tree").fs.focus()`
+Which will show and always focus the window.
+
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)
 
-Documentation example configuration for the filesystem source with proper 
-syntax highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
+An example configuration for the filesystem source with proper syntax
+highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
 
 ## Status
 

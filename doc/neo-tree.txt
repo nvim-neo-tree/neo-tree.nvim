@@ -25,12 +25,22 @@ BASIC USAGE                                              *Neo-tree-Basic-Usage*
 Neo-tree does not define any default commands or keybindings for nvim. The
 suggested keybinding is:
 
-nnoremap / lua require('neo-tree').focus()
+    nnoremap / lua require('neo-tree').focus()                 *Neo-tree-focus*
 
+                                                                *Neo-tree-show*
 `focus()` will open the sidebar and focus it if it is closed, and just switch to
 the neo-tree window if it is already open. You can also use `show()` which will
 do the same if it is closed, but won't switch to the neo-tree window if it is
 already open.
+
+Another useful mapping is:                                    *Neo-tree-reveal*
+
+    nnoremap / lua require('neo-tree').fs.reveal_current_file()
+
+fs.reveal_current_file() is like focus(), but it will also find whatever file
+is in the current buffer, expand all nodes needed to reveal it, and set the
+cursor on that file. If the current file is not in the current working
+directory, you will be prompted to change it.
 
 
 ===============================================================================

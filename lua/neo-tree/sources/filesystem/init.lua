@@ -5,6 +5,7 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
+local inputs   = require("neo-tree.ui.inputs")
 
 local M = {}
 local default_config = nil
@@ -21,6 +22,59 @@ local get_state = function()
   return state
 end
 
+local expand_to_root
+expand_to_root = function(tree, from_node) 
+  local parent_id = from_node:get_parent_id()
+  if not parent_id then
+    return
+  end
+  local parent_node = tree:get_node(parent_id)
+  if parent_node then
+    parent_node:expand()
+    expand_to_root(tree, parent_node)
+  end
+end
+
+local reveal_file = function(path)
+  if not path then
+    return nil
+  end
+  local state = get_state()
+  local tree = state.tree
+  if not tree then
+    return false
+  end
+  local node = tree:get_node(path)
+  if not node then
+    return false
+  end
+  --expand_to_root(tree, node)
+  --tree:render()
+
+  local lines = vim.api.nvim_buf_line_count(state.bufnr)
+  local linenr = 0
+  while linenr < lines do
+    linenr = linenr + 1
+    node = tree:get_node(linenr)
+    if node then
+      if node:get_id() == path then
+        local col = 0
+        if node.indent then
+          col = #node.indent + 2
+        end
+        vim.api.nvim_win_set_cursor(state.split.winid, { linenr, col })
+        vim.api.nvim_set_current_win(state.split.winid)
+        return true
+      end
+    else
+      --must be out of nodes
+      return false
+    end
+  end
+  return false
+end
+
+
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function()
   local state = get_state()
@@ -33,18 +87,25 @@ M.dir_changed = function()
   end
 end
 
-M.focus = function()
+---Focus the window, opening it if it is not already open.
+---@param path_to_reveal string Node to focus after the items are loaded.
+M.focus = function(path_to_reveal)
   local state = get_state()
-  if renderer.window_exists(state) then
-    vim.api.nvim_set_current_win(state.split.winid)
+  if path_to_reveal then
+    M.navigate(state.path, path_to_reveal)
   else
-    M.navigate(state.path)
+    if renderer.window_exists(state) then
+      vim.api.nvim_set_current_win(state.split.winid)
+    else
+      M.navigate(state.path)
+    end
   end
 end
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(path)
+---@param path_to_reveal string Node to focus after the items are loaded.
+M.navigate = function(path, path_to_reveal)
   local state = get_state()
   local path_changed = false
   if path == nil then
@@ -55,10 +116,44 @@ M.navigate = function(path)
     path_changed = true
   end
 
-  fs_scan.get_items_async(state)
+  if path_to_reveal then
+    fs_scan.get_items_async(state, nil, path_to_reveal, function()
+      local found = reveal_file(path_to_reveal)
+      if not found then
+        print("Could not find " .. path_to_reveal)
+      end
+    end)
+  else
+    fs_scan.get_items_async(state)
+  end
 
   if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
+  end
+end
+
+
+M.reveal_current_file = function()
+  local path = vim.fn.expand("%:p")
+  local state = get_state()
+  local cwd = state.path
+  if cwd == nil then
+    cwd = vim.fn.getcwd()
+  end
+  if string.sub(path, 1, string.len(cwd)) ~= cwd then
+    cwd, _ = utils.split_path(path)
+    inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
+      if response == true then
+        state.path = cwd
+        M.focus(path)
+      end
+    end)
+    return
+  end
+  if path then
+    if not reveal_file(path) then
+      M.focus(path)
+    end
   end
 end
 

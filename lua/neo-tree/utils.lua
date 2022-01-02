@@ -218,4 +218,19 @@ M.table_merge = function(base_table, override_table)
     return table_merge_internal(merged_table, override_table)
 end
 
+---Returns a new list that is the result of dedeuplicating a list.
+---@param list table The list to deduplicate.
+---@return table table The list of unique values.
+M.unique = function(list)
+  local seen = {}
+  local result = {}
+  for _, item in ipairs(list) do
+    if not seen[item] then
+      table.insert(result, item)
+      seen[item] = true
+    end
+  end
+  return result
+end
+
 return M
