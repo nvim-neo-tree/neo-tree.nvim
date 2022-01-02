@@ -18,12 +18,32 @@ Example for packer:
     }
 ```
 
-Other common commands include:
+Here are the various ways to open the tree:
 
-`:lua require("neo-tree").fs.show()`
+```lua
+require("neo-tree").fs.reveal_current_file()
+```
+Which will find the current file in the tree and focus it. If the current file
+is not within the current working directory, you will be prompted to change the
+cwd.
+
+```lua
+require("neo-tree").show()
+```
 Which will show and focus the window if it is not open, but do nothing if it is.
 
-`require("neo-tree").fs.focus()`
+```lua
+require("neo-tree").show(nil, true)
+```
+Which will show the window WITHOUT focusing it, leaving the focus on the current
+file.
+
+*NOTE: The first argument is the source name, which will default to "filesystem"
+right now because it is the only source so far.*
+
+```lua
+require("neo-tree").focus()
+```
 Which will show and always focus the window.
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online
