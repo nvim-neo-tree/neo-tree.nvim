@@ -7,6 +7,22 @@ local highlights = require("neo-tree.ui.highlights")
 
 local M = {}
 
+M.close = function(state)
+  if state.split then
+    local isvalid = vim.api.nvim_win_is_valid(state.split.winid)
+    local window_exists = isvalid and (vim.api.nvim_win_get_number(state.split.winid) > 0)
+    if window_exists then
+      vim.api.nvim_win_close(state.split.win, true)
+    end
+    state.split = nil
+  end
+  if state.bufid then
+    if vim.api.nvim_buf_is_valid(state.bufid) then
+      vim.api.nvim_buf_delete(state.bufid, {force = true})
+    end
+  end
+end
+
 ---Transforms a list of items into a collection of TreeNodes.
 ---@param source_items table The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for

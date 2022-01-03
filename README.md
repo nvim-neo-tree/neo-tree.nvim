@@ -13,38 +13,32 @@ Example for packer:
         requires = { "MunifTanjim/nui.nvim" },
         config = function ()
             require("neo-tree").setup()
-            vim.cmd([[nnoremap \ :lua require("neo-tree").fs.reveal_current_file()<cr>]])
+            vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
         end
     }
 ```
 
 Here are the various ways to open the tree:
 
-```lua
-require("neo-tree").fs.reveal_current_file()
+```
+:NeoTreeReveal
 ```
 Which will find the current file in the tree and focus it. If the current file
 is not within the current working directory, you will be prompted to change the
 cwd.
 
-```lua
-require("neo-tree").show()
 ```
-Which will show and focus the window if it is not open, but do nothing if it is.
+:NeoTreeFocus
+```
+Which will open the window and switch to it. If Neo-tree is already open, it
+will just switch focus to that window.
 
-```lua
-require("neo-tree").show(nil, true)
+```
+:NeoTreeShow
 ```
 Which will show the window WITHOUT focusing it, leaving the focus on the current
 file.
 
-*NOTE: The first argument is the source name, which will default to "filesystem"
-right now because it is the only source so far.*
-
-```lua
-require("neo-tree").focus()
-```
-Which will show and always focus the window.
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)

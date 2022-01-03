@@ -60,10 +60,10 @@ local reveal_file = function(path)
       if node:get_id() == path then
         local col = 0
         if node.indent then
-          col = #node.indent + 2
+          col = string.len(node.indent)
         end
-        vim.api.nvim_win_set_cursor(state.split.winid, { linenr, col })
         vim.api.nvim_set_current_win(state.split.winid)
+        vim.api.nvim_win_set_cursor(state.split.winid, { linenr, col })
         return true
       end
     else
@@ -74,6 +74,10 @@ local reveal_file = function(path)
   return false
 end
 
+M.close = function()
+  local state = get_state()
+  renderer.close(state)
+end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function()
@@ -140,6 +144,10 @@ end
 
 M.reveal_current_file = function()
   local path = vim.fn.expand("%:p")
+  if not path or path == "" then
+    M.focus()
+    return
+  end
   local state = get_state()
   local cwd = state.path
   if cwd == nil then

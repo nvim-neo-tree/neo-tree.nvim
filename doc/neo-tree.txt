@@ -2,7 +2,7 @@
 
 CONTENTS                                                            *neo-tree*
 Introduction ........ |Neo-tree-Introduction|
-Basic Usage ......... |Neo-tree-Basic-Usage|
+Commands ............ |Neo-tree-Commands|
 Mappings ............ |Neo-tree-Mappings|
   Navigation ........ |Neo-tree-Navigation|
   View Changes ...... |Neo-tree-View-Changes|
@@ -13,46 +13,36 @@ Configuration ....... |Neo-tree-Configuration|
   Highlights ........ |Neo-tree-Highlights|
 
 
-INTRODUCTION                                            *Neo-tree-Introduction*
+INTRODUCTION                                             *Neo-tree-Introduction*
 
 Neo-tree is a plugin for nvim that can display tree structures in a sidebar.
 The current version supports one source, which is a filesystem browser. Future
 versions will add suport for other sources.
 
 
-BASIC USAGE                                              *Neo-tree-Basic-Usage*
+COMMANDS                                                     *Neo-tree-Commands*
 
-Neo-tree does not define any default commands or keybindings for nvim. The
-suggested keybinding is:
+Neo-tree does not define any default keybindings for nvim. The suggested
+keybinding is:
 
-    nnoremap / lua require('neo-tree').focus()                 *Neo-tree-focus*
+    nnoremap / :NeoTreeFocus<cr>                          
 
-                                                                *Neo-tree-show*
-`focus()` will open the sidebar and focus it if it is closed, and just switch to
-the neo-tree window if it is already open. You can also use `show()` which will
-do the same if it is closed, but won't switch to the neo-tree window if it is
-already open. 
+|NeoTreeFocus|                                                    *NeoTreeFocus*
+NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
+to the neo-tree window if it is already open. 
 
-NOTE: Both focus and show take an argument for `source`, which will default to
-the `default_source` specified in your config. There is currently only one
-source, the "filesystem", so there's no need to use it yet.
+|NeoTreeShow|                                                      *NeoTreeShow*
+You can also use NeoTreeShow which will open the tree, but leave the current
+window focused.
 
-    nnoremap / lua require('neo-tree').show("filesystem", false)
+|NeoTreeReveal|                                                  *NeoTreeReveal*
+NeoTreeReveal is like NeoTreeFocus, but it will also find whatever file is in
+the current buffer, expand all nodes needed to reveal it, and set the cursor on
+that file. If the current file is not in the current working directory, you will
+be prompted to change it.
 
-To show the window without focusing it, you can include the second parameter to
-the function, called `do_not_focus`.
-
-    nnoremap / lua require('neo-tree').show(nil, true)
-    
-
-Another useful mapping is:                                    *Neo-tree-reveal*
-
-    nnoremap / lua require('neo-tree').fs.reveal_current_file()
-
-fs.reveal_current_file() is like focus(), but it will also find whatever file
-is in the current buffer, expand all nodes needed to reveal it, and set the
-cursor on that file. If the current file is not in the current working
-directory, you will be prompted to change it.
+|NeoTreeClose|                                                    *NeoTreeClose*
+Close the Neo-tree window.
 
 
 ===============================================================================

@@ -1,3 +1,4 @@
+local vim = vim
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
 
@@ -13,10 +14,18 @@ local M = { }
 -- Adding this as a shortcut because the module path is so long.
 M.fs = require("neo-tree.sources.filesystem")
 
+
 local ensure_config = function ()
   if not M.config then
     M.setup({})
   end
+end
+
+M.close = function(source_name)
+  ensure_config()
+  source_name = source_name or M.config.default_source
+  local source = require('neo-tree.sources.' .. source_name)
+  source.close()
 end
 
 M.focus = function(source_name)
@@ -51,9 +60,6 @@ M.show = function(source_name, do_not_focus)
   ensure_config()
   source_name = source_name or M.config.default_source
   local source = require('neo-tree.sources.' .. source_name)
-  if not source then
-    error("Source " .. source_name .. " not found.")
-  end
   if do_not_focus then
     local current_win = vim.api.nvim_get_current_win()
     source.show(function ()
