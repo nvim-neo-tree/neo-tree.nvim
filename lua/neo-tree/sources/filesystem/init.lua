@@ -144,7 +144,7 @@ end
 
 M.reveal_current_file = function()
   local path = vim.fn.expand("%:p")
-  if not path or path == "" then
+  if not path or path == "" or path:match("term://") then
     M.focus()
     return
   end
