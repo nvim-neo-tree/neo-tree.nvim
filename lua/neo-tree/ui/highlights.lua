@@ -61,6 +61,8 @@ local function create_highlight_group(hl_group_name, link_to_if_exists, backgrou
     end
     if foreground then
       cmd = cmd .. " guifg=#" .. foreground
+    else
+      cmd = cmd .. " guifg=NONE"
     end
     if gui then
       cmd = cmd .. " gui=" .. gui

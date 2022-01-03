@@ -10,7 +10,11 @@ Example for packer:
     use {
         "nvim-neo-tree/neo-tree.nvim",
         branch = "v1.x",
-        requires = { "MunifTanjim/nui.nvim" },
+        requires = { 
+          "nvim-lua/plenary.nvim",
+          "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+          "MunifTanjim/nui.nvim" 
+        },
         config = function ()
             require("neo-tree").setup()
             vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
