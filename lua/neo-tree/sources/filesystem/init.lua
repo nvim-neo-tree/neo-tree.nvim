@@ -62,7 +62,11 @@ local reveal_file = function(path)
         if node.indent then
           col = string.len(node.indent)
         end
-        vim.api.nvim_set_current_win(state.split.winid)
+        if renderer.window_exists(state) then
+          vim.api.nvim_set_current_win(state.split.winid)
+        else
+          renderer.draw(state.tree:get_nodes(), state, nil)
+        end
         vim.api.nvim_win_set_cursor(state.split.winid, { linenr, col })
         return true
       end

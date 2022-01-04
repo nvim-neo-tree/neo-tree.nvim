@@ -21,44 +21,52 @@ local function clear_buffer(path)
     end
 end
 
+local get_unused_name
+
+function get_unused_name(destination, name_chosen_callback)
+    if loop.fs_stat(destination) then
+        local parent_path, name = utils.split_path(destination)
+        inputs.input(name .. " already exists. Please enter a new name: ",
+            name, function(new_name)
+                if new_name and string.len(new_name) > 0 then
+                    local new_path = parent_path .. utils.path_separator .. new_name
+                    get_unused_name(new_path, name_chosen_callback)
+                end
+            end)
+    else
+        name_chosen_callback(destination)
+    end
+end
 -- Move Node
 M.move_node = function(source, destination, callback)
-    -- If aleady exists
-    if loop.fs_stat(destination) then
-        print(destination, " already exists")
-        return
-    end
-
-    --create_dirs_if_needed(destination)
-    loop.fs_rename(source, destination, function(err)
-        if err then
-            print("Could not move the files")
-            return
-        end
-        if callback then
-            vim.schedule_wrap(callback)()
-        end
+    get_unused_name(destination, function(dest)
+        loop.fs_rename(source, dest, function(err)
+            if err then
+                print("Could not move the files")
+                return
+            end
+            if callback then
+                vim.schedule_wrap(callback)()
+            end
+        end)
     end)
 end
 
 -- Copy Node
-M.copy_node = function(source, destination, callback)
-    if loop.fs_stat(destination) then
-        print("Node already exists")
-        return
-    end
-
-    loop.fs_copyfile(source, destination)
-    local handle
-    handle = loop.spawn( "cp", {args = {"-r",source, destination}}, function(code)
-        handle:close()
-        if code ~= 0 then
-            print("copy failed")
-            return
-        end
-        if callback then
-            vim.schedule_wrap(callback)()
-        end
+M.copy_node = function(source, _destination, callback)
+    get_unused_name(_destination, function(destination)
+        loop.fs_copyfile(source, destination)
+        local handle
+        handle = loop.spawn( "cp", {args = {"-r",source, destination}}, function(code)
+            handle:close()
+            if code ~= 0 then
+                print("copy failed")
+                return
+            end
+            if callback then
+                vim.schedule_wrap(callback)()
+            end
+        end)
     end)
 end
 
@@ -117,7 +125,7 @@ M.delete_node = function(path, callback)
             depth = 1,
         })
         if #children > 0 then
-            msg = msg .. "\nWARNING: Directory is not empty!"
+            msg = "WARNING: Dir not empty! " .. msg
         end
     end
 

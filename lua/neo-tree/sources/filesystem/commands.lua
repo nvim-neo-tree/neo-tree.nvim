@@ -63,23 +63,47 @@ M.paste_from_clipboard = function(state)
     if at_node.type == "file" then
       folder = at_node:get_parent_id()
     end
+
+    -- Convert to list so to make it easier to pop items from the stack.
+    local clipboard_list = {}
     for _, item in pairs(state.clipboard) do
-      if item.action == "copy" then
-        fs_actions.copy_node(item.node.path, folder .. utils.path_separator .. item.node.name)
-      elseif item.action == "cut" then
-        fs_actions.move_node(item.node.path, folder .. utils.path_separator .. item.node.name)
-      end
+      table.insert(clipboard_list, item)
     end
     state.clipboard = nil
-    fs.refresh()
+    local handle_next_paste, paste_complete
 
-    -- open the folder so the user can see the new files
-    local node = state.tree:get_node(folder)
-    if not node then
-      print("Could not find node for " .. folder)
-      return
+    paste_complete = function()
+      -- open the folder so the user can see the new files
+      local node = state.tree:get_node(folder)
+      if not node then
+        print("Could not find node for " .. folder)
+        return
+      end
+      fs.show_new_children(node)
+      local next_item = table.remove(clipboard_list)
+      if next_item then
+        handle_next_paste(next_item)
+      end
     end
-    fs.show_new_children(node)
+
+    handle_next_paste = function(item)
+      if item.action == "copy" then
+        fs_actions.copy_node(
+          item.node.path,
+          folder .. utils.path_separator .. item.node.name,
+          paste_complete)
+      elseif item.action == "cut" then
+        fs_actions.move_node(
+          item.node.path,
+          folder .. utils.path_separator .. item.node.name,
+          paste_complete)
+      end
+    end
+
+    local next_item = table.remove(clipboard_list)
+    if next_item then
+      handle_next_paste(next_item)
+    end
   end
 end
 
