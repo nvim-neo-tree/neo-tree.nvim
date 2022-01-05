@@ -67,8 +67,8 @@ local reveal_file = function(path)
         else
           renderer.draw(state.tree:get_nodes(), state, nil)
         end
-        vim.api.nvim_win_set_cursor(state.split.winid, { linenr, col })
-        return true
+        local success = pcall(vim.api.nvim_win_set_cursor, state.split.winid, { linenr, col })
+        return success
       end
     else
       --must be out of nodes
@@ -147,12 +147,13 @@ end
 
 
 M.reveal_current_file = function()
+  local state = get_state()
+  require("neo-tree").close_all_except("filesystem")
   local path = vim.fn.expand("%:p")
   if not path or path == "" or path:match("term://") then
     M.focus()
     return
   end
-  local state = get_state()
   local cwd = state.path
   if cwd == nil then
     cwd = vim.fn.getcwd()
@@ -272,8 +273,6 @@ M.toggle_directory = function (node)
       updated = node:expand()
     end
     if updated then
-      tree:render()
-    else
       tree:render()
     end
   end

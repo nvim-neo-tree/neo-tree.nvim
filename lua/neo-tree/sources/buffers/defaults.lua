@@ -1,4 +1,5 @@
 local highlights = require('neo-tree.ui.highlights')
+local components = require('neo-tree.sources.buffers.components')
 
 local filesystem = {
   window = {
@@ -15,27 +16,12 @@ local filesystem = {
       ["s"] = "open_vsplit",
       ["<bs>"] = "navigate_up",
       ["."] = "set_root",
-      ["H"] = "toggle_hidden",
-      ["I"] = "toggle_gitignore",
       ["R"] = "refresh",
-      ["/"] = "filter_as_you_type",
-      ["f"] = "filter_on_submit",
-      ["<C-x>"] = "clear_filter",
-      ["a"] = "add",
-      ["d"] = "delete",
-      ["r"] = "rename",
-      ["c"] = "copy_to_clipboard",
-      ["x"] = "cut_to_clipboard",
-      ["p"] = "paste_from_clipboard",
+      --["/"] = "filter_as_you_type",
+      --["f"] = "filter_on_submit",
+      --["<C-x>"] = "clear_filter",
     }
   },
---find_command = "fd",
-  search_limit = 50, -- max number of search results when using filters
-  filters = {
-    show_hidden = false,
-    respect_gitignore = true,
-  },
-  bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
   before_render = function(state)
     -- This function is called after the file system has been scanned,
     -- but before the tree is rendered. You can use this to gather extra
@@ -57,13 +43,7 @@ local filesystem = {
         folder_open = "",
         padding = " ",
       },
-      { "current_filter" },
       { "name" },
-      {
-        "clipboard",
-        highlight = highlights.DIM_TEXT
-      },
-      --{ "git_status" },
     },
     file = {
       {
@@ -71,16 +51,9 @@ local filesystem = {
         default = "*",
         padding = " ",
       },
-      --{ "hello_node", highlight = "Normal" },
       { "name" },
-      {
-        "clipboard",
-        highlight = highlights.DIM_TEXT
-      },
-      {
-        "git_status",
-        highlight = highlights.DIM_TEXT
-      }
+      { "bufnr" },
+      { "git_status", highlight = highlights.DIM_TEXT },
     },
   }
 }

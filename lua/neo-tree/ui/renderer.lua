@@ -48,6 +48,7 @@ M.create_nodes = function(source_items, state, level)
       type = item.type,
       loaded = item.loaded,
       indent = indent,
+      extra = item.extra,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to a a "data" or "extra" field?
       path = item.path,
@@ -186,7 +187,7 @@ local create_window = function(state)
     }
   })
   state.split:mount()
-  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree[%s]", state.tabnr))
+  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree %s [%s]", state.source_name, state.tabnr))
   local winid = state.split.winid
   state.bufid = vim.api.nvim_win_get_buf(winid)
 

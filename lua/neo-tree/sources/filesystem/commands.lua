@@ -1,6 +1,7 @@
 --This file should contain all commands meant to be used by mappings.
 
 local vim = vim
+local cc = require("neo-tree.sources.common.commands")
 local fs = require('neo-tree.sources.filesystem')
 local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
 local utils = require('neo-tree.utils')
@@ -9,14 +10,7 @@ local filter = require("neo-tree.sources.filesystem.lib.filter")
 local M = {}
 
 M.add = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type == 'file' then
-    node = tree:get_node(node:get_parent_id())
-  end
-  fs_actions.create_node(node:get_id(), function()
-    fs.show_new_children(node)
-  end)
+  cc.add(state, fs.show_new_children)
 end
 
 M.clear_filter = function(state)
@@ -25,93 +19,23 @@ end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
-  local node = state.tree:get_node()
-  state.clipboard = state.clipboard or {}
-  local existing = state.clipboard[node.id]
-  if existing and existing.action == "copy" then
-    state.clipboard[node.id] = nil
-  else
-    state.clipboard[node.id] = { action = "copy", node = node }
-    print("Copied " .. node.name .. " to clipboard")
-  end
-  fs.redraw()
+  cc.copy_to_clipboard(state, fs.redraw)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
-  local node = state.tree:get_node()
-  state.clipboard = state.clipboard or {}
-  local existing = state.clipboard[node.id]
-  if existing and existing.action == "cut" then
-    state.clipboard[node.id] = nil
-  else
-    state.clipboard[node.id] = { action = "cut", node = node }
-    print("Cut " .. node.name .. " to clipboard")
-  end
-  fs.redraw()
+  cc.cut_to_clipboard(state, fs.redraw)
 end
 
-M.show_debug_info = function(state)
-  print(vim.inspect(state))
-end
+M.show_debug_info = cc.show_debug_info
 
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
-  if state.clipboard then
-    local at_node = state.tree:get_node()
-    local folder = at_node:get_id()
-    if at_node.type == "file" then
-      folder = at_node:get_parent_id()
-    end
-
-    -- Convert to list so to make it easier to pop items from the stack.
-    local clipboard_list = {}
-    for _, item in pairs(state.clipboard) do
-      table.insert(clipboard_list, item)
-    end
-    state.clipboard = nil
-    local handle_next_paste, paste_complete
-
-    paste_complete = function()
-      -- open the folder so the user can see the new files
-      local node = state.tree:get_node(folder)
-      if not node then
-        print("Could not find node for " .. folder)
-        return
-      end
-      fs.show_new_children(node)
-      local next_item = table.remove(clipboard_list)
-      if next_item then
-        handle_next_paste(next_item)
-      end
-    end
-
-    handle_next_paste = function(item)
-      if item.action == "copy" then
-        fs_actions.copy_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete)
-      elseif item.action == "cut" then
-        fs_actions.move_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete)
-      end
-    end
-
-    local next_item = table.remove(clipboard_list)
-    if next_item then
-      handle_next_paste(next_item)
-    end
-  end
+  cc.paste_from_clipboard(state, fs.show_new_children)
 end
 
 M.delete = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-
-  fs_actions.delete_node(node.path, fs.refresh)
+  cc.delete(state, fs.refresh)
 end
 
 ---Shows the filter input, which will filter the tree.
@@ -133,40 +57,14 @@ M.navigate_up = function(state)
   fs.navigate(parent_path)
 end
 
-local open_with_cmd = function(state, open_cmd)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type == 'directory' then
-    fs.toggle_directory()
-    return nil
-  else
-    if state.window.position == "right" then
-      vim.cmd("wincmd t")
-    else
-      vim.cmd("wincmd w")
-    end
-    vim.cmd(open_cmd .. " " .. node:get_id())
-  end
-end
-
-M.open = function(state)
-  open_with_cmd(state, "e")
-end
-
-M.open_split = function(state)
-  open_with_cmd(state, "split")
-end
-
-M.open_vsplit = function(state)
-  open_with_cmd(state, "vsplit")
-end
+M.open = function(state) cc.open(state, fs.toggle_directory) end
+M.open_split = function(state) cc.open_split(state, fs.toggle_directory) end
+M.open_vsplit = function(state) cc.open_vsplit(state, fs.toggle_directory) end
 
 M.refresh = fs.refresh
 
 M.rename = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-  fs_actions.rename_node(node.path, fs.refresh)
+  cc.rename(state, fs.refresh)
 end
 
 M.set_root = function(state)

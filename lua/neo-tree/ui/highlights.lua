@@ -2,7 +2,9 @@ local vim = vim
 local M = {}
 
 
+M.BUFFER_NUMBER = "NeoTreeBufferNumber"
 M.CURSOR_LINE = "NeoTreeCursorLine"
+M.DIM_TEXT = "NeoTreeDimText"
 M.DIRECTORY_NAME = "NeoTreeDirectoryName"
 M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
 M.FILE_ICON = "NeoTreeFileIcon"
@@ -103,6 +105,8 @@ create_highlight_group(M.GIT_UNTRACKED,
   { },
   nil, modified.foreground, 'italic')
 
+create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
+create_highlight_group(M.DIM_TEXT, {}, nil, '505050')
 create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
 create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
 create_highlight_group(M.DIRECTORY_ICON, { "TabLineSel" }, nil, "#73cef4")

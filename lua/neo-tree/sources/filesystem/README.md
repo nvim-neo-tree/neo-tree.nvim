@@ -101,7 +101,7 @@ require("neo-tree").setup({
         { "name" },
         {
           "clipboard",
-          highlight = "Comment"
+          highlight = "NeoTreeDimText"
         },
         --{ "git_status" },
       },
@@ -116,11 +116,11 @@ require("neo-tree").setup({
         { "name" },
         {
           "clipboard",
-          highlight = "Comment"
+          highlight = "NeoTreeDimText"
         },
         {
           "git_status",
-          highlight = "Comment"
+          highlight = "NeoTreeDimText"
         }
       },
     }

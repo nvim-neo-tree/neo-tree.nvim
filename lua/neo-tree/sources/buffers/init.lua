@@ -4,6 +4,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local items = require("neo-tree.sources.buffers.lib.items")
 
 local M = {}
 local default_config = nil
@@ -23,6 +24,27 @@ end
 M.close = function()
   local state = get_state()
   renderer.close(state)
+end
+
+---Calld by autocmd when any buffer is open, closed, renamed, etc.
+M.buffers_changed = function()
+  for _, state in pairs(state_by_tab) do
+    if state.path and renderer.window_exists(state) then
+      items.get_open_buffers(state)
+    end
+  end
+end
+
+---Called by autocmds when the cwd dir is changed. This will change the root.
+M.dir_changed = function()
+  local state = get_state()
+  local cwd = vim.fn.getcwd()
+  if state.path and cwd == state.path then
+    return
+  end
+  if state.path and renderer.window_exists(state) then
+    M.navigate(cwd)
+  end
 end
 
 M.focus = function()
@@ -46,30 +68,12 @@ M.navigate = function(path)
     state.path = path
     path_changed = true
   end
-  -- Do something useful here to get items
-  local items = {
-    {
-      id = "1",
-      name = "root",
-      children = {
-        {
-          id = "1.1",
-          name = "child1",
-          children = {
-            {
-              id = "1.1.1",
-              name = "child1.1",
-            },
-            {
-              id = "1.1.2",
-              name = "child1.2",
-            }
-          }
-        }
-      }
-    }
-  }
-  renderer.show_nodes(state, items)
+
+  items.get_open_buffers(state)
+
+  if path_changed and state.bind_to_cwd then
+    vim.api.nvim_command("tcd " .. path)
+  end
 end
 
 ---Redraws the tree without scanning the filesystem again. Use this after
@@ -86,7 +90,7 @@ end
 M.refresh = function()
   local state = get_state()
   if state.path and renderer.window_exists(state) then
-    M.navigate(state.path)
+    items.get_open_buffers(state)
   end
 end
 
@@ -96,12 +100,25 @@ end
 M.setup = function(config)
   if default_config == nil then
     default_config = config
+    local autocmds = {}
+    local refresh_cmd = ":lua require('neo-tree.sources.buffers').buffers_changed()"
+    table.insert(autocmds, "augroup neotreebuffers")
+    table.insert(autocmds, "autocmd!")
+    table.insert(autocmds, "autocmd BufEnter * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufNew * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufFilePost * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
+    if default_config.bind_to_cwd then
+      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.buffers').dir_changed()")
+    end
+    table.insert(autocmds, "augroup END")
+    vim.cmd(table.concat(autocmds, "\n"))
   end
 end
 
 ---Opens the tree and displays the current path or cwd.
----@param callback function Callback to call after the items are loaded.
-M.show = function(callback)
+M.show = function()
   local state = get_state()
   M.navigate(state.path)
 end

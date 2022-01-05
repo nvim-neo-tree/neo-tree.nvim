@@ -7,6 +7,7 @@ local defaults = require("neo-tree.defaults")
 -- for the source config, and a setup function that takes that config.
 local sources = {
   "filesystem",
+  "buffers"
 }
 
 local M = { }
@@ -21,17 +22,45 @@ local ensure_config = function ()
   end
 end
 
-M.close = function(source_name)
-  ensure_config()
-  source_name = source_name or M.config.default_source
-  local source = require('neo-tree.sources.' .. source_name)
-  source.close()
+local src = function(source_name)
+  if source_name == nil or source_name == "" then
+    source_name = M.config.default_source
+  end
+  local success, source = pcall(require, "neo-tree.sources." .. source_name)
+  if not success then
+    error("Source " .. source_name .. " not found.")
+  end
+  source.name = source_name
+  return source
 end
 
-M.focus = function(source_name)
-  ensure_config()
-  source_name = source_name or M.config.default_source
-  local source = require('neo-tree.sources.' .. source_name)
+M.close_all_except = function (source_name)
+  local source = src(source_name)
+  local target_pos = utils.get_value(M,
+    "config.sources[" .. source.name .. "].window.position", "left")
+  for _, name in ipairs(sources) do
+    if name ~= source_name then
+      local pos = utils.get_value(M,
+        "config.sources[" .. name .. "].window.position", "left")
+      if pos == target_pos then
+        src(name).close()
+      end
+    end
+  end
+end
+
+M.close = function(source_name)
+  src(source_name).close()
+end
+
+M.focus = function(source_name, close_others)
+  if close_others == nil then
+    close_others = true
+  end
+  local source = src(source_name)
+  if close_others then
+    M.close_all_except(source.name)
+  end
   source.focus()
 end
 
@@ -43,6 +72,7 @@ M.setup = function(config)
     sd[source_name] = require(mod_root .. ".defaults")
     sd[source_name].components = require(mod_root .. ".components")
     sd[source_name].commands = require(mod_root .. ".commands")
+    sd[source_name].name = source_name
   end
   local default_config = utils.table_merge(defaults, sd)
 
@@ -51,15 +81,18 @@ M.setup = function(config)
 
   -- setup the sources with the combined config
   for _, source_name in ipairs(sources) do
-    local source = require('neo-tree.sources.' .. source_name)
-    source.setup(M.config[source_name])
+    src(source_name).setup(M.config[source_name])
   end
 end
 
-M.show = function(source_name, do_not_focus)
-  ensure_config()
-  source_name = source_name or M.config.default_source
-  local source = require('neo-tree.sources.' .. source_name)
+M.show = function(source_name, do_not_focus, close_others)
+  if close_others == nil then
+    close_others = true
+  end
+  local source = src(source_name)
+  if close_others then
+    M.close_all_except(source.name)
+  end
   if do_not_focus then
     local current_win = vim.api.nvim_get_current_win()
     source.show(function ()
@@ -70,4 +103,5 @@ M.show = function(source_name, do_not_focus)
   end
 end
 
+ensure_config()
 return M
