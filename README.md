@@ -3,6 +3,44 @@
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar. 
 
+## Installation
+### Packer
+```lua
+use "nvim-neo-tree/neo-tree.nvim"
+```
+### Paq-nvim
+```lua
+require "paq" {
+    "nvim-neo-tree/neo-tree.nvim"
+}
+```
+
+### Nixos (Fetch From Github)
+Example (Home Manager):
+```nix
+{ config, pkgs, lib, ... }:
+
+let 
+  pluginGit = ref: repo: pkgs.vimUtils.buildVimPluginFrom2Nix {
+    pname = "${lib.strings.sanitizeDerivationName repo}";
+    version = ref;
+    src = builtins.fetchGit {
+      url = "https://github.com/${repo}.git";
+      ref = ref;
+    };
+  };
+
+  plugin = pluginGit "HEAD";
+in {
+    programs.neovim = {
+        plugins = with pkgs.vimPlugins; [
+            (plugin "nvim-neo-tree/neo-tree.nvim")
+        ]
+    };
+}
+```
+
+
 ## Quickstart
 
 Example for packer:
