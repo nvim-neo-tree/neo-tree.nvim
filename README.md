@@ -6,12 +6,23 @@ structures in a sidebar.
 ## Installation
 ### Packer
 ```lua
-use "nvim-neo-tree/neo-tree.nvim"
+use {
+        "nvim-neo-tree/neo-tree.nvim",
+        branch = "v1.x",
+        requires = { 
+          "nvim-lua/plenary.nvim",
+          "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+          "MunifTanjim/nui.nvim" 
+        }
+    }
 ```
 ### Paq-nvim
 ```lua
 require "paq" {
-    "nvim-neo-tree/neo-tree.nvim"
+    { "nvim-neo-tree/neo-tree.nvim", branch = "v1.x" },
+    "nvim-lua/plenary.nvim"
+    "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+    "MunifTanjim/nui.nvim"
 }
 ```
 
@@ -34,7 +45,10 @@ let
 in {
     programs.neovim = {
         plugins = with pkgs.vimPlugins; [
-            (plugin "nvim-neo-tree/neo-tree.nvim")
+            (pluginGit "v1.x" "nvim-neo-tree/neo-tree.nvim")
+            (plugin "nvim-lua/plenary.nvim")
+            (plugin "kyazdani42/nvim-web-devicons")
+            (plugin "MunifTanjim/nui.nvim")
         ]
     };
 }
