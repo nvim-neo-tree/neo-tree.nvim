@@ -17,7 +17,7 @@ local utils  = require("neo-tree.utils")
 local M = {}
 
 M.name = function(config, node, state)
-    local highlight = config.highlight or highlights.FILE_NAME
+    local highlight = config.highlight or highlights.FILE_NAME_OPENED
     local name = node.name
     if node.type == "directory" then
         if node:get_depth() == 1 then

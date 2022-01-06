@@ -22,6 +22,7 @@ local filesystem = {
       --["<C-x>"] = "clear_filter",
     }
   },
+  bind_to_cwd = true,
   before_render = function(state)
     -- This function is called after the file system has been scanned,
     -- but before the tree is rendered. You can use this to gather extra
