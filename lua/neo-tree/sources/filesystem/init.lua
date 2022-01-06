@@ -51,6 +51,10 @@ local reveal_file = function(path)
   --expand_to_root(tree, node)
   --tree:render()
 
+  local bufnr = utils.get_value(state, "bufnr", 0, true)
+  if bufnr == 0 then
+    return false
+  end
   local lines = vim.api.nvim_buf_line_count(state.bufnr)
   local linenr = 0
   while linenr < lines do
@@ -130,7 +134,7 @@ M.navigate = function(path, path_to_reveal, callback)
     fs_scan.get_items_async(state, nil, path_to_reveal, function()
       local found = reveal_file(path_to_reveal)
       if not found then
-        print("Could not find " .. path_to_reveal)
+        print("Could not find " .. path_to_reveal .. " in " .. state.path)
       end
       if callback then
         callback()

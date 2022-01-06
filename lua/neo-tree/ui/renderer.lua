@@ -8,17 +8,17 @@ local highlights = require("neo-tree.ui.highlights")
 local M = {}
 
 M.close = function(state)
-  if state.split then
-    local isvalid = vim.api.nvim_win_is_valid(state.split.winid)
-    local window_exists = isvalid and (vim.api.nvim_win_get_number(state.split.winid) > 0)
-    if window_exists then
-      vim.api.nvim_win_close(state.split.win, true)
+  if state and state.split then
+    if M.window_exists(state) then
+      local winid = utils.get_value(state, "split.winid", 0, true)
+      vim.api.nvim_win_close(winid, true)
     end
     state.split = nil
   end
   if state.bufid then
-    if vim.api.nvim_buf_is_valid(state.bufid) then
-      vim.api.nvim_buf_delete(state.bufid, {force = true})
+    local bufid = utils.get_value(state, "bufid", 0, true)
+    if vim.api.nvim_buf_is_valid(bufid) then
+      vim.api.nvim_buf_delete(bufid, {force = true})
     end
   end
 end
@@ -168,10 +168,11 @@ end
 local create_window = function(state)
   local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
+  local position = utils.get_value(state, "window.position", "left", true)
 
   state.split = NuiSplit({
     relative = "editor",
-    position = utils.get_value(state, "window.position", "left"),
+    position = position,
     size = utils.get_value(state, "window.size", 40),
     win_options = {
       number = false,
@@ -187,7 +188,7 @@ local create_window = function(state)
     }
   })
   state.split:mount()
-  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree %s [%s]", state.source_name, state.tabnr))
+  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree %s [%s]", state.name, state.tabnr))
   local winid = state.split.winid
   state.bufid = vim.api.nvim_win_get_buf(winid)
 
@@ -197,7 +198,7 @@ local create_window = function(state)
   end, { once = true })
 
   local map_options = { noremap = true, nowait = true }
-  local mappings = utils.get_value(state, "window.mappings", {})
+  local mappings = utils.get_value(state, "window.mappings", {}, true)
   for cmd, func in pairs(mappings) do
     if func then
       if type(func) == "string" then
@@ -211,7 +212,7 @@ local create_window = function(state)
   return state.split
 end
 
----Determines of the window exists and is valid.
+---Determines if the window exists and is valid.
 ---@param state table The current state of the plugin.
 ---@return boolean True if the window exists and is valid, false otherwise.
 M.window_exists = function(state)
@@ -219,11 +220,13 @@ M.window_exists = function(state)
   if state.split == nil then
     window_exists = false
   else
-    local isvalid = vim.api.nvim_win_is_valid(state.split.winid)
-    window_exists = isvalid and (vim.api.nvim_win_get_number(state.split.winid) > 0)
+    local winid = utils.get_value(state, "split.winid", 0, true)
+    local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
+    window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
     if not window_exists then
-      if vim.api.nvim_buf_is_valid(state.bufid) then
-        vim.api.nvim_buf_delete(state.bufid, {force = true})
+      local bufid = utils.get_value(state, "bufnr", 0, true)
+      if bufid > 0 and vim.api.nvim_buf_is_valid(bufid) then
+        vim.api.nvim_buf_delete(bufid, {force = true})
       end
     end
   end

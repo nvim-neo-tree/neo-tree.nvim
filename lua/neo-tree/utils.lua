@@ -110,11 +110,12 @@ end
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
 ---@param defaultValue any The default value to return if the value is nil.
+---@param strict_type_check boolean Whether to require the type of the value is
+---the same as the default value.
 ---@return table table The value at the path or the default value.
-M.get_value = function(sourceObject, valuePath, defaultValue)
-    local value = defaultValue or {}
+M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
     if sourceObject == nil then
-        return value
+        return defaultValue
     end
     local pathParts = M.split(valuePath, ".")
     local currentTable = sourceObject
@@ -122,10 +123,20 @@ M.get_value = function(sourceObject, valuePath, defaultValue)
         if currentTable[part] ~= nil then
             currentTable = currentTable[part]
         else
-            return value
+            return defaultValue
         end
     end
-    return currentTable or value
+
+    if defaultValue == nil then
+      return currentTable
+    end
+    if strict_type_check then
+      if type(defaultValue) == type(currentTable) then
+        return currentTable
+      else
+        return defaultValue
+      end
+    end
 end
 
 M.map = function(tbl, fn)
