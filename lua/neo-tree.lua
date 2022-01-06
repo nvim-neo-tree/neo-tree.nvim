@@ -43,7 +43,7 @@ M.close_all_except = function (source_name)
       local pos = utils.get_value(M,
         "config.sources[" .. name .. "].window.position", "left")
       if pos == target_pos then
-        src(name).close()
+        M.close(name)
       end
     end
   end
@@ -51,6 +51,22 @@ end
 
 M.close = function(source_name)
   src(source_name).close()
+end
+
+M.close_all = function(at_position)
+  if at_position then
+    for _, name in ipairs(sources) do
+      local pos = utils.get_value(M,
+        "config.sources[" .. name .. "].window.position", "left")
+      if pos == at_position then
+        M.close(name)
+      end
+    end
+  else
+    for _, name in ipairs(sources) do
+      M.close(name)
+    end
+  end
 end
 
 M.focus = function(source_name, close_others)

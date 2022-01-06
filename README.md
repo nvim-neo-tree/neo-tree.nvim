@@ -43,6 +43,10 @@ will just switch focus to that window.
 Which will show the window WITHOUT focusing it, leaving the focus on the current
 file.
 
+You can also close the tree with:
+```
+:NeoTreeClose
+```
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)
@@ -50,14 +54,32 @@ at [neo-tree.txt](/doc/neo-tree.txt)
 An example configuration for the filesystem source with proper syntax
 highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
 
+## Sources
+
+Neo-tree is built on the idea of supporting various sources. Sources are
+basically interface implimentations whose job it is to provide a list of
+hierachical items to be rendered, along with commands that are appropriate to
+those items.
+
+The default source is `filesystem`, which displays your files and folders. This
+is the default source in commands when none is specified.
+
+Another available source is `buffers`, which displays your open buffers. This is
+the same list you would see from `:ls`. To show with the `buffers` list, use:
+```
+:NeoTreeShow buffers
+```
+or
+```
+:NeoTreeFocus buffers
+```
+
 ## Status
 
-This is currently functional as a basic file browser with navigation, mutation,
-git status, and filtering.
-
-The file system source can serve as an example of how to create other sources.
-Other sources that may include things like tags, treesitter or lsp document
-structures, git status, open buffers list, etc.
+This is a fully functional file browser with navigation, mutation,
+git status, and filtering. It can also display a list of open buffers. Other
+sources that may be added include things like tags, treesitter or lsp document
+structures, git status, etc.
 
 ## Configuration and Customization
 

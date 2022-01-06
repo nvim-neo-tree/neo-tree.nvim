@@ -11,6 +11,8 @@ Mappings ............ |Neo-tree-Mappings|
 Configuration ....... |Neo-tree-Configuration|
   Setup ............. |Neo-tree-Setup|
   Highlights ........ |Neo-tree-Highlights|
+Other Sources ....... |Neo-tree-Sources|
+  Buffers ........... |Neo-tree-Buffers|
 
 
 INTRODUCTION                                             *Neo-tree-Introduction*
@@ -23,17 +25,20 @@ versions will add suport for other sources.
 COMMANDS                                                     *Neo-tree-Commands*
 
 Neo-tree does not define any default keybindings for nvim. The suggested
-keybinding is:
+keybindings are:
 
-    nnoremap / :NeoTreeFocus<cr>                          
+    nnoremap / :NeoTreeReveal<cr>                          
+    nnoremap | :NeoTreeClose<cr>                          
+    nnoremap <leader>b :NeoTreeFocus buffers<cr>
 
 |NeoTreeFocus|                                                    *NeoTreeFocus*
 NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
-to the neo-tree window if it is already open. 
+to the neo-tree window if it is already open. Takes an optional argument to
+specify the source to focus, such as `filesystem` or `buffers`.
 
 |NeoTreeShow|                                                      *NeoTreeShow*
 You can also use NeoTreeShow which will open the tree, but leave the current
-window focused.
+window focused. Takes an optional argument to specify the source to show.
 
 |NeoTreeReveal|                                                  *NeoTreeReveal*
 NeoTreeReveal is like NeoTreeFocus, but it will also find whatever file is in
@@ -42,7 +47,9 @@ that file. If the current file is not in the current working directory, you will
 be prompted to change it.
 
 |NeoTreeClose|                                                    *NeoTreeClose*
-Close the Neo-tree window.
+Closes all Neo-tree windows. Takes an optional argument to specify the position
+to close, such as `left` or `right`. The position corresponds to the
+window.position setting in your config for each source.
 
 
 ===============================================================================
@@ -52,7 +59,9 @@ MAPPINGS                                                                      ~
 
 NAVIGATION                                                *Neo-tree-Navigation*
 
-Within the neo-tree window, the following mappings are defined by default.
+Within the neo-tree window, for the filesystem source, the following mappings
+are defined by default.
+
 Note: The "selected" item is the line the cursor is currently on.
 
 <2-LeftMouse> = open:        Expand or collapse a folder. If a file is selected,
@@ -243,7 +252,9 @@ The following highlight groups are defined by this plugin. If you set any of
 these yourself before the plugin loads, it will not be touched. If they do not
 exist, they will be created.
 
+NeoTreeBufferNumber   The buffer number shown in the buffers source.
 NeoTreeCursorLine     |hi-CursorLine| override in Neo-tree window.
+NeoTreeDimText        Greyed out text used in various places.
 NeoTreeDirectoryName  Directory name.
 NeoTreeDirectoryIcon  Directory icon.
 NeoTreeFileIcon       File icon, when not overriden by devicons.
@@ -261,5 +272,26 @@ NeoTreeRootName       The name of the root node.
 NeoTreeTitleBar       Used for the title bar of pop-ups, when the border-style
                       is set to "NC". This is derived from NeoTreeFloatBorder.
 
+
+================================================================================
+OTHER SOURCES                                                                  ~
+================================================================================
+                                                              *Neo-tree-Sources*
+
+Neo-tree supports other sources beside the filesystem source which is used by
+default. The rest of the sources follow the same pattern as the filesystem
+sources described above. The following sections will give an overview of each
+source and describe the options that are unique to those sources.
+
+BUFFERS                                                        *Neo-tree-Buffers*
+
+The buffers source shows all open buffers. This is the same list that |ls| would
+show. This view adds one componment, which is the buffer number, shown to the
+right of the file name by default.
+
+As a list of files, this source shares most of the commands with the filesystem
+source, with gthe exception of filtering. Some of these commands make less
+sense to use here, as things like adding new files won't be visible until you
+open them by some other means.
 
 vim:tw=80:ts=2:et:ft=help:
