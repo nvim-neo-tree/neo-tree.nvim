@@ -1,6 +1,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
+local renderer = require("neo-tree.ui.renderer")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -47,6 +48,7 @@ M.close_all_except = function (source_name)
       end
     end
   end
+  M.close_all("float")
 end
 
 M.close = function(source_name)
@@ -55,12 +57,7 @@ end
 
 M.close_all = function(at_position)
   if at_position == "float" then
-    for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-      local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(winid))
-      if buf_name:match("^neo-tree float ") then
-        vim.api.nvim_win_close(winid, true)
-      end
-    end
+    renderer.close_all_floating_windows()
   elseif type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
       local pos = utils.get_value(M,
@@ -78,6 +75,7 @@ end
 
 M.float = function(source_name)
   M.close_all("float")
+  M.close(source_name) -- in case this source is open in a sidebar
   src(source_name).float()
 end
 

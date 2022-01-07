@@ -46,11 +46,10 @@ local get_path_to_reveal = function()
   return path
 end
 
-local reveal_file = function(path)
+local reveal_file = function(state, path)
   if not path then
     return nil
   end
-  local state = get_state()
   local tree = state.tree
   if not tree then
     return false
@@ -85,8 +84,11 @@ local reveal_file = function(path)
         else
           renderer.draw(state.tree:get_nodes(), state, nil)
         end
-        local success = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-        return success
+          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+          if not success then
+            print("Failed to set cursor: " .. err)
+          end
+          return success
       end
     else
       --must be out of nodes
@@ -142,6 +144,8 @@ end
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(path, path_to_reveal, callback)
   local state = get_state()
+  local pos = utils.get_value(state, "window.position", "left")
+  local was_float = state.force_float or pos == "floating"
   local path_changed = false
   if path == nil then
     path = vim.fn.getcwd()
@@ -153,9 +157,10 @@ M.navigate = function(path, path_to_reveal, callback)
 
   if path_to_reveal then
     fs_scan.get_items_async(state, nil, path_to_reveal, function()
-      local found = reveal_file(path_to_reveal)
-      if not found then
-        print("Could not find " .. path_to_reveal .. " in " .. state.path)
+      local found = reveal_file(state, path_to_reveal)
+      if not found and was_float then
+        -- I'm not realy sure why it is not focused when it is created...
+        --vim.api.nvim_set_current_win(state.winid)
       end
       if callback then
         callback()
@@ -193,7 +198,7 @@ M.reveal_current_file = function()
     return
   end
   if path then
-    if not reveal_file(path) then
+    if not reveal_file(state, path) then
       M.focus(path)
     end
   end

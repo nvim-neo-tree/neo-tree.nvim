@@ -2,57 +2,9 @@ local vim = vim
 local Input = require("nui.input")
 local NuiText = require("nui.text")
 local highlights= require("neo-tree.ui.highlights")
+local popups = require("neo-tree.ui.popups")
 
 local M = {}
-
-M.popup_options = function(message, min_width, override_options)
-  local min_width = min_width or 30
-  local width = string.len(message) + 2
-  local right_padding = " "
-  if width < min_width then
-    right_padding = string.rep(" ", min_width - width + 1)
-    width = min_width
-  end
-
-  local popup_options = {
-    relative = "cursor",
-    position = {
-      row = 1,
-      col = 0,
-    },
-    size = width,
-    border = {
-      text = {
-        top = message
-      },
-      style = "rounded",
-      highlight = highlights.FLOAT_BORDER,
-    },
-    win_options = {
-      winhighlight = "Normal:Normal,FloatBorder:" .. highlights.FLOAT_BORDER,
-    },
-  }
-
-  local nt = require("neo-tree")
-  if nt.config.popup_border_style == "NC" then
-    local blank = NuiText(" ", highlights.TITLE_BAR)
-    local title = NuiText(" " .. message .. " ", highlights.TITLE_BAR)
-    popup_options.border = {
-      style = { "▕", blank, "▏", "▏", " ", "▔", " ", "▕" },
-      highlight = highlights.FLOAT_BORDER,
-      text = {
-        top = title,
-        top_align = "left"
-      },
-    }
-  end
-
-  if override_options then
-    return vim.tbl_extend("force", popup_options, override_options)
-  else
-    return popup_options
-  end
-end
 
 M.show_input = function(input, callback)
   input:mount()
@@ -71,7 +23,7 @@ M.show_input = function(input, callback)
 end
 
 M.input = function(message, default_value, callback)
-  local popup_options = M.popup_options(message)
+  local popup_options = popups.popup_options(message)
 
   local input = Input(popup_options, {
     prompt = " ",
@@ -83,7 +35,7 @@ M.input = function(message, default_value, callback)
 end
 
 M.confirm = function(message, callback)
-  local popup_options = M.popup_options(message, 10)
+  local popup_options = popups.popup_options(message, 10)
 
   local input = Input(popup_options, {
     prompt = " y/n: ",

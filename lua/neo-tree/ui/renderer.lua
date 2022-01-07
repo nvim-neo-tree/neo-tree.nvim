@@ -5,13 +5,15 @@ local NuiSplit = require("nui.split")
 local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
+local popups     = require("neo-tree.ui.popups")
 
 local M = {}
+local floating_windows = {}
 
 M.close = function(state)
   if state and state.winid then
     if M.window_exists(state) then
-      local winid = utils.get_value(state, "split.winid", 0, true)
+      local winid = utils.get_value(state, "winid", 0, true)
       vim.api.nvim_win_close(winid, true)
     end
     state.winid = nil
@@ -25,6 +27,13 @@ M.close = function(state)
   end
 end
 
+M.close_all_floating_windows = function()
+  while #floating_windows > 0 do
+    local win = table.remove(floating_windows)
+    win:unmount()
+  end
+end
+
 ---Transforms a list of items into a collection of TreeNodes.
 ---@param source_items table The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for
@@ -35,7 +44,7 @@ end
 M.create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
-  local indent = ""
+  local indent = " "
   local indent_size = state.indent_size or 2
   for _ = 1, level do
     for _ = 1, indent_size do
@@ -186,7 +195,7 @@ local close_me_when_entering_non_floating_window = function(winid)
           endif
           if !IsFloating(nvim_get_current_win())
               if nvim_win_is_valid(g:NeoTreeFloatingWinId)
-                  call nvim_win_close(g:NeoTreeFloatingWinId, 1)
+                  lua require("neo-tree").close_all("float")
               endif
               let g:NeoTreeFloatingWinId = 0
           endif
@@ -228,27 +237,30 @@ local create_window = function(state)
   local win
   if state.force_float or win_options.position == "float" then
     state.force_float = nil
+    local sourceTitle = state.name:gsub("^%l", string.upper)
+    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
     local size = { width = "50%", height = "80%" }
     win_options.size = utils.resolve_config_option(state, "window.popup.size", size, state)
     win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%", state)
     win_options.zindex = 40
-    local b = { style = "single" }
+    local b = win_options.border
     win_options.border = utils.resolve_config_option(state, "window.popup.border", b, state)
     win = NuiPopup(win_options)
     win:mount()
+    table.insert(floating_windows, win)
 
     win:map("n", "<esc>", function(bufnr)
       win:unmount()
     end, { noremap = true })
 
+    -- why is this necessary?
+    vim.api.nvim_set_current_win(win.winid)
     close_me_when_entering_non_floating_window(win.winid)
   else
     win = NuiSplit(win_options)
     win:mount()
   end
 
-  state.split = win
-  state.NuiWindow = win
   state.winid = win.winid
   state.bufnr = win.bufnr
 
@@ -259,7 +271,6 @@ local create_window = function(state)
 
   win:on({ "BufDelete" }, function()
     win:unmount()
-    win = nil
   end, { once = true })
 
   local map_options = { noremap = true, nowait = true }
@@ -285,13 +296,18 @@ M.window_exists = function(state)
   if state.winid == nil then
     window_exists = false
   else
-    local winid = utils.get_value(state, "split.winid", 0, true)
+    local winid = utils.get_value(state, "winid", 0, true)
     local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
     if not window_exists then
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
-        vim.api.nvim_buf_delete(bufnr, {force = true})
+        local success, err = pcall(vim.api.nvim_buf_delete, bufnr, {force = true})
+        if not success and err:match("E523") then
+          vim.schedule_wrap(function()
+            vim.api.nvim_buf_delete(bufnr, {force = true})
+          end)()
+        end
       end
     end
   end
