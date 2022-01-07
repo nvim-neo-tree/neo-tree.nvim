@@ -50,7 +50,7 @@ end
 M.focus = function()
   local state = get_state()
   if renderer.window_exists(state) then
-    vim.api.nvim_set_current_win(state.split.winid)
+    vim.api.nvim_set_current_win(state.winid)
   else
     M.navigate(state.path)
   end

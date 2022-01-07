@@ -67,11 +67,11 @@ local reveal_file = function(path)
           col = string.len(node.indent)
         end
         if renderer.window_exists(state) then
-          vim.api.nvim_set_current_win(state.split.winid)
+          vim.api.nvim_set_current_win(state.winid)
         else
           renderer.draw(state.tree:get_nodes(), state, nil)
         end
-        local success = pcall(vim.api.nvim_win_set_cursor, state.split.winid, { linenr, col })
+        local success = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
         return success
       end
     else
@@ -108,7 +108,7 @@ M.focus = function(path_to_reveal, callback)
     M.navigate(state.path, path_to_reveal, callback)
   else
     if renderer.window_exists(state) then
-      vim.api.nvim_set_current_win(state.split.winid)
+      vim.api.nvim_set_current_win(state.winid)
     else
       M.navigate(state.path, nil, callback)
     end

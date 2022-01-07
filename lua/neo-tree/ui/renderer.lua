@@ -8,18 +8,21 @@ local highlights = require("neo-tree.ui.highlights")
 local M = {}
 
 M.close = function(state)
-  if state and state.split then
+  if state and state.winid then
     if M.window_exists(state) then
       local winid = utils.get_value(state, "split.winid", 0, true)
       vim.api.nvim_win_close(winid, true)
     end
     state.split = nil
+    state.NuiWindow = nil
+    state.winid = nil
   end
-  if state.bufid then
-    local bufid = utils.get_value(state, "bufid", 0, true)
-    if vim.api.nvim_buf_is_valid(bufid) then
-      vim.api.nvim_buf_delete(bufid, {force = true})
+  local bufnr = utils.get_value(state, "bufnr", 0, true)
+  if bufnr > 0 then
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_delete(bufnr, {force = true})
     end
+    state.bufnr = nil
   end
 end
 
@@ -155,7 +158,7 @@ end
 
 local create_tree = function(state)
   state.tree = NuiTree({
-    winid = state.split.winid,
+    winid = state.winid,
     get_node_id = function(node)
       return node.id
     end,
@@ -170,7 +173,7 @@ local create_window = function(state)
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
   local position = utils.get_value(state, "window.position", "left", true)
 
-  state.split = NuiSplit({
+  local split = NuiSplit({
     relative = "editor",
     position = position,
     size = utils.get_value(state, "window.size", 40),
@@ -187,14 +190,21 @@ local create_window = function(state)
       filetype = "neo-tree",
     }
   })
-  state.split:mount()
-  vim.api.nvim_buf_set_name(state.split.bufnr, string.format("neo-tree %s [%s]", state.name, state.tabnr))
-  local winid = state.split.winid
-  state.bufid = vim.api.nvim_win_get_buf(winid)
+  split:mount()
 
-  state.split:on({ "BufDelete" }, function()
-    state.split:unmount()
-    state.split = nil
+  state.split = split
+  state.NuiWindow = split
+  state.winid = split.winid
+  state.bufnr = split.bufnr
+
+  if type(state.bufnr) == "number" then
+    local bufname = string.format("neo-tree %s [%s]", state.name, state.tabnr)
+    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+  end
+
+  split:on({ "BufDelete" }, function()
+    split:unmount()
+    split = nil
   end, { once = true })
 
   local map_options = { noremap = true, nowait = true }
@@ -204,12 +214,12 @@ local create_window = function(state)
       if type(func) == "string" then
         func = state.commands[func]
       end
-      state.split:map('n', cmd, function()
+      split:map('n', cmd, function()
         func(state)
       end, map_options)
     end
   end
-  return state.split
+  return split
 end
 
 ---Determines if the window exists and is valid.
@@ -217,16 +227,16 @@ end
 ---@return boolean True if the window exists and is valid, false otherwise.
 M.window_exists = function(state)
   local window_exists
-  if state.split == nil then
+  if state.winid == nil then
     window_exists = false
   else
     local winid = utils.get_value(state, "split.winid", 0, true)
     local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
     if not window_exists then
-      local bufid = utils.get_value(state, "bufnr", 0, true)
-      if bufid > 0 and vim.api.nvim_buf_is_valid(bufid) then
-        vim.api.nvim_buf_delete(bufid, {force = true})
+      local bufnr = utils.get_value(state, "bufnr", 0, true)
+      if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+        vim.api.nvim_buf_delete(bufnr, {force = true})
       end
     end
   end
