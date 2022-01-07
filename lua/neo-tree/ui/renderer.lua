@@ -2,6 +2,7 @@ local vim = vim
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local NuiSplit = require("nui.split")
+local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
 
@@ -171,12 +172,11 @@ end
 local create_window = function(state)
   local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
-  local position = utils.get_value(state, "window.position", "left", true)
 
-  local split = NuiSplit({
+  local win_options = {
+    size = utils.resolve_config_option(state, "window.width", "40", state),
+    position = utils.resolve_config_option(state, "window.position", "left", state),
     relative = "editor",
-    position = position,
-    size = utils.get_value(state, "window.size", 40),
     win_options = {
       number = false,
       wrap = false,
@@ -189,22 +189,34 @@ local create_window = function(state)
       swapfile = false,
       filetype = "neo-tree",
     }
-  })
-  split:mount()
+  }
 
-  state.split = split
-  state.NuiWindow = split
-  state.winid = split.winid
-  state.bufnr = split.bufnr
+  local win
+  if state.force_float or win_options.position == "float" then
+    state.force_float = nil
+    win_options.size = utils.resolve_config_option(state, "window.popup.size", "50%", state)
+    win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%", state)
+    local b = { style = "single" }
+    win_options.border = utils.resolve_config_option(state, "window.popup.border", b, state)
+    win = NuiPopup(win_options)
+  else
+    win = NuiSplit(win_options)
+  end
+  win:mount()
+
+  state.split = win
+  state.NuiWindow = win
+  state.winid = win.winid
+  state.bufnr = win.bufnr
 
   if type(state.bufnr) == "number" then
     local bufname = string.format("neo-tree %s [%s]", state.name, state.tabnr)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
   end
 
-  split:on({ "BufDelete" }, function()
-    split:unmount()
-    split = nil
+  win:on({ "BufDelete" }, function()
+    win:unmount()
+    win = nil
   end, { once = true })
 
   local map_options = { noremap = true, nowait = true }
@@ -214,12 +226,12 @@ local create_window = function(state)
       if type(func) == "string" then
         func = state.commands[func]
       end
-      split:map('n', cmd, function()
+      win:map('n', cmd, function()
         func(state)
       end, map_options)
     end
   end
-  return split
+  return win
 end
 
 ---Determines if the window exists and is valid.

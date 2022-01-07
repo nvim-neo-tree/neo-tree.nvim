@@ -99,6 +99,12 @@ M.dir_changed = function()
   end
 end
 
+M.float = function()
+  local state = get_state()
+  state.force_float = true
+  M.reveal_current_file()
+end
+
 ---Focus the window, opening it if it is not already open.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.

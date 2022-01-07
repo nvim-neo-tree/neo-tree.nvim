@@ -154,6 +154,21 @@ M.reduce = function(list, memo, func)
   return memo
 end
 
+M.resolve_config_option = function(sourceTable, config_option, default_value, state)
+    local opt = M.get_value(sourceTable, config_option, default_value, false)
+    print(sourceTable, ".", config_option, "=", opt)
+    if type(opt) == "function" then
+       local success,val = pcall(opt, state)
+       if success then
+         return val
+       else
+         print("Error resolving config option: " .. config_option .. ": " .. val)
+         return default_value
+       end
+    else
+      return opt or default_value
+    end
+end
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win32unix') == 1

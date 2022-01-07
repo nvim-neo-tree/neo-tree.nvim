@@ -54,7 +54,14 @@ M.close = function(source_name)
 end
 
 M.close_all = function(at_position)
-  if type(at_position) == "string" and at_position > "" then
+  if at_position == "float" then
+    for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(winid))
+      if buf_name:match("^neo-tree float ") then
+        vim.api.nvim_win_close(winid, true)
+      end
+    end
+  elseif type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
       local pos = utils.get_value(M,
         "config.sources." .. name .. ".window.position", "left")
@@ -67,6 +74,11 @@ M.close_all = function(at_position)
       M.close(name)
     end
   end
+end
+
+M.float = function(source_name)
+  M.close_all("float")
+  src(source_name).float()
 end
 
 M.focus = function(source_name, close_others)
