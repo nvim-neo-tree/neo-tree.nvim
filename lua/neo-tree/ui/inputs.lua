@@ -54,7 +54,7 @@ M.popup_options = function(message, min_width, override_options)
   end
 end
 
-M.show_input = function(input)
+M.show_input = function(input, callback)
   input:mount()
 
   input:map("i", "<esc>", function(bufnr)
@@ -64,6 +64,9 @@ M.show_input = function(input)
 
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
+    if callback then
+      callback()
+    end
   end, { once = true })
 end
 

@@ -156,7 +156,6 @@ end
 
 M.resolve_config_option = function(sourceTable, config_option, default_value, state)
     local opt = M.get_value(sourceTable, config_option, default_value, false)
-    print(sourceTable, ".", config_option, "=", opt)
     if type(opt) == "function" then
        local success,val = pcall(opt, state)
        if success then

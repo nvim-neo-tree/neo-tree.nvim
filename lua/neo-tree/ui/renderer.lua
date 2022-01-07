@@ -14,8 +14,6 @@ M.close = function(state)
       local winid = utils.get_value(state, "split.winid", 0, true)
       vim.api.nvim_win_close(winid, true)
     end
-    state.split = nil
-    state.NuiWindow = nil
     state.winid = nil
   end
   local bufnr = utils.get_value(state, "bufnr", 0, true)
@@ -169,6 +167,29 @@ local create_tree = function(state)
   })
 end
 
+local close_me_when_entering_non_floating_window = function(winid)
+  vim.cmd([[
+    function! IsFloating(id) abort
+        let l:cfg = nvim_win_get_config(a:id)
+        return !empty(l:cfg.relative) || l:cfg.external
+    endfunction
+    function! NeoTreeCloseMe() abort
+        if !IsFloating(nvim_get_current_win())
+            if nvim_win_is_valid(]] .. winid .. [[)
+                call nvim_win_close(]] .. winid .. [[, 1)
+            endif
+            augroup NEO_TREE_CLOSE_ME
+            autocmd!
+            augroup END
+        endif
+    endfunction
+    augroup NEO_TREE_CLOSE_ME
+      autocmd!
+      autocmd WinEnter * call NeoTreeCloseMe()
+    augroup END
+  ]])
+end
+
 local create_window = function(state)
   local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
@@ -179,6 +200,7 @@ local create_window = function(state)
     relative = "editor",
     win_options = {
       number = false,
+      relativenumber = false,
       wrap = false,
       winhighlight = winhl,
     },
@@ -194,15 +216,24 @@ local create_window = function(state)
   local win
   if state.force_float or win_options.position == "float" then
     state.force_float = nil
-    win_options.size = utils.resolve_config_option(state, "window.popup.size", "50%", state)
+    local size = { width = "50%", height = "80%" }
+    win_options.size = utils.resolve_config_option(state, "window.popup.size", size, state)
     win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%", state)
+    win_options.zindex = 40
     local b = { style = "single" }
     win_options.border = utils.resolve_config_option(state, "window.popup.border", b, state)
     win = NuiPopup(win_options)
+    win:mount()
+
+    win:map("n", "<esc>", function(bufnr)
+      win:unmount()
+    end, { noremap = true })
+
+    close_me_when_entering_non_floating_window(win.winid)
   else
     win = NuiSplit(win_options)
+    win:mount()
   end
-  win:mount()
 
   state.split = win
   state.NuiWindow = win

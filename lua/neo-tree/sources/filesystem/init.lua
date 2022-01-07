@@ -55,6 +55,9 @@ local reveal_file = function(path)
   if bufnr == 0 then
     return false
   end
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
   local lines = vim.api.nvim_buf_line_count(state.bufnr)
   local linenr = 0
   while linenr < lines do

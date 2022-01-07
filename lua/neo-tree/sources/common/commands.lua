@@ -181,7 +181,11 @@ end
 M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  fs_actions.rename_node(node.path, callback)
+  fs_actions.rename_node(node.path, function()
+    if callback then
+      callback()
+    end
+  end)
 end
 
 
