@@ -167,27 +167,39 @@ local create_tree = function(state)
   })
 end
 
+local close_me_autocmd_is_set = false
+
 local close_me_when_entering_non_floating_window = function(winid)
-  vim.cmd([[
-    function! IsFloating(id) abort
-        let l:cfg = nvim_win_get_config(a:id)
-        return !empty(l:cfg.relative) || l:cfg.external
-    endfunction
-    function! NeoTreeCloseMe() abort
-        if !IsFloating(nvim_get_current_win())
-            if nvim_win_is_valid(]] .. winid .. [[)
-                call nvim_win_close(]] .. winid .. [[, 1)
-            endif
-            augroup NEO_TREE_CLOSE_ME
-            autocmd!
-            augroup END
-        endif
-    endfunction
-    augroup NEO_TREE_CLOSE_ME
-      autocmd!
-      autocmd WinEnter * call NeoTreeCloseMe()
-    augroup END
-  ]])
+  if not close_me_autocmd_is_set then
+    vim.cmd([[
+      function! IsFloating(id) abort
+          let l:cfg = nvim_win_get_config(a:id)
+          return !empty(l:cfg.relative) || l:cfg.external
+      endfunction
+
+      function! NeoTreeCloseMe() abort
+          if empty(g:NeoTreeFloatingWinId)
+              return
+          endif
+          if g:NeoTreeFloatingWinId == 0
+              return
+          endif
+          if !IsFloating(nvim_get_current_win())
+              if nvim_win_is_valid(g:NeoTreeFloatingWinId)
+                  call nvim_win_close(g:NeoTreeFloatingWinId, 1)
+              endif
+              let g:NeoTreeFloatingWinId = 0
+          endif
+      endfunction
+
+      augroup NEO_TREE_CLOSE_ME
+        autocmd!
+        autocmd WinEnter * call NeoTreeCloseMe()
+      augroup END
+    ]])
+    close_me_autocmd_is_set = true
+  end
+  vim.cmd("let g:NeoTreeFloatingWinId = " .. winid)
 end
 
 local create_window = function(state)

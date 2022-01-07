@@ -35,6 +35,17 @@ expand_to_root = function(tree, from_node)
   end
 end
 
+local get_path_to_reveal = function()
+  if vim.bo.filetype == "neo-tree" then
+    return nil
+  end
+  local path = vim.fn.expand("%:p")
+  if not path or path == "" or path:match("term://") then
+    return nil
+  end
+  return path
+end
+
 local reveal_file = function(path)
   if not path then
     return nil
@@ -105,7 +116,8 @@ end
 M.float = function()
   local state = get_state()
   state.force_float = true
-  M.reveal_current_file()
+  local path_to_reveal = get_path_to_reveal()
+  M.navigate(state.path, path_to_reveal)
 end
 
 ---Focus the window, opening it if it is not already open.
@@ -158,12 +170,11 @@ M.navigate = function(path, path_to_reveal, callback)
   end
 end
 
-
 M.reveal_current_file = function()
   local state = get_state()
   require("neo-tree").close_all_except("filesystem")
-  local path = vim.fn.expand("%:p")
-  if not path or path == "" or path:match("term://") then
+  local path = get_path_to_reveal()
+  if not path then
     M.focus()
     return
   end
