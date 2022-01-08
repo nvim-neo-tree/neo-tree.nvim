@@ -98,14 +98,13 @@ M.paste_from_clipboard = function(state, callback)
     local handle_next_paste, paste_complete
 
     paste_complete = function(source, destination)
-      -- open the folder so the user can see the new files
-      local node = state.tree:get_node(folder)
-      if not node then
-        print("Could not find node for " .. folder)
-        return
-      end
       if callback then
-        callback(source, destination)
+        -- open the folder so the user can see the new files
+        local node = state.tree:get_node(folder)
+        if not node then
+          print("Could not find node for " .. folder)
+        end
+        callback(node, destination)
       end
       local next_item = table.remove(clipboard_list)
       if next_item then

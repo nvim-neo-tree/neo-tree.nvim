@@ -131,14 +131,16 @@ M.get_diagnostic_counts = function ()
   local d = vim.diagnostic.get()
   local lookup = {}
   for _, diag in ipairs(d) do
-    local file_name = vim.api.nvim_buf_get_name(diag.bufnr)
-    local sev = diag_severity_to_string(diag.severity)
-    if sev then
-      local entry = lookup[file_name] or { severity_number = 4 }
-      entry[sev] = (entry[sev] or 0) + 1
-      entry.severity_number = math.min(entry.severity_number, diag.severity)
-      entry.severity_string = diag_severity_to_string(entry.severity_number)
-      lookup[file_name] = entry
+    local success,file_name = pcall(vim.api.nvim_buf_get_name, diag.bufnr)
+    if success then
+      local sev = diag_severity_to_string(diag.severity)
+      if sev then
+        local entry = lookup[file_name] or { severity_number = 4 }
+        entry[sev] = (entry[sev] or 0) + 1
+        entry.severity_number = math.min(entry.severity_number, diag.severity)
+        entry.severity_string = diag_severity_to_string(entry.severity_number)
+        lookup[file_name] = entry
+      end
     end
   end
 
