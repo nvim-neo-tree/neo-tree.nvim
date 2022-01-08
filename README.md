@@ -1,7 +1,7 @@
 # Neo-tree.nvim
 
 Neo-tree is a Neovim plugin to browse the file system and other tree like
-structures in a sidebar. 
+structures in a sidebar *or* floating window. 
 
 ## Quickstart
 
@@ -24,29 +24,19 @@ Example for packer:
 
 Here are the various ways to open the tree:
 
-```
-:NeoTreeReveal
-```
-Which will find the current file in the tree and focus it. If the current file
+`:NeoTreeReveal` will find the current file in the tree and focus it. If the current file
 is not within the current working directory, you will be prompted to change the
 cwd.
 
-```
-:NeoTreeFocus
-```
-Which will open the window and switch to it. If Neo-tree is already open, it
+` :NeoTreeFocus ` will open the window and switch to it. If Neo-tree is already open, it
 will just switch focus to that window.
 
-```
-:NeoTreeShow
-```
-Which will show the window WITHOUT focusing it, leaving the focus on the current
+` :NeoTreeShow ` will show the window WITHOUT focusing it, leaving the focus on the current
 file.
 
-You can also close the tree with:
-```
-:NeoTreeClose
-```
+` :NeoTreeFloat ` will open the tree in a floating window instead of a sidebar.
+
+You can also close the tree with: `:NeoTreeClose `
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online
 at [neo-tree.txt](/doc/neo-tree.txt)
@@ -69,10 +59,7 @@ the same list you would see from `:ls`. To show with the `buffers` list, use:
 ```
 :NeoTreeShow buffers
 ```
-or
-```
-:NeoTreeFocus buffers
-```
+or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
 
 ## Status
 
