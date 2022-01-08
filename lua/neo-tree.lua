@@ -38,11 +38,11 @@ end
 M.close_all_except = function (source_name)
   local source = src(source_name)
   local target_pos = utils.get_value(M,
-    "config.sources." .. source.name .. ".window.position", "left")
+    "config." .. source.name .. ".window.position", "left")
   for _, name in ipairs(sources) do
     if name ~= source_name then
       local pos = utils.get_value(M,
-        "config.sources." .. name .. ".window.position", "left")
+        "config." .. name .. ".window.position", "left")
       if pos == target_pos then
         M.close(name)
       end
@@ -56,12 +56,11 @@ M.close = function(source_name)
 end
 
 M.close_all = function(at_position)
-  if at_position == "float" then
-    renderer.close_all_floating_windows()
-  elseif type(at_position) == "string" and at_position > "" then
+  renderer.close_all_floating_windows()
+  if type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
       local pos = utils.get_value(M,
-        "config.sources." .. name .. ".window.position", "left")
+        "config." .. name .. ".window.position", "left")
       if pos == at_position then
         M.close(name)
       end

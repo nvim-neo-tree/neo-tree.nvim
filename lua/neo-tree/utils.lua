@@ -156,7 +156,6 @@ end
 
 M.resolve_config_option = function(state, config_option, default_value)
     local opt = M.get_value(state, config_option, default_value, false)
-    print(config_option .. ": " .. vim.inspect(opt))
     if type(opt) == "function" then
        local success,val = pcall(opt, state)
        if success then
