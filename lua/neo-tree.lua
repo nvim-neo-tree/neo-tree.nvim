@@ -52,7 +52,7 @@ M.close_all_except = function (source_name)
 end
 
 M.close = function(source_name)
-  src(source_name).close()
+  return src(source_name).close()
 end
 
 M.close_all = function(at_position)
@@ -72,13 +72,26 @@ M.close_all = function(at_position)
   end
 end
 
-M.float = function(source_name)
+M.float = function(source_name, toggle_if_open)
+  source_name = src(source_name).name
+  if toggle_if_open then
+    if renderer.close_floating_window(source_name) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
   M.close_all("float")
   M.close(source_name) -- in case this source is open in a sidebar
   src(source_name).float()
 end
 
-M.focus = function(source_name, close_others)
+M.focus = function(source_name, close_others, toggle_if_open)
+  if toggle_if_open then
+    if M.close(source_name) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
   if close_others == nil then
     close_others = true
   end
@@ -110,7 +123,13 @@ M.setup = function(config)
   end
 end
 
-M.show = function(source_name, do_not_focus, close_others)
+M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
+  if toggle_if_open then
+    if M.close(source_name) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
   if close_others == nil then
     close_others = true
   end

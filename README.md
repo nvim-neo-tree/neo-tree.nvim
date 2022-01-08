@@ -63,6 +63,10 @@ file.
 
 ` :NeoTreeFloat ` will open the tree in a floating window instead of a sidebar.
 
+There are also Toggle variants of the above commands, which will close the
+window if it is already open: `NeoTreeRevealToggle` `NeoTreeShowToggle`
+`NeoTreeFocusToggle` `NeoTreeFloatToggle`
+
 You can also close the tree with: `:NeoTreeClose `
 
 Complete documentation can be find in the vim help file `:h neo-tree` or online

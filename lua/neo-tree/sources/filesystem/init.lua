@@ -48,7 +48,7 @@ end
 
 M.close = function()
   local state = get_state()
-  renderer.close(state)
+  return renderer.close(state)
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
@@ -123,7 +123,13 @@ M.navigate = function(path, path_to_reveal, callback)
   end
 end
 
-M.reveal_current_file = function()
+M.reveal_current_file = function(toggle_if_open)
+  if toggle_if_open then
+    if M.close() then
+      -- It was open, and now it's not.
+      return
+    end
+  end
   local state = get_state()
   require("neo-tree").close_all_except("filesystem")
   local path = get_path_to_reveal()

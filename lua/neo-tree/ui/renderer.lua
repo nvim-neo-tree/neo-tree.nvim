@@ -11,10 +11,12 @@ local M = {}
 local floating_windows = {}
 
 M.close = function(state)
+  local window_existed = false
   if state and state.winid then
     if M.window_exists(state) then
       local winid = utils.get_value(state, "winid", 0, true)
       vim.api.nvim_win_close(winid, true)
+      window_existed = true
     end
     state.winid = nil
   end
@@ -24,6 +26,24 @@ M.close = function(state)
       vim.api.nvim_buf_delete(bufnr, {force = true})
     end
     state.bufnr = nil
+  end
+  return window_existed
+end
+
+M.close_floating_window = function(source_name)
+  local target_index = nil
+  for index, win in ipairs(floating_windows) do
+    if win.source_name == source_name then
+      target_index = index
+      break
+    end
+  end
+  if target_index then
+    local win = table.remove(floating_windows, target_index)
+    win:unmount()
+    return true
+  else
+    return false
   end
 end
 
@@ -308,6 +328,7 @@ local create_window = function(state)
 
     win = NuiPopup(win_options)
     win:mount()
+    win.source_name = state.name
     table.insert(floating_windows, win)
 
     win:map("n", "<esc>", function(bufnr)

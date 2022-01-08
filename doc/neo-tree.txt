@@ -32,6 +32,10 @@ keybindings are:
     nnoremap | :NeoTreeClose<cr>                          
     nnoremap <leader>b :NeoTreeFocus buffers<cr>
 
+NOTE: All of the below commands also have a Toggle variant, which will close
+the window if it is already open. i.e. NeoTreeFocusToggle, NeoTreeShowToggle,
+etc.
+
 |NeoTreeFocus|                                                    *NeoTreeFocus*
 NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
 to the neo-tree window if it is already open. Takes an optional argument to
