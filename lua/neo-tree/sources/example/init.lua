@@ -25,6 +25,12 @@ M.close = function()
   renderer.close(state)
 end
 
+M.float = function()
+  local state = get_state()
+  state.force_float = true
+  M.navigate(state.path)
+end
+
 M.focus = function()
   local state = get_state()
   if renderer.window_exists(state) then

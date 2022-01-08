@@ -17,9 +17,9 @@ Other Sources ....... |Neo-tree-Sources|
 
 INTRODUCTION                                             *Neo-tree-Introduction*
 
-Neo-tree is a plugin for nvim that can display tree structures in a sidebar.
-The current version supports one source, which is a filesystem browser. Future
-versions will add suport for other sources.
+Neo-tree is a plugin for nvim that can display tree structures in a sidebar or
+a floating window. The current version includes a filesystem browser and a
+buffer list.
 
 
 COMMANDS                                                     *Neo-tree-Commands*
@@ -36,14 +36,14 @@ NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
 to the neo-tree window if it is already open. Takes an optional argument to
 specify the source to focus, such as `filesystem` or `buffers`.
 
-If you specify `window.position: floating` in your configuration, this will
+If you specify `window.position: float` in your configuration, this will
 act like |NeoTreeFloat| but will not reveal the current file.
 
 |NeoTreeShow|                                                      *NeoTreeShow*
 You can also use NeoTreeShow which will open the tree, but leave the current
 window focused. Takes an optional argument to specify the source to show.
 
-If you specify `window.position: floating` in your configuration, this will
+If you specify `window.position: float` in your configuration, this will
 act like |NeoTreeFloat| but will not reveal the current file.
 
 |NeoTreeReveal|                                                  *NeoTreeReveal*
@@ -160,9 +160,9 @@ require("neo-tree").setup({
       -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
       -- for possible options. These can also be functions that return these
       -- options.
-      position = "left", -- left, right, floating
+      position = "left", -- left, right, float
       width = 40, -- applies to left and right positions
-      -- settings that apply to floating position only
+      -- settings that apply to float position only
       popop = {
         size = {
           height = "80%",

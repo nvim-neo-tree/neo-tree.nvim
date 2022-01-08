@@ -1,7 +1,6 @@
 local highlights = require('neo-tree.ui.highlights')
-local components = require('neo-tree.sources.buffers.components')
 
-local filesystem = {
+local buffers = {
   window = {
     position = "left",
     width = 40,
@@ -62,4 +61,4 @@ local filesystem = {
   }
 }
 
-return filesystem
+return buffers

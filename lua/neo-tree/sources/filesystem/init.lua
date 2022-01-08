@@ -145,7 +145,7 @@ end
 M.navigate = function(path, path_to_reveal, callback)
   local state = get_state()
   local pos = utils.get_value(state, "window.position", "left")
-  local was_float = state.force_float or pos == "floating"
+  local was_float = state.force_float or pos == "float"
   local path_changed = false
   if path == nil then
     path = vim.fn.getcwd()
