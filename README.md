@@ -1,7 +1,7 @@
 # Neo-tree.nvim
 
 Neo-tree is a Neovim plugin to browse the file system and other tree like
-structures in a sidebar *or* floating window. 
+structures in a sidebar **or** floating window. 
 
 ## Quickstart
 
