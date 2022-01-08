@@ -45,6 +45,119 @@ local function get_priority_git_status_code(status, other_status)
   end
 end
 
+local diag_severity_to_string = function(severity)
+  if severity == vim.diagnostic.severity.ERROR then
+    return 'Error'
+  elseif severity == vim.diagnostic.severity.WARN then
+    return 'Warning'
+  elseif severity == vim.diagnostic.severity.INFO then
+    return 'Information'
+  elseif severity == vim.diagnostic.severity.HINT then
+    return 'Hint'
+  else
+    return nil
+  end
+end
+
+local tracked_functions = {}
+
+
+---Call fn, but not more than once every x milliseconds.
+---@param id string Identifier for the debounce group, such as the function name.
+---@param fn function Function to be executed.
+---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
+---@param callback function Called with the result of executing fn as: callback(success, result)
+M.debounce = function(id, fn, frequency_in_ms, callback)
+    local fn_data = tracked_functions[id]
+    if fn_data == nil then
+        -- first call for this id
+        fn_data = {
+            id = id,
+            fn = nil,
+            frequency_in_ms = frequency_in_ms,
+            postponed_callback = nil,
+            in_debounce_period = true,
+        }
+        tracked_functions[id] = fn_data
+    else
+        if fn_data.in_debounce_period then
+            -- This id was called recently and can't be executed again yet.
+            -- Just keep track of the details for this request so it
+            -- can be executed at the end of the debounce period.
+            -- Last one in wins.
+            fn_data.fn = fn
+            fn_data.frequency_in_ms = frequency_in_ms
+            fn_data.postponed_callback = callback
+            return
+        end
+    end
+
+    -- Run the requested function normally.
+    -- Use a pcall to ensure the debounce period is still respected even if
+    -- this call throws an error.
+    fn_data.in_debounce_period = true
+    local success, result = pcall(fn)
+
+    if not success then
+      print("Error in neo-tree.utils.debounce: ", result)
+    end
+
+    -- Now schedule the next earliest execution.
+    -- If there are no calls to run the same function between now
+    -- and when this deferred executes, nothing will happen.
+    -- If there are several calls, only the last one in will run.
+    vim.defer_fn(function ()
+        local current_data = tracked_functions[id]
+        local _callback = current_data.postponed_callback
+        local _fn = current_data.fn
+        current_data.postponed_callback = nil
+        current_data.fn = nil
+        current_data.in_debounce_period = false
+        if _fn ~= nil then
+            M.debounce(id, _fn, current_data.frequency_in_ms, _callback)
+        end
+    end, frequency_in_ms)
+
+    -- The callback function is outside the scope of the debounce period
+    if type(callback) == "function" then
+        callback(success, result)
+    end
+end
+
+
+---Gets diagnostic severity counts for all files
+---@return table table { file_path = { Error = int, Warning = int, Information = int, Hint = int, Unknown = int } }
+M.get_diagnostic_counts = function ()
+  local d = vim.diagnostic.get()
+  local lookup = {}
+  for _, diag in ipairs(d) do
+    local file_name = vim.api.nvim_buf_get_name(diag.bufnr)
+    local sev = diag_severity_to_string(diag.severity)
+    if sev then
+      local entry = lookup[file_name] or { severity_number = 4 }
+      entry[sev] = (entry[sev] or 0) + 1
+      entry.severity_number = math.min(entry.severity_number, diag.severity)
+      entry.severity_string = diag_severity_to_string(entry.severity_number)
+      lookup[file_name] = entry
+    end
+  end
+
+  for file_name, entry in pairs(lookup) do
+    -- Now bubble this status up to the parent directories
+    local parts = M.split(file_name, M.path_separator)
+    table.remove(parts) -- pop the last part so we don't override the file's status
+    M.reduce(parts, "", function (acc, part)
+      local path = acc .. M.path_separator .. part
+      local path_entry = lookup[path] or { severity_number = 4 }
+      path_entry.severity_number = math.min(path_entry.severity_number, entry.severity_number)
+      path_entry.severity_string = diag_severity_to_string(path_entry.severity_number)
+      lookup[path] = path_entry
+      return path
+    end)
+  end
+  return lookup
+end
+
 ---Parse "git status" output for the current working directory.
 ---@return table table Table with the path as key and the status as value.
 M.get_git_status = function ()

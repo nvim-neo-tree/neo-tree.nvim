@@ -47,6 +47,31 @@ M.current_filter = function(config, node, state)
     }
 end
 
+M.diagnostics = function(config, node, state)
+    local diag = state.diagnostics_lookup or {}
+    local diag_state = diag[node:get_id()]
+    if not diag_state then
+        return {}
+    end
+    if config.errors_only and diag_state.severity_number > 1 then
+        return {}
+    end
+    local severity = diag_state.severity_string
+    local defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. severity)
+    defined = defined and defined[1]
+    if defined and defined.text and defined.texthl then
+        return {
+            text = " " .. defined.text,
+            highlight = defined.texthl
+        }
+    else
+        return {
+            text = " " .. severity:sub(1, 1),
+            highlight = "LspDiagnosticsDefault" .. severity
+        }
+    end
+end
+
 M.git_status = function(config, node, state)
     local git_status_lookup = state.git_status_lookup
     if not git_status_lookup then

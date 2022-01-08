@@ -81,13 +81,13 @@ function, either built-in or specified in your own the setup() config. Those
 functions are called with the config, node, and state of the plugin, and return
 the text and highlight group for the component.
 
-Additionally, each source has a `before_render()` function that you can override 
-and use to gather any additonal information you want to use in your components.
-This function is currently used to gather the git status for the tree. If you 
-want to skip that, override the function and leave that part out. If you want
-to show LSP diagnostics, gather them in `before_render()`, create a component
-to display them, and reference that component in the renderer for the `file`
-and/or `directory` type.
+Additionally, each source has a `before_render()` function that you can
+override and use to gather any additonal information you want to use in your
+components. This function is currently used to gather the git status and
+diagnostics for the tree. If you want to skip that, override the function and
+leave that part out. If you want to show some other data, gather it in
+`before_render()`, create a component to display it, and reference that
+component in the renderer for the `file` and/or `directory` type.
 
 Details on how to configure everything is in the help file at `:h neo-tree` or
 online at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)

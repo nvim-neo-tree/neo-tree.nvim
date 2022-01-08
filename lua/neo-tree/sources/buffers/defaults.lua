@@ -31,6 +31,7 @@ local buffers = {
     -- data that can be used in the renderers.
     local utils = require("neo-tree.utils")
     state.git_status_lookup = utils.get_git_status()
+    state.diagnostics_lookup = utils.get_diagnostic_counts()
   end,
 -- This section provides the renderers that will be used to render the tree.
 -- The first level is the node type.
@@ -47,6 +48,7 @@ local buffers = {
         padding = " ",
       },
       { "name" },
+      { "diagnostics", errors_only = true },
     },
     file = {
       {
@@ -56,6 +58,7 @@ local buffers = {
       },
       { "name" },
       { "bufnr" },
+      { "diagnostics" },
       { "git_status", highlight = highlights.DIM_TEXT },
     },
   }

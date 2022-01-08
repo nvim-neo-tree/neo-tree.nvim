@@ -26,13 +26,17 @@ M.close = function()
   renderer.close(state)
 end
 
----Calld by autocmd when any buffer is open, closed, renamed, etc.
-M.buffers_changed = function()
+local buffers_changed_internal = function()
   for _, state in pairs(state_by_tab) do
     if state.path and renderer.window_exists(state) then
       items.get_open_buffers(state)
     end
   end
+end
+
+---Calld by autocmd when any buffer is open, closed, renamed, etc.
+M.buffers_changed = function()
+  utils.debounce("buffers_changed", buffers_changed_internal, 500)
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
@@ -115,6 +119,13 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufFilePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
+    table.insert(autocmds, string.format([[
+    if has('nvim-0.6')
+      " Use the new diagnostic subsystem for neovim 0.6 and up
+      au DiagnosticChanged * %s
+    else
+      au User LspDiagnosticsChanged * %s
+    endif]], refresh_cmd, refresh_cmd))
     if default_config.bind_to_cwd then
       table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.buffers').dir_changed()")
     end

@@ -10,6 +10,7 @@ Mappings ............ |Neo-tree-Mappings|
   Filter ............ |Neo-tree-Filter|
 Configuration ....... |Neo-tree-Configuration|
   Setup ............. |Neo-tree-Setup|
+  Diagnostics ....... |Neo-tree-Diagnostics|
   Highlights ........ |Neo-tree-Highlights|
 Other Sources ....... |Neo-tree-Sources|
   Buffers ........... |Neo-tree-Buffers|
@@ -253,6 +254,7 @@ require("neo-tree").setup({
           "clipboard",
           highlight = "NeoTreeDimText"
         },
+        { "diagnostics", errors_only = true },
         --{ "git_status" },
       },
       file = {
@@ -268,6 +270,7 @@ require("neo-tree").setup({
           "clipboard",
           highlight = "NeoTreeDimText"
         },
+        { "diagnostics" },
         {
           "git_status",
           highlight = "NeoTreeDimText"
@@ -276,6 +279,24 @@ require("neo-tree").setup({
     }
   }
 })
+<
+
+DIAGNOSTICS                                         *Neo-tree-Setup-Diagnostics*
+
+By default, Neo-tree will display diagnostic symbols next to files. It will
+display the highest severity level for files, and errors only for directories.
+If you want to use symbols instead of "E", "W", "I", and H", you'll need to
+define those somewhere in your nvim configuration. Here is an example:
+
+>
+vim.fn.sign_define("LspDiagnosticsSignError",
+    {text = " ", texthl = "LspDiagnosticsSignError"})
+vim.fn.sign_define("LspDiagnosticsSignWarning",
+    {text = " ", texthl = "LspDiagnosticsSignWarning"})
+vim.fn.sign_define("LspDiagnosticsSignInformation",
+    {text = " ", texthl = "LspDiagnosticsSignInformation"})
+vim.fn.sign_define("LspDiagnosticsSignHint",
+    {text = "", texthl = "LspDiagnosticsSignHint"})
 <
 
 HIGHLIGHTS                                                 *Neo-tree-Highlights*

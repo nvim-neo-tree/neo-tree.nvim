@@ -55,6 +55,7 @@ local filesystem = {
     -- data that can be used in the renderers.
     local utils = require("neo-tree.utils")
     state.git_status_lookup = utils.get_git_status()
+    state.diagnostics_lookup = utils.get_diagnostic_counts()
   end,
 -- This section provides the renderers that will be used to render the tree.
 -- The first level is the node type.
@@ -76,6 +77,7 @@ local filesystem = {
         "clipboard",
         highlight = highlights.DIM_TEXT
       },
+      { "diagnostics", errors_only = true },
       --{ "git_status" },
     },
     file = {
@@ -90,6 +92,7 @@ local filesystem = {
         "clipboard",
         highlight = highlights.DIM_TEXT
       },
+      { "diagnostics" },
       {
         "git_status",
         highlight = highlights.DIM_TEXT

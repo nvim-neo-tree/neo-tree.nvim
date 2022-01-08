@@ -247,6 +247,13 @@ M.redraw = function()
   end
 end
 
+---Refresh the tree, but not more often than frequency_in_ms
+---@param frequency_in_ms number The minimum time between refreshes.
+M.refresh_debounced = function(frequency_in_ms)
+  frequency_in_ms = frequency_in_ms or 500
+  utils.debounce("filesystem_refresh", M.refresh, frequency_in_ms)
+end
+
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function()
   local state = get_state()
@@ -262,7 +269,7 @@ M.setup = function(config)
   if default_config == nil then
     default_config = config
     local autocmds = {}
-    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
+    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh_debounced()"
     table.insert(autocmds, "augroup neotreefilesystem")
     table.insert(autocmds, "autocmd!")
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
@@ -270,8 +277,16 @@ M.setup = function(config)
     if default_config.bind_to_cwd then
       table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
     end
+    table.insert(autocmds, string.format([[
+    if has('nvim-0.6')
+      " Use the new diagnostic subsystem for neovim 0.6 and up
+      au DiagnosticChanged * %s
+    else
+      au User LspDiagnosticsChanged * %s
+    endif]], refresh_cmd, refresh_cmd))
     table.insert(autocmds, "augroup END")
-    vim.cmd(table.concat(autocmds, "\n"))
+    local cmds = table.concat(autocmds, "\n")
+    vim.cmd(cmds)
   end
 end
 
