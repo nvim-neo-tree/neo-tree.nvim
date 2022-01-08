@@ -152,7 +152,7 @@ Contributions are encouraged. Please see [CONTRIBUTING](CONTRIBUTING.md) for mor
 
 This project relies upon these two excellent libraries:
 - [nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI components, including the tree!
-- [plenary.nvm](https://github.com/nvim-lua/plenary.nvim) for backend utilities, such as scanning the filesystem.
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend utilities, such as scanning the filesystem.
 
 The design is heavily inspired by these excellent plugins:
 - [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
