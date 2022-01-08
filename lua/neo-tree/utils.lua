@@ -120,14 +120,14 @@ M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
     local pathParts = M.split(valuePath, ".")
     local currentTable = sourceObject
     for _, part in ipairs(pathParts) do
-        if currentTable[part] ~= nil then
-            currentTable = currentTable[part]
-        else
+        if currentTable[part] == nil then
             return defaultValue
+        else
+            currentTable = currentTable[part]
         end
     end
 
-    if defaultValue == nil then
+    if currentTable ~= nil then
       return currentTable
     end
     if strict_type_check then
@@ -154,8 +154,9 @@ M.reduce = function(list, memo, func)
   return memo
 end
 
-M.resolve_config_option = function(sourceTable, config_option, default_value, state)
-    local opt = M.get_value(sourceTable, config_option, default_value, false)
+M.resolve_config_option = function(state, config_option, default_value)
+    local opt = M.get_value(state, config_option, default_value, false)
+    print(config_option .. ": " .. vim.inspect(opt))
     if type(opt) == "function" then
        local success,val = pcall(opt, state)
        if success then
@@ -165,7 +166,7 @@ M.resolve_config_option = function(sourceTable, config_option, default_value, st
          return default_value
        end
     else
-      return opt or default_value
+      return opt
     end
 end
 ---The file system path separator for the current platform.

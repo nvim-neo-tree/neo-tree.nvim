@@ -36,15 +36,32 @@ NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
 to the neo-tree window if it is already open. Takes an optional argument to
 specify the source to focus, such as `filesystem` or `buffers`.
 
+If you specify `window.position: floating` in your configuration, this will
+act like |NeoTreeFloat| but will not reveal the current file.
+
 |NeoTreeShow|                                                      *NeoTreeShow*
 You can also use NeoTreeShow which will open the tree, but leave the current
 window focused. Takes an optional argument to specify the source to show.
+
+If you specify `window.position: floating` in your configuration, this will
+act like |NeoTreeFloat| but will not reveal the current file.
 
 |NeoTreeReveal|                                                  *NeoTreeReveal*
 NeoTreeReveal is like NeoTreeFocus, but it will also find whatever file is in
 the current buffer, expand all nodes needed to reveal it, and set the cursor on
 that file. If the current file is not in the current working directory, you will
 be prompted to change it.
+
+|NeoTreeFloat|                                                    *NeoTreeFloat*
+You can also use NeoTreeFloat which will open the tree in a floating window. The
+filesystem source will always reveal the current file if it is within the cwd
+when called in this way. Takes an optional argument to specify the source to
+show.
+
+This will work even if you specify `left` or `right` for the position in your
+config, it works as a one time override. If the current source is currently
+displayed in a sidebar, it will be closed and recreated with the same state in
+a floating window.
 
 |NeoTreeClose|                                                    *NeoTreeClose*
 Closes all Neo-tree windows. Takes an optional argument to specify the position
@@ -113,6 +130,7 @@ SETUP                                                           *Neo-tree-Setup*
 To override the defaults or add new functionality, call the setup() function
 with your overrides. For example, to add your own mappings in 'lua':
 >
+>
 require("neo-tree").setup({
   filesystem = {
     window = {
@@ -124,6 +142,7 @@ require("neo-tree").setup({
   }
 })
 <
+
 Below is a complete skeleton of all of the configuration options, ready for
 copy and paste into your lua config file.
 
@@ -138,8 +157,21 @@ require("neo-tree").setup({
   -- "NC" is a special style that works well with NormalNC set
   filesystem = {
     window = {
-      position = "left",
-      width = 40,
+      -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
+      -- for possible options. These can also be functions that return these
+      -- options.
+      position = "left", -- left, right, floating
+      width = 40, -- applies to left and right positions
+      -- settings that apply to floating position only
+      popop = {
+        size = {
+          height = "80%",
+          width = "50%"
+        },
+        position = "50%" -- 50% means center it
+        -- you can also specify border here, if you want a different setting from
+        -- the global popup_border_style.
+      },
       -- Mappings for tree window. See |Neo-tree-Mappings| for built-in 
       -- commands. You can also create your own commands by providing a 
       -- function instead of a string. See the built-in commands for examples.
