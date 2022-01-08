@@ -26,11 +26,19 @@ end
 M.close_node = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  node = tree:get_node(node:get_parent_id())
-  if node then
-    node:collapse()
+  local parent_node = tree:get_node(node:get_parent_id())
+  local target_node
+
+  if node.type == 'directory' and node:is_expanded() then
+    target_node = node
+  else
+    target_node = parent_node
+  end
+
+  if target_node then
+    target_node:collapse()
     tree:render()
-    renderer.focus_node(state, node:get_id())
+    renderer.focus_node(state, target_node:get_id())
   end
 end
 
