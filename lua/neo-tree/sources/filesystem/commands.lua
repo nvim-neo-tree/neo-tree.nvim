@@ -66,7 +66,13 @@ M.open_vsplit = function(state) cc.open_vsplit(state, fs.toggle_directory) end
 M.refresh = fs.refresh
 
 M.rename = function(state)
-  cc.rename(state, fs.refresh)
+  cc.rename(state, function(original_path, new_path)
+    -- This is where you would do something like fix references to the file
+    -- with an LSP server.
+    -- <YOUR CODE HERE>
+    -- Don't forget to call fs.refresh() after you're done.
+    fs.refresh()
+  end)
 end
 
 M.set_root = function(state)

@@ -16,9 +16,9 @@ M.add = function(state, callback)
   if node.type == 'file' then
     node = tree:get_node(node:get_parent_id())
   end
-  fs_actions.create_node(node:get_id(), function()
+  fs_actions.create_node(node:get_id(), function(dir_path, new_path)
     if callback then
-      callback(node)
+      callback(dir_path, new_path)
     end
   end)
 end
@@ -97,7 +97,7 @@ M.paste_from_clipboard = function(state, callback)
     state.clipboard = nil
     local handle_next_paste, paste_complete
 
-    paste_complete = function()
+    paste_complete = function(source, destination)
       -- open the folder so the user can see the new files
       local node = state.tree:get_node(folder)
       if not node then
@@ -105,7 +105,7 @@ M.paste_from_clipboard = function(state, callback)
         return
       end
       if callback then
-        callback()
+        callback(source, destination)
       end
       local next_item = table.remove(clipboard_list)
       if next_item then
@@ -207,11 +207,7 @@ end
 M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  fs_actions.rename_node(node.path, function()
-    if callback then
-      callback()
-    end
-  end)
+  fs_actions.rename_node(node.path, callback)
 end
 
 

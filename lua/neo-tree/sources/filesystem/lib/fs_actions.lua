@@ -46,7 +46,9 @@ M.move_node = function(source, destination, callback)
                 return
             end
             if callback then
-                vim.schedule_wrap(callback)()
+                vim.schedule_wrap(function()
+                    callback(source, dest)
+                end)()
             end
         end)
     end)
@@ -64,7 +66,9 @@ M.copy_node = function(source, _destination, callback)
                 return
             end
             if callback then
-                vim.schedule_wrap(callback)()
+                vim.schedule_wrap(function()
+                    callback(source, destination)
+                end)()
             end
         end)
     end)
@@ -97,7 +101,9 @@ M.create_node = function(in_directory, callback)
         end
 
         if callback then
-            vim.schedule_wrap(callback)()
+            vim.schedule_wrap(function()
+                callback(in_directory, destination)
+            end)()
         end
     end)
 end
@@ -178,7 +184,9 @@ M.delete_node = function(path, callback)
         end
 
         if callback then
-            vim.schedule_wrap(callback)()
+            vim.schedule_wrap(function()
+                callback(path)
+            end)()
         end
     end)
 end
@@ -204,7 +212,7 @@ M.rename_node = function(path, callback)
 
         local complete = vim.schedule_wrap( function()
             if callback then
-                callback()
+                callback(path, destination)
             end
             print("Renamed " .. new_name .. " successfully")
         end)
