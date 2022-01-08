@@ -117,6 +117,63 @@ local prepare_node = function(item, state)
     return line
 end
 
+---Sets the cursor at the specified node.
+---@param state table The current state of the source.
+---@param id string The id of the node to set the cursor at.
+---@return boolean boolean True if the node was found and focused, false
+---otherwise.
+M.focus_node = function(state, id)
+  if not id then
+    return nil
+  end
+  local tree = state.tree
+  if not tree then
+    return false
+  end
+  local node = tree:get_node(id)
+  if not node then
+    return false
+  end
+  --expand_to_root(tree, node)
+  --tree:render()
+
+  local bufnr = utils.get_value(state, "bufnr", 0, true)
+  if bufnr == 0 then
+    return false
+  end
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+  local lines = vim.api.nvim_buf_line_count(state.bufnr)
+  local linenr = 0
+  while linenr < lines do
+    linenr = linenr + 1
+    node = tree:get_node(linenr)
+    if node then
+      if node:get_id() == id then
+        local col = 0
+        if node.indent then
+          col = string.len(node.indent)
+        end
+        if M.window_exists(state) then
+          vim.api.nvim_set_current_win(state.winid)
+        else
+          M.draw(state.tree:get_nodes(), state, nil)
+        end
+          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+          if not success then
+            print("Failed to set cursor: " .. err)
+          end
+          return success
+      end
+    else
+      --must be out of nodes
+      return false
+    end
+  end
+  return false
+end
+
 M.get_expanded_nodes = function(tree)
   local node_ids = {}
 

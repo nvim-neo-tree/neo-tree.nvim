@@ -46,58 +46,6 @@ local get_path_to_reveal = function()
   return path
 end
 
-local reveal_file = function(state, path)
-  if not path then
-    return nil
-  end
-  local tree = state.tree
-  if not tree then
-    return false
-  end
-  local node = tree:get_node(path)
-  if not node then
-    return false
-  end
-  --expand_to_root(tree, node)
-  --tree:render()
-
-  local bufnr = utils.get_value(state, "bufnr", 0, true)
-  if bufnr == 0 then
-    return false
-  end
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    return false
-  end
-  local lines = vim.api.nvim_buf_line_count(state.bufnr)
-  local linenr = 0
-  while linenr < lines do
-    linenr = linenr + 1
-    node = tree:get_node(linenr)
-    if node then
-      if node:get_id() == path then
-        local col = 0
-        if node.indent then
-          col = string.len(node.indent)
-        end
-        if renderer.window_exists(state) then
-          vim.api.nvim_set_current_win(state.winid)
-        else
-          renderer.draw(state.tree:get_nodes(), state, nil)
-        end
-          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-          if not success then
-            print("Failed to set cursor: " .. err)
-          end
-          return success
-      end
-    else
-      --must be out of nodes
-      return false
-    end
-  end
-  return false
-end
-
 M.close = function()
   local state = get_state()
   renderer.close(state)
@@ -157,7 +105,7 @@ M.navigate = function(path, path_to_reveal, callback)
 
   if path_to_reveal then
     fs_scan.get_items_async(state, nil, path_to_reveal, function()
-      local found = reveal_file(state, path_to_reveal)
+      local found = renderer.focus_node(state, path_to_reveal)
       if not found and was_float then
         -- I'm not realy sure why it is not focused when it is created...
         --vim.api.nvim_set_current_win(state.winid)
@@ -198,7 +146,7 @@ M.reveal_current_file = function()
     return
   end
   if path then
-    if not reveal_file(state, path) then
+    if not renderer.focus_node(state, path) then
       M.focus(path)
     end
   end

@@ -17,6 +17,8 @@ M.clear_filter = function(state)
   fs.reset_search(true)
 end
 
+M.close_node = cc.close_node
+
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, fs.redraw)

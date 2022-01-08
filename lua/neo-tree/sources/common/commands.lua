@@ -3,6 +3,7 @@
 local vim = vim
 local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
 local utils = require('neo-tree.utils')
+local renderer = require('neo-tree.ui.renderer')
 
 local M = {}
 
@@ -20,6 +21,17 @@ M.add = function(state, callback)
       callback(node)
     end
   end)
+end
+
+M.close_node = function(state, callback)
+  local tree = state.tree
+  local node = tree:get_node()
+  node = tree:get_node(node:get_parent_id())
+  if node then
+    node:collapse()
+    tree:render()
+    renderer.focus_node(state, node:get_id())
+  end
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
