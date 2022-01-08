@@ -2,8 +2,21 @@ local highlights = require('neo-tree.ui.highlights')
 
 local filesystem = {
   window = {
-    position = "left",
-    width = 40,
+    -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
+    -- for possible options. These can also be functions that return these
+    -- options.
+    position = "left", -- left, right, floating
+    width = 40, -- applies to left and right positions
+    -- settings that apply to floating position only
+    popup = {
+      size = {
+        height = "80%",
+        width = "50%"
+      },
+      position = "50%" -- 50% means center it
+      -- you can also specify border here, if you want a different setting from
+      -- the global popup_border_style.
+    },
     -- Mappings for tree window. See https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/sources/filesystem/commands.lua
     -- for built-in commands. You can also create your own commands by
     -- providing a function instead of a string. See the built-in

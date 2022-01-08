@@ -2,19 +2,20 @@ local vim = vim
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local NuiSplit = require("nui.split")
+local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
+local popups     = require("neo-tree.ui.popups")
 
 local M = {}
+local floating_windows = {}
 
 M.close = function(state)
   if state and state.winid then
     if M.window_exists(state) then
-      local winid = utils.get_value(state, "split.winid", 0, true)
+      local winid = utils.get_value(state, "winid", 0, true)
       vim.api.nvim_win_close(winid, true)
     end
-    state.split = nil
-    state.NuiWindow = nil
     state.winid = nil
   end
   local bufnr = utils.get_value(state, "bufnr", 0, true)
@@ -23,6 +24,13 @@ M.close = function(state)
       vim.api.nvim_buf_delete(bufnr, {force = true})
     end
     state.bufnr = nil
+  end
+end
+
+M.close_all_floating_windows = function()
+  while #floating_windows > 0 do
+    local win = table.remove(floating_windows)
+    win:unmount()
   end
 end
 
@@ -36,7 +44,7 @@ end
 M.create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
-  local indent = ""
+  local indent = " "
   local indent_size = state.indent_size or 2
   for _ = 1, level do
     for _ = 1, indent_size do
@@ -168,17 +176,52 @@ local create_tree = function(state)
   })
 end
 
+local close_me_autocmd_is_set = false
+
+local close_me_when_entering_non_floating_window = function(winid)
+  if not close_me_autocmd_is_set then
+    vim.cmd([[
+      function! IsFloating(id) abort
+          let l:cfg = nvim_win_get_config(a:id)
+          return !empty(l:cfg.relative) || l:cfg.external
+      endfunction
+
+      function! NeoTreeCloseMe() abort
+          if empty(g:NeoTreeFloatingWinId)
+              return
+          endif
+          if g:NeoTreeFloatingWinId == 0
+              return
+          endif
+          if !IsFloating(nvim_get_current_win())
+              if nvim_win_is_valid(g:NeoTreeFloatingWinId)
+                  lua require("neo-tree").close_all("float")
+              endif
+              let g:NeoTreeFloatingWinId = 0
+          endif
+      endfunction
+
+      augroup NEO_TREE_CLOSE_ME
+        autocmd!
+        autocmd WinEnter * call NeoTreeCloseMe()
+      augroup END
+    ]])
+    close_me_autocmd_is_set = true
+  end
+  vim.cmd("let g:NeoTreeFloatingWinId = " .. winid)
+end
+
 local create_window = function(state)
   local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
-  local position = utils.get_value(state, "window.position", "left", true)
 
-  local split = NuiSplit({
+  local win_options = {
+    size = utils.resolve_config_option(state, "window.width", "40"),
+    position = utils.resolve_config_option(state, "window.position", "left"),
     relative = "editor",
-    position = position,
-    size = utils.get_value(state, "window.size", 40),
     win_options = {
       number = false,
+      relativenumber = false,
       wrap = false,
       winhighlight = winhl,
     },
@@ -189,22 +232,46 @@ local create_window = function(state)
       swapfile = false,
       filetype = "neo-tree",
     }
-  })
-  split:mount()
+  }
 
-  state.split = split
-  state.NuiWindow = split
-  state.winid = split.winid
-  state.bufnr = split.bufnr
+  local win
+  if state.force_float or win_options.position == "float" then
+    state.force_float = nil
+    local sourceTitle = state.name:gsub("^%l", string.upper)
+    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+    local size = { width = "50%", height = "80%" }
+    print(vim.inspect(state.window))
+    win_options.size = utils.resolve_config_option(state, "window.popup.size", size)
+    win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
+    win_options.zindex = 40
+    local b = win_options.border
+    win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
+    win = NuiPopup(win_options)
+    win:mount()
+    table.insert(floating_windows, win)
+
+    win:map("n", "<esc>", function(bufnr)
+      win:unmount()
+    end, { noremap = true })
+
+    -- why is this necessary?
+    vim.api.nvim_set_current_win(win.winid)
+    close_me_when_entering_non_floating_window(win.winid)
+  else
+    win = NuiSplit(win_options)
+    win:mount()
+  end
+
+  state.winid = win.winid
+  state.bufnr = win.bufnr
 
   if type(state.bufnr) == "number" then
     local bufname = string.format("neo-tree %s [%s]", state.name, state.tabnr)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
   end
 
-  split:on({ "BufDelete" }, function()
-    split:unmount()
-    split = nil
+  win:on({ "BufDelete" }, function()
+    win:unmount()
   end, { once = true })
 
   local map_options = { noremap = true, nowait = true }
@@ -214,12 +281,12 @@ local create_window = function(state)
       if type(func) == "string" then
         func = state.commands[func]
       end
-      split:map('n', cmd, function()
+      win:map('n', cmd, function()
         func(state)
       end, map_options)
     end
   end
-  return split
+  return win
 end
 
 ---Determines if the window exists and is valid.
@@ -230,13 +297,18 @@ M.window_exists = function(state)
   if state.winid == nil then
     window_exists = false
   else
-    local winid = utils.get_value(state, "split.winid", 0, true)
+    local winid = utils.get_value(state, "winid", 0, true)
     local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
     if not window_exists then
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
-        vim.api.nvim_buf_delete(bufnr, {force = true})
+        local success, err = pcall(vim.api.nvim_buf_delete, bufnr, {force = true})
+        if not success and err:match("E523") then
+          vim.schedule_wrap(function()
+            vim.api.nvim_buf_delete(bufnr, {force = true})
+          end)()
+        end
       end
     end
   end

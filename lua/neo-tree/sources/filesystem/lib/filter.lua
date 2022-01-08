@@ -5,14 +5,15 @@ local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")
 local inputs = require("neo-tree.ui.inputs")
+local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
 M.show_filter = function(state, search_as_you_type)
   local width = vim.fn.winwidth(0) - 2
-  local row = vim.api.nvim_win_get_height(0) - 2
-  local popup_options = inputs.popup_options("Enter Filter Pattern:", width, {
+  local row = vim.api.nvim_win_get_height(0) - 3
+  local popup_options = popups.popup_options("Enter Filter Pattern:", width, {
     relative = "win",
     position = {
       row = row,

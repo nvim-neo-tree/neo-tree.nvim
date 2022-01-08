@@ -145,9 +145,15 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     end
     return nil
   else
+    -- find a suitable window to open the file in
     if state.window.position == "right" then
       vim.cmd("wincmd t")
     else
+      vim.cmd("wincmd w")
+    end
+    local attempts = 0
+    while attempts < 4 and vim.bo.filetype == "neo-tree" do
+      attempts = attempts + 1
       vim.cmd("wincmd w")
     end
     vim.cmd(open_cmd .. " " .. node:get_id())
@@ -181,7 +187,11 @@ end
 M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  fs_actions.rename_node(node.path, callback)
+  fs_actions.rename_node(node.path, function()
+    if callback then
+      callback()
+    end
+  end)
 end
 
 

@@ -1,6 +1,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
+local renderer = require("neo-tree.ui.renderer")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -47,6 +48,7 @@ M.close_all_except = function (source_name)
       end
     end
   end
+  M.close_all("float")
 end
 
 M.close = function(source_name)
@@ -54,7 +56,9 @@ M.close = function(source_name)
 end
 
 M.close_all = function(at_position)
-  if type(at_position) == "string" and at_position > "" then
+  if at_position == "float" then
+    renderer.close_all_floating_windows()
+  elseif type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
       local pos = utils.get_value(M,
         "config.sources." .. name .. ".window.position", "left")
@@ -67,6 +71,12 @@ M.close_all = function(at_position)
       M.close(name)
     end
   end
+end
+
+M.float = function(source_name)
+  M.close_all("float")
+  M.close(source_name) -- in case this source is open in a sidebar
+  src(source_name).float()
 end
 
 M.focus = function(source_name, close_others)
