@@ -185,6 +185,9 @@ end
 ---open/closed
 M.open = function(state, toggle_directory)
   open_with_cmd(state, "e", toggle_directory)
+
+  if not toggle_directory then
+  end
 end
 
 ---Open file or directory in a split of the closest window

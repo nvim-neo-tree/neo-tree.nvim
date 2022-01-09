@@ -13,6 +13,3 @@ command! -nargs=? NeoTreeFloatToggle  lua require("neo-tree").float("<args>", tr
 command! -nargs=? NeoTreeFocusToggle  lua require("neo-tree").focus("<args>", true, true)
 command! -nargs=? NeoTreeShowToggle   lua require("neo-tree").show("<args>", true, true, true)
 command! NeoTreeRevealToggle lua require("neo-tree.sources.filesystem").reveal_current_file(true)
-
-set nospell
-set nolist
