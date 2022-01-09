@@ -2,6 +2,7 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
 local renderer = require("neo-tree.ui.renderer")
+local mapping_helper = require("neo-tree.mapping-helper")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -16,6 +17,19 @@ local M = { }
 -- Adding this as a shortcut because the module path is so long.
 M.fs = require("neo-tree.sources.filesystem")
 
+local normalize_mappings = function(config)
+  if config == nil then
+    return false
+  end
+  local mappings = utils.get_value(config, "window.mappings", nil)
+  if mappings then
+    local fixed = mapping_helper.normalize_map(mappings)
+    config.window.mappings = fixed
+    return true
+  else
+    return false
+  end
+end
 
 local ensure_config = function ()
   if not M.config then
@@ -103,6 +117,7 @@ M.focus = function(source_name, close_others, toggle_if_open)
 end
 
 M.setup = function(config)
+  config = config or {}
   -- setup the default values for all sources
   local sd = {}
   for _, source_name in ipairs(sources) do
@@ -111,11 +126,13 @@ M.setup = function(config)
     sd[source_name].components = require(mod_root .. ".components")
     sd[source_name].commands = require(mod_root .. ".commands")
     sd[source_name].name = source_name
+    normalize_mappings(sd[source_name])
+    normalize_mappings(config[source_name])
   end
   local default_config = utils.table_merge(defaults, sd)
 
   -- apply the users config
-  M.config = utils.table_merge(default_config, config or {})
+  M.config = utils.table_merge(default_config, config)
 
   -- setup the sources with the combined config
   for _, source_name in ipairs(sources) do
