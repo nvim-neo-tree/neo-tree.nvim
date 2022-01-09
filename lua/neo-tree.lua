@@ -34,7 +34,7 @@ end
 
 local ensure_config = function ()
   if not M.config then
-    M.setup({})
+    M.setup()
   end
 end
 
@@ -128,11 +128,19 @@ M.setup = function(config)
     source.components = require(mod_root .. ".components")
     source.commands = require(mod_root .. ".commands")
     source.name = source_name
-    source_defaults[source_name] = source
 
     -- Make sure all the mappings are normalized so they will merge properly.
     normalize_mappings(source)
     normalize_mappings(config[source_name])
+
+    -- if user sets renderers, completely wipe the default ones
+    if utils.get_value(config, source_name .. ".renderers.directory") then
+      source.renderers.directory = {}
+    end
+    if utils.get_value(config, source_name .. ".renderers.file") then
+      source.renderers.file = {}
+    end
+    source_defaults[source_name] = source
   end
   local default_config = utils.table_merge(defaults, source_defaults)
 
