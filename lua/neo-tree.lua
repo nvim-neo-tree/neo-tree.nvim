@@ -118,18 +118,22 @@ end
 
 M.setup = function(config)
   config = config or {}
+
   -- setup the default values for all sources
-  local sd = {}
+  local source_defaults = {}
   for _, source_name in ipairs(sources) do
     local mod_root = "neo-tree.sources." .. source_name
-    sd[source_name] = require(mod_root .. ".defaults")
-    sd[source_name].components = require(mod_root .. ".components")
-    sd[source_name].commands = require(mod_root .. ".commands")
-    sd[source_name].name = source_name
-    normalize_mappings(sd[source_name])
+    local source = require(mod_root .. ".defaults")
+    source.components = require(mod_root .. ".components")
+    source.commands = require(mod_root .. ".commands")
+    source.name = source_name
+    source_defaults[source_name] = source
+
+    -- Make sure all the mappings are normalized so they will merge properly.
+    normalize_mappings(source)
     normalize_mappings(config[source_name])
   end
-  local default_config = utils.table_merge(defaults, sd)
+  local default_config = utils.table_merge(defaults, source_defaults)
 
   -- apply the users config
   M.config = utils.table_merge(default_config, config)
