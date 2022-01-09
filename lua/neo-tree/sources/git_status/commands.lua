@@ -24,13 +24,24 @@ M.git_add_all = function (state)
 end
 
 M.git_commit = function (state)
+  local width = vim.fn.winwidth(0) - 2
+  local row = vim.api.nvim_win_get_height(0) - 3
+  local popup_options = {
+    relative = "win",
+    position = {
+      row = row,
+      col = 0
+    },
+    size = width,
+  }
+
   inputs.input("Commit message: ", "", function (msg)
     msg = msg:gsub('"', "'")
     local cmd = "git commit -m \"" .. msg .. "\""
     local result = vim.fn.systemlist(cmd)
     gs.refresh()
     popups.alert("Commit Results", result)
-  end)
+  end, popup_options)
 end
 
 M.git_unstage_file = function (state)

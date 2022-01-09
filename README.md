@@ -17,34 +17,56 @@ use {
     },
     config = function ()
       require("neo-tree").setup({
-          popup_border_style = "rounded",
-          filesystem = {
-            window = {
-              mappings = {
-                ["<2-LeftMouse>"] = "open",
-                ["<cr>"] = "open",
-                ["S"] = "open_split",
-                ["s"] = "open_vsplit",
-                ["C"] = "close_node",
-                ["<bs>"] = "navigate_up",
-                ["."] = "set_root",
-                ["H"] = "toggle_hidden",
-                ["I"] = "toggle_gitignore",
-                ["R"] = "refresh",
-                ["/"] = "filter_as_you_type",
-                ["f"] = "filter_on_submit",
-                ["<c-x>"] = "clear_filter",
-                ["a"] = "add",
-                ["d"] = "delete",
-                ["r"] = "rename",
-                ["c"] = "copy_to_clipboard",
-                ["x"] = "cut_to_clipboard",
-                ["p"] = "paste_from_clipboard",
-              }
+        popup_border_style = "rounded",
+        filesystem = {
+          window = {
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["C"] = "close_node",
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
+              ["H"] = "toggle_hidden",
+              ["I"] = "toggle_gitignore",
+              ["R"] = "refresh",
+              ["/"] = "filter_as_you_type",
+              ["f"] = "filter_on_submit",
+              ["<c-x>"] = "clear_filter",
+              ["a"] = "add",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
             }
           }
+        },
+        git_status = {
+          window = {
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["C"] = "close_node",
+              ["R"] = "refresh",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
+              ["A"]  = "git_add_all",
+              ["gu"] = "git_unstage_file",
+              ["ga"] = "git_add_file",
+              ["gr"] = "git_revert_file",
+              ["gc"] = "git_commit"
+            }
+          }
+        }
       })
-  vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
+      vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
     end
 }
 ```
@@ -82,15 +104,22 @@ basically interface implimentations whose job it is to provide a list of
 hierachical items to be rendered, along with commands that are appropriate to
 those items.
 
+### filesystem
 The default source is `filesystem`, which displays your files and folders. This
 is the default source in commands when none is specified.
 
+### buffers
 Another available source is `buffers`, which displays your open buffers. This is
 the same list you would see from `:ls`. To show with the `buffers` list, use:
 ```
 :NeoTreeShow buffers
 ```
 or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
+
+### git_status
+This view take the results of the `git status` command and display them in a
+tree. It includes commands for adding, unstaging, reverting, and committing.
+
 
 ## Status
 
