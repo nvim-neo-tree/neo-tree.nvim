@@ -22,7 +22,7 @@ end
 
 M.close = function()
   local state = get_state()
-  renderer.close(state)
+  return renderer.close(state)
 end
 
 M.float = function()
