@@ -131,15 +131,20 @@ M.get_diagnostic_counts = function ()
   local d = vim.diagnostic.get()
   local lookup = {}
   for _, diag in ipairs(d) do
-    local success,file_name = pcall(vim.api.nvim_buf_get_name, diag.bufnr)
-    if success then
-      local sev = diag_severity_to_string(diag.severity)
-      if sev then
-        local entry = lookup[file_name] or { severity_number = 4 }
-        entry[sev] = (entry[sev] or 0) + 1
-        entry.severity_number = math.min(entry.severity_number, diag.severity)
-        entry.severity_string = diag_severity_to_string(entry.severity_number)
-        lookup[file_name] = entry
+    if diag.source == "Lua Diagnostics."
+      and diag.message == "Undefined global `vim`." then
+      -- ignore this diagnostic
+    else
+      local success,file_name = pcall(vim.api.nvim_buf_get_name, diag.bufnr)
+      if success then
+        local sev = diag_severity_to_string(diag.severity)
+        if sev then
+          local entry = lookup[file_name] or { severity_number = 4 }
+          entry[sev] = (entry[sev] or 0) + 1
+          entry.severity_number = math.min(entry.severity_number, diag.severity)
+          entry.severity_string = diag_severity_to_string(entry.severity_number)
+          lookup[file_name] = entry
+        end
       end
     end
   end
@@ -160,10 +165,14 @@ M.get_diagnostic_counts = function ()
   return lookup
 end
 
+M.get_git_project_root = function()
+  return vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+end
+
 ---Parse "git status" output for the current working directory.
 ---@return table table Table with the path as key and the status as value.
-M.get_git_status = function ()
-  local project_root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+M.get_git_status = function (exclude_directories)
+  local project_root = M.get_git_project_root()
   local git_output = vim.fn.systemlist("git status --porcelain")
   local git_status = {}
   local codes = "[ACDMRTU!%?%s]"
@@ -192,19 +201,21 @@ M.get_git_status = function ()
     local absolute_path = project_root .. M.path_separator .. relative_path
     git_status[absolute_path] = status
 
-    -- Now bubble this status up to the parent directories
-    local parts = M.split(absolute_path, M.path_separator)
-    table.remove(parts) -- pop the last part so we don't override the file's status
-    M.reduce(parts, "", function (acc, part)
-      local path = acc .. M.path_separator .. part
-      local path_status = git_status[path]
-      local file_status = get_simple_git_status_code(status)
-      git_status[path] = get_priority_git_status_code(path_status, file_status)
-      return path
-    end)
+    if not exclude_directories then
+      -- Now bubble this status up to the parent directories
+      local parts = M.split(absolute_path, M.path_separator)
+      table.remove(parts) -- pop the last part so we don't override the file's status
+      M.reduce(parts, "", function (acc, part)
+        local path = acc .. M.path_separator .. part
+        local path_status = git_status[path]
+        local file_status = get_simple_git_status_code(status)
+        git_status[path] = get_priority_git_status_code(path_status, file_status)
+        return path
+      end)
+    end
   end
 
-  return git_status
+  return git_status, project_root
 end
 
 ---Resolves some variable to a string. The object can be either a string or a
@@ -298,7 +309,7 @@ M.split = function(inputString, sep)
   local fields = {}
 
   local pattern = string.format("([^%s]+)", sep)
-  string.gsub(inputString, pattern, function(c) fields[#fields + 1] = c end)
+  local _ = string.gsub(inputString, pattern, function(c) fields[#fields + 1] = c end)
 
   return fields
 end

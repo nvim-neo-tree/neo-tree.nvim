@@ -9,7 +9,8 @@ local mapping_helper = require("neo-tree.mapping-helper")
 -- for the source config, and a setup function that takes that config.
 local sources = {
   "filesystem",
-  "buffers"
+  "buffers",
+  "git_status"
 }
 
 local M = { }

@@ -305,7 +305,6 @@ local create_window = function(state)
       spell = false,
     },
     buf_options = {
-      bufhidden = "delete",
       buftype = "nowrite",
       modifiable = false,
       swapfile = false,
@@ -336,6 +335,12 @@ local create_window = function(state)
     win:map("n", "<esc>", function(bufnr)
       win:unmount()
     end, { noremap = true })
+
+    win:on({ "BufHidden" }, function()
+      vim.schedule(function ()
+        win:unmount()
+      end)
+    end, { once = true })
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)

@@ -12,8 +12,8 @@ M.show_input = function(input, callback)
   input:map("i", "<esc>", function(bufnr)
     input:unmount()
   end, { noremap = true })
-  local event = require("nui.utils.autocmd").event
 
+  local event = require("nui.utils.autocmd").event
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
     if callback then
