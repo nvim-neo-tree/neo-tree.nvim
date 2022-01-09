@@ -3,6 +3,8 @@
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar **or** floating window. 
 
+![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-filesystem.png)
+
 ## Quickstart
 
 Example for packer:
@@ -73,17 +75,31 @@ use {
 
 Here are the various ways to open the tree:
 
-`:NeoTreeReveal` will find the current file in the tree and focus it. If the current file
+```
+:NeoTreeReveal
+``` 
+This will find the current file in the tree and focus it. If the current file
 is not within the current working directory, you will be prompted to change the
 cwd.
 
-` :NeoTreeFocus ` will open the window and switch to it. If Neo-tree is already open, it
+```
+:NeoTreeFocus 
+```
+This will open the window and switch to it. If Neo-tree is already open, it
 will just switch focus to that window.
 
-` :NeoTreeShow ` will show the window WITHOUT focusing it, leaving the focus on the current
+```
+:NeoTreeShow 
+```
+This will show the window WITHOUT focusing it, leaving the focus on the current
 file.
 
-` :NeoTreeFloat ` will open the tree in a floating window instead of a sidebar.
+```
+:NeoTreeFloat
+```
+This will open the tree in a floating window instead of a sidebar:
+
+![Neo-tree floating](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-floating.png)
 
 There are also Toggle variants of the above commands, which will close the
 window if it is already open: `NeoTreeRevealToggle` `NeoTreeShowToggle`
@@ -109,6 +125,8 @@ The default source is `filesystem`, which displays your files and folders. This
 is the default source in commands when none is specified.
 
 ### buffers
+![Neo-tree buffers](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-buffers.png)
+
 Another available source is `buffers`, which displays your open buffers. This is
 the same list you would see from `:ls`. To show with the `buffers` list, use:
 ```
@@ -119,6 +137,12 @@ or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
 ### git_status
 This view take the results of the `git status` command and display them in a
 tree. It includes commands for adding, unstaging, reverting, and committing.
+
+The screenshot below shows the result of `:NeoTreeFloat git_status` while the 
+filesystem is open in a sidebar:
+
+![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
+
 
 
 ## Status
