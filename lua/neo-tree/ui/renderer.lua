@@ -301,6 +301,8 @@ local create_window = function(state)
       relativenumber = false,
       wrap = false,
       winhighlight = winhl,
+      list = false,
+      spell = false,
     },
     buf_options = {
       bufhidden = "delete",
