@@ -15,3 +15,4 @@ command! -nargs=? NeoTreeShowToggle   lua require("neo-tree").show("<args>", tru
 command! NeoTreeRevealToggle lua require("neo-tree.sources.filesystem").reveal_current_file(true)
 
 set nospell
+set nolist
