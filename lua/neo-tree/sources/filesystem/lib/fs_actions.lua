@@ -104,8 +104,6 @@ M.create_node = function(in_directory, callback)
             vim.schedule_wrap(function()
                 callback(destination)
             end)()
-        else
-            print("No callback... Created " .. destination)
         end
     end)
 end

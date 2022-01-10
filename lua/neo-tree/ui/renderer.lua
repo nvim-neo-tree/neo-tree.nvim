@@ -31,20 +31,25 @@ M.close = function(state)
 end
 
 M.close_floating_window = function(source_name)
-  local target_index = nil
-  for index, win in ipairs(floating_windows) do
+  local found_windows = {}
+  for _, win in ipairs(floating_windows) do
     if win.source_name == source_name then
-      target_index = index
-      break
+      table.insert(found_windows, win)
     end
   end
-  if target_index then
-    local win = table.remove(floating_windows, target_index)
+
+  local valid_window_was_closed = false
+  for _, win in ipairs(found_windows) do
+    if not valid_window_was_closed then
+      local winid = win.winid
+      if type(winid) == "number" and winid > 0 then
+        valid_window_was_closed = vim.api.nvim_win_is_valid(winid)
+      end
+    end
+    -- regardless of whether the window is valid or not, nui will cleanup
     win:unmount()
-    return true
-  else
-    return false
   end
+  return valid_window_was_closed
 end
 
 M.close_all_floating_windows = function()
