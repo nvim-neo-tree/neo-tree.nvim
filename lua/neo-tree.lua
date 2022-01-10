@@ -15,7 +15,7 @@ local sources = {
 local M = {}
 
 -- Adding this as a shortcut because the module path is so long.
-M.fs = require("neo-tree.sources.filesystem")
+    M.fs = require("neo-tree.sources.filesystem")
 
 local normalize_mappings = function(config)
   if config == nil then
