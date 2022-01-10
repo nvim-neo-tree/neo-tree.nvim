@@ -23,7 +23,7 @@ M.git_add_all = function (state)
   gs.refresh()
 end
 
-M.git_commit = function (state)
+M.git_commit = function (state, and_push)
   local width = vim.fn.winwidth(0) - 2
   local row = vim.api.nvim_win_get_height(0) - 3
   local popup_options = {
@@ -38,10 +38,27 @@ M.git_commit = function (state)
   inputs.input("Commit message: ", "", function (msg)
     msg = msg:gsub('"', "'")
     local cmd = "git commit -m \"" .. msg .. "\""
+    if and_push then
+      cmd = cmd .. " && git push"
+    end
     local result = vim.fn.systemlist(cmd)
     gs.refresh()
     popups.alert("Commit Results", result)
   end, popup_options)
+end
+
+M.git_commit_and_push = function (state)
+  M.git_commit(state, true)
+end
+
+M.git_push = function (state)
+  inputs.confirm("Are you sure you want to push your changes?", function (yes)
+    if yes then
+      local result = vim.fn.systemlist("git push")
+      gs.refresh()
+      popups.alert("Git Push", result)
+    end
+  end)
 end
 
 M.git_unstage_file = function (state)
