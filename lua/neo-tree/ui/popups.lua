@@ -1,9 +1,8 @@
-
 local vim = vim
 local Input = require("nui.input")
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
-local highlights= require("neo-tree.ui.highlights")
+local highlights = require("neo-tree.ui.highlights")
 
 local M = {}
 
@@ -17,7 +16,7 @@ M.popup_options = function(title, min_width, override_options)
   end
 
   local nt = require("neo-tree")
-  local popup_border_style = nt.config.popup_border_style 
+  local popup_border_style = nt.config.popup_border_style
   local popup_options = {
     relative = "cursor",
     position = {
@@ -27,7 +26,7 @@ M.popup_options = function(title, min_width, override_options)
     size = width,
     border = {
       text = {
-        top = title
+        top = title,
       },
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,
@@ -38,7 +37,7 @@ M.popup_options = function(title, min_width, override_options)
     buf_options = {
       bufhidden = "delete",
       buflisted = false,
-    }
+    },
   }
 
   if popup_border_style == "NC" then
@@ -49,7 +48,7 @@ M.popup_options = function(title, min_width, override_options)
       highlight = highlights.FLOAT_BORDER,
       text = {
         top = text,
-        top_align = "left"
+        top_align = "left",
       },
     }
   end
@@ -91,7 +90,7 @@ M.alert = function(title, message, size)
   win_options.zindex = 60
   win_options.size = {
     width = max_line_width + 4,
-    height = #lines + 1
+    height = #lines + 1,
   }
   local win = NuiPopup(win_options)
   win:mount()

@@ -2,14 +2,14 @@
 
 local vim = vim
 local cc = require("neo-tree.sources.common.commands")
-local gs = require('neo-tree.sources.git_status')
-local utils = require('neo-tree.utils')
-local inputs = require('neo-tree.ui.inputs')
-local popups = require('neo-tree.ui.popups')
+local gs = require("neo-tree.sources.git_status")
+local utils = require("neo-tree.utils")
+local inputs = require("neo-tree.ui.inputs")
+local popups = require("neo-tree.ui.popups")
 
 local M = {}
 
-M.git_add_file = function (state)
+M.git_add_file = function(state)
   local node = state.tree:get_node()
   local path = node:get_id()
   local cmd = "git add " .. path
@@ -17,27 +17,27 @@ M.git_add_file = function (state)
   gs.refresh()
 end
 
-M.git_add_all = function (state)
+M.git_add_all = function(state)
   local cmd = "git add -A"
   vim.fn.system(cmd)
   gs.refresh()
 end
 
-M.git_commit = function (state, and_push)
+M.git_commit = function(state, and_push)
   local width = vim.fn.winwidth(0) - 2
   local row = vim.api.nvim_win_get_height(0) - 3
   local popup_options = {
     relative = "win",
     position = {
       row = row,
-      col = 0
+      col = 0,
     },
     size = width,
   }
 
-  inputs.input("Commit message: ", "", function (msg)
+  inputs.input("Commit message: ", "", function(msg)
     msg = msg:gsub('"', "'")
-    local cmd = "git commit -m \"" .. msg .. "\""
+    local cmd = 'git commit -m "' .. msg .. '"'
     local title = "git commit"
     if and_push then
       cmd = cmd .. " && git push"
@@ -49,12 +49,12 @@ M.git_commit = function (state, and_push)
   end, popup_options)
 end
 
-M.git_commit_and_push = function (state)
+M.git_commit_and_push = function(state)
   M.git_commit(state, true)
 end
 
-M.git_push = function (state)
-  inputs.confirm("Are you sure you want to push your changes?", function (yes)
+M.git_push = function(state)
+  inputs.confirm("Are you sure you want to push your changes?", function(yes)
     if yes then
       local result = vim.fn.systemlist("git push")
       gs.refresh()
@@ -63,7 +63,7 @@ M.git_push = function (state)
   end)
 end
 
-M.git_unstage_file = function (state)
+M.git_unstage_file = function(state)
   local node = state.tree:get_node()
   local path = node:get_id()
   local cmd = "git reset -- " .. path
@@ -71,12 +71,12 @@ M.git_unstage_file = function (state)
   gs.refresh()
 end
 
-M.git_revert_file = function (state)
+M.git_revert_file = function(state)
   local node = state.tree:get_node()
   local path = node:get_id()
   local cmd = "git checkout HEAD -- " .. path
   local msg = string.format("Are you sure you want to revert %s?", node.name)
-  inputs.confirm(msg, function (yes)
+  inputs.confirm(msg, function(yes)
     if yes then
       vim.fn.system(cmd)
       gs.refresh()

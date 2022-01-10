@@ -5,7 +5,7 @@ local NuiSplit = require("nui.split")
 local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
-local popups     = require("neo-tree.ui.popups")
+local popups = require("neo-tree.ui.popups")
 
 local M = {}
 local floating_windows = {}
@@ -23,7 +23,7 @@ M.close = function(state)
   local bufnr = utils.get_value(state, "bufnr", 0, true)
   if bufnr > 0 then
     if vim.api.nvim_buf_is_valid(bufnr) then
-      vim.api.nvim_buf_delete(bufnr, {force = true})
+      vim.api.nvim_buf_delete(bufnr, { force = true })
     end
     state.bufnr = nil
   end
@@ -104,39 +104,38 @@ M.create_nodes = function(source_items, state, level)
 end
 
 local prepare_node = function(item, state)
-    local line = NuiLine()
-    line:append(item.indent)
+  local line = NuiLine()
+  line:append(item.indent)
 
-    local renderer = state.renderers[item.type]
-    if not renderer then
-      line:append(item.type .. ': ', "Comment")
-      line:append(item.name)
-    else
-      for _,component in ipairs(renderer) do
-        local component_func = state.components[component[1]]
-        if component_func then
-          local success, component_data = pcall(component_func, component, item, state)
-          if success then
-            if component_data[1] then
-              -- a list of text objects
-              for _,data in ipairs(component_data) do
-                line:append(data.text, data.highlight)
-              end
-            else
-              line:append(component_data.text, component_data.highlight)
+  local renderer = state.renderers[item.type]
+  if not renderer then
+    line:append(item.type .. ": ", "Comment")
+    line:append(item.name)
+  else
+    for _, component in ipairs(renderer) do
+      local component_func = state.components[component[1]]
+      if component_func then
+        local success, component_data = pcall(component_func, component, item, state)
+        if success then
+          if component_data[1] then
+            -- a list of text objects
+            for _, data in ipairs(component_data) do
+              line:append(data.text, data.highlight)
             end
           else
-            local name = component[1] or "[missing_name]"
-            local msg = string.format(
-              "Error rendering component %s: %s", name, component_data)
-            line:append(msg, highlights.NORMAL)
+            line:append(component_data.text, component_data.highlight)
           end
         else
-          print("Neo-tree: Component " .. component[1] .. " not found.")
+          local name = component[1] or "[missing_name]"
+          local msg = string.format("Error rendering component %s: %s", name, component_data)
+          line:append(msg, highlights.NORMAL)
         end
+      else
+        print("Neo-tree: Component " .. component[1] .. " not found.")
       end
     end
-    return line
+  end
+  return line
 end
 
 ---Sets the cursor at the specified node.
@@ -322,8 +321,12 @@ local close_me_when_entering_non_floating_window = function(winid)
 end
 
 local create_window = function(state)
-  local winhl = string.format("Normal:%s,NormalNC:%s,CursorLine:%s",
-    highlights.NORMAL, highlights.NORMALNC, highlights.CURSOR_LINE)
+  local winhl = string.format(
+    "Normal:%s,NormalNC:%s,CursorLine:%s",
+    highlights.NORMAL,
+    highlights.NORMALNC,
+    highlights.CURSOR_LINE
+  )
 
   local win_options = {
     size = utils.resolve_config_option(state, "window.width", "40"),
@@ -342,7 +345,7 @@ local create_window = function(state)
       modifiable = false,
       swapfile = false,
       filetype = "neo-tree",
-    }
+    },
   }
 
   local win
@@ -370,7 +373,7 @@ local create_window = function(state)
     end, { noremap = true })
 
     win:on({ "BufHidden" }, function()
-      vim.schedule(function ()
+      vim.schedule(function()
         win:unmount()
       end)
     end, { once = true })
@@ -402,7 +405,7 @@ local create_window = function(state)
       if type(func) == "string" then
         func = state.commands[func]
       end
-      win:map('n', cmd, function()
+      win:map("n", cmd, function()
         func(state)
       end, map_options)
     end
@@ -418,7 +421,7 @@ M.is_window_valid = function(winid)
     return false
   end
   if type(winid) == "number" and winid > 0 then
-     return vim.api.nvim_win_is_valid(winid)
+    return vim.api.nvim_win_is_valid(winid)
   else
     return false
   end
@@ -437,10 +440,10 @@ M.window_exists = function(state)
     if not window_exists then
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
-        local success, err = pcall(vim.api.nvim_buf_delete, bufnr, {force = true})
+        local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
         if not success and err:match("E523") then
           vim.schedule_wrap(function()
-            vim.api.nvim_buf_delete(bufnr, {force = true})
+            vim.api.nvim_buf_delete(bufnr, { force = true })
           end)()
         end
       end
