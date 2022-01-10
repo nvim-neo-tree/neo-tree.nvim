@@ -38,12 +38,14 @@ M.git_commit = function (state, and_push)
   inputs.input("Commit message: ", "", function (msg)
     msg = msg:gsub('"', "'")
     local cmd = "git commit -m \"" .. msg .. "\""
+    local title = "git commit"
     if and_push then
       cmd = cmd .. " && git push"
+      title = "git commit && git push"
     end
     local result = vim.fn.systemlist(cmd)
     gs.refresh()
-    popups.alert("Commit Results", result)
+    popups.alert(title, result)
   end, popup_options)
 end
 
@@ -56,7 +58,7 @@ M.git_push = function (state)
     if yes then
       local result = vim.fn.systemlist("git push")
       gs.refresh()
-      popups.alert("Git Push", result)
+      popups.alert("git push", result)
     end
   end)
 end
