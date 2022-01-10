@@ -22,6 +22,8 @@ use {
         popup_border_style = "rounded",
         filesystem = {
           window = {
+            position = "left",
+            width = 40,
             mappings = {
               ["<2-LeftMouse>"] = "open",
               ["<cr>"] = "open",
@@ -45,8 +47,30 @@ use {
             }
           }
         },
+        buffers = {
+          show_unloaded = true,
+          window = {
+            position = "left",
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
+              ["R"] = "refresh",
+              ["a"] = "add",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
+            }
+          },
+        },
         git_status = {
           window = {
+            position = "float",
             mappings = {
               ["<2-LeftMouse>"] = "open",
               ["<cr>"] = "open",

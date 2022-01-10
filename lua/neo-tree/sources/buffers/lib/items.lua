@@ -22,22 +22,25 @@ M.get_open_buffers = function(state)
 
   local bufs = vim.api.nvim_list_bufs()
   for _, b in ipairs(bufs) do
-    if vim.api.nvim_buf_is_loaded(b) then
-      local path = vim.api.nvim_buf_get_name(b)
-      local rootsub = path:sub(1, #state.path)
-      if rootsub == state.path then
-        -- making sure this is within the root path
+    local path = vim.api.nvim_buf_get_name(b)
+    local rootsub = path:sub(1, #state.path)
+    -- make sure this is within the root path
+    if rootsub == state.path then
+      local is_loaded = vim.api.nvim_buf_is_loaded(b)
+      if is_loaded or state.show_unloaded then
         local bufnr = vim.api.nvim_buf_get_number(b)
-        local islisted = vim.fn.buflisted(bufnr)
-        if islisted == 1 then
+        local is_listed = vim.fn.buflisted(bufnr)
+        if is_listed == 1 then
           local success, item = pcall(file_items.create_item, context, path, 'file')
-          if not success then
+          if success then
+            item.extra = {
+              bufnr = bufnr,
+              bufhandle = b,
+              is_listed = is_listed,
+            }
+          else
             print("Error creating item for " .. path .. ": " .. item)
           end
-          item.extra = {
-            bufnr = bufnr,
-            bufhandle = b,
-          }
         end
       end
     end

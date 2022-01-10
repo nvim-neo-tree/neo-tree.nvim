@@ -344,8 +344,14 @@ source and describe the options that are unique to those sources.
 BUFFERS                                                        *Neo-tree-Buffers*
 
 The buffers source shows all open buffers. This is the same list that |ls| would
-show. This view adds one componment, which is the buffer number, shown to the
+show. This view adds one component, which is the buffer number, shown to the
 right of the file name by default.
+
+If you use sessions, your previously loaded buffers may be saved as part of
+the session, but they will be unloaded at first. If you want to see these
+unloaded buffers, set `show_unloaded = true` in your `buffers` config.
+Otherwise, you will only see the buffers that have been opened since starting
+nvim.
 
 As a list of files, this source shares most of the commands with the filesystem
 source, with the exception of filtering. Some of these commands make less
