@@ -3,6 +3,8 @@
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar **or** floating window. 
 
+![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-filesystem.png)
+
 ## Quickstart
 
 Example for packer:
@@ -17,51 +19,113 @@ use {
     },
     config = function ()
       require("neo-tree").setup({
-          popup_border_style = "rounded",
-          filesystem = {
-            window = {
-              mappings = {
-                ["<2-LeftMouse>"] = "open",
-                ["<cr>"] = "open",
-                ["S"] = "open_split",
-                ["s"] = "open_vsplit",
-                ["C"] = "close_node",
-                ["<bs>"] = "navigate_up",
-                ["."] = "set_root",
-                ["H"] = "toggle_hidden",
-                ["I"] = "toggle_gitignore",
-                ["R"] = "refresh",
-                ["/"] = "filter_as_you_type",
-                ["f"] = "filter_on_submit",
-                ["<c-x>"] = "clear_filter",
-                ["a"] = "add",
-                ["d"] = "delete",
-                ["r"] = "rename",
-                ["c"] = "copy_to_clipboard",
-                ["x"] = "cut_to_clipboard",
-                ["p"] = "paste_from_clipboard",
-              }
+        popup_border_style = "rounded",
+        filesystem = {
+          window = {
+            position = "left",
+            width = 40,
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["C"] = "close_node",
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
+              ["H"] = "toggle_hidden",
+              ["I"] = "toggle_gitignore",
+              ["R"] = "refresh",
+              ["/"] = "filter_as_you_type",
+              ["f"] = "filter_on_submit",
+              ["<c-x>"] = "clear_filter",
+              ["a"] = "add",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
             }
           }
+        },
+        buffers = {
+          show_unloaded = true,
+          window = {
+            position = "left",
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
+              ["R"] = "refresh",
+              ["a"] = "add",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
+            }
+          },
+        },
+        git_status = {
+          window = {
+            position = "float",
+            mappings = {
+              ["<2-LeftMouse>"] = "open",
+              ["<cr>"] = "open",
+              ["S"] = "open_split",
+              ["s"] = "open_vsplit",
+              ["C"] = "close_node",
+              ["R"] = "refresh",
+              ["d"] = "delete",
+              ["r"] = "rename",
+              ["c"] = "copy_to_clipboard",
+              ["x"] = "cut_to_clipboard",
+              ["p"] = "paste_from_clipboard",
+              ["A"]  = "git_add_all",
+              ["gu"] = "git_unstage_file",
+              ["ga"] = "git_add_file",
+              ["gr"] = "git_revert_file",
+              ["gc"] = "git_commit"
+              ["gp"] = "git_push",
+              ["gg"] = "git_commit_and_push",
+            }
+          }
+        }
       })
-  vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
+      vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
     end
 }
 ```
 
 Here are the various ways to open the tree:
 
-`:NeoTreeReveal` will find the current file in the tree and focus it. If the current file
+```
+:NeoTreeReveal
+``` 
+This will find the current file in the tree and focus it. If the current file
 is not within the current working directory, you will be prompted to change the
 cwd.
 
-` :NeoTreeFocus ` will open the window and switch to it. If Neo-tree is already open, it
+```
+:NeoTreeFocus 
+```
+This will open the window and switch to it. If Neo-tree is already open, it
 will just switch focus to that window.
 
-` :NeoTreeShow ` will show the window WITHOUT focusing it, leaving the focus on the current
+```
+:NeoTreeShow 
+```
+This will show the window WITHOUT focusing it, leaving the focus on the current
 file.
 
-` :NeoTreeFloat ` will open the tree in a floating window instead of a sidebar.
+```
+:NeoTreeFloat
+```
+This will open the tree in a floating window instead of a sidebar:
+
+![Neo-tree floating](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-floating.png)
 
 There are also Toggle variants of the above commands, which will close the
 window if it is already open: `NeoTreeRevealToggle` `NeoTreeShowToggle`
@@ -82,8 +146,12 @@ basically interface implimentations whose job it is to provide a list of
 hierachical items to be rendered, along with commands that are appropriate to
 those items.
 
+### filesystem
 The default source is `filesystem`, which displays your files and folders. This
 is the default source in commands when none is specified.
+
+### buffers
+![Neo-tree buffers](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-buffers.png)
 
 Another available source is `buffers`, which displays your open buffers. This is
 the same list you would see from `:ls`. To show with the `buffers` list, use:
@@ -91,6 +159,17 @@ the same list you would see from `:ls`. To show with the `buffers` list, use:
 :NeoTreeShow buffers
 ```
 or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
+
+### git_status
+This view take the results of the `git status` command and display them in a
+tree. It includes commands for adding, unstaging, reverting, and committing.
+
+The screenshot below shows the result of `:NeoTreeFloat git_status` while the 
+filesystem is open in a sidebar:
+
+![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
+
+
 
 ## Status
 

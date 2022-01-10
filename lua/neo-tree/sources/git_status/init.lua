@@ -4,6 +4,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local items = require("neo-tree.sources.git_status.lib.items")
 
 local M = {}
 local default_config = nil
@@ -44,38 +45,7 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(path)
   local state = get_state()
-  local path_changed = false
-  if path == nil then
-    path = vim.fn.getcwd()
-  end
-  if path ~= state.path then
-    state.path = path
-    path_changed = true
-  end
-  -- Do something useful here to get items
-  local items = {
-    {
-      id = "1",
-      name = "root",
-      children = {
-        {
-          id = "1.1",
-          name = "child1",
-          children = {
-            {
-              id = "1.1.1",
-              name = "child1.1",
-            },
-            {
-              id = "1.1.2",
-              name = "child1.2",
-            },
-          },
-        },
-      },
-    },
-  }
-  renderer.show_nodes(state, items)
+  items.get_git_status(state)
 end
 
 ---Redraws the tree without scanning the filesystem again. Use this after
@@ -88,12 +58,16 @@ M.redraw = function()
   end
 end
 
----Refreshes the tree by scanning the filesystem again.
-M.refresh = function()
-  local state = get_state()
-  if state.path and renderer.window_exists(state) then
-    M.navigate(state.path)
+local refresh_internal = function()
+  for _, state in pairs(state_by_tab) do
+    if state.path and renderer.window_exists(state) then
+      items.get_git_status(state)
+    end
   end
+end
+
+M.refresh = function()
+  utils.debounce("git_status_refresh", refresh_internal, 500)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
@@ -102,24 +76,40 @@ end
 M.setup = function(config)
   if default_config == nil then
     default_config = config
+    local autocmds = {}
+    local refresh_cmd = ":lua require('neo-tree.sources.git_status').refresh()"
+    table.insert(autocmds, "augroup neotreebuffers")
+    table.insert(autocmds, "autocmd!")
+    table.insert(autocmds, "autocmd BufFilePost * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
+    table.insert(autocmds, "autocmd DirChanged * " .. refresh_cmd)
+    table.insert(autocmds, string.format([[
+    if has('nvim-0.6')
+      " Use the new diagnostic subsystem for neovim 0.6 and up
+      au DiagnosticChanged * %s
+    else
+      au User LspDiagnosticsChanged * %s
+    endif]], refresh_cmd, refresh_cmd))
+    table.insert(autocmds, "augroup END")
+    vim.cmd(table.concat(autocmds, "\n"))
   end
 end
 
 ---Opens the tree and displays the current path or cwd.
----@param callback function Callback to call after the items are loaded.
-M.show = function(callback)
+M.show = function()
   local state = get_state()
   M.navigate(state.path)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(node)
+M.toggle_directory = function (node)
   local state = get_state()
   local tree = state.tree
   if not node then
     node = tree:get_node()
   end
-  if node.type ~= "directory" then
+  if node.type ~= 'directory' then
     return
   end
   if node.loaded == false then

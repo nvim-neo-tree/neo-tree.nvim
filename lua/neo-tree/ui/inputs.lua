@@ -12,8 +12,8 @@ M.show_input = function(input, callback)
   input:map("i", "<esc>", function(bufnr)
     input:unmount()
   end, { noremap = true })
-  local event = require("nui.utils.autocmd").event
 
+  local event = require("nui.utils.autocmd").event
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
     if callback then
@@ -22,8 +22,8 @@ M.show_input = function(input, callback)
   end, { once = true })
 end
 
-M.input = function(message, default_value, callback)
-  local popup_options = popups.popup_options(message)
+M.input = function(message, default_value, callback, options)
+  local popup_options = popups.popup_options(message, 10, options)
 
   local input = Input(popup_options, {
     prompt = " ",

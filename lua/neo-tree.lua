@@ -10,9 +10,10 @@ local mapping_helper = require("neo-tree.mapping-helper")
 local sources = {
   "filesystem",
   "buffers",
+  "git_status"
 }
 
-local M = {}
+local M = { }
 
 -- Adding this as a shortcut because the module path is so long.
 M.fs = require("neo-tree.sources.filesystem")
@@ -31,9 +32,9 @@ local normalize_mappings = function(config)
   end
 end
 
-local ensure_config = function()
+local ensure_config = function ()
   if not M.config then
-    M.setup({})
+    M.setup()
   end
 end
 
@@ -49,12 +50,14 @@ local src = function(source_name)
   return source
 end
 
-M.close_all_except = function(source_name)
+M.close_all_except = function (source_name)
   local source = src(source_name)
-  local target_pos = utils.get_value(M, "config." .. source.name .. ".window.position", "left")
+  local target_pos = utils.get_value(M,
+    "config." .. source.name .. ".window.position", "left")
   for _, name in ipairs(sources) do
     if name ~= source_name then
-      local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
+      local pos = utils.get_value(M,
+        "config." .. name .. ".window.position", "left")
       if pos == target_pos then
         M.close(name)
       end
@@ -71,7 +74,8 @@ M.close_all = function(at_position)
   renderer.close_all_floating_windows()
   if type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
-      local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
+      local pos = utils.get_value(M,
+        "config." .. name .. ".window.position", "left")
       if pos == at_position then
         M.close(name)
       end
@@ -124,11 +128,19 @@ M.setup = function(config)
     source.components = require(mod_root .. ".components")
     source.commands = require(mod_root .. ".commands")
     source.name = source_name
-    source_defaults[source_name] = source
 
     -- Make sure all the mappings are normalized so they will merge properly.
     normalize_mappings(source)
     normalize_mappings(config[source_name])
+
+    -- if user sets renderers, completely wipe the default ones
+    if utils.get_value(config, source_name .. ".renderers.directory") then
+      source.renderers.directory = {}
+    end
+    if utils.get_value(config, source_name .. ".renderers.file") then
+      source.renderers.file = {}
+    end
+    source_defaults[source_name] = source
   end
   local default_config = utils.table_merge(defaults, source_defaults)
 
@@ -157,7 +169,7 @@ M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
   end
   if do_not_focus then
     local current_win = vim.api.nvim_get_current_win()
-    source.show(function()
+    source.show(function ()
       vim.api.nvim_set_current_win(current_win)
     end)
   else

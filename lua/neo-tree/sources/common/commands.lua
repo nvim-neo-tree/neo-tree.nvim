@@ -16,11 +16,7 @@ M.add = function(state, callback)
   if node.type == "file" then
     node = tree:get_node(node:get_parent_id())
   end
-  fs_actions.create_node(node:get_id(), function(dir_path, new_path)
-    if callback then
-      callback(dir_path, new_path)
-    end
-  end)
+  fs_actions.create_node(node:get_id(), callback)
 end
 
 M.close_node = function(state, callback)

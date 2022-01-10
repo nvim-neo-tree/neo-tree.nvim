@@ -22,25 +22,29 @@ M.show_filter = function(state, search_as_you_type)
     size = width,
   })
 
-  if not state.search_pattern then
+  if not state.search_pattern or state.search_pattern == ""
+    and not state.open_folders_before_search then
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 
   local input = Input(popup_options, {
     prompt = " ",
     default_value = state.search_pattern,
-    --on_close = function()
-    --  if state.search_pattern then
-    --    state.search_pattern = nil
-    --    fs.refresh()
-    --  end
-    --end,
     on_submit = function(value)
       if value == "" then
         fs.reset_search()
       else
         state.search_pattern = value
-        fs.refresh()
+        fs.refresh(function ()
+          -- focus first file
+          local nodes = renderer.get_all_visible_nodes(state.tree)
+          for _, node in ipairs(nodes) do
+            if node.type == "file" then
+              renderer.focus_node(state, node:get_id(), false)
+              break
+            end
+          end
+        end)
       end
     end,
     --this can be bad in a deep folder structure
