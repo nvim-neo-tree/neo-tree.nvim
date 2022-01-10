@@ -31,20 +31,22 @@ M.close = function(state)
 end
 
 M.close_floating_window = function(source_name)
-  local target_index = nil
-  for index, win in ipairs(floating_windows) do
+  local found_windows = {}
+  for _, win in ipairs(floating_windows) do
     if win.source_name == source_name then
-      target_index = index
-      break
+      table.insert(found_windows, win)
     end
   end
-  if target_index then
-    local win = table.remove(floating_windows, target_index)
+
+  local valid_window_was_closed = false
+  for _, win in ipairs(found_windows) do
+    if not valid_window_was_closed then
+      valid_window_was_closed = M.is_window_valid(win.winid)
+    end
+    -- regardless of whether the window is valid or not, nui will cleanup
     win:unmount()
-    return true
-  else
-    return false
   end
+  return valid_window_was_closed
 end
 
 M.close_all_floating_windows = function()
@@ -142,7 +144,7 @@ end
 ---@param id string The id of the node to set the cursor at.
 ---@return boolean boolean True if the node was found and focused, false
 ---otherwise.
-M.focus_node = function(state, id)
+M.focus_node = function(state, id, do_not_focus_window)
   if not id then
     return nil
   end
@@ -175,16 +177,27 @@ M.focus_node = function(state, id)
         if node.indent then
           col = string.len(node.indent)
         end
-        if M.window_exists(state) then
-          vim.api.nvim_set_current_win(state.winid)
-        else
-          M.draw(state.tree:get_nodes(), state, nil)
-        end
-          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-          if not success then
-            print("Failed to set cursor: " .. err)
+        local focus_window = not do_not_focus_window
+        if focus_window then
+          if M.window_exists(state) then
+            vim.api.nvim_set_current_win(state.winid)
+          else
+            M.draw(state.tree:get_nodes(), state, nil)
           end
-          return success
+        end
+        local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+        if success then
+          -- make sure we are not scrolled down if it can all fit on the screen
+          local win_height = vim.api.nvim_win_get_height(state.winid)
+          if win_height > linenr then
+            vim.cmd("normal! zb")
+          elseif linenr < (win_height / 2) then
+            vim.cmd("normal! zz")
+          end
+        else
+          print("Failed to set cursor: " .. err)
+        end
+        return success
       end
     else
       --must be out of nodes
@@ -192,6 +205,26 @@ M.focus_node = function(state, id)
     end
   end
   return false
+end
+
+M.get_all_visible_nodes = function(tree)
+  local nodes = {}
+
+  local function process(node)
+    table.insert(nodes, node)
+    if node:is_expanded() then
+      if node:has_children() then
+        for _, child in ipairs(tree:get_nodes(node:get_id())) do
+          process(child)
+        end
+      end
+    end
+  end
+
+  for _, node in ipairs(tree:get_nodes()) do
+    process(node)
+  end
+  return nodes
 end
 
 M.get_expanded_nodes = function(tree)
@@ -305,7 +338,6 @@ local create_window = function(state)
       spell = false,
     },
     buf_options = {
-      bufhidden = "delete",
       buftype = "nowrite",
       modifiable = false,
       swapfile = false,
@@ -320,7 +352,7 @@ local create_window = function(state)
     local sourceTitle = state.name:gsub("^%l", string.upper)
     win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
     win_options.zindex = 40
-    local size = { width = "50%", height = "80%" }
+    local size = { width = 60, height = "80%" }
 
     -- Then override with source specific options.
     local b = win_options.border
@@ -336,6 +368,12 @@ local create_window = function(state)
     win:map("n", "<esc>", function(bufnr)
       win:unmount()
     end, { noremap = true })
+
+    win:on({ "BufHidden" }, function()
+      vim.schedule(function ()
+        win:unmount()
+      end)
+    end, { once = true })
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
@@ -372,6 +410,20 @@ local create_window = function(state)
   return win
 end
 
+---Determines is the givin winid is valid and the window still exists.
+---@param winid any
+---@return boolean
+M.is_window_valid = function(winid)
+  if winid == nil then
+    return false
+  end
+  if type(winid) == "number" and winid > 0 then
+     return vim.api.nvim_win_is_valid(winid)
+  else
+    return false
+  end
+end
+
 ---Determines if the window exists and is valid.
 ---@param state table The current state of the plugin.
 ---@return boolean True if the window exists and is valid, false otherwise.
@@ -380,9 +432,8 @@ M.window_exists = function(state)
   if state.winid == nil then
     window_exists = false
   else
-    local winid = utils.get_value(state, "winid", 0, true)
-    local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
-    window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
+    local isvalid = M.is_window_valid(state.winid)
+    window_exists = isvalid and (vim.api.nvim_win_get_number(state.winid) > 0)
     if not window_exists then
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then

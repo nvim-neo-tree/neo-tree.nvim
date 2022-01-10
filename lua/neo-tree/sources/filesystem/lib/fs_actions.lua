@@ -102,7 +102,7 @@ M.create_node = function(in_directory, callback)
 
         if callback then
             vim.schedule_wrap(function()
-                callback(in_directory, destination)
+                callback(destination)
             end)()
         end
     end)

@@ -14,6 +14,7 @@ Configuration ....... |Neo-tree-Configuration|
   Highlights ........ |Neo-tree-Highlights|
 Other Sources ....... |Neo-tree-Sources|
   Buffers ........... |Neo-tree-Buffers|
+  Git Status ........ |Neo-tree-Git-Status|
 
 
 INTRODUCTION                                             *Neo-tree-Introduction*
@@ -347,8 +348,26 @@ show. This view adds one componment, which is the buffer number, shown to the
 right of the file name by default.
 
 As a list of files, this source shares most of the commands with the filesystem
-source, with gthe exception of filtering. Some of these commands make less
+source, with the exception of filtering. Some of these commands make less
 sense to use here, as things like adding new files won't be visible until you
 open them by some other means.
+
+GIT STATUS                                                  *Neo-tree-Git-Status*
+
+The git_status view shows the output of the `git status` command in the tree.
+Unlike the other sources, this will always show the project root of the
+current working directory. If the working tree is clean, this view will be
+empty.
+
+This view has most file commands except for "add", plus the following git
+specific commands:
+
+      ["A"]  = "git_add_all",
+      ["ga"] = "git_add_file",
+      ["gu"] = "git_unstage_file",
+      ["gr"] = "git_revert_file",
+      ["gc"] = "git_commit"
+      ["gp"] = "git_push",
+      ["gg"] = "git_commit_and_push",
 
 vim:tw=80:ts=2:et:ft=help:
