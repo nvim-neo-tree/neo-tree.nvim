@@ -1,4 +1,4 @@
-local highlights = require('neo-tree.ui.highlights')
+local highlights = require("neo-tree.ui.highlights")
 
 local filesystem = {
   window = {
@@ -11,9 +11,9 @@ local filesystem = {
     popup = {
       size = {
         height = "80%",
-        width = "50%"
+        width = "50%",
       },
-      position = "50%" -- 50% means center it
+      position = "50%", -- 50% means center it
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
@@ -41,9 +41,9 @@ local filesystem = {
       ["c"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
-    }
+    },
   },
---find_command = "fd",
+  --find_command = "fd",
   search_limit = 50, -- max number of search results when using filters
   filters = {
     show_hidden = false,
@@ -58,12 +58,12 @@ local filesystem = {
     state.git_status_lookup = utils.get_git_status()
     state.diagnostics_lookup = utils.get_diagnostic_counts()
   end,
--- This section provides the renderers that will be used to render the tree.
--- The first level is the node type.
--- For each node type, you can specify a list of components to render.
--- Components are rendered in the order they are specified.
--- The first field in each component is the name of the function to call.
--- The rest of the fields are passed to the function as the "config" argument.
+  -- This section provides the renderers that will be used to render the tree.
+  -- The first level is the node type.
+  -- For each node type, you can specify a list of components to render.
+  -- Components are rendered in the order they are specified.
+  -- The first field in each component is the name of the function to call.
+  -- The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
       {
@@ -76,7 +76,7 @@ local filesystem = {
       { "name" },
       {
         "clipboard",
-        highlight = highlights.DIM_TEXT
+        highlight = highlights.DIM_TEXT,
       },
       { "diagnostics", errors_only = true },
       --{ "git_status" },
@@ -91,15 +91,15 @@ local filesystem = {
       { "name" },
       {
         "clipboard",
-        highlight = highlights.DIM_TEXT
+        highlight = highlights.DIM_TEXT,
       },
       { "diagnostics" },
       {
         "git_status",
-        highlight = highlights.DIM_TEXT
-      }
+        highlight = highlights.DIM_TEXT,
+      },
     },
-  }
+  },
 }
 
 return filesystem

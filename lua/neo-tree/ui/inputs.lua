@@ -1,7 +1,7 @@
 local vim = vim
 local Input = require("nui.input")
 local NuiText = require("nui.text")
-local highlights= require("neo-tree.ui.highlights")
+local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
 
 local M = {}
@@ -39,10 +39,10 @@ M.confirm = function(message, callback)
 
   local input = Input(popup_options, {
     prompt = " y/n: ",
-    on_close = function ()
+    on_close = function()
       callback(false)
     end,
-    on_submit = function (value)
+    on_submit = function(value)
       callback(value == "y" or value == "Y")
     end,
   })

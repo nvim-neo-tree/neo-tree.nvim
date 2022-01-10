@@ -1,4 +1,4 @@
-local highlights = require('neo-tree.ui.highlights')
+local highlights = require("neo-tree.ui.highlights")
 
 local filesystem = {
   window = {
@@ -27,7 +27,7 @@ local filesystem = {
       ["gc"] = "git_commit",
       ["gp"] = "git_push",
       ["gg"] = "git_commit_and_push",
-    }
+    },
   },
   before_render = function(state)
     -- This function is called after the file system has been scanned,
@@ -36,12 +36,12 @@ local filesystem = {
     local utils = require("neo-tree.utils")
     state.diagnostics_lookup = utils.get_diagnostic_counts()
   end,
--- This section provides the renderers that will be used to render the tree.
--- The first level is the node type.
--- For each node type, you can specify a list of components to render.
--- Components are rendered in the order they are specified.
--- The first field in each component is the name of the function to call.
--- The rest of the fields are passed to the function as the "config" argument.
+  -- This section provides the renderers that will be used to render the tree.
+  -- The first level is the node type.
+  -- For each node type, you can specify a list of components to render.
+  -- Components are rendered in the order they are specified.
+  -- The first field in each component is the name of the function to call.
+  -- The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
       {
@@ -63,10 +63,10 @@ local filesystem = {
       { "diagnostics" },
       {
         "git_status",
-        highlight = highlights.DIM_TEXT
-      }
+        highlight = highlights.DIM_TEXT,
+      },
     },
-  }
+  },
 }
 
 return filesystem

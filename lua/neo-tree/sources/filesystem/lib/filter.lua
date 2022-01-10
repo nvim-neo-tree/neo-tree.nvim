@@ -17,13 +17,12 @@ M.show_filter = function(state, search_as_you_type)
     relative = "win",
     position = {
       row = row,
-      col = 0
+      col = 0,
     },
     size = width,
   })
 
-  if not state.search_pattern or state.search_pattern == ""
-    and not state.open_folders_before_search then
+  if not state.search_pattern or state.search_pattern == "" and not state.open_folders_before_search then
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 
@@ -35,7 +34,7 @@ M.show_filter = function(state, search_as_you_type)
         fs.reset_search()
       else
         state.search_pattern = value
-        fs.refresh(function ()
+        fs.refresh(function()
           -- focus first file
           local nodes = renderer.get_all_visible_nodes(state.tree)
           for _, node in ipairs(nodes) do

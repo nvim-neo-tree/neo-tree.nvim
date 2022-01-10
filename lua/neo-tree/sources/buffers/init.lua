@@ -119,13 +119,20 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufFilePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
-    table.insert(autocmds, string.format([[
+    table.insert(
+      autocmds,
+      string.format(
+        [[
     if has('nvim-0.6')
       " Use the new diagnostic subsystem for neovim 0.6 and up
       au DiagnosticChanged * %s
     else
       au User LspDiagnosticsChanged * %s
-    endif]], refresh_cmd, refresh_cmd))
+    endif]],
+        refresh_cmd,
+        refresh_cmd
+      )
+    )
     if default_config.bind_to_cwd then
       table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.buffers').dir_changed()")
     end
@@ -141,13 +148,13 @@ M.show = function()
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function (node)
+M.toggle_directory = function(node)
   local state = get_state()
   local tree = state.tree
   if not node then
     node = tree:get_node()
   end
-  if node.type ~= 'directory' then
+  if node.type ~= "directory" then
     return
   end
   if node.loaded == false then

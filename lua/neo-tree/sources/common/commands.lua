@@ -1,9 +1,9 @@
 --This file should contain all commands meant to be used by mappings.
 
 local vim = vim
-local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
-local utils = require('neo-tree.utils')
-local renderer = require('neo-tree.ui.renderer')
+local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
+local utils = require("neo-tree.utils")
+local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
@@ -13,7 +13,7 @@ local M = {}
 M.add = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == 'file' then
+  if node.type == "file" then
     node = tree:get_node(node:get_parent_id())
   end
   fs_actions.create_node(node:get_id(), callback)
@@ -25,7 +25,7 @@ M.close_node = function(state, callback)
   local parent_node = tree:get_node(node:get_parent_id())
   local target_node
 
-  if node.type == 'directory' and node:is_expanded() then
+  if node.type == "directory" and node:is_expanded() then
     target_node = node
   else
     target_node = parent_node
@@ -110,15 +110,9 @@ M.paste_from_clipboard = function(state, callback)
 
     handle_next_paste = function(item)
       if item.action == "copy" then
-        fs_actions.copy_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete)
+        fs_actions.copy_node(item.node.path, folder .. utils.path_separator .. item.node.name, paste_complete)
       elseif item.action == "cut" then
-        fs_actions.move_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete)
+        fs_actions.move_node(item.node.path, folder .. utils.path_separator .. item.node.name, paste_complete)
       end
     end
 
@@ -144,7 +138,7 @@ end
 local open_with_cmd = function(state, open_cmd, toggle_directory)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == 'directory' then
+  if node.type == "directory" then
     if toggle_directory then
       toggle_directory(node)
     elseif node:has_children() then
@@ -204,6 +198,5 @@ M.rename = function(state, callback)
   local node = tree:get_node()
   fs_actions.rename_node(node.path, callback)
 end
-
 
 return M

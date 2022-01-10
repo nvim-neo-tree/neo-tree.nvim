@@ -2,7 +2,7 @@
 local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
-local scan = require('plenary.scandir')
+local scan = require("plenary.scandir")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
 
@@ -55,7 +55,7 @@ local function do_scan(context, path_to_scan)
       else
         context.job_complete()
       end
-    end)
+    end),
   })
 end
 
@@ -63,8 +63,8 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   local context = file_items.create_context(state)
 
   -- Create root folder
-  local root = file_items.create_item(context, parent_id or state.path, 'directory')
-  root.name = vim.fn.fnamemodify(root.path, ':~')
+  local root = file_items.create_item(context, parent_id or state.path, "directory")
+  root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
@@ -100,7 +100,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
           file_items.create_item(context, path)
         end
       end,
-      on_exit = vim.schedule_wrap(context.job_complete)
+      on_exit = vim.schedule_wrap(context.job_complete),
     })
   else
     -- In the case of a refresh or navigating up, we need to make sure that all
