@@ -240,6 +240,9 @@ end
 M.refresh = function(callback)
   local state = get_state()
   if state.path and renderer.window_exists(state) then
+    if type(callback) ~= "function" then
+      callback = nil
+    end
     M.navigate(state.path, nil, callback)
   end
 end
