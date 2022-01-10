@@ -113,7 +113,7 @@ M.navigate = function(path, path_to_reveal, callback)
     end)
   else
     local previously_focused = nil
-    if state.tree then
+    if state.tree and renderer.is_window_valid(state.winid) then
       local node = state.tree:get_node()
       if node then
         -- keep the current node selected
@@ -122,7 +122,7 @@ M.navigate = function(path, path_to_reveal, callback)
     end
     fs_scan.get_items_async(state, nil, nil, function ()
       local current_winid = vim.api.nvim_get_current_win()
-      if current_winid == state.winid and previously_focused then
+      if path_changed and current_winid == state.winid and previously_focused then
         local currently_focused = state.tree:get_node():get_id()
         if currently_focused ~= previously_focused then
           renderer.focus_node(state, previously_focused, false)

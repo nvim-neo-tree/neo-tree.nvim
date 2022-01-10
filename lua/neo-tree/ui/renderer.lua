@@ -41,10 +41,7 @@ M.close_floating_window = function(source_name)
   local valid_window_was_closed = false
   for _, win in ipairs(found_windows) do
     if not valid_window_was_closed then
-      local winid = win.winid
-      if type(winid) == "number" and winid > 0 then
-        valid_window_was_closed = vim.api.nvim_win_is_valid(winid)
-      end
+      valid_window_was_closed = M.is_window_valid(win.winid)
     end
     -- regardless of whether the window is valid or not, nui will cleanup
     win:unmount()
@@ -413,6 +410,20 @@ local create_window = function(state)
   return win
 end
 
+---Determines is the givin winid is valid and the window still exists.
+---@param winid any
+---@return boolean
+M.is_window_valid = function(winid)
+  if winid == nil then
+    return false
+  end
+  if type(winid) == "number" and winid > 0 then
+     return vim.api.nvim_win_is_valid(winid)
+  else
+    return false
+  end
+end
+
 ---Determines if the window exists and is valid.
 ---@param state table The current state of the plugin.
 ---@return boolean True if the window exists and is valid, false otherwise.
@@ -421,9 +432,8 @@ M.window_exists = function(state)
   if state.winid == nil then
     window_exists = false
   else
-    local winid = utils.get_value(state, "winid", 0, true)
-    local isvalid = winid > 0 and vim.api.nvim_win_is_valid(winid)
-    window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
+    local isvalid = M.is_window_valid(state.winid)
+    window_exists = isvalid and (vim.api.nvim_win_get_number(state.winid) > 0)
     if not window_exists then
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
