@@ -14,7 +14,7 @@ M.get_git_status = function(state)
   end
   state.loading = true
   local status_lookup, project_root = utils.get_git_status(true)
-  state.path = project_root
+  state.path = project_root or state.path or vim.fn.getcwd()
   local context = file_items.create_context(state)
   -- Create root folder
   local root = file_items.create_item(context, state.path, 'directory')
