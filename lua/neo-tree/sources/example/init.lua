@@ -69,11 +69,11 @@ M.navigate = function(path)
             {
               id = "1.1.2",
               name = "child1.2",
-            }
-          }
-        }
-      }
-    }
+            },
+          },
+        },
+      },
+    },
   }
   renderer.show_nodes(state, items)
 end
@@ -113,13 +113,13 @@ M.show = function(callback)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function (node)
+M.toggle_directory = function(node)
   local state = get_state()
   local tree = state.tree
   if not node then
     node = tree:get_node()
   end
-  if node.type ~= 'directory' then
+  if node.type ~= "directory" then
     return
   end
   if node.loaded == false then

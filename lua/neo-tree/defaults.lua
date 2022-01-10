@@ -6,6 +6,5 @@ local config = {
   -- Configurtaion of floating window is done in the individual source sections.
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   -- "NC" is a special style that works well with NormalNC set
-
 }
 return config

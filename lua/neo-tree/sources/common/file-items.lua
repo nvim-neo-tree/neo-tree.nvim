@@ -1,4 +1,3 @@
-
 local vim = vim
 local utils = require("neo-tree.utils")
 
@@ -13,12 +12,11 @@ end
 local function deep_sort(tbl)
   table.sort(tbl, sort_items)
   for _, item in pairs(tbl) do
-    if item.type == 'directory' then
+    if item.type == "directory" then
       deep_sort(item.children)
     end
   end
 end
-
 
 local create_item, set_parents
 
@@ -26,7 +24,7 @@ function create_item(context, path, _type)
   local parent_path, name = utils.split_path(path)
   if _type == nil then
     local stat = vim.loop.fs_stat(path)
-    _type = stat and stat.type or 'unknown'
+    _type = stat and stat.type or "unknown"
   end
   local item = {
     id = path,
@@ -35,14 +33,14 @@ function create_item(context, path, _type)
     path = path,
     type = _type,
   }
-  if item.type == 'link' then
+  if item.type == "link" then
     item.is_link = true
     item.link_to = vim.loop.fs_realpath(path)
     if item.link_to ~= nil then
-        item.type = vim.loop.fs_stat(item.link_to).type
+      item.type = vim.loop.fs_stat(item.link_to).type
     end
   end
-  if item.type == 'directory' then
+  if item.type == "directory" then
     item.children = {}
     item.loaded = false
     context.folders[path] = item
@@ -69,7 +67,7 @@ function set_parents(context, item)
   local parent = context.folders[item.parent_path]
   if parent == nil then
     local success
-    success, parent = pcall(create_item, context, item.parent_path, 'directory')
+    success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
       print("error creating item for ", item.parent_path)
     end

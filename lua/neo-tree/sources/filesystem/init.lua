@@ -5,7 +5,7 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
-local inputs   = require("neo-tree.ui.inputs")
+local inputs = require("neo-tree.ui.inputs")
 
 local M = {}
 local default_config = nil
@@ -158,7 +158,6 @@ M.reveal_current_file = function(toggle_if_open)
   end
 end
 
-
 M.reset_search = function(refresh)
   if refresh == nil then
     refresh = true
@@ -177,7 +176,7 @@ M.show_new_children = function(node)
   if not node then
     node = state.tree:get_node()
   end
-  if node.type ~= 'directory' then
+  if node.type ~= "directory" then
     return
   end
 
@@ -231,13 +230,20 @@ M.setup = function(config)
     if default_config.bind_to_cwd then
       table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
     end
-    table.insert(autocmds, string.format([[
+    table.insert(
+      autocmds,
+      string.format(
+        [[
     if has('nvim-0.6')
       " Use the new diagnostic subsystem for neovim 0.6 and up
       au DiagnosticChanged * %s
     else
       au User LspDiagnosticsChanged * %s
-    endif]], refresh_cmd, refresh_cmd))
+    endif]],
+        refresh_cmd,
+        refresh_cmd
+      )
+    )
     table.insert(autocmds, "augroup END")
     local cmds = table.concat(autocmds, "\n")
     vim.cmd(cmds)
@@ -252,13 +258,13 @@ M.show = function(callback)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function (node)
+M.toggle_directory = function(node)
   local state = get_state()
   local tree = state.tree
   if not node then
     node = tree:get_node()
   end
-  if node.type ~= 'directory' then
+  if node.type ~= "directory" then
     return
   end
   if node.loaded == false then

@@ -14,8 +14,8 @@ M.get_open_buffers = function(state)
   state.loading = true
   local context = file_items.create_context(state)
   -- Create root folder
-  local root = file_items.create_item(context, state.path, 'directory')
-  root.name = vim.fn.fnamemodify(root.path, ':~')
+  local root = file_items.create_item(context, state.path, "directory")
+  root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
@@ -30,7 +30,7 @@ M.get_open_buffers = function(state)
         local bufnr = vim.api.nvim_buf_get_number(b)
         local islisted = vim.fn.buflisted(bufnr)
         if islisted == 1 then
-          local success, item = pcall(file_items.create_item, context, path, 'file')
+          local success, item = pcall(file_items.create_item, context, path, "file")
           if not success then
             print("Error creating item for " .. path .. ": " .. item)
           end
@@ -43,7 +43,7 @@ M.get_open_buffers = function(state)
     end
   end
 
-  state.default_expanded_nodes = { }
+  state.default_expanded_nodes = {}
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
   end
@@ -52,6 +52,5 @@ M.get_open_buffers = function(state)
   renderer.show_nodes({ root }, state)
   state.loading = false
 end
-
 
 return M

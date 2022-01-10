@@ -2,8 +2,8 @@
 
 local vim = vim
 local cc = require("neo-tree.sources.common.commands")
-local buffers = require('neo-tree.sources.buffers')
-local utils = require('neo-tree.utils')
+local buffers = require("neo-tree.sources.buffers")
+local utils = require("neo-tree.utils")
 
 local M = {}
 
@@ -53,7 +53,7 @@ end
 M.set_root = function(state)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == 'directory' then
+  if node.type == "directory" then
     buffers.navigate(node.id)
   end
 end

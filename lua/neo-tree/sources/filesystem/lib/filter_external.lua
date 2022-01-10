@@ -8,13 +8,13 @@ local get_find_command = function(state)
     return state.find_command
   end
 
-  if 1 == vim.fn.executable "fd" then
+  if 1 == vim.fn.executable("fd") then
     state.find_command = "fd"
-  elseif 1 == vim.fn.executable "fdfind" then
+  elseif 1 == vim.fn.executable("fdfind") then
     state.find_command = "fdfind"
-  elseif 1 == vim.fn.executable "find" and vim.fn.has "win32" == 0 then
+  elseif 1 == vim.fn.executable("find") and vim.fn.has("win32") == 0 then
     state.find_command = "find"
-  elseif 1 == vim.fn.executable "where" then
+  elseif 1 == vim.fn.executable("where") then
     state.find_command = "where"
   end
   return state.find_command
@@ -28,12 +28,12 @@ M.find_files = function(opts)
   local term = opts.term
 
   if term ~= "*" and not term:find("*") then
-    term = '*' .. term .. '*'
+    term = "*" .. term .. "*"
   end
 
   local args = {}
   local function append(...)
-    for _, v in ipairs({...}) do
+    for _, v in ipairs({ ... }) do
       table.insert(args, v)
     end
   end
@@ -52,7 +52,7 @@ M.find_files = function(opts)
     append(path)
     append("-type", "f,d")
     if not filters.show_hidden then
-      append("-not", "-path", '*/.*')
+      append("-not", "-path", "*/.*")
     end
     append("-iname", term)
   elseif cmd == "where" then
@@ -61,30 +61,32 @@ M.find_files = function(opts)
     return { "No search command found!" }
   end
 
-  Job:new({
-    command = cmd,
-    args = args,
-    enable_recording = false,
-    maximum_results = limit or 100,
-    on_stdout = function(err, line)
-      if opts.on_insert then
-        opts.on_insert(err, line)
-      end
-    end,
-    on_stderr = function(err, line)
-      if opts.on_insert then
-        if not err then
-          err = line
+  Job
+    :new({
+      command = cmd,
+      args = args,
+      enable_recording = false,
+      maximum_results = limit or 100,
+      on_stdout = function(err, line)
+        if opts.on_insert then
+          opts.on_insert(err, line)
         end
-        opts.on_insert(err, line)
-      end
-    end,
-    on_exit = function(j, return_val)
-      if opts.on_exit then
-        opts.on_exit(return_val)
-      end
-    end
-  }):start()
+      end,
+      on_stderr = function(err, line)
+        if opts.on_insert then
+          if not err then
+            err = line
+          end
+          opts.on_insert(err, line)
+        end
+      end,
+      on_exit = function(j, return_val)
+        if opts.on_exit then
+          opts.on_exit(return_val)
+        end
+      end,
+    })
+    :start()
 end
 
 return M

@@ -2,9 +2,9 @@
 
 local vim = vim
 local cc = require("neo-tree.sources.common.commands")
-local fs = require('neo-tree.sources.filesystem')
-local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
-local utils = require('neo-tree.utils')
+local fs = require("neo-tree.sources.filesystem")
+local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
+local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
 
 local M = {}
@@ -59,9 +59,15 @@ M.navigate_up = function(state)
   fs.navigate(parent_path)
 end
 
-M.open = function(state) cc.open(state, fs.toggle_directory) end
-M.open_split = function(state) cc.open_split(state, fs.toggle_directory) end
-M.open_vsplit = function(state) cc.open_vsplit(state, fs.toggle_directory) end
+M.open = function(state)
+  cc.open(state, fs.toggle_directory)
+end
+M.open_split = function(state)
+  cc.open_split(state, fs.toggle_directory)
+end
+M.open_vsplit = function(state)
+  cc.open_vsplit(state, fs.toggle_directory)
+end
 
 M.refresh = fs.refresh
 
@@ -78,7 +84,7 @@ end
 M.set_root = function(state)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == 'directory' then
+  if node.type == "directory" then
     if state.search_pattern then
       fs.reset_search(false)
     end

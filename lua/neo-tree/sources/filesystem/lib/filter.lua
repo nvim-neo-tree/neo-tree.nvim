@@ -17,7 +17,7 @@ M.show_filter = function(state, search_as_you_type)
     relative = "win",
     position = {
       row = row,
-      col = 0
+      col = 0,
     },
     size = width,
   })
