@@ -147,7 +147,7 @@ end
 ---@param id string The id of the node to set the cursor at.
 ---@return boolean boolean True if the node was found and focused, false
 ---otherwise.
-M.focus_node = function(state, id)
+M.focus_node = function(state, id, do_not_focus_window)
   if not id then
     return nil
   end
@@ -180,16 +180,19 @@ M.focus_node = function(state, id)
         if node.indent then
           col = string.len(node.indent)
         end
-        if M.window_exists(state) then
-          vim.api.nvim_set_current_win(state.winid)
-        else
-          M.draw(state.tree:get_nodes(), state, nil)
-        end
-          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-          if not success then
-            print("Failed to set cursor: " .. err)
+        local focus_window = not do_not_focus_window
+        if focus_window then
+          if M.window_exists(state) then
+            vim.api.nvim_set_current_win(state.winid)
+          else
+            M.draw(state.tree:get_nodes(), state, nil)
           end
-          return success
+        end
+        local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+        if not success then
+          print("Failed to set cursor: " .. err)
+        end
+        return success
       end
     else
       --must be out of nodes
@@ -197,6 +200,26 @@ M.focus_node = function(state, id)
     end
   end
   return false
+end
+
+M.get_all_visible_nodes = function(tree)
+  local nodes = {}
+
+  local function process(node)
+    table.insert(nodes, node)
+    if node:is_expanded() then
+      if node:has_children() then
+        for _, child in ipairs(tree:get_nodes(node:get_id())) do
+          process(child)
+        end
+      end
+    end
+  end
+
+  for _, node in ipairs(tree:get_nodes()) do
+    process(node)
+  end
+  return nodes
 end
 
 M.get_expanded_nodes = function(tree)

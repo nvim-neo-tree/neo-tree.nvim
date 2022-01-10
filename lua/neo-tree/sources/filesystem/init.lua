@@ -103,19 +103,35 @@ M.navigate = function(path, path_to_reveal, callback)
     path_changed = true
   end
 
+
   if path_to_reveal then
     fs_scan.get_items_async(state, nil, path_to_reveal, function()
-      local found = renderer.focus_node(state, path_to_reveal)
-      if not found and was_float then
-        -- I'm not realy sure why it is not focused when it is created...
-        --vim.api.nvim_set_current_win(state.winid)
-      end
+      renderer.focus_node(state, path_to_reveal)
       if callback then
         callback()
       end
     end)
   else
-    fs_scan.get_items_async(state, nil, nil, callback)
+    local previously_focused = nil
+    if state.tree then
+      local node = state.tree:get_node()
+      if node then
+        -- keep the current node selected
+        previously_focused = node:get_id()
+      end
+    end
+    fs_scan.get_items_async(state, nil, nil, function ()
+      local current_winid = vim.api.nvim_get_current_win()
+      if current_winid == state.winid and previously_focused then
+        local currently_focused = state.tree:get_node():get_id()
+        if currently_focused ~= previously_focused then
+          renderer.focus_node(state, previously_focused, false)
+        end
+      end
+      if callback then
+        callback()
+      end
+    end)
   end
 
   if path_changed and state.bind_to_cwd then
@@ -164,8 +180,10 @@ M.reset_search = function(refresh)
     refresh = true
   end
   local state = get_state()
-  renderer.set_expanded_nodes(state.tree, state.open_folders_before_search)
-  state.open_folders_before_search = nil
+  if state.open_folders_before_search then
+    renderer.set_expanded_nodes(state.tree, state.open_folders_before_search)
+    state.open_folders_before_search = nil
+  end
   state.search_pattern = nil
   if refresh then
     M.refresh()
@@ -219,10 +237,10 @@ M.refresh_debounced = function(frequency_in_ms)
 end
 
 ---Refreshes the tree by scanning the filesystem again.
-M.refresh = function()
+M.refresh = function(callback)
   local state = get_state()
   if state.path and renderer.window_exists(state) then
-    M.navigate(state.path)
+    M.navigate(state.path, nil, callback)
   end
 end
 
