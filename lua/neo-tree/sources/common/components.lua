@@ -151,52 +151,68 @@ end
 local indent_cache = {}
 
 M.indent = function(config, node, state)
-  local indent_size = state.indent_size or 2
   local level = node.level
+  local indent_size = state.indent_size or 2
+
+  if level == 0 or indent_size == 0 then
+    return {}
+  end
 
   if not indent_cache[level] then
-    local indent = utils.table_copy(indent_cache[level - 1])
-    for _ = 1, indent_size do
-      table.insert(indent, { text = " ", highlight = highlights.NORMAL })
-    end
+    local indent = utils.table_copy(indent_cache[level - 1] or {})
+
+    local spaces = utils.make_spaces(indent_size)
+    table.insert(indent, { text = spaces })
+
     indent_cache[level] = indent
   end
 
   local node_indent = utils.table_copy(indent_cache[level])
+  -- table.insert(node_indent, { text = " " })
 
-  if level > 1 then
-    table.insert(node_indent, { text = " ", highlight = highlights.NORMAL })
-  end
-
-  table.insert(node_indent, { text = " ", highlight = highlights.NORMAL })
   return node_indent
 end
 
+local prevent_indent = {}
+
 M.indent_with_guides = function(config, node, state)
   local indent_size = state.indent_size or 2
+
+  if indent_size == 0 then
+    return {}
+  end
+
   local level = node.level
 
-  if not indent_cache[level] then
-    local indent = utils.table_copy(indent_cache[level - 1])
-    if level > 1 then
-      table.insert(indent, { text = "│", highlight = highlights.NORMAL })
-    end
-
-    for _ = 1, indent_size - 1 do
-      table.insert(indent, { text = " ", highlight = highlights.NORMAL })
-    end
-    indent_cache[level] = indent
+  if level < 2 then
+    return M.indent(config, node, state)
   end
 
-  local node_indent = utils.table_copy(indent_cache[level])
+  local indent_marker = state.indent_marker or "│"
+  local last_indent_marker = state.last_indent_marker or "└"
+  local highlight = config.highlight or highlights.INDENT_GUIDE
 
-  if level > 1 then
-    local guide = node.is_last and "└" or "│"
-    table.insert(node_indent, { text = guide, highlight = highlights.NORMAL })
+  prevent_indent[level] = node.is_last_child
+  local indent = {}
+
+  for i = 1, level do
+    local spaces_count = indent_size
+    local marker = indent_marker
+
+    if i == level and node.is_last_child then
+      marker = last_indent_marker
+    end
+
+    if i > 1 and not prevent_indent[i] or i == level then
+      table.insert(indent, { text = marker, highlight = highlight })
+      spaces_count = spaces_count - 1
+    end
+
+    local spaces = utils.make_spaces(spaces_count)
+    table.insert(indent, { text = spaces })
   end
 
-  table.insert(node_indent, { text = " ", highlight = highlights.NORMAL })
-  return node_indent
+  return indent
 end
 
 return M
