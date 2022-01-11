@@ -42,9 +42,13 @@ local function create_highlight_group(hl_group_name, link_to_if_exists, backgrou
   if not success or not hl_group.foreground or not hl_group.background then
     for _, link_to in ipairs(link_to_if_exists) do
       success, hl_group = pcall(vim.api.nvim_get_hl_by_name, link_to, true)
-      if success and (hl_group.foreground or hl_group.background) then
-        vim.cmd("highlight default link " .. hl_group_name .. " " .. link_to)
-        return hl_group
+      if success then
+        local new_group_has_settings = background or foreground or gui
+        local link_to_has_settings = hl_group.foreground or hl_group.background
+        if link_to_has_settings or not new_group_has_settings then
+          vim.cmd("highlight default link " .. hl_group_name .. " " .. link_to)
+          return hl_group
+        end
       end
     end
 

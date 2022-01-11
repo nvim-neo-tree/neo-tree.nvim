@@ -333,6 +333,7 @@ local create_window = function(state)
     position = utils.resolve_config_option(state, "window.position", "left"),
     relative = "editor",
     win_options = {
+      cursorline = true,
       number = false,
       relativenumber = false,
       wrap = false,
