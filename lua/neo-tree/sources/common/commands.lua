@@ -162,16 +162,34 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     end
     return nil
   else
+    -- use last window if possible
+    local suitable_window_found = false
+    local nt = require("neo-tree")
+    if nt.config.open_files_in_last_window then
+      local prior_window = nt.get_prior_window()
+      if prior_window > 0 then
+        local success = pcall(vim.api.nvim_set_current_win, prior_window)
+        if success then
+          suitable_window_found = true
+        end
+      end
+    end
     -- find a suitable window to open the file in
-    if state.window.position == "right" then
-      vim.cmd("wincmd t")
-    else
-      vim.cmd("wincmd w")
+    if not suitable_window_found then
+      if state.window.position == "right" then
+        vim.cmd("wincmd t")
+      else
+        vim.cmd("wincmd w")
+      end
     end
     local attempts = 0
     while attempts < 4 and vim.bo.filetype == "neo-tree" do
       attempts = attempts + 1
       vim.cmd("wincmd w")
+    end
+    -- TODO: make this configurable, see issue #43
+    if vim.bo.filetype == "neo-tree" then
+      open_cmd = "vsplit"
     end
     vim.cmd(open_cmd .. " " .. node:get_id())
   end

@@ -148,6 +148,73 @@ M.setup = function(config)
   for _, source_name in ipairs(sources) do
     src(source_name).setup(M.config[source_name])
   end
+
+  if config.open_files_in_last_window then
+    vim.cmd([[
+      augroup NEO_TREE_TRACK_WINDOW
+        autocmd!
+        autocmd WinEnter * lua require("neo-tree").win_enter_event()
+      augroup END
+    ]])
+  elseif config.prior_windows then
+    -- Clear out prior autocmd, user must have run config again.
+    vim.cmd([[
+      augroup NEO_TREE_TRACK_WINDOW
+        autocmd!
+      augroup END
+    ]])
+    config.prior_windows = nil
+  end
+end
+
+M.get_prior_window = function()
+  local wins = M.config.prior_windows
+  print("prior wins: " .. vim.inspect(wins))
+  if wins == nil then
+    return -1
+  end
+  local win_index = #wins
+  while win_index > 0 do
+    local last_win = wins[win_index]
+    if type(last_win) == "number" then
+      local success, is_valid = pcall(vim.api.nvim_win_is_valid, last_win)
+      if success and is_valid then
+        local buf = vim.api.nvim_win_get_buf(last_win)
+        local ft = vim.api.nvim_buf_get_option(buf, "filetype")
+        if ft ~= "neo-tree" then
+          return last_win
+        end
+      end
+    end
+    win_index = win_index - 1
+  end
+  return -1
+end
+
+M.win_enter_event = function()
+  local win_id = vim.api.nvim_get_current_win()
+  local cfg = vim.api.nvim_win_get_config(win_id)
+  if cfg.relative > "" or cfg.external then
+    -- floating window, ignore
+    return
+  end
+  if vim.o.filetype == "neo-tree" then
+    -- it's a neo-tree window, ignore
+    return
+  end
+
+  M.config.prior_windows = M.config.prior_windows or {}
+  table.insert(M.config.prior_windows, win_id)
+
+  -- prune the history when it gets too big
+  if #M.config.prior_windows > 100 then
+    local new_array = {}
+    local win_count = #M.config.prior_windows
+    for i = 90, win_count do
+      table.insert(new_array, M.config.prior_windows[i])
+    end
+    M.config.prior_windows = new_array
+  end
 end
 
 M.show = function(source_name, do_not_focus, close_others, toggle_if_open)

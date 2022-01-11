@@ -8,5 +8,7 @@ local config = {
   -- "NC" is a special style that works well with NormalNC set
   enable_git_status = true,
   enable_diagnostics = true,
+  open_files_in_last_window = true, -- false = open files int top left window
+                                     -- true = open files in last window visited
 }
 return config
