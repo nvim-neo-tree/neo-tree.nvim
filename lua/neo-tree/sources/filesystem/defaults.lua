@@ -71,6 +71,7 @@ local filesystem = {
   -- The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
+      { "indent_with_guides" },
       {
         "icon",
         folder_closed = "",
@@ -87,6 +88,7 @@ local filesystem = {
       --{ "git_status" },
     },
     file = {
+      { "indent_with_guides" },
       {
         "icon",
         default = "*",
@@ -94,7 +96,7 @@ local filesystem = {
       },
       {
         "name",
-        use_git_status_colors = true
+        use_git_status_colors = true,
       },
       {
         "clipboard",

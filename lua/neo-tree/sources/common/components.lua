@@ -11,6 +11,7 @@
 --    highlight: The highlight group to apply to this text.
 
 local highlights = require("neo-tree.ui.highlights")
+local utils = require("neo-tree.utils")
 
 local M = {}
 
@@ -145,6 +146,57 @@ M.name = function(config, node, state)
     text = node.name,
     highlight = highlight,
   }
+end
+
+local indent_cache = {}
+
+M.indent = function(config, node, state)
+  local indent_size = state.indent_size or 2
+  local level = node.level
+
+  if not indent_cache[level] then
+    local indent = utils.table_copy(indent_cache[level - 1])
+    for _ = 1, indent_size do
+      table.insert(indent, { text = " ", highlights.NORMAL })
+    end
+    indent_cache[level] = indent
+  end
+
+  local node_indent = utils.table_copy(indent_cache[level])
+
+  if level > 1 then
+    table.insert(node_indent, { text = " ", highlights.NORMAL })
+  end
+
+  table.insert(node_indent, { text = " ", highlights.NORMAL })
+  return node_indent
+end
+
+M.indent_with_guides = function(config, node, state)
+  local indent_size = state.indent_size or 2
+  local level = node.level
+
+  if not indent_cache[level] then
+    local indent = utils.table_copy(indent_cache[level - 1])
+    if level > 1 then
+      table.insert(indent, { text = "│", highlights.NORMAL })
+    end
+
+    for _ = 1, indent_size - 1 do
+      table.insert(indent, { text = " ", highlights.NORMAL })
+    end
+    indent_cache[level] = indent
+  end
+
+  local node_indent = utils.table_copy(indent_cache[level])
+
+  if level > 1 then
+    local guide = node.is_last and "└" or "│"
+    table.insert(node_indent, { text = guide, highlights.NORMAL })
+  end
+
+  table.insert(node_indent, { text = " ", highlights.NORMAL })
+  return node_indent
 end
 
 return M
