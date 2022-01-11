@@ -97,8 +97,6 @@ end
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(path, path_to_reveal, callback)
   local state = get_state()
-  local pos = utils.get_value(state, "window.position", "left")
-  local was_float = state.force_float or pos == "float"
   local path_changed = false
   if path == nil then
     path = vim.fn.getcwd()
@@ -143,8 +141,8 @@ M.navigate = function(path, path_to_reveal, callback)
   end
 end
 
-M.reveal_current_file = function(toggle_if_open)
-  if toggle_if_open then
+M.reveal = function(opts)
+  if opts.toggle then
     if M.close() then
       -- It was open, and now it's not.
       return
@@ -263,10 +261,7 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
     if default_config.bind_to_cwd then
-      table.insert(
-        autocmds,
-        "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()"
-      )
+      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
     end
     table.insert(
       autocmds,
