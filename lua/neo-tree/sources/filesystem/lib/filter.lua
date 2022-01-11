@@ -22,7 +22,10 @@ M.show_filter = function(state, search_as_you_type)
     size = width,
   })
 
-  if not state.search_pattern or state.search_pattern == "" and not state.open_folders_before_search then
+  if
+    not state.search_pattern
+    or state.search_pattern == "" and not state.open_folders_before_search
+  then
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 

@@ -83,7 +83,12 @@ end
 local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
 local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
 
-local float_border_hl = create_highlight_group(M.FLOAT_BORDER, { "FloatBorder" }, normalnc_hl.background, "444444")
+local float_border_hl = create_highlight_group(
+  M.FLOAT_BORDER,
+  { "FloatBorder" },
+  normalnc_hl.background,
+  "444444"
+)
 
 create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
@@ -91,7 +96,12 @@ create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5fa
 
 create_highlight_group(M.GIT_CONFLICT, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
 
-local modified = create_highlight_group(M.GIT_MODIFIED, { "GitGutterChange", "GitSignsChange" }, nil, "d7af5f")
+local modified = create_highlight_group(
+  M.GIT_MODIFIED,
+  { "GitGutterChange", "GitSignsChange" },
+  nil,
+  "d7af5f"
+)
 
 create_highlight_group(M.GIT_UNTRACKED, {}, nil, modified.foreground, "italic")
 

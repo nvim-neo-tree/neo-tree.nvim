@@ -258,7 +258,10 @@ M.setup = function(config)
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
     table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
     if default_config.bind_to_cwd then
-      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()")
+      table.insert(
+        autocmds,
+        "autocmd DirChanged * :lua require('neo-tree.sources.filesystem').dir_changed()"
+      )
     end
     table.insert(
       autocmds,

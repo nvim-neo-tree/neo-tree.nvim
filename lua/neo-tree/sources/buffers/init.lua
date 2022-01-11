@@ -134,7 +134,10 @@ M.setup = function(config)
       )
     )
     if default_config.bind_to_cwd then
-      table.insert(autocmds, "autocmd DirChanged * :lua require('neo-tree.sources.buffers').dir_changed()")
+      table.insert(
+        autocmds,
+        "autocmd DirChanged * :lua require('neo-tree.sources.buffers').dir_changed()"
+      )
     end
     table.insert(autocmds, "augroup END")
     vim.cmd(table.concat(autocmds, "\n"))

@@ -110,9 +110,17 @@ M.paste_from_clipboard = function(state, callback)
 
     handle_next_paste = function(item)
       if item.action == "copy" then
-        fs_actions.copy_node(item.node.path, folder .. utils.path_separator .. item.node.name, paste_complete)
+        fs_actions.copy_node(
+          item.node.path,
+          folder .. utils.path_separator .. item.node.name,
+          paste_complete
+        )
       elseif item.action == "cut" then
-        fs_actions.move_node(item.node.path, folder .. utils.path_separator .. item.node.name, paste_complete)
+        fs_actions.move_node(
+          item.node.path,
+          folder .. utils.path_separator .. item.node.name,
+          paste_complete
+        )
       end
     end
 
