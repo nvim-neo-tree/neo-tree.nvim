@@ -52,7 +52,8 @@ M.close = function()
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
-M.dir_changed = function()
+
+local dir_changed_internal = function()
   local state = get_state()
   local cwd = vim.fn.getcwd()
   if state.path and cwd == state.path then
@@ -61,6 +62,10 @@ M.dir_changed = function()
   if state.path and renderer.window_exists(state) then
     M.navigate(cwd)
   end
+end
+
+M.dir_changed = function()
+  utils.debounce("filesystem_dir_changed", dir_changed_internal, 1000)
 end
 
 M.float = function()
@@ -252,7 +257,7 @@ M.setup = function(config)
   if default_config == nil then
     default_config = config
     local autocmds = {}
-    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh_debounced()"
+    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh_debounced(1000)"
     table.insert(autocmds, "augroup neotreefilesystem")
     table.insert(autocmds, "autocmd!")
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
