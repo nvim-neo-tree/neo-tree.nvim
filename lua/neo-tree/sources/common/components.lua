@@ -157,7 +157,7 @@ M.indent = function(config, node, state)
   if not indent_cache[level] then
     local indent = utils.table_copy(indent_cache[level - 1])
     for _ = 1, indent_size do
-      table.insert(indent, { text = " ", highlights.NORMAL })
+      table.insert(indent, { text = " ", highlights = highlights.NORMAL })
     end
     indent_cache[level] = indent
   end
@@ -165,10 +165,10 @@ M.indent = function(config, node, state)
   local node_indent = utils.table_copy(indent_cache[level])
 
   if level > 1 then
-    table.insert(node_indent, { text = " ", highlights.NORMAL })
+    table.insert(node_indent, { text = " ", highlights = highlights.NORMAL })
   end
 
-  table.insert(node_indent, { text = " ", highlights.NORMAL })
+  table.insert(node_indent, { text = " ", highlights = highlights.NORMAL })
   return node_indent
 end
 
@@ -179,11 +179,11 @@ M.indent_with_guides = function(config, node, state)
   if not indent_cache[level] then
     local indent = utils.table_copy(indent_cache[level - 1])
     if level > 1 then
-      table.insert(indent, { text = "│", highlights.NORMAL })
+      table.insert(indent, { text = "│", highlights = highlights.NORMAL })
     end
 
     for _ = 1, indent_size - 1 do
-      table.insert(indent, { text = " ", highlights.NORMAL })
+      table.insert(indent, { text = " ", highlights = highlights.NORMAL })
     end
     indent_cache[level] = indent
   end
@@ -192,10 +192,10 @@ M.indent_with_guides = function(config, node, state)
 
   if level > 1 then
     local guide = node.is_last and "└" or "│"
-    table.insert(node_indent, { text = guide, highlights.NORMAL })
+    table.insert(node_indent, { text = guide, highlights = highlights.NORMAL })
   end
 
-  table.insert(node_indent, { text = " ", highlights.NORMAL })
+  table.insert(node_indent, { text = " ", highlights = highlights.NORMAL })
   return node_indent
 end
 
