@@ -161,6 +161,8 @@ require("neo-tree").setup({
   default_source = "filesystem",
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   -- "NC" is a special style that works well with NormalNC set
+  enable_git_status = true,
+  enable_diagnostics = true,
   filesystem = {
     window = {
       -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
@@ -270,7 +272,10 @@ require("neo-tree").setup({
         },
         --{ "hello_node", highlight = "Normal" }, -- For example, don't actually
         -- use this!
-        { "name" },
+        {
+          "name",
+          use_git_status_colors = true
+        },
         {
           "clipboard",
           highlight = "NeoTreeDimText"
@@ -285,6 +290,18 @@ require("neo-tree").setup({
   }
 })
 <
+
+GIT STATUS                                           *Neo-tree_Setup-Git-Status*
+
+By default, Neo-tree will attempt to get the git status for files in the
+current directory. It will use this information to add markers to the right of
+your files, and will set the highlight groups of files and directories.
+
+To disable this feature entirely, set `enable_git_status = false` in your
+config when calling the setup function. To just disable colors on file or
+directory names, you can set `use_git_status_colors = false` in the `name`
+component of your renderer(s).
+
 
 DIAGNOSTICS                                         *Neo-tree-Setup-Diagnostics*
 
@@ -303,6 +320,9 @@ vim.fn.sign_define("LspDiagnosticsSignInformation",
 vim.fn.sign_define("LspDiagnosticsSignHint",
     {text = "", texthl = "LspDiagnosticsSignHint"})
 <
+
+To disable this feature entirely, set `enable_diagnostics = false` in your
+config when calling the setup function.
 
 HIGHLIGHTS                                                 *Neo-tree-Highlights*
 

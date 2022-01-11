@@ -54,9 +54,14 @@ local filesystem = {
     -- This function is called after the file system has been scanned,
     -- but before the tree is rendered. You can use this to gather extra
     -- data that can be used in the renderers.
+    local nt = require("neo-tree")
     local utils = require("neo-tree.utils")
-    state.git_status_lookup = utils.get_git_status()
-    state.diagnostics_lookup = utils.get_diagnostic_counts()
+    if nt.config.enable_git_status then
+      state.git_status_lookup = utils.get_git_status()
+    end
+    if nt.config.enable_diagnostics then
+      state.diagnostics_lookup = utils.get_diagnostic_counts()
+    end
   end,
   -- This section provides the renderers that will be used to render the tree.
   -- The first level is the node type.
@@ -87,8 +92,10 @@ local filesystem = {
         default = "*",
         padding = " ",
       },
-      --{ "hello_node", highlight = "Normal" },
-      { "name" },
+      {
+        "name",
+        use_git_status_colors = true
+      },
       {
         "clipboard",
         highlight = highlights.DIM_TEXT,

@@ -20,6 +20,8 @@ use {
     config = function ()
       require("neo-tree").setup({
         popup_border_style = "rounded",
+        enable_git_status = true,
+        enable_diagnostics = true,
         filesystem = {
           window = {
             position = "left",
@@ -98,6 +100,8 @@ use {
     end
 }
 ```
+_The above configuration is not everything that can be changed, it's just the
+parts you might want to change first._
 
 Here are the various ways to open the tree:
 

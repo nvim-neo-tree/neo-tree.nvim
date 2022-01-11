@@ -134,9 +134,11 @@ M.name = function(config, node, state)
   if node:get_depth() == 1 then
     highlight = highlights.ROOT_NAME
   else
-    local git_status = state.components.git_status({}, node, state)
-    if git_status and git_status.highlight then
-      highlight = git_status.highlight
+    if config.use_git_status_colors == nil or config.use_git_status_colors then
+      local git_status = state.components.git_status({}, node, state)
+      if git_status and git_status.highlight then
+        highlight = git_status.highlight
+      end
     end
   end
   return {
