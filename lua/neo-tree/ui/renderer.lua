@@ -60,6 +60,7 @@ M.close_all_floating_windows = function()
   end
 end
 
+local create_nodes
 ---Transforms a list of items into a collection of TreeNodes.
 ---@param source_items table The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for
@@ -67,7 +68,7 @@ end
 ---@param state table The current state of the plugin.
 ---@param level integer Optional. The current level of the tree, defaults to 0.
 ---@return table A collection of TreeNodes.
-M.create_nodes = function(source_items, state, level)
+create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
   local indent = " "
@@ -95,7 +96,7 @@ M.create_nodes = function(source_items, state, level)
 
     local node_children = nil
     if item.children ~= nil then
-      node_children = M.create_nodes(item.children, state, level + 1)
+      node_children = create_nodes(item.children, state, level + 1)
     end
 
     local node = NuiTree.Node(nodeData, node_children)
@@ -185,7 +186,7 @@ M.focus_node = function(state, id, do_not_focus_window)
           if M.window_exists(state) then
             vim.api.nvim_set_current_win(state.winid)
           else
-            M.draw(state.tree:get_nodes(), state, nil)
+            draw(state.tree:get_nodes(), state, nil)
           end
         end
         local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
@@ -460,7 +461,7 @@ end
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
 --@param state table The current state of the source.
-M.draw = function(nodes, state, parent_id)
+local draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
   if parent_id == nil and state.tree ~= nil then
@@ -489,20 +490,22 @@ M.draw = function(nodes, state, parent_id)
   state.tree:render()
 end
 
----Shows the given items as a tree. This is a convienence methid that sends the
---output of createNodes() to draw().
+---Shows the given items as a tree.
 --@param sourceItems table The list of items to transform.
 --@param state table The current state of the plugin.
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
 M.show_nodes = function(sourceItems, state, parentId)
-  local level = 0
-  if parentId ~= nil then
-    local parent = state.tree:get_node(parentId)
-    level = parent:get_depth()
-  end
-  local nodes = M.create_nodes(sourceItems, state, level)
-  M.draw(nodes, state, parentId)
+  local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
+  utils.debounce(id, function ()
+    local level = 0
+    if parentId ~= nil then
+      local parent = state.tree:get_node(parentId)
+      level = parent:get_depth()
+    end
+    local nodes = create_nodes(sourceItems, state, level)
+    draw(nodes, state, parentId)
+  end, 100)
 end
 
 return M

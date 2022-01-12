@@ -52,8 +52,7 @@ M.close = function()
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
-
-local dir_changed_internal = function()
+M.dir_changed = function()
   local state = get_state()
   local cwd = vim.fn.getcwd()
   if state.path and cwd == state.path then
@@ -62,10 +61,6 @@ local dir_changed_internal = function()
   if state.path and renderer.window_exists(state) then
     M.navigate(cwd)
   end
-end
-
-M.dir_changed = function()
-  utils.debounce("filesystem_dir_changed", dir_changed_internal, 1000)
 end
 
 M.float = function()
@@ -91,11 +86,7 @@ M.focus = function(path_to_reveal, callback)
   end
 end
 
----Navigate to the given path.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string Node to focus after the items are loaded.
----@param callback function Callback to call after the items are loaded.
-M.navigate = function(path, path_to_reveal, callback)
+local navigate_internal = function(path, path_to_reveal, callback)
   local state = get_state()
   local pos = utils.get_value(state, "window.position", "left")
   local was_float = state.force_float or pos == "float"
@@ -141,6 +132,16 @@ M.navigate = function(path, path_to_reveal, callback)
   if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
   end
+end
+
+---Navigate to the given path.
+---@param path string Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string Node to focus after the items are loaded.
+---@param callback function Callback to call after the items are loaded.
+M.navigate = function(path, path_to_reveal, callback)
+  utils.debounce("filesystem_navigate", function()
+    navigate_internal(path, path_to_reveal, callback)
+  end, 100)
 end
 
 M.reveal_current_file = function(toggle_if_open)
@@ -232,13 +233,6 @@ M.redraw = function()
   end
 end
 
----Refresh the tree, but not more often than frequency_in_ms
----@param frequency_in_ms number The minimum time between refreshes.
-M.refresh_debounced = function(frequency_in_ms)
-  frequency_in_ms = frequency_in_ms or 500
-  utils.debounce("filesystem_refresh", M.refresh, frequency_in_ms)
-end
-
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function(callback)
   local state = get_state()
@@ -257,7 +251,7 @@ M.setup = function(config)
   if default_config == nil then
     default_config = config
     local autocmds = {}
-    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh_debounced(1000)"
+    local refresh_cmd = ":lua require('neo-tree.sources.filesystem').refresh()"
     table.insert(autocmds, "augroup neotreefilesystem")
     table.insert(autocmds, "autocmd!")
     table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
