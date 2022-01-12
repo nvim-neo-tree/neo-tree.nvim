@@ -94,7 +94,7 @@ local filesystem = {
       },
       {
         "name",
-        use_git_status_colors = true
+        use_git_status_colors = true,
       },
       {
         "clipboard",

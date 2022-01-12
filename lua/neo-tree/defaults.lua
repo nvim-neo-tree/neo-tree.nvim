@@ -9,6 +9,6 @@ local config = {
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files int top left window
-                                     -- true = open files in last window visited
+  -- true = open files in last window visited
 }
 return config

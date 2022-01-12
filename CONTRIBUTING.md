@@ -15,6 +15,12 @@ This is open for debate, but here is the current style choices being observed:
 I prefer `local name = function()` over `local function name()`, just to be
 consistant with the `M.name = function()` exports.
 
+### StyLua
+
+We use (StyLua)[https://github.com/JohnnyMorganz/StyLua] to enforce consistency
+in code. You should install it on your local machine. PRs will be checked with
+this tool.
+
 ## Commit Messages
 
 We use **semantic**, aka **conventional** commit messages. The official guide

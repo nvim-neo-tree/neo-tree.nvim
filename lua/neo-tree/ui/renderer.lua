@@ -497,7 +497,7 @@ end
 --at; defaults to nil.
 M.show_nodes = function(sourceItems, state, parentId)
   local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
-  utils.debounce(id, function ()
+  utils.debounce(id, function()
     local level = 0
     if parentId ~= nil then
       local parent = state.tree:get_node(parentId)
