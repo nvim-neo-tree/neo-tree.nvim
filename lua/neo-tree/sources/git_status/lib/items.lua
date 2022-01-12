@@ -41,7 +41,6 @@ M.get_git_status = function(state)
     table.insert(state.default_expanded_nodes, id)
   end
   file_items.deep_sort(root.children)
-  state.before_render(state)
   renderer.show_nodes({ root }, state)
   state.loading = false
 end

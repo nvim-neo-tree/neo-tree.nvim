@@ -5,6 +5,7 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local items = require("neo-tree.sources.git_status.lib.items")
+local events = require("neo-tree.events")
 
 local M = {}
 local default_config = nil
@@ -24,6 +25,16 @@ end
 M.close = function()
   local state = get_state()
   return renderer.close(state)
+end
+
+---Redraws the tree with updated diagnostics without scanning the filesystem again.
+M.diagnostics_changed = function(args)
+  local state = get_state()
+  args = args or {}
+  state.diagnostics_lookup = args.diagnostics_lookup
+  if renderer.window_exists(state) then
+    state.tree:render()
+  end
 end
 
 M.float = function()
@@ -73,33 +84,43 @@ end
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
-M.setup = function(config)
-  if default_config == nil then
-    default_config = config
-    local autocmds = {}
-    local refresh_cmd = ":lua require('neo-tree.sources.git_status').refresh()"
-    table.insert(autocmds, "augroup neotreebuffers")
-    table.insert(autocmds, "autocmd!")
-    table.insert(autocmds, "autocmd BufFilePost * " .. refresh_cmd)
-    table.insert(autocmds, "autocmd BufWritePost * " .. refresh_cmd)
-    table.insert(autocmds, "autocmd BufDelete * " .. refresh_cmd)
-    table.insert(autocmds, "autocmd DirChanged * " .. refresh_cmd)
-    table.insert(
-      autocmds,
-      string.format(
-        [[
-    if has('nvim-0.6')
-      " Use the new diagnostic subsystem for neovim 0.6 and up
-      au DiagnosticChanged * %s
-    else
-      au User LspDiagnosticsChanged * %s
-    endif]],
-        refresh_cmd,
-        refresh_cmd
-      )
-    )
-    table.insert(autocmds, "augroup END")
-    vim.cmd(table.concat(autocmds, "\n"))
+M.setup = function(config, global_config)
+  default_config = config
+
+  if config.before_render then
+    --convert to new event system
+    events.subscribe({
+      event = events.BEFORE_RENDER,
+      handler = config.before_render,
+      id = config.name .. ".config.before_render",
+    })
+  else
+    events.unsubscribe({
+      event = events.BEFORE_RENDER,
+      id = config.name .. ".config.before_render",
+    })
+  end
+
+  events.subscribe({
+    event = events.VIM_BUFFER_CHANGED,
+    handler = M.refresh,
+    id = "git_status." .. events.VIM_BUFFER_CHANGED,
+  })
+
+  if default_config.bind_to_cwd then
+    events.subscribe({
+      event = events.VIM_DIR_CHANGED,
+      handler = M.refresh,
+      id = "git_status." .. events.VIM_DIR_CHANGED,
+    })
+  end
+
+  if global_config.enable_diagnostics then
+    events.subscribe({
+      event = events.VIM_DIAGNOSTIC_CHANGED,
+      handler = M.diagnostics_changed,
+      id = "git_status." .. events.VIM_DIAGNOSTIC_CHANGED,
+    })
   end
 end
 

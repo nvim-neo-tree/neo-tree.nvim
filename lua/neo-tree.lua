@@ -3,6 +3,7 @@ local utils = require("neo-tree.utils")
 local defaults = require("neo-tree.defaults")
 local renderer = require("neo-tree.ui.renderer")
 local mapping_helper = require("neo-tree.mapping-helper")
+local events = require("neo-tree.events")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -36,6 +37,31 @@ local ensure_config = function()
   if not M.config then
     M.setup()
   end
+end
+
+local events_setup = false
+local define_events = function()
+  if events_setup then
+    return
+  end
+  local v = vim.version()
+  local diag_autocmd = "DiagnosticChanged"
+  if v.major < 1 and v.minor < 6 then
+    diag_autocmd = "User LspDiagnosticsChanged"
+  end
+  events.define_autocmd_event(events.VIM_DIAGNOSTIC_CHANGED, { diag_autocmd }, 500, function(args)
+    args.diagnostics_lookup = utils.get_diagnostic_counts()
+  end)
+
+  events.define_autocmd_event(
+    events.VIM_BUFFER_CHANGED,
+    { "BufDelete", "BufWritePost", "BufFilePost", "BufNew" },
+    200
+  )
+  events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
+  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
+  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)
+  events_setup = true
 end
 
 local src = function(source_name)
@@ -114,59 +140,6 @@ M.focus = function(source_name, close_others, toggle_if_open)
   source.focus()
 end
 
-M.setup = function(config)
-  config = config or {}
-
-  -- setup the default values for all sources
-  local source_defaults = {}
-  for _, source_name in ipairs(sources) do
-    local mod_root = "neo-tree.sources." .. source_name
-    local source = require(mod_root .. ".defaults")
-    source.components = require(mod_root .. ".components")
-    source.commands = require(mod_root .. ".commands")
-    source.name = source_name
-
-    -- Make sure all the mappings are normalized so they will merge properly.
-    normalize_mappings(source)
-    normalize_mappings(config[source_name])
-
-    -- if user sets renderers, completely wipe the default ones
-    if utils.get_value(config, source_name .. ".renderers.directory") then
-      source.renderers.directory = {}
-    end
-    if utils.get_value(config, source_name .. ".renderers.file") then
-      source.renderers.file = {}
-    end
-    source_defaults[source_name] = source
-  end
-  local default_config = utils.table_merge(defaults, source_defaults)
-
-  -- apply the users config
-  M.config = utils.table_merge(default_config, config)
-
-  -- setup the sources with the combined config
-  for _, source_name in ipairs(sources) do
-    src(source_name).setup(M.config[source_name])
-  end
-
-  if config.open_files_in_last_window then
-    vim.cmd([[
-      augroup NEO_TREE_TRACK_WINDOW
-        autocmd!
-        autocmd WinEnter * lua require("neo-tree").win_enter_event()
-      augroup END
-    ]])
-  elseif config.prior_windows then
-    -- Clear out prior autocmd, user must have run config again.
-    vim.cmd([[
-      augroup NEO_TREE_TRACK_WINDOW
-        autocmd!
-      augroup END
-    ]])
-    config.prior_windows = nil
-  end
-end
-
 M.get_prior_window = function()
   local wins = M.config.prior_windows
   if wins == nil then
@@ -237,6 +210,55 @@ M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
     end)
   else
     source.show()
+  end
+end
+
+M.setup = function(config)
+  config = config or {}
+  define_events()
+
+  -- setup the default values for all sources
+  local source_defaults = {}
+  for _, source_name in ipairs(sources) do
+    local mod_root = "neo-tree.sources." .. source_name
+    local source = require(mod_root .. ".defaults")
+    source.components = require(mod_root .. ".components")
+    source.commands = require(mod_root .. ".commands")
+    source.name = source_name
+
+    -- Make sure all the mappings are normalized so they will merge properly.
+    normalize_mappings(source)
+    normalize_mappings(config[source_name])
+
+    -- if user sets renderers, completely wipe the default ones
+    if utils.get_value(config, source_name .. ".renderers.directory") then
+      source.renderers.directory = {}
+    end
+    if utils.get_value(config, source_name .. ".renderers.file") then
+      source.renderers.file = {}
+    end
+    source_defaults[source_name] = source
+  end
+  local default_config = utils.table_merge(defaults, source_defaults)
+
+  -- apply the users config
+  M.config = utils.table_merge(default_config, config)
+
+  -- setup the sources with the combined config
+  for _, source_name in ipairs(sources) do
+    src(source_name).setup(M.config[source_name], M.config)
+  end
+
+  local event_handler = {
+    event = events.VIM_WIN_ENTER,
+    handler = M.win_enter_event,
+    id = "neo-tree-win-enter",
+  }
+  if config.open_files_in_last_window then
+    events.subscribe(event_handler)
+  else
+    events.unsubscribe(event_handler)
+    config.prior_windows = nil
   end
 end
 

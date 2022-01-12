@@ -10,6 +10,7 @@ local loop = vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
+local events = require("neo-tree.events")
 
 local M = {}
 
@@ -44,11 +45,15 @@ M.move_node = function(source, destination, callback)
         print("Could not move the files")
         return
       end
-      if callback then
-        vim.schedule_wrap(function()
+      vim.schedule(function()
+        events.fire_event(events.FILE_MOVED, {
+          source = source,
+          destination = dest,
+        })
+        if callback then
           callback(source, dest)
-        end)()
-      end
+        end
+      end)
     end)
   end)
 end
@@ -64,11 +69,12 @@ M.copy_node = function(source, _destination, callback)
         print("copy failed")
         return
       end
-      if callback then
-        vim.schedule_wrap(function()
+      vim.schedule(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
           callback(source, destination)
-        end)()
-      end
+        end
+      end)
     end)
   end)
 end
@@ -100,9 +106,12 @@ M.create_node = function(in_directory, callback)
     end
 
     if callback then
-      vim.schedule_wrap(function()
-        callback(destination)
-      end)()
+      vim.schedulep(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
     end
   end)
 end
@@ -182,11 +191,12 @@ M.delete_node = function(path, callback)
       clear_buffer(path)
     end
 
-    if callback then
-      vim.schedule_wrap(function()
+    vim.schedule(function()
+      events.fire_event(events.FILE_DELETED, path)
+      if callback then
         callback(path)
-      end)()
-    end
+      end
+    end)
   end)
 end
 
@@ -210,6 +220,10 @@ M.rename_node = function(path, callback)
     end
 
     local complete = vim.schedule_wrap(function()
+      events.fire_event(events.FILE_RENAMED, {
+        source = path,
+        destination = destination,
+      })
       if callback then
         callback(path, destination)
       end

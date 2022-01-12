@@ -6,6 +6,7 @@ local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
+local events = require("neo-tree.events")
 
 local M = {}
 local floating_windows = {}
@@ -290,39 +291,27 @@ local create_tree = function(state)
   })
 end
 
-local close_me_autocmd_is_set = false
+local auto_close_floats_is_set = false
 
-local close_me_when_entering_non_floating_window = function(winid)
-  if not close_me_autocmd_is_set then
-    vim.cmd([[
-      function! IsFloating(id) abort
-          let l:cfg = nvim_win_get_config(a:id)
-          return !empty(l:cfg.relative) || l:cfg.external
-      endfunction
-
-      function! NeoTreeCloseMe() abort
-          if empty(g:NeoTreeFloatingWinId)
-              return
-          endif
-          if g:NeoTreeFloatingWinId == 0
-              return
-          endif
-          if !IsFloating(nvim_get_current_win())
-              if nvim_win_is_valid(g:NeoTreeFloatingWinId)
-                  lua require("neo-tree").close_all("float")
-              endif
-              let g:NeoTreeFloatingWinId = 0
-          endif
-      endfunction
-
-      augroup NEO_TREE_CLOSE_ME
-        autocmd!
-        autocmd WinEnter * call NeoTreeCloseMe()
-      augroup END
-    ]])
-    close_me_autocmd_is_set = true
+local enable_auto_close_floats = function()
+  if not auto_close_floats_is_set then
+    return
   end
-  vim.cmd("let g:NeoTreeFloatingWinId = " .. winid)
+  local event_handler = {
+    event = events.VIM_WIN_ENTER,
+    handler = function()
+      local win_id = vim.api.nvim_get_current_win()
+      local cfg = vim.api.nvim_win_get_config(win_id)
+      if cfg.relative > "" or cfg.external then
+        -- floating window, ignore
+        return
+      end
+      require("neo-tree").close_all("float")
+    end,
+    id = "neo-tree-auto-close-floats",
+  }
+  events.subscribe(event_handler)
+  auto_close_floats_is_set = true
 end
 
 local create_window = function(state)
@@ -386,7 +375,7 @@ local create_window = function(state)
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
-    close_me_when_entering_non_floating_window(win.winid)
+    enable_auto_close_floats()
   else
     win = NuiSplit(win_options)
     win:mount()
@@ -498,6 +487,7 @@ end
 M.show_nodes = function(sourceItems, state, parentId)
   local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
   utils.debounce(id, function()
+    events.fire_event(events.BEFORE_RENDER, state)
     local level = 0
     if parentId ~= nil then
       local parent = state.tree:get_node(parentId)
@@ -505,6 +495,7 @@ M.show_nodes = function(sourceItems, state, parentId)
     end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)
+    events.fire_event(events.AFTER_RENDER, state)
   end, 100)
 end
 

@@ -77,7 +77,6 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       renderer.show_nodes(root.children, state, parent_id)
     else
       -- full render of the tree
-      state.before_render(state)
       renderer.show_nodes({ root }, state)
     end
     if callback then
