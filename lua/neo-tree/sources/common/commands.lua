@@ -197,6 +197,8 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     else
       vim.cmd(open_cmd .. " " .. node:get_id())
     end
+    local events = require("neo-tree.events")
+    events.fire_event(events.FILE_OPENED, node:get_id())
   end
 end
 

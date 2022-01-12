@@ -29,16 +29,6 @@ local filesystem = {
       ["gg"] = "git_commit_and_push",
     },
   },
-  before_render = function(state)
-    -- This function is called after the file system has been scanned,
-    -- but before the tree is rendered. You can use this to gather extra
-    -- data that can be used in the renderers.
-    local nt = require("neo-tree")
-    local utils = require("neo-tree.utils")
-    if nt.config.enable_diagnostics then
-      state.diagnostics_lookup = utils.get_diagnostic_counts()
-    end
-  end,
   -- This section provides the renderers that will be used to render the tree.
   -- The first level is the node type.
   -- For each node type, you can specify a list of components to render.
