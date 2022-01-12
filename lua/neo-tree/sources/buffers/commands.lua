@@ -11,6 +11,13 @@ M.add = function(state)
   cc.add(state, buffers.refresh)
 end
 
+M.buffer_delete = function(state)
+  local node = state.tree:get_node()
+  if node then
+    vim.api.nvim_buf_delete(node.extra.bufnr, { force = false, unload = false })
+    buffers.refresh()
+  end
+end
 M.close_node = cc.close_node
 
 ---Marks node as copied, so that it can be pasted somewhere else.

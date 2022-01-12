@@ -46,6 +46,7 @@ use {
               ["c"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
+              ["bd"] = "buffer_delete",
             }
           }
         },

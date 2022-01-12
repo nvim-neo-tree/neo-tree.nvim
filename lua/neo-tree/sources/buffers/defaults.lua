@@ -22,6 +22,7 @@ local buffers = {
       ["c"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
+      ["bd"] = "buffer_delete",
     },
   },
   bind_to_cwd = true,
@@ -54,6 +55,7 @@ local buffers = {
       },
       { "name" },
       { "diagnostics", errors_only = true },
+      { "clipboard", highlight = highlights.DIM_TEXT },
     },
     file = {
       {
@@ -65,6 +67,7 @@ local buffers = {
       { "bufnr" },
       { "diagnostics" },
       { "git_status", highlight = highlights.DIM_TEXT },
+      { "clipboard", highlight = highlights.DIM_TEXT },
     },
   },
 }

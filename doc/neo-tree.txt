@@ -378,7 +378,9 @@ nvim.
 As a list of files, this source shares most of the commands with the filesystem
 source, with the exception of filtering. Some of these commands make less
 sense to use here, as things like adding new files won't be visible until you
-open them by some other means.
+open them by some other means. One command that is unique to this view is
+`buffer_delete`, which issues |:bdelete| on the selected buffer. This is mapped
+to `bd` by default.
 
 GIT STATUS                                                  *Neo-tree-Git-Status*
 
