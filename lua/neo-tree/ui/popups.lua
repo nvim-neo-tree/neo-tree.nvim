@@ -61,7 +61,6 @@ M.popup_options = function(title, min_width, override_options)
 end
 
 M.alert = function(title, message, size)
-  print(vim.inspect(message))
   local lines = {}
   local max_line_width = title:len()
   local add_line = function(line)
@@ -84,7 +83,6 @@ M.alert = function(title, message, size)
 
   add_line("")
   add_line(" Press <Escape> or <Enter> to close")
-  print(vim.inspect(lines))
 
   local win_options = M.popup_options(title, 80)
   win_options.zindex = 60

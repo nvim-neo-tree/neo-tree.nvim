@@ -169,7 +169,6 @@ end
 
 M.get_prior_window = function()
   local wins = M.config.prior_windows
-  print("prior wins: " .. vim.inspect(wins))
   if wins == nil then
     return -1
   end
