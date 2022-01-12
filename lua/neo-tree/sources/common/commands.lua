@@ -189,9 +189,14 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     end
     -- TODO: make this configurable, see issue #43
     if vim.bo.filetype == "neo-tree" then
-      open_cmd = "vsplit"
+      -- Neo-tree must be the only window, restore it's status as a sidebar
+      local winid = vim.api.nvim_get_current_win()
+      local width = utils.get_value(state, "window.width", 40)
+      vim.cmd("vsplit " .. node:get_id())
+      vim.api.nvim_win_set_width(winid, width)
+    else
+      vim.cmd(open_cmd .. " " .. node:get_id())
     end
-    vim.cmd(open_cmd .. " " .. node:get_id())
   end
 end
 
