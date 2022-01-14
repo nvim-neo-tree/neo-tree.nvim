@@ -40,6 +40,7 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
   q.define_event(event_name, opts)
 end
 
+M.clear_all_events = q.clear_all_events
 M.define_event = q.define_event
 M.destroy_event = q.destroy_event
 M.fire_event = q.fire_event
