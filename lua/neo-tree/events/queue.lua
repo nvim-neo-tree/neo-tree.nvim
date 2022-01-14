@@ -67,6 +67,13 @@ local validate_event_handler = function(event_handler)
   end
 end
 
+M.clear_all_events = function()
+  for event_name, _ in pairs(events) do
+    M.destroy_event(event_name)
+  end
+  events = {}
+end
+
 M.define_event = function(event_name, opts)
   local existing = events[event_name]
   if existing ~= nil then
@@ -80,11 +87,12 @@ M.destroy_event = function(event_name)
   if existing == nil then
     return false
   end
-  if type(existing.teardown) == "function" then
+  if existing.setup_was_run and type(existing.teardown) == "function" then
     local success, result = pcall(existing.teardown)
     if not success then
       error("Error in teardown for " .. event_name .. ": " .. result)
     end
+    existing.setup_was_run = false
   end
   events[event_name] = nil
   return true
@@ -140,7 +148,9 @@ M.subscribe = function(event_handler)
     local def = events[event_handler.event]
     if def and type(def.setup) == "function" then
       local success, result = pcall(def.setup)
-      if not success then
+      if success then
+        def.setup_was_run = true
+      else
         error("Error in setup for " .. event_handler.event .. ": " .. result)
       end
     end

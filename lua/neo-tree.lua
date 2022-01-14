@@ -224,7 +224,14 @@ M.setup = function(config)
   if config.log_level ~= nil then
     M.set_log_level(config.log_level)
   end
+
+  events.clear_all_events()
   define_events()
+  if config.event_handlers ~= nil then
+    for _, handler in ipairs(config.event_handlers) do
+      events.subscribe(handler)
+    end
+  end
 
   -- setup the default values for all sources
   local source_defaults = {}

@@ -12,6 +12,7 @@ Configuration ....... |Neo-tree-Configuration|
   Setup ............. |Neo-tree-Setup|
   Diagnostics ....... |Neo-tree-Diagnostics|
   Highlights ........ |Neo-tree-Highlights|
+  Events ............ |Neo-tree-Events|
 Other Sources ....... |Neo-tree-Sources|
   Buffers ........... |Neo-tree-Buffers|
   Git Status ........ |Neo-tree-Git-Status|
@@ -165,6 +166,36 @@ require("neo-tree").setup({
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files int top left window
                                      -- true = open files in last window visited
+  --
+  --event_handlers = {
+  --  {
+  --    event = "before_render",
+  --    handler = function (state)
+  --      -- add something to the state that can be used by custom components
+  --    end
+  --  },
+  --  {
+  --    event = "file_opened",
+  --    handler = function(file_path)
+  --      --auto close
+  --      require("neo-tree").close_all()
+  --    end
+  --  },
+  --  {
+  --    event = "file_renamed",
+  --    handler = function(args)
+  --      -- fix references to file
+  --      print(args.source, " renamed to ", args.destination)
+  --    end
+  --  },
+  --  {
+  --    event = "file_moved",
+  --    handler = function(args)
+  --      -- fix references to file
+  --      print(args.source, " moved to ", args.destination)
+  --    end
+  --  },
+  --},
   filesystem = {
     window = {
       -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
@@ -190,6 +221,8 @@ require("neo-tree").setup({
         ["<cr>"] = "open",
         ["S"] = "open_split",
         ["s"] = "open_vsplit",
+        ["C"] = "close_node",
+        ["z"] = "close_all_nodes",
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
         ["H"] = "toggle_hidden",
@@ -212,13 +245,6 @@ require("neo-tree").setup({
       respect_gitignore = true,
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
-    before_render = function(state)
-      -- This function is called after the file system has been scanned,
-      -- but before the tree is rendered. You can use this to gather extra
-      -- data that can be used in the renderers.
-      local utils = require("neo-tree.utils")
-      state.git_status_lookup = utils.get_git_status()
-    end,
     -- The components section provides custom functions that may be called by 
     -- the renderers below. Each componment is a function that takes the
     -- following arguments:
@@ -352,6 +378,94 @@ NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
                           is set to "NC". This is derived from NeoTreeFloatBorder.
+
+EVENTS                                                        *Neo-tree-Events*
+
+Events are one way to customize the behavior of Neo-tree. You can add event
+handlers to your config in the `event_handlers` section, which should be a list
+of objects in the form:
+
+
+{
+  event = "event_name",
+  handler = function(arg)
+    -- do something, the value of arg varies by event.
+  end,
+  id = "optional unique id, only meaningful if you want to unsubscribe later"
+}
+<
+
+The following events are available:
+
+"before_render"
+Fired after items have been collected from the source but before drawing the
+nodes of the tree. This is the best place to gather additional data to be used
+by components. The argument passed is the state of the source, which is also
+passed to components and commands down the line.
+
+"after_render"
+Fired after the tree has been rendered. The argument passed is the state of the
+source, which is also passed to components and commands down the line.
+
+"file_added"
+Fired after a file (or folder) has been created, either by using the "add"
+command or by copy and paste. The arg is the full path to the new file.
+
+"file_deleted"
+Fired after a file (or folder) has been deleted. The arg is the full path to the
+deleted file.
+
+"file_moved"
+Fired after a file (or folder) has been moved. The arg is an table containing
+`source` and `destination` properties.
+
+"file_opened"
+Fired after a file has been opened. You might use this to auto-close the window
+or clear the filter. The arg is the path of the file opened.
+
+"file_renamed"
+Fired after a file (or folder) has been renamed. The arg is an table containing
+`source` and `destination` properties.
+
+"vim_diagnostic_changed"
+Fired on the |DiagnosticChanged| autocmd event. The arg is a table where the keys
+are file names and the values are tables with diagnostic counts by severity level.
+
+"vim_buffer_changed"
+Fired on the following autocmd events: |BufDelete|, |BufWritePost|, |BufFilePost|, |BufNew|
+
+"vim_buffer_enter"
+Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
+
+"vim_dir_changed"
+Fired on the |DirChanged| autocmd event
+
+"vim_win_enter"
+Fired on the |WinEnter| autocmd event
+
+
+You can also define your own with:
+>
+require("neo-tree.events.queue").define_event(event_name, {
+  setup = <function>,
+  seed = <function>,
+  teardown = <function>,
+  debounce_frequency = <number>
+})
+
+The setup function is run the first time the event is subscribed to. For an
+autocmd event, this would define the vim autocmd to connect it to fire_event().
+
+The seed function is run at the begining of every event firing. The diagnostics
+event uses this to collect the diagnostic information and pass it to all
+subscribers.
+
+The teardown function is used when the last subscriber unsubscribes, and cleans
+up. This is like Dispose in other languages.
+
+debounce_frequency is the minimum number of milliseconds between each invocation
+of the event. The first event is gauranteed to fire, as well as the last one, but
+in between events may be dropped if this is set to a number greater than zero.
 
 
 ================================================================================

@@ -8,7 +8,37 @@ local config = {
   -- "NC" is a special style that works well with NormalNC set
   enable_git_status = true,
   enable_diagnostics = true,
-  open_files_in_last_window = true, -- false = open files int top left window
-  -- true = open files in last window visited
+  open_files_in_last_window = true, -- false = open files in top left window
+  --open_files_in_last_window = true -- true = open files in last window visited
+  --
+  --event_handlers = {
+  --  {
+  --    event = "before_render",
+  --    handler = function (state)
+  --      -- add something to the state that can be used by custom components
+  --    end
+  --  },
+  --  {
+  --    event = "file_opened",
+  --    handler = function(file_path)
+  --      --auto close
+  --      require("neo-tree").close_all()
+  --    end
+  --  },
+  --  {
+  --    event = "file_renamed",
+  --    handler = function(args)
+  --      -- fix references to file
+  --      print(args.source, " renamed to ", args.destination)
+  --    end
+  --  },
+  --  {
+  --    event = "file_moved",
+  --    handler = function(args)
+  --      -- fix references to file
+  --      print(args.source, " moved to ", args.destination)
+  --    end
+  --  },
+  --}
 }
 return config

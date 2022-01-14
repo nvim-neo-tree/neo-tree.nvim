@@ -11,7 +11,7 @@ local log = require("neo-tree.log")
 
 local M = {}
 local floating_windows = {}
-local draw
+local draw, create_window, create_tree
 
 M.close = function(state)
   local window_existed = false
@@ -191,7 +191,7 @@ M.focus_node = function(state, id, do_not_focus_window)
           if M.window_exists(state) then
             vim.api.nvim_set_current_win(state.winid)
           else
-            draw(state.tree:get_nodes(), state, nil)
+            return false
           end
         end
         local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
