@@ -90,6 +90,8 @@ create_nodes = function(source_items, state, level)
       loaded = item.loaded,
       indent = indent,
       extra = item.extra,
+      is_link = item.is_link,
+      link_to = item.link_to,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to a a "data" or "extra" field?
       path = item.path,
