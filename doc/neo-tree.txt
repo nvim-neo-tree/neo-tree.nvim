@@ -332,25 +332,26 @@ The following highlight groups are defined by this plugin. If you set any of
 these yourself before the plugin loads, it will not be touched. If they do not
 exist, they will be created.
 
-NeoTreeBufferNumber   The buffer number shown in the buffers source.
-NeoTreeCursorLine     |hi-CursorLine| override in Neo-tree window.
-NeoTreeDimText        Greyed out text used in various places.
-NeoTreeDirectoryName  Directory name.
-NeoTreeDirectoryIcon  Directory icon.
-NeoTreeFileIcon       File icon, when not overriden by devicons.
-NeoTreeFileName       File name, when not overwritten by another status.
-NeoTreeFileNameOpened File name when the file is open. Not used yet.
-NeoTreeFilterTerm     The filter term, as displayed in the root node.
-NeoTreeFloatBorder    The border for pop-up windows.
-NeoTreeGitAdded       File name when the git status is added.
-NeoTreeGitConflict    File name when the git status is conflict.
-NeoTreeGitModified    File name when the git status is modified.
-NeoTreeGitUntracked   File name when the git status is untracked.
-NeoTreeNormal         |hl-Normal| override in Neo-tree window.
-NeoTreeNormalNC       |hi-NormalNC| override in Neo-tree window.
-NeoTreeRootName       The name of the root node.
-NeoTreeTitleBar       Used for the title bar of pop-ups, when the border-style
-                      is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeBufferNumber       The buffer number shown in the buffers source.
+NeoTreeCursorLine         |hi-CursorLine| override in Neo-tree window.
+NeoTreeDimText            Greyed out text used in various places.
+NeoTreeDirectoryName      Directory name.
+NeoTreeDirectoryIcon      Directory icon.
+NeoTreeFileIcon           File icon, when not overriden by devicons.
+NeoTreeFileName           File name, when not overwritten by another status.
+NeoTreeFileNameOpened     File name when the file is open. Not used yet.
+NeoTreeSymbolicLinkTarget Symbolic link target.
+NeoTreeFilterTerm         The filter term, as displayed in the root node.
+NeoTreeFloatBorder        The border for pop-up windows.
+NeoTreeGitAdded           File name when the git status is added.
+NeoTreeGitConflict        File name when the git status is conflict.
+NeoTreeGitModified        File name when the git status is modified.
+NeoTreeGitUntracked       File name when the git status is untracked.
+NeoTreeNormal             |hl-Normal| override in Neo-tree window.
+NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
+NeoTreeRootName           The name of the root node.
+NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
+                          is set to "NC". This is derived from NeoTreeFloatBorder.
 
 
 ================================================================================

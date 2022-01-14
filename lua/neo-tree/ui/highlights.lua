@@ -9,6 +9,7 @@ M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
 M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
+M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.GIT_ADDED = "NeoTreeGitAdded"
@@ -113,6 +114,7 @@ create_highlight_group(M.DIRECTORY_ICON, { "TabLineSel" }, nil, "#73cef4")
 create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
 create_highlight_group(M.FILE_NAME, {}, "NONE", "NONE")
 create_highlight_group(M.FILE_NAME_OPENED, {}, nil, nil, "bold")
+create_highlight_group(M.SYMBOLIC_LINK_TARGET, { M.FILE_NAME })
 create_highlight_group(M.FILTER_TERM, { "SpecialChar", "Normal" })
 create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
 

@@ -99,6 +99,10 @@ require("neo-tree").setup({
         },
         { "current_filter" },
         { "name" },
+        --{
+        --  "symlink_target",
+        --  highlight = "NeoTreeSymbolicLinkTarget",
+        --},
         {
           "clipboard",
           highlight = "NeoTreeDimText"
@@ -114,6 +118,10 @@ require("neo-tree").setup({
         --{ "hello_node", highlight = "Normal" }, -- For example, don't actually
         -- use this!
         { "name" },
+        --{
+        --  "symlink_target",
+        --  highlight = "NeoTreeSymbolicLinkTarget",
+        --},
         {
           "clipboard",
           highlight = "NeoTreeDimText"

@@ -67,6 +67,10 @@ local filesystem = {
       },
       { "current_filter" },
       { "name" },
+      -- {
+      --   "symlink_target",
+      --   highlight = highlights.SYMBOLIC_LINK_TARGET,
+      -- },
       {
         "clipboard",
         highlight = highlights.DIM_TEXT,
@@ -84,6 +88,10 @@ local filesystem = {
         "name",
         use_git_status_colors = true,
       },
+      -- {
+      --   "symlink_target",
+      --   highlight = highlights.SYMBOLIC_LINK_TARGET,
+      -- },
       {
         "clipboard",
         highlight = highlights.DIM_TEXT,
