@@ -79,43 +79,46 @@ local function create_highlight_group(hl_group_name, link_to_if_exists, backgrou
       foreground = foreground and tonumber(foreground, 16) or nil,
     }
   end
+  return hl_group
 end
 
-local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
-local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
+M.setup = function()
+  local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
+  local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
 
-local float_border_hl = create_highlight_group(
-  M.FLOAT_BORDER,
-  { "FloatBorder" },
-  normalnc_hl.background,
-  "444444"
-)
+  local float_border_hl = create_highlight_group(
+    M.FLOAT_BORDER,
+    { "FloatBorder" },
+    normalnc_hl.background,
+    "444444"
+  )
 
-create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
+  create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
-create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
+  create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
 
-create_highlight_group(M.GIT_CONFLICT, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
+  create_highlight_group(M.GIT_CONFLICT, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
 
-local modified = create_highlight_group(
-  M.GIT_MODIFIED,
-  { "GitGutterChange", "GitSignsChange" },
-  nil,
-  "d7af5f"
-)
+  local modified = create_highlight_group(
+    M.GIT_MODIFIED,
+    { "GitGutterChange", "GitSignsChange" },
+    nil,
+    "d7af5f"
+  )
 
-create_highlight_group(M.GIT_UNTRACKED, {}, nil, modified.foreground, "italic")
+  create_highlight_group(M.GIT_UNTRACKED, {}, nil, modified.foreground, "italic")
 
-create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
-create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
-create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
-create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
-create_highlight_group(M.DIRECTORY_ICON, { "TabLineSel" }, nil, "#73cef4")
-create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
-create_highlight_group(M.FILE_NAME, {}, "NONE", "NONE")
-create_highlight_group(M.FILE_NAME_OPENED, {}, nil, nil, "bold")
-create_highlight_group(M.SYMBOLIC_LINK_TARGET, { M.FILE_NAME })
-create_highlight_group(M.FILTER_TERM, { "SpecialChar", "Normal" })
-create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
+  create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
+  create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
+  create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
+  create_highlight_group(M.DIRECTORY_ICON, {}, nil, "#73cef4")
+  create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
+  create_highlight_group(M.FILE_NAME, {}, "NONE", "NONE")
+  create_highlight_group(M.FILE_NAME_OPENED, {}, nil, nil, "bold")
+  create_highlight_group(M.SYMBOLIC_LINK_TARGET, { M.FILE_NAME })
+  create_highlight_group(M.FILTER_TERM, { "SpecialChar", "Normal" })
+  create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
+end
 
 return M
