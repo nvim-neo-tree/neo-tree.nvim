@@ -166,6 +166,8 @@ require("neo-tree").setup({
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files int top left window
                                      -- true = open files in last window visited
+  log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
+  log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   --
   --event_handlers = {
   --  {

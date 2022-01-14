@@ -9,6 +9,8 @@ local config = {
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files in top left window
+  log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
+  log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   --open_files_in_last_window = true -- true = open files in last window visited
   --
   --event_handlers = {

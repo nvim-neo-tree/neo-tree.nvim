@@ -224,6 +224,8 @@ M.setup = function(config)
   if config.log_level ~= nil then
     M.set_log_level(config.log_level)
   end
+  log.use_file(config.log_to_file)
+  log.debug("setup")
 
   events.clear_all_events()
   define_events()
