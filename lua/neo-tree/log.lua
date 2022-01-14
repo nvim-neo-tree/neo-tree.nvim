@@ -59,14 +59,18 @@ log.new = function(config, standalone)
   end
   obj.outfile = outfile
 
-  obj.use_file = function(file)
+  obj.use_file = function(file, quiet)
     if file == false then
       config.use_file = false
-      print("[neo-tree] Logging to file disabled")
+      if not quiet then
+        print("[neo-tree] Logging to file disabled")
+      end
     else
       obj.outfile = file or outfile
       config.use_file = true
-      print("[neo-tree] Logging to file: " .. obj.outfile)
+      if not quiet then
+        print("[neo-tree] Logging to file: " .. obj.outfile)
+      end
     end
   end
 

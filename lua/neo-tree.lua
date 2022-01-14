@@ -6,6 +6,7 @@ local mapping_helper = require("neo-tree.mapping-helper")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local popups = require("neo-tree.ui.popups")
+local highlights = require("neo-tree.ui.highlights")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -37,7 +38,7 @@ end
 
 local ensure_config = function()
   if not M.config then
-    M.setup()
+    M.setup({ log_to_file = false })
   end
 end
 
@@ -224,7 +225,7 @@ M.setup = function(config)
   if config.log_level ~= nil then
     M.set_log_level(config.log_level)
   end
-  log.use_file(config.log_to_file)
+  log.use_file(config.log_to_file, true)
   log.debug("setup")
 
   events.clear_all_events()
@@ -234,6 +235,8 @@ M.setup = function(config)
       events.subscribe(handler)
     end
   end
+
+  highlights.setup()
 
   -- setup the default values for all sources
   local source_defaults = {}
