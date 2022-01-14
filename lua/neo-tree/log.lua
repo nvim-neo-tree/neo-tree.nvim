@@ -18,7 +18,7 @@ local default_config = {
   highlights = true,
 
   -- Should write to a file
-  use_file = true,
+  use_file = false,
 
   -- Any messages above this level will be logged.
   level = "info",
@@ -58,13 +58,30 @@ log.new = function(config, standalone)
     obj = {}
   end
   obj.outfile = outfile
-  obj.set_level = function(level)
-    config.level = level
+
+  obj.use_file = function(file)
+    if file == false then
+      config.use_file = false
+      print("[neo-tree] Logging to file disabled")
+    else
+      obj.outfile = file or outfile
+      config.use_file = true
+      print("[neo-tree] Logging to file: " .. obj.outfile)
+    end
   end
 
   local levels = {}
   for i, v in ipairs(config.modes) do
     levels[v.name] = i
+  end
+
+  obj.set_level = function(level)
+    if levels[level] then
+      config.level = level
+      print("[neo-tree] Log level set to " .. level)
+    else
+      print("[neo-tree] Invalid log level: " .. level)
+    end
   end
 
   local round = function(x, increment)
@@ -104,10 +121,14 @@ log.new = function(config, standalone)
 
     -- Output to log file
     if config.use_file then
-      local fp = io.open(outfile, "a")
       local str = string.format("[%-6s%s] %s: %s\n", nameupper, os.date(), lineinfo, msg)
-      fp:write(str)
-      fp:close()
+      local fp = io.open(obj.outfile, "a")
+      if fp then
+        fp:write(str)
+        fp:close()
+      else
+        print("[neo-tree] Could not open log file: " .. obj.outfile)
+      end
     end
 
     -- Output to console
