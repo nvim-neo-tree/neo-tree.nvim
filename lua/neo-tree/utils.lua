@@ -199,8 +199,7 @@ M.get_git_status = function(exclude_directories)
         relative_path = relative_path:gsub("/", M.path_separator)
     end
     local absolute_path = project_root .. M.path_separator .. relative_path
-    git_status[absolute_path] = status
-
+    git_status[absolute_path] = status:gsub("^[ ]*", "")
     if not exclude_directories then
       -- Now bubble this status up to the parent directories
       local parts = M.split(absolute_path, M.path_separator)
