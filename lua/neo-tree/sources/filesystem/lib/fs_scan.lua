@@ -5,6 +5,7 @@ local utils = require("neo-tree.utils")
 local scan = require("plenary.scandir")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -24,7 +25,7 @@ local function do_scan(context, path_to_scan)
     on_insert = function(path, _type)
       local success, _ = pcall(file_items.create_item, context, path, _type)
       if not success then
-        print("error creating item for ", path)
+        log.error("error creating item for ", path)
       end
     end,
     on_exit = vim.schedule_wrap(function()
@@ -94,7 +95,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       term = state.search_pattern,
       on_insert = function(err, path)
         if err and #err > 0 then
-          print(err, path)
+          log.error(err, path)
         else
           file_items.create_item(context, path)
         end

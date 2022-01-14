@@ -7,9 +7,11 @@ local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
 local events = require("neo-tree.events")
+local log = require("neo-tree.log")
 
 local M = {}
 local floating_windows = {}
+local draw
 
 M.close = function(state)
   local window_existed = false
@@ -137,7 +139,7 @@ local prepare_node = function(item, state)
           line:append(msg, highlights.NORMAL)
         end
       else
-        print("Neo-tree: Component " .. component[1] .. " not found.")
+        log.error("Neo-tree: Component " .. component[1] .. " not found.")
       end
     end
   end
@@ -200,7 +202,7 @@ M.focus_node = function(state, id, do_not_focus_window)
             vim.cmd("normal! zz")
           end
         else
-          print("Failed to set cursor: " .. err)
+          log.warn("Failed to set cursor: " .. err)
         end
         return success
       end
@@ -294,7 +296,7 @@ end
 local auto_close_floats_is_set = false
 
 local enable_auto_close_floats = function()
-  if not auto_close_floats_is_set then
+  if auto_close_floats_is_set then
     return
   end
   local event_handler = {
@@ -400,9 +402,13 @@ local create_window = function(state)
       if type(func) == "string" then
         func = state.commands[func]
       end
-      win:map("n", cmd, function()
-        func(state)
-      end, map_options)
+      if type(func) == "function" then
+        win:map("n", cmd, function()
+          func(state)
+        end, map_options)
+      else
+        log.warn("Invalid mapping for %s: %s", cmd, func)
+      end
     end
   end
   return win

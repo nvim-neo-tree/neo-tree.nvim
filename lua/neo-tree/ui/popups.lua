@@ -3,6 +3,7 @@ local Input = require("nui.input")
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
 local highlights = require("neo-tree.ui.highlights")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -111,7 +112,7 @@ M.alert = function(title, message, size)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   else
-    print(msg)
+    log.error(msg)
     win:unmount()
   end
 end

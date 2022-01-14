@@ -3,6 +3,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local file_items = require("neo-tree.sources.common.file-items")
 local popups = require("neo-tree.ui.popups")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -31,7 +32,7 @@ M.get_git_status = function(state)
         git_status = status,
       }
     else
-      print("Error creating item for " .. path .. ": " .. item)
+      log.error("Error creating item for " .. path .. ": " .. item)
     end
   end
 

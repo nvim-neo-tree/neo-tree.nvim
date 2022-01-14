@@ -4,6 +4,7 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -17,6 +18,12 @@ M.add = function(state, callback)
     node = tree:get_node(node:get_parent_id())
   end
   fs_actions.create_node(node:get_id(), callback)
+end
+
+M.close_all_nodes = function(state)
+  renderer.collapse_all_nodes(state.tree)
+  state.tree:get_nodes()[1]:expand()
+  state.tree:render()
 end
 
 M.close_node = function(state, callback)
@@ -47,7 +54,7 @@ M.copy_to_clipboard = function(state, callback)
     state.clipboard[node.id] = nil
   else
     state.clipboard[node.id] = { action = "copy", node = node }
-    print("Copied " .. node.name .. " to clipboard")
+    log.info("Copied " .. node.name .. " to clipboard")
   end
   if callback then
     callback()
@@ -63,7 +70,7 @@ M.cut_to_clipboard = function(state, callback)
     state.clipboard[node.id] = nil
   else
     state.clipboard[node.id] = { action = "cut", node = node }
-    print("Cut " .. node.name .. " to clipboard")
+    log.info("Cut " .. node.name .. " to clipboard")
   end
   if callback then
     callback()
@@ -98,7 +105,7 @@ M.paste_from_clipboard = function(state, callback)
         -- open the folder so the user can see the new files
         local node = state.tree:get_node(folder)
         if not node then
-          print("Could not find node for " .. folder)
+          log.warn("Could not find node for " .. folder)
         end
         callback(node, destination)
       end

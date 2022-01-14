@@ -1,4 +1,5 @@
 local vim = vim
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -98,7 +99,7 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
   local success, result = pcall(fn)
 
   if not success then
-    print("Error in neo-tree.utils.debounce: ", result)
+    log.error("Error in neo-tree.utils.debounce: ", result)
   end
 
   -- Now schedule the next earliest execution.
@@ -182,7 +183,7 @@ M.get_git_status = function(exclude_directories)
       if line:match("fatal: not a git repository") then
         return {}
       else
-        print("Error parsing git status for: " .. line)
+        log.error("Error parsing git status for: " .. line)
       end
       break
     end
@@ -283,7 +284,7 @@ M.resolve_config_option = function(state, config_option, default_value)
     if success then
       return val
     else
-      print("Error resolving config option: " .. config_option .. ": " .. val)
+      log.error("Error resolving config option: " .. config_option .. ": " .. val)
       return default_value
     end
   else
