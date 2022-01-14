@@ -1,4 +1,6 @@
 local utils = require("neo-tree.utils")
+local log = require("neo-tree.log")
+
 -- First in Last Out
 Queue = {}
 function Queue:new()
@@ -93,7 +95,7 @@ local fire_event_internal = function(event, args)
   if queue == nil then
     return nil
   end
-  --print(os.date("%c") .. " Firing event: " .. event)
+  log.trace("Firing event: " .. event)
 
   if queue:is_empty() then
     return nil
@@ -113,7 +115,7 @@ local fire_event_internal = function(event, args)
     local success, result = pcall(event_handler.handler, args)
     if not success then
       local id = event_handler.id or event_handler
-      print(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
+      log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
     end
   end
 end

@@ -11,6 +11,7 @@ local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -42,7 +43,7 @@ M.move_node = function(source, destination, callback)
   get_unused_name(destination, function(dest)
     loop.fs_rename(source, dest, function(err)
       if err then
-        print("Could not move the files")
+        log.error("Could not move the files")
         return
       end
       vim.schedule(function()
@@ -66,7 +67,7 @@ M.copy_node = function(source, _destination, callback)
     handle = loop.spawn("cp", { args = { "-r", source, destination } }, function(code)
       handle:close()
       if code ~= 0 then
-        print("copy failed")
+        log.error("copy failed")
         return
       end
       vim.schedule(function()
@@ -87,7 +88,7 @@ M.create_node = function(in_directory, callback)
     end
     local destination = in_directory .. utils.path_separator .. name
     if loop.fs_stat(destination) then
-      print("File already exists")
+      log.warn("File already exists")
       return
     end
 
@@ -106,7 +107,7 @@ M.create_node = function(in_directory, callback)
     end
 
     if callback then
-      vim.schedulep(function()
+      vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)
         if callback then
           callback(destination)
@@ -126,7 +127,7 @@ M.delete_node = function(path, callback)
   if _type == "link" then
     local link_to = loop.fs_readlink(path)
     if not link_to then
-      print("Could not read link")
+      log.error("Could not read link")
       return
     end
     _type = loop.fs_stat(link_to)
@@ -164,7 +165,7 @@ M.delete_node = function(path, callback)
         if t == "directory" then
           local success = delete_dir(child_path)
           if not success then
-            print("failed to delete ", child_path)
+            log.error("failed to delete ", child_path)
             return false
           end
         else
@@ -208,14 +209,14 @@ M.rename_node = function(path, callback)
   inputs.input(msg, name, function(new_name)
     -- If cancelled
     if not new_name or new_name == "" then
-      print("Operation canceled")
+      log.info("Operation canceled")
       return
     end
 
     local destination = parent_path .. utils.path_separator .. new_name
     -- If aleady exists
     if loop.fs_stat(destination) then
-      print(destination, " already exists")
+      log.warn(destination, " already exists")
       return
     end
 
@@ -227,15 +228,15 @@ M.rename_node = function(path, callback)
       if callback then
         callback(path, destination)
       end
-      print("Renamed " .. new_name .. " successfully")
+      log.info("Renamed " .. new_name .. " successfully")
     end)
 
     loop.fs_rename(path, destination, function(err)
       if err then
-        print("Could not rename the files")
+        log.warn("Could not rename the files")
         return
       else
-        print("Renamed " .. name .. " successfully")
+        log.info("Renamed " .. name .. " successfully")
         complete()
       end
     end)

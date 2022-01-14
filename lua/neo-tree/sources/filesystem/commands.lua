@@ -17,6 +17,7 @@ M.clear_filter = function(state)
   fs.reset_search(true)
 end
 
+M.close_all_nodes = cc.close_all_nodes
 M.close_node = cc.close_node
 
 ---Marks node as copied, so that it can be pasted somewhere else.

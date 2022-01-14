@@ -4,6 +4,8 @@ local defaults = require("neo-tree.defaults")
 local renderer = require("neo-tree.ui.renderer")
 local mapping_helper = require("neo-tree.mapping-helper")
 local events = require("neo-tree.events")
+local log = require("neo-tree.log")
+local popups = require("neo-tree.ui.popups")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -213,8 +215,15 @@ M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
   end
 end
 
+M.set_log_level = function(level)
+  log.set_level(level)
+end
+
 M.setup = function(config)
   config = config or {}
+  if config.log_level ~= nil then
+    M.set_log_level(config.log_level)
+  end
   define_events()
 
   -- setup the default values for all sources
@@ -260,6 +269,10 @@ M.setup = function(config)
     events.unsubscribe(event_handler)
     config.prior_windows = nil
   end
+end
+
+M.show_logs = function()
+  vim.cmd("tabnew " .. log.outfile)
 end
 
 ensure_config()
