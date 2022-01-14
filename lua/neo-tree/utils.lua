@@ -194,6 +194,10 @@ M.get_git_status = function(exclude_directories)
       -- path was quoted, remove quoting
       relative_path = relative_path:match('^"(.+)".*')
     end
+    if M.is_windows == true then
+        project_root = project_root:gsub("/", M.path_separator)
+        relative_path = relative_path:gsub("/", M.path_separator)
+    end
     local absolute_path = project_root .. M.path_separator .. relative_path
     git_status[absolute_path] = status
 
@@ -203,6 +207,9 @@ M.get_git_status = function(exclude_directories)
       table.remove(parts) -- pop the last part so we don't override the file's status
       M.reduce(parts, "", function(acc, part)
         local path = acc .. M.path_separator .. part
+        if M.is_windows == true then
+            path = path:gsub("^" .. M.path_separator, "")
+        end
         local path_status = git_status[path]
         local file_status = get_simple_git_status_code(status)
         git_status[path] = get_priority_git_status_code(path_status, file_status)
