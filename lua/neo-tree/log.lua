@@ -6,6 +6,7 @@
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
 
+local vim = vim
 -- User configuration section
 local default_config = {
   -- Name of the plugin. Prepended to log messages
@@ -66,7 +67,11 @@ log.new = function(config, standalone)
       end
       config.use_file = false
     else
-      obj.outfile = file or outfile
+      if type(file) == "string" then
+        obj.outfile = file
+      else
+        obj.outfile = outfile
+      end
       config.use_file = true
       if not quiet then
         obj.info("[neo-tree] Logging to file: " .. obj.outfile)
@@ -137,26 +142,28 @@ log.new = function(config, standalone)
 
     -- Output to console
     if config.use_console and level > 2 then
-      local console_string = string.format(
-        "[%-6s%s] %s: %s",
-        nameupper,
-        os.date("%H:%M:%S"),
-        lineinfo,
-        msg
-      )
+      vim.schedule(function()
+        local console_string = string.format(
+          "[%-6s%s] %s: %s",
+          nameupper,
+          os.date("%H:%M:%S"),
+          lineinfo,
+          msg
+        )
 
-      if config.highlights and level_config.hl then
-        vim.cmd(string.format("echohl %s", level_config.hl))
-      end
+        if config.highlights and level_config.hl then
+          vim.cmd(string.format("echohl %s", level_config.hl))
+        end
 
-      local split_console = vim.split(console_string, "\n")
-      for _, v in ipairs(split_console) do
-        vim.cmd(string.format([[echom "[%s] %s"]], config.plugin, vim.fn.escape(v, '"')))
-      end
+        local split_console = vim.split(console_string, "\n")
+        for _, v in ipairs(split_console) do
+          vim.cmd(string.format([[echom "[%s] %s"]], config.plugin, vim.fn.escape(v, '"')))
+        end
 
-      if config.highlights and level_config.hl then
-        vim.cmd("echohl NONE")
-      end
+        if config.highlights and level_config.hl then
+          vim.cmd("echohl NONE")
+        end
+      end)
     end
   end
 
