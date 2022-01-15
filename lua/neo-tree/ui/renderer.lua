@@ -299,6 +299,7 @@ local auto_close_floats_is_set = false
 
 local enable_auto_close_floats = function()
   if auto_close_floats_is_set then
+    log.trace("Auto close floats is already set.")
     return
   end
   local event_handler = {
@@ -308,12 +309,15 @@ local enable_auto_close_floats = function()
       local cfg = vim.api.nvim_win_get_config(win_id)
       if cfg.relative > "" or cfg.external then
         -- floating window, ignore
+        log.trace("Ignoring floating window", cfg)
         return
       end
+      log.trace("Closing all floating windows")
       require("neo-tree").close_all("float")
     end,
     id = "neo-tree-auto-close-floats",
   }
+  log.trace("Enabling auto close floats")
   events.subscribe(event_handler)
   auto_close_floats_is_set = true
 end
