@@ -241,12 +241,14 @@ require("neo-tree").setup({
         ["p"] = "paste_from_clipboard",
       }
     },
+    --find_command = "fd" -- if not specified, it will test for fd, fdfind, find, or where
     search_limit = 50, -- max number of search results when using filters
     filters = {
       show_hidden = false,
       respect_gitignore = true,
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
+    --
     -- The components section provides custom functions that may be called by 
     -- the renderers below. Each componment is a function that takes the
     -- following arguments:
