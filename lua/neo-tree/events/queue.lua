@@ -52,7 +52,7 @@ function Queue:without(id)
 end
 
 local event_queues = {}
-local events = {}
+local event_definitions = {}
 local M = {}
 
 local validate_event_handler = function(event_handler)
@@ -68,22 +68,22 @@ local validate_event_handler = function(event_handler)
 end
 
 M.clear_all_events = function()
-  for event_name, _ in pairs(events) do
+  for event_name, queue in pairs(event_queues) do
     M.destroy_event(event_name)
   end
-  events = {}
+  event_queues = {}
 end
 
 M.define_event = function(event_name, opts)
-  local existing = events[event_name]
+  local existing = event_definitions[event_name]
   if existing ~= nil then
     error("Event already defined: " .. event_name)
   end
-  events[event_name] = opts
+  event_definitions[event_name] = opts
 end
 
 M.destroy_event = function(event_name)
-  local existing = events[event_name]
+  local existing = event_definitions[event_name]
   if existing == nil then
     return false
   end
@@ -94,7 +94,7 @@ M.destroy_event = function(event_name)
     end
     existing.setup_was_run = false
   end
-  events[event_name] = nil
+  event_queues[event_name] = nil
   return true
 end
 
@@ -106,13 +106,16 @@ local fire_event_internal = function(event, args)
   log.trace("Firing event: " .. event)
 
   if queue:is_empty() then
+    log.trace("Event queue is empty")
     return nil
   end
-  local seed = utils.get_value(events, event .. ".seed")
+  local seed = utils.get_value(event_definitions, event .. ".seed")
   if seed ~= nil then
     local success, result = pcall(seed, args)
-    if not success then
-      error("Error in seed function for " .. event .. ": " .. result)
+    if success then
+      log.trace("Seed for " .. event .. " returned: " .. tostring(result))
+    else
+      log.error("Error in seed function for " .. event .. ": " .. result)
     end
   end
 
@@ -121,15 +124,17 @@ local fire_event_internal = function(event, args)
   for i = first, last do
     local event_handler = queue[i]
     local success, result = pcall(event_handler.handler, args)
-    if not success then
-      local id = event_handler.id or event_handler
+    local id = event_handler.id or event_handler
+    if success then
+      log.trace("Handler ", id, " for " .. event .. " called successfully.")
+    else
       log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
     end
   end
 end
 
 M.fire_event = function(event, args)
-  local freq = utils.get_value(events, event .. ".debounce_frequency", 0, true)
+  local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   if freq > 0 then
     utils.debounce("EVENT_FIRED: " .. event, function()
       fire_event_internal(event, args or {})
@@ -144,18 +149,26 @@ M.subscribe = function(event_handler)
 
   local queue = event_queues[event_handler.event]
   if queue == nil then
+    log.debug("Creating queue for event: " .. event_handler.event)
     queue = Queue:new()
-    local def = events[event_handler.event]
+    local def = event_definitions[event_handler.event]
+    if def then
+      log.trace("Event definition for ", event_handler.event, ": ", def)
+    else
+      log.trace("No event definition for ", event_handler.event)
+    end
     if def and type(def.setup) == "function" then
       local success, result = pcall(def.setup)
       if success then
         def.setup_was_run = true
+        log.debug("Setup for event " .. event_handler.event .. " was run")
       else
-        error("Error in setup for " .. event_handler.event .. ": " .. result)
+        log.error("Error in setup for " .. event_handler.event .. ": " .. result)
       end
     end
     event_queues[event_handler.event] = queue
   end
+  log.debug("Adding event handler [", event_handler.id, "] for event: ", event_handler.event)
   queue:add(event_handler)
 end
 
