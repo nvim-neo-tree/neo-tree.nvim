@@ -510,7 +510,9 @@ M.show_nodes = function(sourceItems, state, parentId)
     end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)
-    events.fire_event(events.AFTER_RENDER, state)
+    vim.schedule(function()
+      events.fire_event(events.AFTER_RENDER, state)
+    end)
   end, 100)
 end
 

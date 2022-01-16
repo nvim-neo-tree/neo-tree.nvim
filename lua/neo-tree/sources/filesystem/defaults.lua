@@ -1,6 +1,8 @@
 local highlights = require("neo-tree.ui.highlights")
 
 local filesystem = {
+  follow_current_file = false, -- This will find and focus the file in the
+  -- active buffer every time the current file is changed while the tree is open.
   window = {
     -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
     -- for possible options. These can also be functions that return these

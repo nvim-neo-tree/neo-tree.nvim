@@ -38,11 +38,17 @@ expand_to_root = function(tree, from_node)
 end
 
 local get_path_to_reveal = function()
+  local win_id = vim.api.nvim_get_current_win()
+  local cfg = vim.api.nvim_win_get_config(win_id)
+  if cfg.relative > "" or cfg.external then
+    -- floating window, ignore
+    return nil
+  end
   if vim.bo.filetype == "neo-tree" then
     return nil
   end
   local path = vim.fn.expand("%:p")
-  if not path or path == "" or path:match("term://") then
+  if not utils.truthy(path) or path:match("term://") then
     return nil
   end
   return path
@@ -80,6 +86,63 @@ M.float = function()
   state.force_float = true
   local path_to_reveal = get_path_to_reveal()
   M.navigate(state.path, path_to_reveal)
+end
+
+M.follow = function()
+  log.trace("follow called")
+  local path_to_reveal = get_path_to_reveal()
+  if not utils.truthy(path_to_reveal) then
+    return
+  end
+  local state = get_state()
+  if not renderer.window_exists(state) then
+    return
+  end
+
+  log.debug("follow file: ", path_to_reveal)
+  local show_only_explicitly_opened = function()
+    local eod = state.explicitly_opened_directories or {}
+    local expanded_nodes = renderer.get_expanded_nodes(state.tree)
+    local state_changed = false
+    for _, id in ipairs(expanded_nodes) do
+      local is_explicit = eod[id]
+      if not is_explicit then
+        local is_in_path = path_to_reveal:sub(1, #id) == id
+        if is_in_path then
+          is_explicit = true
+        end
+      end
+      if not is_explicit then
+        local node = state.tree:get_node(id)
+        if node then
+          node:collapse()
+          state_changed = true
+        end
+      end
+      if state_changed then
+        state.tree:render()
+      end
+    end
+  end
+
+  fs_scan.get_items_async(state, nil, path_to_reveal, function()
+    local event = {
+      event = events.AFTER_RENDER,
+      id = "neo-tree-follow:" .. tostring(state),
+    }
+    events.unsubscribe(event) -- if there is a prior event waiting, replace it
+    event.handler = function(arg)
+      if arg ~= state then
+        return -- this is not our event
+      end
+      log.trace(event.id .. ": handler called")
+      show_only_explicitly_opened()
+      renderer.focus_node(state, path_to_reveal, true)
+      event.cancelled = true
+    end
+
+    events.subscribe(event)
+  end)
 end
 
 ---Focus the window, opening it if it is not already open.
@@ -338,6 +401,19 @@ M.setup = function(config, global_config)
       id = "filesystem." .. events.VIM_DIAGNOSTIC_CHANGED,
     })
   end
+
+  if config.follow_current_file then
+    events.subscribe({
+      event = events.VIM_BUFFER_ENTER,
+      handler = M.follow,
+      id = "filesystem." .. events.VIM_BUFFER_ENTER,
+    })
+  else
+    events.unsubscribe({
+      event = events.VIM_BUFFER_ENTER,
+      id = "filesystem." .. events.VIM_BUFFER_ENTER,
+    })
+  end
 end
 
 ---Opens the tree and displays the current path or cwd.
@@ -357,14 +433,18 @@ M.toggle_directory = function(node)
   if node.type ~= "directory" then
     return
   end
+  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
   if node.loaded == false then
+    state.explicitly_opened_directories[node:get_id()] = true
     fs_scan.get_items_async(state, node.id, true)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
       updated = node:collapse()
+      state.explicitly_opened_directories[node:get_id()] = false
     else
       updated = node:expand()
+      state.explicitly_opened_directories[node:get_id()] = true
     end
     if updated then
       tree:render()

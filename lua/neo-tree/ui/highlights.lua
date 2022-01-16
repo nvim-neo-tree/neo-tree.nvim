@@ -110,7 +110,7 @@ M.setup = function()
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
-  create_highlight_group(M.CURSOR_LINE, { "CursorLine" })
+  create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
   create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
   create_highlight_group(M.DIRECTORY_ICON, {}, nil, "73cef4")
   create_highlight_group(M.FILE_ICON, { M.DIRECTORY_ICON })
