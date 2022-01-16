@@ -56,11 +56,11 @@ local define_events = function()
     args.diagnostics_lookup = utils.get_diagnostic_counts()
   end)
 
-  events.define_autocmd_event(
-    events.VIM_BUFFER_CHANGED,
-    { "BufDelete", "BufWritePost", "BufFilePost", "BufNew" },
-    200
-  )
+  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
+
+  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
+
+  events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)

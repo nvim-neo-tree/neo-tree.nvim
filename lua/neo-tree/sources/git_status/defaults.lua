@@ -1,6 +1,6 @@
 local highlights = require("neo-tree.ui.highlights")
 
-local filesystem = {
+local git_status = {
   window = {
     position = "left",
     width = 40,
@@ -62,4 +62,4 @@ local filesystem = {
   },
 }
 
-return filesystem
+return git_status

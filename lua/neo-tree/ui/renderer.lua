@@ -259,22 +259,19 @@ M.get_expanded_nodes = function(tree)
 end
 
 M.collapse_all_nodes = function(tree)
-  local function collapse_all(parent_node)
-    if parent_node:has_children() then
-      for _, child in ipairs(tree:get_nodes(parent_node:get_id())) do
-        child:collapse()
-      end
-      parent_node:collapse()
-    end
+  local expanded = M.get_expanded_nodes(tree)
+  for _, id in ipairs(expanded) do
+    local node = tree:get_node(id)
+    node:collapse(id)
   end
-
-  for _, node in ipairs(tree:get_nodes()) do
-    collapse_all(node)
-  end
+  -- but make sure the root is expanded
+  local root = tree:get_nodes()[1]
+  root:expand()
 end
 
 M.set_expanded_nodes = function(tree, expanded_nodes)
   M.collapse_all_nodes(tree)
+  log.debug("Setting expanded nodes")
   for _, id in ipairs(expanded_nodes or {}) do
     local node = tree:get_node(id)
     if node ~= nil then
@@ -466,7 +463,13 @@ local draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
   if parent_id == nil and state.tree ~= nil then
-    expanded_nodes = M.get_expanded_nodes(state.tree)
+    if state.force_open_folders then
+      log.trace("Force open folders")
+      state.force_open_folders = nil
+    else
+      log.trace("Preserving expanded nodes")
+      expanded_nodes = M.get_expanded_nodes(state.tree)
+    end
   end
   for _, id in ipairs(state.default_expanded_nodes) do
     table.insert(expanded_nodes, id)

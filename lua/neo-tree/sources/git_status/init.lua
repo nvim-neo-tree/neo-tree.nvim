@@ -91,7 +91,12 @@ M.setup = function(config, global_config)
     --convert to new event system
     events.subscribe({
       event = events.BEFORE_RENDER,
-      handler = config.before_render,
+      handler = function(state)
+        local this_state = get_state()
+        if state == this_state then
+          config.before_render(this_state)
+        end
+      end,
       id = config.name .. ".config.before_render",
     })
   else

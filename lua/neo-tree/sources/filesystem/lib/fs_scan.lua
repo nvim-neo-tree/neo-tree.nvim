@@ -69,7 +69,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   root.loaded = true
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
-  state.default_expanded_nodes = { state.path }
+  state.default_expanded_nodes = state.force_open_folders or { state.path }
 
   context.job_complete = function()
     file_items.deep_sort(root.children)
@@ -108,7 +108,11 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
     local path = parent_id or state.path
     context.paths_to_load = {}
     if parent_id == nil then
-      if state.tree then
+      if utils.truthy(state.force_open_folders) then
+        for _, path in ipairs(state.force_open_folders) do
+          table.insert(context.paths_to_load, path)
+        end
+      elseif state.tree then
         context.paths_to_load = renderer.get_expanded_nodes(state.tree)
       end
       if path_to_reveal then

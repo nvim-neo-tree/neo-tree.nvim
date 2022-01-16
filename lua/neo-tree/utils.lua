@@ -375,6 +375,28 @@ M.table_merge = function(base_table, override_table)
   return table_merge_internal(merged_table, override_table)
 end
 
+---Evaluate the truthiness of a value, according to js/python rules.
+---@param value any
+---@return boolean
+M.truthy = function(value)
+  if value == nil then
+    return false
+  end
+  if type(value) == "boolean" then
+    return value
+  end
+  if type(value) == "string" then
+    return value > ""
+  end
+  if type(value) == "number" then
+    return value > 0
+  end
+  if type(value) == "table" then
+    return #value > 0
+  end
+  return true
+end
+
 ---Returns a new list that is the result of dedeuplicating a list.
 ---@param list table The list to deduplicate.
 ---@return table table The list of unique values.

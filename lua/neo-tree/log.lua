@@ -26,8 +26,8 @@ local default_config = {
 
   -- Level configuration
   modes = {
-    { name = "trace", hl = "Comment" },
-    { name = "debug", hl = "Comment" },
+    { name = "trace", hl = "None" },
+    { name = "debug", hl = "None" },
     { name = "info", hl = "None" },
     { name = "warn", hl = "WarningMsg" },
     { name = "error", hl = "ErrorMsg" },

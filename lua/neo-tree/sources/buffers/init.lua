@@ -130,30 +130,39 @@ M.setup = function(config, global_config)
     --convert to new event system
     events.subscribe({
       event = events.BEFORE_RENDER,
-      handler = config.before_render,
+      handler = function(state)
+        local this_state = get_state()
+        if state == this_state then
+          config.before_render(this_state)
+        end
+      end,
       id = before_render_id,
     })
   elseif global_config.enable_git_status then
     events.subscribe({
       event = events.BEFORE_RENDER,
       handler = function(state)
-        state.git_status_lookup = utils.get_git_status()
+        local this_state = get_state()
+        if state == this_state then
+          state.git_status_lookup = utils.get_git_status()
+        end
       end,
       id = before_render_id,
     })
   end
 
-  events.subscribe({
-    event = events.VIM_BUFFER_ENTER,
-    handler = M.buffers_changed,
-    id = "buffers." .. events.VIM_BUFFER_ENTER,
-  })
-
-  events.subscribe({
-    event = events.VIM_BUFFER_CHANGED,
-    handler = M.buffers_changed,
-    id = "buffers." .. events.VIM_BUFFER_CHANGED,
-  })
+  local refresh_events = {
+    events.VIM_BUFFER_CHANGED,
+    events.VIM_BUFFER_ADDED,
+    events.VIM_BUFFER_DELETED,
+  }
+  for _, e in ipairs(refresh_events) do
+    events.subscribe({
+      event = e,
+      handler = M.buffers_changed,
+      id = "buffers." .. e,
+    })
+  end
 
   if default_config.bind_to_cwd then
     events.subscribe({

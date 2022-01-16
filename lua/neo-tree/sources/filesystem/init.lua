@@ -7,6 +7,7 @@ local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
+local log = require("neo-tree.log")
 
 local M = {}
 local default_config = nil
@@ -98,6 +99,7 @@ M.focus = function(path_to_reveal, callback)
 end
 
 local navigate_internal = function(path, path_to_reveal, callback)
+  log.trace("navigate_internal", path, path_to_reveal)
   local state = get_state()
   local pos = utils.get_value(state, "window.position", "left")
   local was_float = state.force_float or pos == "float"
@@ -116,6 +118,7 @@ local navigate_internal = function(path, path_to_reveal, callback)
       if callback then
         callback()
       end
+      state.in_navigate = false
     end)
   else
     local previously_focused = nil
@@ -137,6 +140,7 @@ local navigate_internal = function(path, path_to_reveal, callback)
       if callback then
         callback()
       end
+      state.in_navigate = false
     end)
   end
 
@@ -150,12 +154,16 @@ end
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(path, path_to_reveal, callback)
+  log.trace("navigate", path, path_to_reveal)
+  local state = get_state()
+  state.in_navigate = true
   utils.debounce("filesystem_navigate", function()
     navigate_internal(path, path_to_reveal, callback)
   end, 100)
 end
 
 M.reveal_current_file = function(toggle_if_open)
+  log.trace("Revealing current file")
   if toggle_if_open then
     if M.close() then
       -- It was open, and now it's not.
@@ -191,15 +199,20 @@ M.reveal_current_file = function(toggle_if_open)
 end
 
 M.reset_search = function(refresh)
+  log.trace("reset_search")
+  local state = get_state()
   if refresh == nil then
     refresh = true
   end
-  local state = get_state()
   if state.open_folders_before_search then
-    renderer.set_expanded_nodes(state.tree, state.open_folders_before_search)
-    state.open_folders_before_search = nil
+    log.trace("reset_search: open_folders_before_search")
+    state.force_open_folders = utils.table_copy(state.open_folders_before_search)
+  else
+    log.trace("reset_search: why are there no open_folders_before_search?")
+    state.force_open_folders = nil
   end
   state.search_pattern = nil
+  state.open_folders_before_search = nil
   if refresh then
     M.refresh()
   end
@@ -246,7 +259,11 @@ end
 
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function(callback)
+  log.trace("filesystem refresh")
   local state = get_state()
+  if state.in_navigate or state.in_show_nodes then
+    return
+  end
   if state.path and renderer.window_exists(state) then
     if type(callback) ~= "function" then
       callback = nil
@@ -270,14 +287,22 @@ M.setup = function(config, global_config)
     --convert to new event system
     events.subscribe({
       event = events.BEFORE_RENDER,
-      handler = config.before_render,
+      handler = function(state)
+        local this_state = get_state()
+        if state == this_state then
+          config.before_render(this_state)
+        end
+      end,
       id = before_render_id,
     })
   elseif global_config.enable_git_status then
     events.subscribe({
       event = events.BEFORE_RENDER,
       handler = function(state)
-        state.git_status_lookup = utils.get_git_status()
+        local this_state = get_state()
+        if state == this_state then
+          state.git_status_lookup = utils.get_git_status()
+        end
       end,
       id = before_render_id,
     })
