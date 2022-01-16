@@ -23,6 +23,8 @@ use {
         enable_git_status = true,
         enable_diagnostics = true,
         filesystem = {
+          follow_current_file = false, -- This will find and focus the file in the
+          -- active buffer every time the current file is changed while the tree is open.
           window = {
             position = "left",
             width = 40,

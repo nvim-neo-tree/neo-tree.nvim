@@ -19,6 +19,8 @@ require("neo-tree").setup({
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   -- "NC" is a special style that works well with NormalNC set
   filesystem = {
+    follow_current_file = true, -- This will find and focus the file in the
+    -- active buffer every time the current file is changed, if the tree is open.
     window = {
       position = "left",
       width = 40,

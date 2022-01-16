@@ -43,7 +43,7 @@ function Queue:without(id)
     local item = self[i]
     if item ~= nil then
       local item_id = item.id or item
-      if item_id ~= id then
+      if item_id ~= id and not item.cancelled then
         new_queue:add(item)
       end
     end
@@ -123,12 +123,17 @@ local fire_event_internal = function(event, args)
   local last = queue.last
   for i = first, last do
     local event_handler = queue[i]
-    local success, result = pcall(event_handler.handler, args)
-    local id = event_handler.id or event_handler
-    if success then
-      log.trace("Handler ", id, " for " .. event .. " called successfully.")
-    else
-      log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
+    if not event_handler.cancelled then
+      local success, result = pcall(event_handler.handler, args)
+      local id = event_handler.id or event_handler
+      if success then
+        log.trace("Handler ", id, " for " .. event .. " called successfully.")
+      else
+        log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
+      end
+      if event_handler.once then
+        event_handler.cancelled = true
+      end
     end
   end
 end
@@ -152,11 +157,6 @@ M.subscribe = function(event_handler)
     log.debug("Creating queue for event: " .. event_handler.event)
     queue = Queue:new()
     local def = event_definitions[event_handler.event]
-    if def then
-      log.trace("Event definition for ", event_handler.event, ": ", def)
-    else
-      log.trace("No event definition for ", event_handler.event)
-    end
     if def and type(def.setup) == "function" then
       local success, result = pcall(def.setup)
       if success then
