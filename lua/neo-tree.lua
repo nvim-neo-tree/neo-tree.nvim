@@ -145,7 +145,8 @@ M.focus = function(source_name, close_others, toggle_if_open)
 end
 
 M.get_prior_window = function()
-  local wins = M.config.prior_windows
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
   if wins == nil then
     return -1
   end
@@ -180,16 +181,23 @@ M.win_enter_event = function()
   end
 
   M.config.prior_windows = M.config.prior_windows or {}
-  table.insert(M.config.prior_windows, win_id)
+
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  local tab_windows = M.config.prior_windows[tabnr]
+  if tab_windows == nil then
+    tab_windows = {}
+    M.config.prior_windows[tabnr] = tab_windows
+  end
+  table.insert(tab_windows, win_id)
 
   -- prune the history when it gets too big
-  if #M.config.prior_windows > 100 then
+  if #tab_windows > 100 then
     local new_array = {}
-    local win_count = #M.config.prior_windows
-    for i = 90, win_count do
-      table.insert(new_array, M.config.prior_windows[i])
+    local win_count = #tab_windows
+    for i = 80, win_count do
+      table.insert(new_array, tab_windows[i])
     end
-    M.config.prior_windows = new_array
+    M.config.prior_windows[tabnr] = new_array
   end
 end
 
