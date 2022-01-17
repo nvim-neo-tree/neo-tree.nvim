@@ -13,8 +13,15 @@ local M = {}
 local default_config = nil
 local state_by_tab = {}
 
-local get_state = function()
-  local tabnr = vim.api.nvim_get_current_tabpage()
+local set_default_config = function(config)
+  default_config = config
+  for tabnr, tab_config in pairs(state_by_tab) do
+    state_by_tab[tabnr] = utils.table_merge(tab_config, config)
+  end
+end
+
+local get_state = function(tabnr)
+  tabnr = tabnr or vim.api.nvim_get_current_tabpage()
   local state = state_by_tab[tabnr]
   if not state then
     state = utils.table_copy(default_config)
@@ -54,6 +61,48 @@ local get_path_to_reveal = function()
   return path
 end
 
+local subscribe = function(event)
+  local state = get_state()
+  if not state.subscriptions then
+    state.subscriptions = {}
+  end
+  if not utils.truthy(event.id) then
+    event.id = state.name .. "." .. event.event
+  end
+  log.trace("subscribing to event: " .. event.id)
+  state.subscriptions[event] = true
+  events.subscribe(event)
+end
+
+local unsubscribe = function(event, state)
+  state = state or get_state()
+  if type(event) ~= "table" then
+    error("unsubscribe: event must be a table")
+  end
+  log.trace("unsubscribing to event: " .. event.id or event.event)
+  if state.subscriptions then
+    for sub, _ in pairs(state.subscriptions) do
+      if sub.event == event.event and sub.id == event.id then
+        state.subscriptions[sub] = false
+        events.unsubscribe(sub)
+      end
+    end
+  end
+  events.unsubscribe(event)
+end
+
+local unsubscribe_all = function(state)
+  state = state or get_state()
+  if state.subscriptions then
+    for event, subscribed in pairs(state.subscriptions) do
+      if subscribed then
+        unsubscribe(event, state)
+      end
+    end
+  end
+  state.subscriptions = {}
+end
+
 M.close = function()
   local state = get_state()
   return renderer.close(state)
@@ -79,6 +128,15 @@ M.dir_changed = function()
   if state.path and renderer.window_exists(state) then
     M.navigate(cwd)
   end
+end
+
+M.dispose = function(tabnr)
+  local state = get_state(tabnr)
+  log.trace(state.name, " disposing of tab: ", tabnr)
+  fs_scan.stop_watchers(state)
+  unsubscribe_all(state)
+  renderer.close(state)
+  state_by_tab[state.tabnr] = nil
 end
 
 M.float = function()
@@ -339,16 +397,15 @@ end
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
-  default_config = config
+  set_default_config(config)
+  log.debug("filesystem setup", config)
+  local state = get_state()
+  unsubscribe_all(state)
 
-  local before_render_id = config.name .. ".before_render"
-  events.unsubscribe({
-    event = events.BEFORE_RENDER,
-    id = before_render_id,
-  })
+  --Configure events for before_render
   if config.before_render then
     --convert to new event system
-    events.subscribe({
+    subscribe({
       event = events.BEFORE_RENDER,
       handler = function(state)
         local this_state = get_state()
@@ -356,10 +413,9 @@ M.setup = function(config, global_config)
           config.before_render(this_state)
         end
       end,
-      id = before_render_id,
     })
   elseif global_config.enable_git_status then
-    events.subscribe({
+    subscribe({
       event = events.BEFORE_RENDER,
       handler = function(state)
         local this_state = get_state()
@@ -367,53 +423,60 @@ M.setup = function(config, global_config)
           state.git_status_lookup = utils.get_git_status()
         end
       end,
-      id = before_render_id,
     })
   end
 
-  events.subscribe({
-    event = events.VIM_BUFFER_CHANGED,
-    handler = M.refresh,
-    id = "filesystem." .. events.VIM_BUFFER_CHANGED,
-  })
+  --Configure event handlers for file changes
+  if config.use_libuv_file_watcher then
+    subscribe({
+      event = events.FS_EVENT,
+      handler = M.refresh,
+    })
+  else
+    require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()
+    subscribe({
+      event = events.VIM_BUFFER_CHANGED,
+      handler = M.refresh,
+    })
+  end
+
+  --Configure event handlers for cwd changes
   if default_config.bind_to_cwd then
-    events.subscribe({
+    subscribe({
       event = events.VIM_DIR_CHANGED,
       handler = M.dir_changed,
-      id = "filesystem." .. events.VIM_DIR_CHANGED,
-    })
-  else
-    events.unsubscribe({
-      event = events.VIM_DIR_CHANGED,
-      id = "filesystem." .. events.VIM_DIR_CHANGED,
     })
   end
 
+  --Configure event handlers for lsp diagnostic updates
   if global_config.enable_diagnostics then
-    events.subscribe({
+    subscribe({
       event = events.VIM_DIAGNOSTIC_CHANGED,
       handler = M.diagnostics_changed,
-      id = "filesystem." .. events.VIM_DIAGNOSTIC_CHANGED,
-    })
-  else
-    events.unsubscribe({
-      event = events.VIM_DIAGNOSTIC_CHANGED,
-      id = "filesystem." .. events.VIM_DIAGNOSTIC_CHANGED,
     })
   end
 
+  -- Configure event handler for follow_current_file option
   if config.follow_current_file then
-    events.subscribe({
+    subscribe({
       event = events.VIM_BUFFER_ENTER,
       handler = M.follow,
-      id = "filesystem." .. events.VIM_BUFFER_ENTER,
-    })
-  else
-    events.unsubscribe({
-      event = events.VIM_BUFFER_ENTER,
-      id = "filesystem." .. events.VIM_BUFFER_ENTER,
     })
   end
+
+  --Dispose ourselves if the tab closes
+  subscribe({
+    event = events.VIM_TAB_CLOSED,
+    handler = function(args)
+      local tabnr = tonumber(args.afile)
+      if tabnr then
+        log.debug("VIM_TAB_CLOSED: disposing state for tab", tabnr)
+        M.dispose(tabnr)
+      else
+        log.error("VIM_TAB_CLOSED: no tab number found in args.afile")
+      end
+    end,
+  })
 end
 
 ---Opens the tree and displays the current path or cwd.

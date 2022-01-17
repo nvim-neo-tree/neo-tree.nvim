@@ -6,6 +6,7 @@ local scan = require("plenary.scandir")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
 local log = require("neo-tree.log")
+local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 
 local M = {}
 
@@ -29,6 +30,16 @@ local function do_scan(context, path_to_scan)
       end
     end,
     on_exit = vim.schedule_wrap(function()
+      if state.use_libuv_file_watcher then
+        local root = context.folders[path_to_scan]
+        if root.is_link then
+          log.trace("Adding fs watcher for ", root.link_to)
+          fs_watch.watch_folder(root.link_to)
+        else
+          log.trace("Adding fs watcher for ", root.path)
+          fs_watch.watch_folder(root.path)
+        end
+      end
       local scanned_folder = folders[path_to_scan]
       if scanned_folder then
         scanned_folder.loaded = true
@@ -61,6 +72,9 @@ local function do_scan(context, path_to_scan)
 end
 
 M.get_items_async = function(state, parent_id, path_to_reveal, callback)
+  if not parent_id then
+    M.stop_watchers(state)
+  end
   local context = file_items.create_context(state)
 
   -- Create root folder
@@ -113,7 +127,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
           table.insert(context.paths_to_load, path)
         end
       elseif state.tree then
-        context.paths_to_load = renderer.get_expanded_nodes(state.tree)
+        context.paths_to_load = renderer.get_expanded_nodes(state.tree, state.path)
       end
       if path_to_reveal then
         -- be sure to load all of the folders leading up to the path to reveal
@@ -132,6 +146,31 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       end
     end
     do_scan(context, parent_id or state.path)
+  end
+end
+
+M.stop_watchers = function(state)
+  if state.use_libuv_file_watcher and state.tree then
+    -- We are loaded a new root or refreshing, unwatch any folders that were
+    -- previously being watched.
+    local loaded_folders = renderer.select_nodes(state.tree, function(node)
+      return node.type == "directory" and node.loaded
+    end)
+    for _, folder in ipairs(loaded_folders) do
+      log.trace("Unwatching folder ", folder.path)
+      if folder.is_link then
+        fs_watch.unwatch_folder(folder.link_to)
+      else
+        fs_watch.unwatch_folder(folder:get_id())
+      end
+    end
+  else
+    log.debug(
+      "Not unwatching folders... use_libuv_file_watcher is ",
+      state.use_libuv_file_watcher,
+      " and state.tree is ",
+      utils.truthy(state.tree)
+    )
   end
 end
 

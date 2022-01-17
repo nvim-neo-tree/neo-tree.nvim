@@ -236,7 +236,7 @@ M.get_all_visible_nodes = function(tree)
   return nodes
 end
 
-M.get_expanded_nodes = function(tree)
+M.get_expanded_nodes = function(tree, root_node_id)
   local node_ids = {}
 
   local function process(node)
@@ -252,8 +252,15 @@ M.get_expanded_nodes = function(tree)
     end
   end
 
-  for _, node in ipairs(tree:get_nodes()) do
-    process(node)
+  if root_node_id then
+    local root_node = tree:get_node(root_node_id)
+    if root_node then
+      process(root_node)
+    end
+  else
+    for _, node in ipairs(tree:get_nodes()) do
+      process(node)
+    end
   end
   return node_ids
 end
@@ -267,6 +274,34 @@ M.collapse_all_nodes = function(tree)
   -- but make sure the root is expanded
   local root = tree:get_nodes()[1]
   root:expand()
+end
+
+---Visits all nodes in the tree and returns a list of all nodes that match the
+---given predicate.
+---@param tree table The NuiTree to search.
+---@param selector_func function The predicate function, should return true for
+---nodes that should be included in the result.
+---@return table table A list of nodes that match the predicate.
+M.select_nodes = function(tree, selector_func)
+  if type(selector_func) ~= "function" then
+    error("selector_func must be a function")
+  end
+  local found_nodes = {}
+  local visit
+  visit = function(node)
+    if selector_func(node) then
+      table.insert(found_nodes, node)
+    end
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(node:get_id())) do
+        visit(child)
+      end
+    end
+  end
+  for _, node in ipairs(tree:get_nodes()) do
+    visit(node)
+  end
+  return found_nodes
 end
 
 M.set_expanded_nodes = function(tree, expanded_nodes)

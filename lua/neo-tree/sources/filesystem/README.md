@@ -19,8 +19,10 @@ require("neo-tree").setup({
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   -- "NC" is a special style that works well with NormalNC set
   filesystem = {
-    follow_current_file = true, -- This will find and focus the file in the
+    follow_current_file = false, -- This will find and focus the file in the
     -- active buffer every time the current file is changed, if the tree is open.
+    use_libuv_file_watcher = false, -- This will use the OS level file watchers 
+    -- to detect changes instead of relying on nvim autocmd events.
     window = {
       position = "left",
       width = 40,
