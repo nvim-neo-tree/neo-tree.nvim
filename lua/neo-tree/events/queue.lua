@@ -103,7 +103,7 @@ local fire_event_internal = function(event, args)
   if queue == nil then
     return nil
   end
-  log.trace("Firing event: " .. event)
+  log.trace("Firing event: ", event, " with args: ", args)
 
   if queue:is_empty() then
     log.trace("Event queue is empty")

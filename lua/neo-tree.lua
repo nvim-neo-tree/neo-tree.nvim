@@ -64,6 +64,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)
+  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
   events_setup = true
 end
 

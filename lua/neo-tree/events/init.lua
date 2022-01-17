@@ -19,13 +19,15 @@ local M = {
   VIM_BUFFER_ENTER = "vim_buffer_enter",
   VIM_DIAGNOSTIC_CHANGED = "vim_diagnostic_changed",
   VIM_DIR_CHANGED = "vim_dir_changed",
+  VIM_TAB_CLOSED = "vim_tab_closed",
   VIM_WIN_ENTER = "vim_win_enter",
 }
 
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn)
   local opts = {
     setup = function()
-      local tpl = ":lua require('neo-tree.events').fire_event('%s')"
+      local tpl =
+        ":lua require('neo-tree.events').fire_event('%s', { afile = vim.fn.expand('<afile>') })"
       local callback = string.format(tpl, event_name)
       local cmds = {
         "augroup NeoTreeEvent_" .. event_name,
