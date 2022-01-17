@@ -269,12 +269,68 @@ M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   end
 end
 
+M.is_floating = function(win_id)
+  win_id = win_id or vim.api.nvim_get_current_win()
+  local cfg = vim.api.nvim_win_get_config(win_id)
+  if cfg.relative > "" or cfg.external then
+    return true
+  end
+  return false
+end
+
 M.map = function(tbl, fn)
   local t = {}
   for k, v in pairs(tbl) do
     t[k] = fn(v)
   end
   return t
+end
+
+---Open file in the appropriate window.
+---@param state table The state of the source
+---@param path string The file to open
+---@param open_cmd string The vimcommand to use to open the file
+M.open_file = function(state, path, open_cmd)
+  open_cmd = open_cmd or "edit"
+  if M.truthy(path) then
+    -- use last window if possible
+    local suitable_window_found = false
+    local nt = require("neo-tree")
+    if nt.config.open_files_in_last_window then
+      local prior_window = nt.get_prior_window()
+      if prior_window > 0 then
+        local success = pcall(vim.api.nvim_set_current_win, prior_window)
+        if success then
+          suitable_window_found = true
+        end
+      end
+    end
+    -- find a suitable window to open the file in
+    if not suitable_window_found then
+      if state.window.position == "right" then
+        vim.cmd("wincmd t")
+      else
+        vim.cmd("wincmd w")
+      end
+    end
+    local attempts = 0
+    while attempts < 4 and vim.bo.filetype == "neo-tree" do
+      attempts = attempts + 1
+      vim.cmd("wincmd w")
+    end
+    -- TODO: make this configurable, see issue #43
+    if vim.bo.filetype == "neo-tree" then
+      -- Neo-tree must be the only window, restore it's status as a sidebar
+      local winid = vim.api.nvim_get_current_win()
+      local width = M.get_value(state, "window.width", 40)
+      vim.cmd("vsplit " .. path)
+      vim.api.nvim_win_set_width(winid, width)
+    else
+      vim.cmd(open_cmd .. " " .. path)
+    end
+    local events = require("neo-tree.events")
+    events.fire_event(events.FILE_OPENED, path)
+  end
 end
 
 M.reduce = function(list, memo, func)
@@ -298,6 +354,7 @@ M.resolve_config_option = function(state, config_option, default_value)
     return opt
   end
 end
+
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1

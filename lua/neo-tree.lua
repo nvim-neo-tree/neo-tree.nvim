@@ -47,6 +47,7 @@ local define_events = function()
   if events_setup then
     return
   end
+
   local v = vim.version()
   local diag_autocmd = "DiagnosticChanged"
   if v.major < 1 and v.minor < 6 then
@@ -57,14 +58,13 @@ local define_events = function()
   end)
 
   events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
-
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
-
   events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+
   events_setup = true
 end
 
@@ -170,9 +170,7 @@ end
 
 M.win_enter_event = function()
   local win_id = vim.api.nvim_get_current_win()
-  local cfg = vim.api.nvim_win_get_config(win_id)
-  if cfg.relative > "" or cfg.external then
-    -- floating window, ignore
+  if utils.is_floating(win_id) then
     return
   end
   if vim.o.filetype == "neo-tree" then
@@ -239,6 +237,40 @@ M.setup = function(config)
 
   events.clear_all_events()
   define_events()
+
+  -- Prevent accidentally opening another file in the neo-tree window.
+  events.subscribe({
+    event = events.VIM_BUFFER_ENTER,
+    handler = function(args)
+      if utils.is_floating() then
+        return
+      end
+      local prior_buf = vim.fn.bufnr("#")
+      if prior_buf < 1 then
+        return
+      end
+      local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
+      if prior_type == "neo-tree" and vim.bo.filetype ~= "neo-tree" then
+        local bufname = vim.fn.bufname()
+        vim.cmd("b#")
+        -- Using schedule at this point  fixes problem with syntax
+        -- highlighting in the buffer. I also prevents errors with diagnostics
+        -- trying to work with gthe buffer as it's being closed.
+        vim.schedule(function()
+          -- try to delete the buffer, only because if it was new it would take
+          -- on options from the neo-tree window that are undesirable.
+          pcall(vim.cmd, "bdelete " .. bufname)
+          local fake_state = {
+            window = {
+              position = "left",
+            },
+          }
+          utils.open_file(fake_state, bufname)
+        end)
+      end
+    end,
+  })
+
   if config.event_handlers ~= nil then
     for _, handler in ipairs(config.event_handlers) do
       events.subscribe(handler)
