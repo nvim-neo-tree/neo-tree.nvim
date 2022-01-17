@@ -3,6 +3,34 @@
 Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in a sidebar **or** floating window. 
 
+The biggest and most important feature of Neo-tree is that it works exactly as
+you would expect a sidebar to work without all of the glitchy behavior that is
+normally accepted in (neo)vim sidebars. I can't stand glitchy behavior, and
+neither should you!
+
+- Neo-tree won't tolerate other buffers taking over it's window. When a buffer
+  tries to do so, it will find that buffer an appropriate window to be
+  displayed in.
+- Neo-tree won't leave it's window scrolled to the last line when there is
+  plenty of room to display the whole tree.
+- Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher=true`)
+- Neo-tree can intelligently follow the current file, and will scroll it's
+  window appropriately (set `follow_current_file=true`)
+- Neo-tree will maintain focus on the node you were on when refreshing or
+  navigating to a new root directory
+- Neo-tree will gracefully handle conflicts when you try to rename or copy a
+  file
+- Neo-tree windows in different tabs are completely separate and will not
+  affect each other.
+
+Neo-tree is smooth, efficient, stable, and pays attention to the little details
+to ensure it behaves like a sidebar in traditional gui IDE. Likewise, the
+floating window merges the traditional fuzzy finder with the full functionality
+of a tree control, with attention paid to the little details.
+
+If you find anything janky, wanky, broken, or unintuitive, please open an issue
+so we can fix it.
+
 ![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-filesystem.png)
 
 ## Quickstart
@@ -152,7 +180,7 @@ highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources
 ## Sources
 
 Neo-tree is built on the idea of supporting various sources. Sources are
-basically interface implimentations whose job it is to provide a list of
+basically interface implementations whose job it is to provide a list of
 hierachical items to be rendered, along with commands that are appropriate to
 those items.
 
@@ -180,33 +208,22 @@ filesystem is open in a sidebar:
 ![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
 
 
-
-## Status
-
-This is a fully functional file browser with navigation, mutation,
-git status, and filtering. It can also display a list of open buffers. Other
-sources that may be added include things like tags, treesitter or lsp document
-structures, git status, etc.
-
 ## Configuration and Customization
 
 This is designed to be flexible. The way that is acheived is by making
-everything a function, or a reference to a built-in function. All of the
-built-in functions can be replaced with your own implimentation, or you can 
+everything a function, or a string that identifies a built-in function. All of the
+built-in functions can be replaced with your own implementation, or you can 
 add new ones.
 
 Each node in the tree is created from the renderer specified for the given node
-type, and each renderer is a list of component configs. Each component is a
-function, either built-in or specified in your own the setup() config. Those 
-functions are called with the config, node, and state of the plugin, and return
-the text and highlight group for the component.
+type, and each renderer is a list of component configs to be rendered in order
+for each node in the tree. Each component is a function, either built-in or
+specified in your config. Those functions are called with the config, node, and
+state of the plugin, and return the text and highlight group for the component.
 
-Additionally, each source has a `before_render()` function that you can
-override and use to gather any additonal information you want to use in your
-components. This function is currently used to gather the git status and
-diagnostics for the tree. If you want to skip that, override the function and
-leave that part out. If you want to show some other data, gather it in
-`before_render()`, create a component to display it, and reference that
+Additionally, there is an events system that you can hook into. If you want to
+show some new data point related to your files, gather it in the
+`before_render` event, create a component to display it, and reference that
 component in the renderer for the `file` and/or `directory` type.
 
 Details on how to configure everything is in the help file at `:h neo-tree` or
@@ -225,10 +242,8 @@ wanted something that was:
 ### Easy to maintain and enhance
 
 This plugin is designed to grow and be flexible. This is accomplished by making
-the code as decoupled and functional as possible. It shouldn't be necessary to
-touch any of the core plumbing to add new functionality. Aside from bug fixes,
-the code outside of the `sources` directory should not be touched to add new
-features. Hopefully new contributors will find it easy to work with.
+the code as decoupled and functional as possible. Hopefully new contributors
+will find it easy to work with.
 
 One big difference between this plugin and the ones that came before it, which
 is also what finally pushed me over the edge into making a new plugin, is that
