@@ -95,13 +95,13 @@ end
 
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
-  state.show_hidden = not state.show_hidden
+  state.filters.show_hidden = not state.filters.show_hidden
   fs.show()
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
-  state.respect_gitignore = not state.respect_gitignore
+  state.filters.respect_gitignore = not state.filters.respect_gitignore
   fs.show()
 end
 
