@@ -6,29 +6,21 @@ local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local items = require("neo-tree.sources.buffers.lib.items")
 local events = require("neo-tree.events")
+local manager = require("neo-tree.sources.manager")
 
-local M = {}
-local default_config = nil
-local state_by_tab = {}
+local M = { name = "buffers" }
 
-local get_state = function()
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  local state = state_by_tab[tabnr]
-  if not state then
-    state = utils.table_copy(default_config)
-    state.tabnr = tabnr
-    state_by_tab[tabnr] = state
-  end
-  return state
+local wrap = function(func)
+  return utils.wrap(func, M.name)
 end
 
-M.close = function()
-  local state = get_state()
-  return renderer.close(state)
+local get_state = function()
+  return manager.get_state(M.name)
 end
 
 local buffers_changed_internal = function()
-  for _, state in pairs(state_by_tab) do
+  for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
+    local state = manager.get_state(M.name, tabnr)
     if state.path and renderer.window_exists(state) then
       items.get_open_buffers(state)
     end
@@ -38,43 +30,6 @@ end
 ---Calld by autocmd when any buffer is open, closed, renamed, etc.
 M.buffers_changed = function()
   utils.debounce("buffers_changed", buffers_changed_internal, 500)
-end
-
----Redraws the tree with updated diagnostics without scanning the filesystem again.
-M.diagnostics_changed = function(args)
-  local state = get_state()
-  args = args or {}
-  state.diagnostics_lookup = args.diagnostics_lookup
-  if renderer.window_exists(state) then
-    state.tree:render()
-  end
-end
-
----Called by autocmds when the cwd dir is changed. This will change the root.
-M.dir_changed = function()
-  local state = get_state()
-  local cwd = vim.fn.getcwd()
-  if state.path and cwd == state.path then
-    return
-  end
-  if state.path and renderer.window_exists(state) then
-    M.navigate(cwd)
-  end
-end
-
-M.float = function()
-  local state = get_state()
-  state.force_float = true
-  M.navigate(state.path)
-end
-
-M.focus = function()
-  local state = get_state()
-  if renderer.window_exists(state) then
-    vim.api.nvim_set_current_win(state.winid)
-  else
-    M.navigate(state.path)
-  end
 end
 
 ---Navigate to the given path.
@@ -97,38 +52,14 @@ M.navigate = function(path)
   end
 end
 
----Redraws the tree without scanning the filesystem again. Use this after
--- making changes to the nodes that would affect how their components are
--- rendered.
-M.redraw = function()
-  local state = get_state()
-  if renderer.window_exists(state) then
-    state.tree:render()
-  end
-end
-
----Refreshes the tree by scanning the filesystem again.
-M.refresh = function()
-  local state = get_state()
-  if state.path and renderer.window_exists(state) then
-    items.get_open_buffers(state)
-  end
-end
-
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
-  default_config = config
-
-  local before_render_id = config.name .. ".before_render"
-  events.unsubscribe({
-    event = events.BEFORE_RENDER,
-    id = before_render_id,
-  })
+  --Configure events for before_render
   if config.before_render then
     --convert to new event system
-    events.subscribe({
+    manager.subscribe(M.name, {
       event = events.BEFORE_RENDER,
       handler = function(state)
         local this_state = get_state()
@@ -136,10 +67,9 @@ M.setup = function(config, global_config)
           config.before_render(this_state)
         end
       end,
-      id = before_render_id,
     })
   elseif global_config.enable_git_status then
-    events.subscribe({
+    manager.subscribe(M.name, {
       event = events.BEFORE_RENDER,
       handler = function(state)
         local this_state = get_state()
@@ -147,7 +77,6 @@ M.setup = function(config, global_config)
           state.git_status_lookup = utils.get_git_status()
         end
       end,
-      id = before_render_id,
     })
   end
 
@@ -157,34 +86,25 @@ M.setup = function(config, global_config)
     events.VIM_BUFFER_DELETED,
   }
   for _, e in ipairs(refresh_events) do
-    events.subscribe({
+    manager.subscribe(M.name, {
       event = e,
       handler = M.buffers_changed,
-      id = "buffers." .. e,
     })
   end
 
-  if default_config.bind_to_cwd then
-    events.subscribe({
+  if config.bind_to_cwd then
+    manager.subscribe(M.name, {
       event = events.VIM_DIR_CHANGED,
-      handler = M.dir_changed,
-      id = "buffers." .. events.VIM_DIR_CHANGED,
+      handler = wrap(manager.dir_changed),
     })
   end
 
   if global_config.enable_diagnostics then
-    events.subscribe({
+    manager.subscribe(M.name, {
       event = events.VIM_DIAGNOSTIC_CHANGED,
-      handler = M.diagnostics_changed,
-      id = "buffers." .. events.VIM_DIAGNOSTIC_CHANGED,
+      handler = wrap(manager.diagnostics_changed),
     })
   end
-end
-
----Opens the tree and displays the current path or cwd.
-M.show = function()
-  local state = get_state()
-  M.navigate(state.path)
 end
 
 ---Expands or collapses the current node.

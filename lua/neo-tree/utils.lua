@@ -1,5 +1,10 @@
 local vim = vim
 local log = require("neo-tree.log")
+-- Backwards compatibility
+table.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
+table.unpack = table.unpack or unpack
 
 local M = {}
 
@@ -452,6 +457,17 @@ M.truthy = function(value)
     return #value > 0
   end
   return true
+end
+
+M.wrap = function(func, ...)
+  if type(func) ~= "function" then
+    error("Expected function, got " .. type(func))
+  end
+  local wrapped_args = { ... }
+  return function(...)
+    local all_args = table.pack(table.unpack(wrapped_args), ...)
+    func(table.unpack(all_args))
+  end
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.
