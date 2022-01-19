@@ -146,7 +146,7 @@ M.float = function()
   M.navigate(state.path, path_to_reveal)
 end
 
-M.follow = function()
+M.follow = function(callback)
   log.trace("follow called")
   local path_to_reveal = get_path_to_reveal()
   if not utils.truthy(path_to_reveal) then
@@ -154,6 +154,10 @@ M.follow = function()
   end
   local state = get_state()
   if not renderer.window_exists(state) then
+    return
+  end
+  local is_in_path = path_to_reveal:sub(1, #state.path) == state.path
+  if not is_in_path then
     return
   end
 
@@ -193,10 +197,13 @@ M.follow = function()
       if arg ~= state then
         return -- this is not our event
       end
+      event.cancelled = true
       log.trace(event.id .. ": handler called")
       show_only_explicitly_opened()
       renderer.focus_node(state, path_to_reveal, true)
-      event.cancelled = true
+      if type(callback) == "function" then
+        callback()
+      end
     end
 
     events.subscribe(event)
@@ -223,7 +230,6 @@ local navigate_internal = function(path, path_to_reveal, callback)
   log.trace("navigate_internal", path, path_to_reveal)
   local state = get_state()
   local pos = utils.get_value(state, "window.position", "left")
-  local was_float = state.force_float or pos == "float"
   local path_changed = false
   if path == nil then
     path = vim.fn.getcwd()
@@ -242,31 +248,47 @@ local navigate_internal = function(path, path_to_reveal, callback)
       state.in_navigate = false
     end)
   else
-    local previously_focused = nil
-    if state.tree and renderer.is_window_valid(state.winid) then
-      local node = state.tree:get_node()
-      if node then
-        -- keep the current node selected
-        previously_focused = node:get_id()
-      end
-    end
-    fs_scan.get_items_async(state, nil, nil, function()
-      local current_winid = vim.api.nvim_get_current_win()
-      if path_changed and current_winid == state.winid and previously_focused then
-        local currently_focused = state.tree:get_node():get_id()
-        if currently_focused ~= previously_focused then
-          renderer.focus_node(state, previously_focused, false)
+    local follow_file = state.follow_current_file and get_path_to_reveal()
+    if utils.truthy(follow_file) then
+      M.follow(function()
+        renderer.focus_node(state, follow_file)
+        if callback then
+          callback()
+        end
+        state.in_navigate = false
+      end)
+    else
+      local previously_focused = nil
+      if state.tree and renderer.is_window_valid(state.winid) then
+        local node = state.tree:get_node()
+        if node then
+          -- keep the current node selected
+          previously_focused = node:get_id()
         end
       end
-      if callback then
-        callback()
-      end
-      state.in_navigate = false
-    end)
+      fs_scan.get_items_async(state, nil, nil, function()
+        local current_winid = vim.api.nvim_get_current_win()
+        if path_changed and current_winid == state.winid and previously_focused then
+          local currently_focused = state.tree:get_node():get_id()
+          if currently_focused ~= previously_focused then
+            renderer.focus_node(state, previously_focused, false)
+          end
+        end
+        if callback then
+          callback()
+        end
+        state.in_navigate = false
+      end)
+    end
   end
 
-  if path_changed and state.bind_to_cwd then
-    vim.api.nvim_command("tcd " .. path)
+  if path_changed then
+    if state.follow_current_file then
+      M.follow()
+    end
+    if state.bind_to_cwd then
+      vim.api.nvim_command("tcd " .. path)
+    end
   end
 end
 
