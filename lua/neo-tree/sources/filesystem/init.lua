@@ -146,19 +146,26 @@ M.float = function()
   M.navigate(state.path, path_to_reveal)
 end
 
-M.follow = function(callback)
+M.follow = function(callback, force_show)
   log.trace("follow called")
   local path_to_reveal = get_path_to_reveal()
   if not utils.truthy(path_to_reveal) then
-    return
+    return false
   end
   local state = get_state()
-  if not renderer.window_exists(state) then
-    return
+  if not force_show and not renderer.window_exists(state) then
+    return false
   end
   local is_in_path = path_to_reveal:sub(1, #state.path) == state.path
   if not is_in_path then
-    return
+    return false
+  end
+  local node = state.tree and state.tree:get_node()
+  if node then
+    if node:get_id() == path_to_reveal then
+      -- already focused
+      return false
+    end
   end
 
   log.debug("follow file: ", path_to_reveal)
@@ -208,6 +215,7 @@ M.follow = function(callback)
 
     events.subscribe(event)
   end)
+  return true
 end
 
 ---Focus the window, opening it if it is not already open.
@@ -251,12 +259,11 @@ local navigate_internal = function(path, path_to_reveal, callback)
     local follow_file = state.follow_current_file and get_path_to_reveal()
     if utils.truthy(follow_file) then
       M.follow(function()
-        renderer.focus_node(state, follow_file)
         if callback then
           callback()
         end
         state.in_navigate = false
-      end)
+      end, true)
     else
       local previously_focused = nil
       if state.tree and renderer.is_window_valid(state.winid) then
@@ -283,9 +290,6 @@ local navigate_internal = function(path, path_to_reveal, callback)
   end
 
   if path_changed then
-    if state.follow_current_file then
-      M.follow()
-    end
     if state.bind_to_cwd then
       vim.api.nvim_command("tcd " .. path)
     end
