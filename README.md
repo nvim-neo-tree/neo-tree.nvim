@@ -42,6 +42,7 @@ use {
               ["I"] = "toggle_gitignore",
               ["R"] = "refresh",
               ["/"] = "filter_as_you_type",
+              --["/"] = "none" -- Assigning a key to "none" will remove the default mapping
               ["f"] = "filter_on_submit",
               ["<c-x>"] = "clear_filter",
               ["a"] = "add",

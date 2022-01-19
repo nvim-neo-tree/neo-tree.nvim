@@ -150,6 +150,12 @@ require("neo-tree").setup({
 })
 <
 
+NOTE: The mappings you define will be merged with the default mappings. If you
+wish to remove a default mapping without overriding it with your own function,
+simply assign it to a command that does not exist, such as "none" or "noop".
+This will cause it to be skipped and allow any existing global mappings to
+work.
+
 Below is a complete skeleton of all of the configuration options, ready for
 copy and paste into your lua config file.
 
@@ -235,6 +241,7 @@ require("neo-tree").setup({
         ["I"] = "toggle_gitignore",
         ["R"] = "refresh",
         ["/"] = "filter_as_you_type",
+        --["/"] = "none" -- Assigning a key to "none" will remove the default mapping
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["a"] = "add",
