@@ -198,10 +198,12 @@ M.focus_node = function(state, id, do_not_focus_window)
         if success then
           -- make sure we are not scrolled down if it can all fit on the screen
           local win_height = vim.api.nvim_win_get_height(state.winid)
-          if win_height > linenr then
-            vim.cmd("normal! zb")
-          elseif linenr < (win_height / 2) then
-            vim.cmd("normal! zz")
+          if vim.api.nvim_get_current_win() == state.winid then
+            if win_height > linenr then
+              vim.cmd("normal! zb")
+            elseif linenr < (win_height / 2) then
+              vim.cmd("normal! zz")
+            end
           end
         else
           log.warn("Failed to set cursor: " .. err)

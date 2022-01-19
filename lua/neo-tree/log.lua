@@ -86,8 +86,10 @@ log.new = function(config, standalone)
 
   obj.set_level = function(level)
     if levels[level] then
-      config.level = level
-      print("[neo-tree] Log level set to " .. level)
+      if config.level ~= level then
+        config.level = level
+        print("[neo-tree] Log level set to " .. level)
+      end
     else
       print("[neo-tree] Invalid log level: " .. level)
     end
@@ -108,6 +110,9 @@ log.new = function(config, standalone)
         x = tostring(round(x, config.float_precision))
       elseif type(x) == "table" then
         x = vim.inspect(x)
+        if #x > 200 then
+          x = x:sub(1, 200) .. "..."
+        end
       else
         x = tostring(x)
       end
