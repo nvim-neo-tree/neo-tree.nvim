@@ -6,7 +6,9 @@ name: No PRs to Release Branches
 on:
   # Triggers the workflow on push or pull request events but only for the v1.x branch
   pull_request:
-    branches: [ v1.x, v2.x ]
+    branches:
+      - 'v1.x'
+      - 'v2.x'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
