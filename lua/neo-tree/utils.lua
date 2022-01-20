@@ -8,49 +8,6 @@ table.unpack = table.unpack or unpack
 
 local M = {}
 
-local function get_simple_git_status_code(status)
-  -- Prioritze M then A over all others
-  if status:match("U") or status == "AA" or status == "DD" then
-    return "U"
-  elseif status:match("M") then
-    return "M"
-  elseif status:match("[ACR]") then
-    return "A"
-  elseif status:match("!$") then
-    return "!"
-  elseif status:match("?$") then
-    return "?"
-  else
-    local len = #status
-    while len > 0 do
-      local char = status:sub(len, len)
-      if char ~= " " then
-        return char
-      end
-      len = len - 1
-    end
-    return status
-  end
-end
-
-local function get_priority_git_status_code(status, other_status)
-  if not status then
-    return other_status
-  elseif not other_status then
-    return status
-  elseif status == "U" or other_status == "U" then
-    return "U"
-  elseif status == "?" or other_status == "?" then
-    return "?"
-  elseif status == "M" or other_status == "M" then
-    return "M"
-  elseif status == "A" or other_status == "A" then
-    return "A"
-  else
-    return status
-  end
-end
-
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
     return "Error"
@@ -166,69 +123,6 @@ M.get_diagnostic_counts = function()
     end)
   end
   return lookup
-end
-
-M.get_git_project_root = function(path)
-  local cmd = "git rev-parse --show-toplevel"
-  if M.truthy(path) then
-    cmd = "cd " .. vim.fn.shellescape(path) .. " && " .. cmd
-  end
-  return vim.fn.systemlist(cmd)[1]
-end
-
----Parse "git status" output for the current working directory.
----@return table table Table with the path as key and the status as value.
-M.get_git_status = function(exclude_directories)
-  local project_root = M.get_git_project_root()
-  local git_output = vim.fn.systemlist("git status --porcelain")
-  local git_status = {}
-  local codes = "[ACDMRTU!%?%s]"
-  codes = codes .. codes
-
-  for _, line in ipairs(git_output) do
-    local status = line:match("^(" .. codes .. ")%s")
-    local relative_path = line:match("^" .. codes .. "%s+(.+)$")
-    if not relative_path then
-      if line:match("fatal: not a git repository") then
-        return {}
-      else
-        log.error("Error parsing git status for: " .. line)
-      end
-      break
-    end
-    local renamed = line:match("^" .. codes .. "%s+.*%s->%s(.*)$")
-    if renamed then
-      relative_path = renamed
-    end
-    if relative_path:sub(1, 1) == '"' then
-      -- path was quoted, remove quoting
-      relative_path = relative_path:match('^"(.+)".*')
-    end
-    if M.is_windows == true then
-      project_root = project_root:gsub("/", M.path_separator)
-      relative_path = relative_path:gsub("/", M.path_separator)
-    end
-    local absolute_path = project_root .. M.path_separator .. relative_path
-    git_status[absolute_path] = status
-
-    if not exclude_directories then
-      -- Now bubble this status up to the parent directories
-      local parts = M.split(absolute_path, M.path_separator)
-      table.remove(parts) -- pop the last part so we don't override the file's status
-      M.reduce(parts, "", function(acc, part)
-        local path = acc .. M.path_separator .. part
-        if M.is_windows == true then
-          path = path:gsub("^" .. M.path_separator, "")
-        end
-        local path_status = git_status[path]
-        local file_status = get_simple_git_status_code(status)
-        git_status[path] = get_priority_git_status_code(path_status, file_status)
-        return path
-      end)
-    end
-  end
-
-  return git_status, project_root
 end
 
 ---Resolves some variable to a string. The object can be either a string or a

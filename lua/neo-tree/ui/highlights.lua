@@ -21,7 +21,7 @@ M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
 M.TITLE_BAR = "NeoTreeTitleBar"
 
-function dec_to_hex(n)
+local function dec_to_hex(n)
   local hex = string.format("%06x", n)
   if n < 16 then
     hex = "0" .. hex

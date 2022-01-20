@@ -7,6 +7,7 @@ local filter_external = require("neo-tree.sources.filesystem.lib.filter_external
 local file_items = require("neo-tree.sources.common.file-items")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
+local git = require("neo-tree.git")
 
 local M = {}
 
@@ -20,14 +21,15 @@ local function do_scan(context, path_to_scan)
 
   scan.scan_dir_async(path_to_scan, {
     hidden = filters.show_hidden or false,
-    respect_gitignore = filters.respect_gitignore or false,
     search_pattern = state.search_pattern or nil,
     add_dirs = true,
     depth = 1,
     on_insert = function(path, _type)
-      local success, _ = pcall(file_items.create_item, context, path, _type)
-      if not success then
-        log.error("error creating item for ", path)
+      if not filters.respect_gitignore or not git.is_ignored(state.git_ignored, path, _type) then
+        local success, _ = pcall(file_items.create_item, context, path, _type)
+        if not success then
+          log.error("error creating item for ", path)
+        end
       end
     end,
     on_exit = vim.schedule_wrap(function()
@@ -145,6 +147,8 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         end)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
+
+      state.git_ignored = state.filters.respect_gitignore and git.load_ignored(state.path) or {}
     end
     do_scan(context, parent_id or state.path)
   end
