@@ -9,6 +9,7 @@ local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
@@ -82,7 +83,7 @@ M.show_filter = function(state, search_as_you_type)
       else
         log.trace("Setting search in on_change to: " .. value)
         state.search_pattern = value
-        fs.refresh()
+        manager.refresh("filesystem")
       end
     end,
   })

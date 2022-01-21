@@ -7,6 +7,7 @@ local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local popups = require("neo-tree.ui.popups")
 local highlights = require("neo-tree.ui.highlights")
+local manager = require("neo-tree.sources.manager")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -19,7 +20,7 @@ local sources = {
 
 local M = {}
 
--- Adding this as a shortcut because the module path is so long.
+-- TODO: DEPRECATED in 1.19, remove in 2.0
 M.fs = require("neo-tree.sources.filesystem")
 
 local normalize_mappings = function(config)
@@ -68,35 +69,32 @@ local define_events = function()
   events_setup = true
 end
 
-local src = function(source_name)
-  if source_name == nil or source_name == "" then
+local check_source = function(source_name)
+  if not utils.truthy(source_name) then
     source_name = M.config.default_source
   end
-  local success, source = pcall(require, "neo-tree.sources." .. source_name)
+  local success, result = pcall(require, "neo-tree.sources." .. source_name)
   if not success then
-    error("Source " .. source_name .. " not found.")
+    error("Source " .. source_name .. " could not be loaded: ", result)
   end
-  source.name = source_name
-  return source
+  return source_name
 end
 
 M.close_all_except = function(source_name)
-  local source = src(source_name)
-  local target_pos = utils.get_value(M, "config." .. source.name .. ".window.position", "left")
+  source_name = check_source(source_name)
+  local target_pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
   for _, name in ipairs(sources) do
     if name ~= source_name then
       local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
       if pos == target_pos then
-        M.close(name)
+        manager.close(source_name)
       end
     end
   end
-  M.close_all("float")
+  renderer.close_all_floating_windows()
 end
 
-M.close = function(source_name)
-  return src(source_name).close()
-end
+M.close = manager.close
 
 M.close_all = function(at_position)
   renderer.close_all_floating_windows()
@@ -104,32 +102,34 @@ M.close_all = function(at_position)
     for _, name in ipairs(sources) do
       local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
       if pos == at_position then
-        M.close(name)
+        manager.close(name)
       end
     end
   else
     for _, name in ipairs(sources) do
-      M.close(name)
+      manager.close(name)
     end
   end
 end
 
 M.float = function(source_name, toggle_if_open)
-  source_name = src(source_name).name
+  source_name = check_source(source_name)
   if toggle_if_open then
     if renderer.close_floating_window(source_name) then
       -- It was open, and now it's not.
       return
     end
   end
-  M.close_all("float")
-  M.close(source_name) -- in case this source is open in a sidebar
-  src(source_name).float()
+  renderer.close_all_floating_windows()
+  manager.close(source_name) -- in case this source is open in a sidebar
+  manager.float(source_name)
 end
 
+--TODO: Remove the close_others option in 2.0
 M.focus = function(source_name, close_others, toggle_if_open)
+  source_name = check_source(source_name)
   if toggle_if_open then
-    if M.close(source_name) then
+    if manager.close(source_name) then
       -- It was open, and now it's not.
       return
     end
@@ -137,11 +137,21 @@ M.focus = function(source_name, close_others, toggle_if_open)
   if close_others == nil then
     close_others = true
   end
-  local source = src(source_name)
   if close_others then
-    M.close_all_except(source.name)
+    M.close_all_except(source_name)
   end
-  source.focus()
+  manager.focus(source_name)
+end
+
+M.reveal_current_file = function(source_name, toggle_if_open)
+  source_name = check_source(source_name)
+  if toggle_if_open then
+    if manager.close(source_name) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
+  manager.reveal_current_file(source_name)
 end
 
 M.get_prior_window = function()
@@ -199,9 +209,11 @@ M.win_enter_event = function()
   end
 end
 
+--TODO: Remove the do_not_focus and close_others options in 2.0
 M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
+  source_name = check_source(source_name)
   if toggle_if_open then
-    if M.close(source_name) then
+    if manager.close(source_name) then
       -- It was open, and now it's not.
       return
     end
@@ -209,17 +221,13 @@ M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
   if close_others == nil then
     close_others = true
   end
-  local source = src(source_name)
   if close_others then
-    M.close_all_except(source.name)
+    M.close_all_except(source_name)
   end
   if do_not_focus then
-    local current_win = vim.api.nvim_get_current_win()
-    source.show(function()
-      vim.api.nvim_set_current_win(current_win)
-    end)
+    manager.show(source_name)
   else
-    source.show()
+    manager.focus(source_name)
   end
 end
 
@@ -308,7 +316,7 @@ M.setup = function(config)
 
   -- setup the sources with the combined config
   for _, source_name in ipairs(sources) do
-    src(source_name).setup(M.config[source_name], M.config)
+    manager.setup(source_name, M.config[source_name], M.config)
   end
 
   local event_handler = {

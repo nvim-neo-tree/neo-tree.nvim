@@ -16,7 +16,7 @@ local function do_scan(context, path_to_scan)
   local state = context.state
   local paths_to_load = context.paths_to_load
   local folders = context.folders
-  local filters = state.filters
+  local filters = state.filters or {}
 
   scan.scan_dir_async(path_to_scan, {
     hidden = filters.show_hidden or false,

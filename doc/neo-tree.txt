@@ -465,22 +465,29 @@ require("neo-tree.events.queue").define_event(event_name, {
   setup = <function>,
   seed = <function>,
   teardown = <function>,
-  debounce_frequency = <number>
+  debounce_frequency = <number>,
+  once = <boolean>,
+  cancelled = <boolean>
 })
 
 The setup function is run the first time the event is subscribed to. For an
 autocmd event, this would define the vim autocmd to connect it to fire_event().
 
-The seed function is run at the begining of every event firing. The diagnostics
+The `seed` function is run at the begining of every event firing. The diagnostics
 event uses this to collect the diagnostic information and pass it to all
 subscribers.
 
-The teardown function is used when the last subscriber unsubscribes, and cleans
+The `teardown` function is used when the last subscriber unsubscribes, and cleans
 up. This is like Dispose in other languages.
 
-debounce_frequency is the minimum number of milliseconds between each invocation
+`debounce_frequenc`y is the minimum number of milliseconds between each invocation
 of the event. The first event is gauranteed to fire, as well as the last one, but
 in between events may be dropped if this is set to a number greater than zero.
+
+`once` means to only fire this event handler once then mark it as `cancelled`.
+
+`cancelled` means that this event handler will be skipped in all future event
+fires, and will be discarded on the next cleanup of the queue.
 
 
 ================================================================================
