@@ -1,6 +1,6 @@
 local highlights = require("neo-tree.ui.highlights")
 
-local filesystem = {
+local example = {
   window = {
     position = "left",
     width = 40,
@@ -41,4 +41,4 @@ local filesystem = {
   },
 }
 
-return filesystem
+return example

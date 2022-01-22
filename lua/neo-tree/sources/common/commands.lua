@@ -204,4 +204,30 @@ M.rename = function(state, callback)
   fs_actions.rename_node(node.path, callback)
 end
 
+---Expands or collapses the current node.
+M.toggle_directory = function(state)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type ~= "directory" then
+    return
+  end
+  if node.loaded == false then
+    -- lazy load this node and pass the children to the renderer
+    local children = {}
+    renderer.show_nodes(state, children, node:get_id())
+  elseif node:has_children() then
+    local updated = false
+    if node:is_expanded() then
+      updated = node:collapse()
+    else
+      updated = node:expand()
+    end
+    if updated then
+      tree:render()
+    else
+      tree:render()
+    end
+  end
+end
+
 return M

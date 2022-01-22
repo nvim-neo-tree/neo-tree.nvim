@@ -1,5 +1,10 @@
 local vim = vim
 local log = require("neo-tree.log")
+-- Backwards compatibility
+table.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
+table.unpack = table.unpack or unpack
 
 local M = {}
 
@@ -163,8 +168,12 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
-M.get_git_project_root = function()
-  return vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+M.get_git_project_root = function(path)
+  local cmd = "git rev-parse --show-toplevel"
+  if M.truthy(path) then
+    cmd = "cd " .. vim.fn.shellescape(path) .. " && " .. cmd
+  end
+  return vim.fn.systemlist(cmd)[1]
 end
 
 ---Parse "git status" output for the current working directory.
@@ -452,6 +461,17 @@ M.truthy = function(value)
     return #value > 0
   end
   return true
+end
+
+M.wrap = function(func, ...)
+  if type(func) ~= "function" then
+    error("Expected function, got " .. type(func))
+  end
+  local wrapped_args = { ... }
+  return function(...)
+    local all_args = table.pack(table.unpack(wrapped_args), ...)
+    func(table.unpack(all_args))
+  end
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.

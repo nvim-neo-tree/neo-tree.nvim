@@ -6,6 +6,7 @@ local fs = require("neo-tree.sources.filesystem")
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
+local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
@@ -70,7 +71,7 @@ M.open_vsplit = function(state)
   cc.open_vsplit(state, fs.toggle_directory)
 end
 
-M.refresh = fs.refresh
+M.refresh = utils.wrap(manager.refresh, "filesystem")
 
 M.rename = function(state)
   cc.rename(state, function(original_path, new_path)
@@ -78,7 +79,7 @@ M.rename = function(state)
     -- with an LSP server.
     -- <YOUR CODE HERE>
     -- Don't forget to call fs.refresh() after you're done.
-    fs.refresh()
+    M.refresh()
   end)
 end
 
@@ -96,13 +97,13 @@ end
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
   state.filters.show_hidden = not state.filters.show_hidden
-  fs.show()
+  manager.show("filesystem")
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
   state.filters.respect_gitignore = not state.filters.respect_gitignore
-  fs.show()
+  manager.show("filesystem")
 end
 
 return M
