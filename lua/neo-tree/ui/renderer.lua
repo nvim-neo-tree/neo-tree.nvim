@@ -435,19 +435,30 @@ local create_window = function(state)
     win:unmount()
   end, { once = true })
 
+  local skip_this_mapping = {
+    ["none"] = true,
+    ["nop"] = true,
+    ["noop"] = true,
+    [""] = true,
+    [{}] = true,
+  }
   local map_options = { noremap = true, nowait = true }
   local mappings = utils.get_value(state, "window.mappings", {}, true)
   for cmd, func in pairs(mappings) do
     if func then
-      if type(func) == "string" then
-        func = state.commands[func]
-      end
-      if type(func) == "function" then
-        win:map("n", cmd, function()
-          func(state)
-        end, map_options)
+      if skip_this_mapping[func] then
+        log.trace("Skipping mapping for %s", cmd)
       else
-        log.warn("Invalid mapping for %s: %s", cmd, func)
+        if type(func) == "string" then
+          func = state.commands[func]
+        end
+        if type(func) == "function" then
+          win:map("n", cmd, function()
+            func(state)
+          end, map_options)
+        else
+          log.warn("Invalid mapping for ", cmd, ": ", func)
+        end
       end
     end
   end
