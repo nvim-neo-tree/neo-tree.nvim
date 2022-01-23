@@ -128,6 +128,18 @@ local fire_event_internal = function(event, args)
       local id = event_handler.id or event_handler
       if success then
         log.trace("Handler ", id, " for " .. event .. " called successfully.")
+        if
+          type(result) == "table"
+          and type(result.handled) == "boolean"
+          and result.handled == true
+        then
+          log.trace(
+            "Handler ",
+            id,
+            " for " .. event .. " returned handled = true, skipping the rest of the queue."
+          )
+          return result
+        end
       else
         log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
       end
@@ -145,7 +157,7 @@ M.fire_event = function(event, args)
       fire_event_internal(event, args or {})
     end, freq)
   else
-    fire_event_internal(event, args or {})
+    return fire_event_internal(event, args or {})
   end
 end
 

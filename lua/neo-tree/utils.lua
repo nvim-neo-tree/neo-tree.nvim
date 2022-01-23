@@ -302,6 +302,16 @@ end
 M.open_file = function(state, path, open_cmd)
   open_cmd = open_cmd or "edit"
   if M.truthy(path) then
+    local events = require("neo-tree.events")
+    local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
+      state = state,
+      path = path,
+      open_cmd = open_cmd,
+    }) or {}
+    if event_result.handled then
+      events.fire_event(events.FILE_OPENED, path)
+      return
+    end
     -- use last window if possible
     local suitable_window_found = false
     local nt = require("neo-tree")
@@ -337,7 +347,6 @@ M.open_file = function(state, path, open_cmd)
     else
       vim.cmd(open_cmd .. " " .. path)
     end
-    local events = require("neo-tree.events")
     events.fire_event(events.FILE_OPENED, path)
   end
 end

@@ -9,6 +9,7 @@ local M = {
   FILE_ADDED = "file_added",
   FILE_DELETED = "file_deleted",
   FILE_MOVED = "file_moved",
+  FILE_OPEN_REQUESTED = "file_open_requested",
   FILE_OPENED = "file_opened",
   FILE_RENAMED = "file_renamed",
   FS_EVENT = "fs_event",

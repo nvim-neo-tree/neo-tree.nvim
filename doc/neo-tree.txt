@@ -431,8 +431,17 @@ Fired after a file (or folder) has been deleted. The arg is the full path to the
 deleted file.
 
 "file_moved"
-Fired after a file (or folder) has been moved. The arg is an table containing
+Fired after a file (or folder) has been moved. The arg is a table containing
 `source` and `destination` properties.
+
+"file_open_requested"
+Fired just before a file is opened. The arg is a table containing the `state`
+of the source being used, the `path` of the file to be opened, and `open_cmd`,
+which is the open command that was requested. `open_cmd` will be either |edit|,
+|split|, or |vsplit|. This function should return a table with a property called
+`handled` which is true if the file open operation was handled, or false if it
+was not. If `{ handled = true }` is not returned, the file will be opened using
+the built-in logic.
 
 "file_opened"
 Fired after a file has been opened. You might use this to auto-close the window
