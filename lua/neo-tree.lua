@@ -259,7 +259,21 @@ M.setup = function(config)
       end
       local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
       if prior_type == "neo-tree" and vim.bo.filetype ~= "neo-tree" then
-        local bufname = vim.fn.bufname()
+        local current_tabnr = vim.api.nvim_get_current_tabpage()
+        local neo_tree_tabnr = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabnr")
+        if neo_tree_tabnr ~= current_tabnr then
+          -- This a new tab, so the alternate being neo-tree doesn't matter.
+          return
+        end
+        local neo_tree_winid = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_winid")
+        local current_winid = vim.api.nvim_get_current_win()
+        if neo_tree_winid ~= current_winid then
+          -- This is not the neo-tree window, so the alternate being neo-tree doesn't matter.
+          return
+        end
+
+        local bufname = vim.api.nvim_buf_get_name(0)
+        log.debug("redirecting buffer " .. bufname .. " to new split")
         vim.cmd("b#")
         -- Using schedule at this point  fixes problem with syntax
         -- highlighting in the buffer. I also prevents errors with diagnostics

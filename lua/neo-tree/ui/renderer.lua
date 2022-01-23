@@ -429,6 +429,9 @@ local create_window = function(state)
   if type(state.bufnr) == "number" then
     local bufname = string.format("neo-tree %s [%s]", state.name, state.tabnr)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", state.tabnr)
   end
 
   win:on({ "BufDelete" }, function()

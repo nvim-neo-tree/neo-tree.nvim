@@ -40,7 +40,7 @@ M.show_filter = function(state, search_as_you_type)
         fs.reset_search()
       else
         state.search_pattern = value
-        fs.refresh(function()
+        manager.refresh("filesystem", function()
           -- focus first file
           local nodes = renderer.get_all_visible_nodes(state.tree)
           for _, node in ipairs(nodes) do
