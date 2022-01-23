@@ -51,6 +51,10 @@ use {
         enable_git_status = true,
         enable_diagnostics = true,
         filesystem = {
+          filters = { --These filters are applied to both browsing and searching
+            show_hidden = false,
+            respect_gitignore = true,
+          },
           follow_current_file = false, -- This will find and focus the file in the
           -- active buffer every time the current file is changed while the tree is open.
           use_libuv_file_watcher = false, -- This will use the OS level file watchers
