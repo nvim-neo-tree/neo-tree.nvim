@@ -87,7 +87,7 @@ M.close_all_except = function(source_name)
     if name ~= source_name then
       local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
       if pos == target_pos then
-        manager.close(source_name)
+        manager.close(name)
       end
     end
   end
