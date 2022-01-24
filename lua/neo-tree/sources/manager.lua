@@ -36,8 +36,12 @@ local function create_state(tabnr, sd)
   state.dirty = true
   state.position = {
     save = function()
-      state.position.node_id = state.tree:get_node():get_id()
-
+      if state.tree and renderer.is_window_valid(state.winid) then
+        local node = state.tree:get_node()
+        if node then
+          state.position.node_id = node:get_id()
+        end
+      end
       -- Only need to restore the cursor state once per save, comes
       -- into play when some actions fire multiple times per "iteration"
       -- within the scope of where we need to perform the restore operation
