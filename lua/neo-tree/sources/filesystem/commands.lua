@@ -1,9 +1,7 @@
 --This file should contain all commands meant to be used by mappings.
 
-local vim = vim
 local cc = require("neo-tree.sources.common.commands")
 local fs = require("neo-tree.sources.filesystem")
-local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
 local manager = require("neo-tree.sources.manager")
@@ -97,13 +95,13 @@ end
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
   state.filters.show_hidden = not state.filters.show_hidden
-  manager.show("filesystem")
+  M.refresh()
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
   state.filters.respect_gitignore = not state.filters.respect_gitignore
-  manager.show("filesystem")
+  M.refresh()
 end
 
 return M
