@@ -30,6 +30,33 @@ local get_source_data = function(source_name)
   return sd
 end
 
+local function create_state(tabnr, sd)
+  local state = utils.table_copy(sd.default_config)
+  state.tabnr = tabnr
+  state.dirty = true
+  state.position = {
+    save = function()
+      state.position.node_id = state.tree:get_node():get_id()
+
+      -- Only need to restore the cursor state once per save, comes
+      -- into play when some actions fire multiple times per "iteration"
+      -- within the scope of where we need to perform the restore operation
+      state.position.is.restorable = true
+    end,
+    restore = function()
+      if not state.position.node_id then
+        return
+      end
+      if state.position.is.restorable then
+        renderer.focus_node(state, state.position.node_id, true)
+      end
+      state.position.is.restorable = false
+    end,
+    is = { restorable = true },
+  }
+  return state
+end
+
 M.set_default_config = function(source_name, config)
   if source_name == nil then
     error("set_default_config: source_name cannot be nil")
@@ -51,11 +78,8 @@ M.get_state = function(source_name, tabnr)
   if state then
     return state
   end
-  state = utils.table_copy(sd.default_config)
-  state.tabnr = tabnr
-  state.dirty = true
-  sd.state_by_tab[tabnr] = state
-  return state
+  sd.state_by_tab[tabnr] = create_state(tabnr, sd)
+  return sd.state_by_tab[tabnr]
 end
 
 M.get_path_to_reveal = function()
@@ -207,6 +231,12 @@ end
 M.reveal_current_file = function(source_name)
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
+
+  -- When events trigger that try to restore the position of the cursor in the tree window,
+  -- we want them to ignore this "iteration" as the user is trying to explicitly focus a
+  -- (potentially) different position/node
+  state.position.is.restorable = false
+
   require("neo-tree").close_all_except(source_name)
   local path = M.get_path_to_reveal()
   if not path then
