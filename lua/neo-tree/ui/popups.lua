@@ -38,6 +38,7 @@ M.popup_options = function(title, min_width, override_options)
     buf_options = {
       bufhidden = "delete",
       buflisted = false,
+      filetype = "neo-tree-popup",
     },
   }
 

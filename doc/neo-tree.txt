@@ -10,6 +10,9 @@ Mappings ............ |Neo-tree-Mappings|
   Filter ............ |Neo-tree-Filter|
 Configuration ....... |Neo-tree-Configuration|
   Setup ............. |Neo-tree-Setup|
+  Buffer Variables .. |Neo-tree-buffer-variables|
+  Popups ............ |Neo-tree-Popups|
+
   Diagnostics ....... |Neo-tree-Diagnostics|
   Highlights ........ |Neo-tree-Highlights|
   Events ............ |Neo-tree-Events|
@@ -334,7 +337,36 @@ require("neo-tree").setup({
 })
 <
 
-GIT STATUS                                           *Neo-tree_Setup-Git-Status*
+
+BUFFER VARIABLES                                     *Neo-tree-buffer-variables*
+
+Neo-tree sets certain buffer options and variables that you may use in custom
+code or integrations if you need it. The |filetype| of the main window is
+`neo-tree`. The buffer will also have these local variables set:
+
+`winid` The window handle of the window that it was created in.
+`tabnr` The tab number that it was created in.
+`source` The name of the source that created it, i.e. filesystem, buffers, etc.
+
+Please note that if the buffer is displayed in another window or tab, it's
+behavior is unpredictable. It is meant to be locked to it's original location,
+which is why those variables are recorded.
+
+
+POPUPS                                                         *Neo-tree-Popups*
+
+Popups will be created with a |filetype| of `neo-tree-popup`. You can use this
+as the target for autocmds or to exclude them from being acted upon by other
+plugins.
+
+They can also be configured by setting the `popup_border_style` in your config,
+and the colors of that border are controlled by the `NeoTreeFloatBorder`
+highlight group. If you you use the special `NC` option for
+`popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
+highlight group.
+
+
+GIT STATUS                                           *Neo-tree-Setup-Git-Status*
 
 By default, Neo-tree will attempt to get the git status for files in the
 current directory. It will use this information to add markers to the right of

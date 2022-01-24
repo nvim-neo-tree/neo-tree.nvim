@@ -22,9 +22,9 @@ end
 
 -- TODO: DEPRECATED in 1.19, remove in 2.0
 -- Leaving this here for now because it was mentioned in the help file.
-M.reveal_current_file = function(toggle_if_open)
+M.reveal_current_file = function()
   log.warn("DEPRECATED: use `neotree.sources.manager.reveal_current_file('filesystem')` instead")
-  return manager.reveal_current_file(M.name, toggle_if_open)
+  return manager.reveal_current_file(M.name)
 end
 
 M.follow = function(callback, force_show)
