@@ -9,6 +9,7 @@ local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
+local git = require("neo-tree.git")
 
 local M = { name = "filesystem" }
 
@@ -225,7 +226,7 @@ M.setup = function(config, global_config)
       handler = function(state)
         local this_state = get_state()
         if state == this_state then
-          state.git_status_lookup = utils.get_git_status()
+          state.git_status_lookup = git.status()
         end
       end,
     })

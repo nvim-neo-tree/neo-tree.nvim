@@ -61,8 +61,8 @@ require("neo-tree").setup({
       -- This function is called after the file system has been scanned,
       -- but before the tree is rendered. You can use this to gather extra
       -- data that can be used in the renderers.
-      local utils = require("neo-tree.utils")
-      state.git_status_lookup = utils.get_git_status()
+      local git = require("neo-tree.git")
+      state.git_status_lookup = git.status()
     end,
     -- The components section provides custom functions that may be called by 
     -- the renderers below. Each componment is a function that takes the
