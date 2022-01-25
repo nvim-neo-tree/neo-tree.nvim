@@ -81,6 +81,7 @@ M.follow = function(callback, force_show)
     end
   end
 
+  state.position.is.restorable = false -- we will handle setting cursor position here
   fs_scan.get_items_async(state, nil, path_to_reveal, function()
     local event = {
       event = events.AFTER_RENDER,
@@ -119,44 +120,15 @@ local navigate_internal = function(path, path_to_reveal, callback)
   end
 
   if path_to_reveal then
-    fs_scan.get_items_async(state, nil, path_to_reveal, function()
-      renderer.focus_node(state, path_to_reveal)
-      if callback then
-        callback()
-      end
-      state.in_navigate = false
-    end)
+    state.position.set(path_to_reveal)
+    fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
     local follow_file = state.follow_current_file and manager.get_path_to_reveal()
     if utils.truthy(follow_file) then
-      M.follow(function()
-        if callback then
-          callback()
-        end
-        state.in_navigate = false
-      end, true)
+      M.follow(callback, true)
     else
-      local previously_focused = nil
-      if state.tree and renderer.is_window_valid(state.winid) then
-        local node = state.tree:get_node()
-        if node then
-          -- keep the current node selected
-          previously_focused = node:get_id()
-        end
-      end
-      fs_scan.get_items_async(state, nil, nil, function()
-        local current_winid = vim.api.nvim_get_current_win()
-        if path_changed and current_winid == state.winid and previously_focused then
-          local currently_focused = state.tree:get_node():get_id()
-          if currently_focused ~= previously_focused then
-            renderer.focus_node(state, previously_focused, false)
-          end
-        end
-        if callback then
-          callback()
-        end
-        state.in_navigate = false
-      end)
+      state.position.save()
+      fs_scan.get_items_async(state, nil, nil, callback)
     end
   end
 

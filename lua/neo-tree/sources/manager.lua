@@ -47,6 +47,13 @@ local function create_state(tabnr, sd)
       -- within the scope of where we need to perform the restore operation
       state.position.is.restorable = true
     end,
+    set = function(node_id)
+      if not type(node_id) == "string" and node_id > "" then
+        return
+      end
+      state.position.node_id = node_id
+      state.position.is.restorable = true
+    end,
     restore = function()
       if not state.position.node_id then
         return
