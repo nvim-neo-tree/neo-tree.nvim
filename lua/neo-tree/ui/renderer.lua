@@ -317,7 +317,7 @@ M.set_expanded_nodes = function(tree, expanded_nodes)
   end
 end
 
-local create_tree = function(state)
+create_tree = function(state)
   state.tree = NuiTree({
     winid = state.winid,
     get_node_id = function(node)
@@ -356,7 +356,7 @@ local enable_auto_close_floats = function()
   auto_close_floats_is_set = true
 end
 
-local create_window = function(state)
+create_window = function(state)
   local winhl = string.format(
     "Normal:%s,NormalNC:%s,CursorLine:%s",
     highlights.NORMAL,
@@ -405,7 +405,7 @@ local create_window = function(state)
     win.source_name = state.name
     table.insert(floating_windows, win)
 
-    win:map("n", "<esc>", function(bufnr)
+    win:map("n", "<esc>", function(_)
       win:unmount()
     end, { noremap = true })
 
@@ -433,6 +433,16 @@ local create_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", state.tabnr)
   end
+
+  -- Used to track the position of the cursor within the tree as it gains and loses focus
+  --
+  -- Note `WinEnter` is often too early to restore the cursor position so we do not set
+  -- that up here, and instead trigger those events manually after drawing the tree (not
+  -- to mention that it would be too late to register `WinEnter` here for the first
+  -- iteration of that event on the tree window)
+  win:on({ "WinLeave" }, function()
+    state.position.save()
+  end)
 
   win:on({ "BufDelete" }, function()
     win:unmount()
@@ -510,7 +520,7 @@ end
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
 --@param state table The current state of the source.
-local draw = function(nodes, state, parent_id)
+draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
   if parent_id == nil and state.tree ~= nil then
@@ -543,6 +553,10 @@ local draw = function(nodes, state, parent_id)
     M.set_expanded_nodes(state.tree, expanded_nodes)
   end
   state.tree:render()
+
+  -- Restore the cursor position/focused node in the tree based on the state
+  -- when it was last closed
+  state.position.restore()
 end
 
 ---Shows the given items as a tree.
