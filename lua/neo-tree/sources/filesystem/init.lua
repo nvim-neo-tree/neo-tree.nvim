@@ -112,9 +112,11 @@ local navigate_internal = function(path, path_to_reveal, callback)
   state.dirty = false
   local path_changed = false
   if path == nil then
+    log.debug("navigate_internal: path is nil, using cwd")
     path = vim.fn.getcwd()
   end
   if path ~= state.path then
+    log.debug("navigate_internal: path changed from ", state.path, " to ", path)
     state.path = path
     path_changed = true
   end
