@@ -53,10 +53,15 @@ end
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
+  local path_to_reveal = nil
+  local node = state.tree:get_node()
+  if node then
+    path_to_reveal = node:get_id()
+  end
   if state.search_pattern then
     fs.reset_search(false)
   end
-  fs.navigate(parent_path)
+  fs.navigate(parent_path, path_to_reveal)
 end
 
 M.open = function(state)
