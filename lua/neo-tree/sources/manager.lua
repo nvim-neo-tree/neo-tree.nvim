@@ -258,7 +258,7 @@ M.reveal_current_file = function(source_name)
   if cwd == nil then
     cwd = vim.fn.getcwd()
   end
-  if string.sub(path, 1, string.len(cwd)) ~= cwd then
+  if not utils.is_subpath(cwd, path) then
     cwd, _ = utils.split_path(path)
     inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
       if response == true then
