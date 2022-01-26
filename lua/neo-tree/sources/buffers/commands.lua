@@ -8,38 +8,41 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
+local refresh = utils.wrap(manager.refresh, "git_status")
+local redraw = utils.wrap(manager.redraw, "git_status")
+
 M.add = function(state)
-  cc.add(state, M.refresh)
+  cc.add(state, refresh)
 end
 
 M.buffer_delete = function(state)
   local node = state.tree:get_node()
   if node then
     vim.api.nvim_buf_delete(node.extra.bufnr, { force = false, unload = false })
-    M.refresh()
+    refresh()
   end
 end
 M.close_node = cc.close_node
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
-  cc.copy_to_clipboard(state, utils.wrap(manager.redraw, "buffers"))
+  cc.copy_to_clipboard(state, redraw)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
-  cc.cut_to_clipboard(state, utils.wrap(manager.redraw, "buffers"))
+  cc.cut_to_clipboard(state, redraw)
 end
 
 M.show_debug_info = cc.show_debug_info
 
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
-  cc.paste_from_clipboard(state, M.refresh)
+  cc.paste_from_clipboard(state, refresh)
 end
 
 M.delete = function(state)
-  cc.delete(state, M.refresh)
+  cc.delete(state, refresh)
 end
 
 ---Navigate up one level.
@@ -52,10 +55,10 @@ M.open = cc.open
 M.open_split = cc.open_split
 M.open_vsplit = cc.open_vsplit
 
-M.refresh = utils.wrap(manager.refresh, "buffers")
+M.refresh = refresh
 
 M.rename = function(state)
-  cc.rename(state, M.refresh)
+  cc.rename(state, refresh)
 end
 
 M.set_root = function(state)

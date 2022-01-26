@@ -7,6 +7,8 @@ local filter = require("neo-tree.sources.filesystem.lib.filter")
 local manager = require("neo-tree.sources.manager")
 
 local M = {}
+local refresh = utils.wrap(manager.refresh, "filesystem")
+local redraw = utils.wrap(manager.redraw, "filesystem")
 
 M.add = function(state)
   cc.add(state, fs.show_new_children)
@@ -21,12 +23,12 @@ M.close_node = cc.close_node
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
-  cc.copy_to_clipboard(state, fs.redraw)
+  cc.copy_to_clipboard(state, redraw)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
-  cc.cut_to_clipboard(state, fs.redraw)
+  cc.cut_to_clipboard(state, redraw)
 end
 
 M.show_debug_info = cc.show_debug_info
@@ -37,7 +39,7 @@ M.paste_from_clipboard = function(state)
 end
 
 M.delete = function(state)
-  cc.delete(state, fs.refresh)
+  cc.delete(state, refresh)
 end
 
 ---Shows the filter input, which will filter the tree.
@@ -74,16 +76,10 @@ M.open_vsplit = function(state)
   cc.open_vsplit(state, fs.toggle_directory)
 end
 
-M.refresh = utils.wrap(manager.refresh, "filesystem")
+M.refresh = refresh
 
 M.rename = function(state)
-  cc.rename(state, function(original_path, new_path)
-    -- This is where you would do something like fix references to the file
-    -- with an LSP server.
-    -- <YOUR CODE HERE>
-    -- Don't forget to call fs.refresh() after you're done.
-    M.refresh()
-  end)
+  cc.rename(state, refresh)
 end
 
 M.set_root = function(state)
@@ -100,13 +96,13 @@ end
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
   state.filters.show_hidden = not state.filters.show_hidden
-  M.refresh()
+  refresh()
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
   state.filters.respect_gitignore = not state.filters.respect_gitignore
-  M.refresh()
+  refresh()
 end
 
 return M
