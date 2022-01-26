@@ -274,6 +274,27 @@ if M.is_windows == true then
   M.path_separator = "\\"
 end
 
+---Normalize a path, to avoid errors when comparing paths.
+---@param path string The path to be normalize.
+---@return string string The normalized path.
+M.normalize_path = function(path)
+  if M.is_windows then
+    -- normalize the drive letter to uppercase
+    path = path:sub(1, 1):upper() .. path:sub(2)
+  end
+  return path
+end
+
+---Check if a path is a subpath of another.
+--@param base string The base path.
+--@param path string The path to check is a subpath.
+--@return boolean boolean True if it is a subpath, false otherwise.
+M.is_subpath = function(base, path)
+  base = M.normalize_path(base)
+  path = M.normalize_path(path)
+  return string.sub(path, 1, string.len(base)) == base
+end
+
 ---Split string into a table of strings using a separator.
 ---@param inputString string The string to split.
 ---@param sep string The separator to use.
