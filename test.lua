@@ -1,14 +1,38 @@
+local utils = require("neo-tree.utils")
+
+local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils.lua$")
+print(base_path)
+local config_path = base_path .. utils.path_separator .. "defaults.lua"
+local text = vim.fn.readfile(config_path)
+if text == nil then
+  error("Could not read neo-tree.defaults")
+end
+local config = {}
+for _, line in ipairs(text) do
+  table.insert(config, line)
+  if line == "}" then
+    break
+  end
+end
+
+vim.api.nvim_put(config, "l", true, false)
+
+local highlights = require("neo-tree.ui.highlights")
+
 local config = {
+  -- The default_source is the one used when calling require('neo-tree').show()
+  -- without a source argument.
   default_source = "filesystem",
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
-  -- "NC" is a special style that works well with NormalNC set
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  -- "NC" is a special style that works well with NormalNC set
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files in top left window
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
+  --open_files_in_last_window = true -- true = open files in last window visited
   --
   --event_handlers = {
   --  {
@@ -22,13 +46,6 @@ local config = {
   --    handler = function(file_path)
   --      --auto close
   --      require("neo-tree").close_all()
-  --    end
-  --  },
-  --  {
-  --    event = "file_opened",
-  --    handler = function(file_path)
-  --      --clear search after opening a file
-  --      require("neo-tree.sources.filesystem").reset_search()
   --    end
   --  },
   --  {
@@ -119,11 +136,11 @@ local config = {
         { "name" },
         -- {
         --   "symlink_target",
-        --   highlight = "NeoTreeSymbolicLinkTarget",
+        --   highlight = highlights.SYMBOLIC_LINK_TARGET,
         -- },
         {
           "clipboard",
-          highlight = "NeoTreeDimText",
+          highlight = highlights.DIM_TEXT,
         },
         { "diagnostics", errors_only = true },
         --{ "git_status" },
@@ -140,16 +157,16 @@ local config = {
         },
         -- {
         --   "symlink_target",
-        --   highlight = "NeoTreeSymbolicLinkTarget",
+        --   highlight = highlights.SYMBOLIC_LINK_TARGET,
         -- },
         {
           "clipboard",
-          highlight = "NeoTreeDimText",
+          highlight = highlights.DIM_TEXT,
         },
         { "diagnostics" },
         {
           "git_status",
-          highlight = "NeoTreeDimText",
+          highlight = highlights.DIM_TEXT,
         },
       },
     },
@@ -196,10 +213,7 @@ local config = {
         },
         { "name" },
         { "diagnostics", errors_only = true },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "clipboard", highlight = highlights.DIM_TEXT },
       },
       file = {
         {
@@ -210,14 +224,8 @@ local config = {
         { "name" },
         { "bufnr" },
         { "diagnostics" },
-        {
-          "git_status",
-          highlight = "NeoTreeDimText",
-        },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "git_status", highlight = highlights.DIM_TEXT },
+        { "clipboard", highlight = highlights.DIM_TEXT },
       },
     },
   },
@@ -277,10 +285,9 @@ local config = {
         { "diagnostics" },
         {
           "git_status",
-          highlight = "NeoTreeDimText",
+          highlight = highlights.DIM_TEXT,
         },
       },
     },
   },
 }
-return config

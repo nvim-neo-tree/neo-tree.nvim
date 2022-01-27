@@ -27,6 +27,7 @@ should you!
 - Neo-tree can intelligently follow the current file (set `follow_current_file=true`)
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
+- `respect_gitignore` actually works!
 
 Neo-tree is smooth, efficient, stable, and pays attention to the little details.
 If you find anything janky, wanky, broken, or unintuitive, please open an issue
@@ -43,7 +44,7 @@ use {
     requires = { 
       "nvim-lua/plenary.nvim",
       "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
-        "MunifTanjim/nui.nvim" 
+      "MunifTanjim/nui.nvim" 
     },
     config = function ()
       require("neo-tree").setup({
@@ -138,8 +139,26 @@ use {
     end
 }
 ```
+
 _The above configuration is not everything that can be changed, it's just the
 parts you might want to change first._
+
+
+See `:h neo-tree` for full documentation. You can also preview that online at
+[doc/neo-tree.txt](doc/neo-tree.txt), although it's best viewed within vim.
+
+
+### Config Options
+
+To see all of the default config options with commentary, you can view it online
+at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
+into your config after installing Neo-tree by running `:NeoTreePasteConfig`,
+which will paste the default config as a `config` table into the current buffer.
+You can then change what you want in the pasted `config` table and pass it to
+`require("neo-tree").setup(config)`
+
+
+### Commands
 
 Here are the various ways to open the tree:
 
@@ -181,6 +200,7 @@ at [neo-tree.txt](/doc/neo-tree.txt)
 An example configuration for the filesystem source with proper syntax
 highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
 
+
 ## Sources
 
 Neo-tree is built on the idea of supporting various sources. Sources are
@@ -191,6 +211,13 @@ those items.
 ### filesystem
 The default source is `filesystem`, which displays your files and folders. This
 is the default source in commands when none is specified.
+
+This source can be used to:
+- Browse the filesystem
+- Control the current working directory of nvim
+- Add/Copy/Delete/Move/Rename files and directories
+- Search the filesystem
+- Monitor git status and lsp diagnostics for the current working directory
 
 ### buffers
 ![Neo-tree buffers](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-buffers.png)
@@ -220,18 +247,24 @@ built-in functions can be replaced with your own implementation, or you can
 add new ones.
 
 Each node in the tree is created from the renderer specified for the given node
-type, and each renderer is a list of component configs to be rendered in order
-for each node in the tree. Each component is a function, either built-in or
-specified in your config. Those functions are called with the config, node, and
-state of the plugin, and return the text and highlight group for the component.
+type, and each renderer is a list of component configs to be rendered in order. 
+Each component is a function, either built-in or specified in your config. Those
+functions simply return the text and highlight group for the component.
 
 Additionally, there is an events system that you can hook into. If you want to
 show some new data point related to your files, gather it in the
 `before_render` event, create a component to display it, and reference that
 component in the renderer for the `file` and/or `directory` type.
 
-Details on how to configure everything is in the help file at `:h neo-tree` or
-online at [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
+Details on how to configure everything is in the help file at `:h
+neo-tree-configuration` or online at
+[neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
+
+Recipes for customizations can be found on the [wiki](wiki). Recipes include
+things like adding a component to show the
+[Harpoon](https://github.com/ThePrimeagen/harpoon) index for files, or
+responding to the `"file_opened"` event to auto clear the search when you open a
+file.
 
 
 ## Why?
@@ -276,7 +309,7 @@ major version, and the breaking change will happen in the next major version.
 
 ### Easy to Customize
 
-This will follow in the spirit of plugins like
+Neo-tree follows in the spirit of plugins like
 [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) and
 [nvim-cokeline](https://github.com/noib3/nvim-cokeline). Everything will be
 configurable and take either strings, tables, or functions. You can take sane

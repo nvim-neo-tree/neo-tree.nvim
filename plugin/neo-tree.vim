@@ -14,5 +14,6 @@ command! -nargs=? NeoTreeFocusToggle  lua require("neo-tree").focus("<args>", tr
 command! -nargs=? NeoTreeShowToggle   lua require("neo-tree").show("<args>", true, true, true)
 command! NeoTreeRevealToggle lua require("neo-tree").reveal_current_file("filesystem", true)
 
+command! NeoTreePasteConfig lua require("neo-tree").paste_default_config()
 command! -nargs=? NeoTreeSetLogLevel   lua require("neo-tree").set_log_level("<args>")
 command! NeoTreeLogs lua require("neo-tree").show_logs()

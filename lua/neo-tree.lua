@@ -178,6 +178,29 @@ M.get_prior_window = function()
   return -1
 end
 
+M.paste_default_config = function()
+  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils.lua$")
+  local config_path = base_path .. utils.path_separator .. "defaults.lua"
+  local lines = vim.fn.readfile(config_path)
+  if lines == nil then
+    error("Could not read neo-tree.defaults")
+  end
+
+  -- read up to the end of the config, jut to omit the final return
+  local config = {}
+  for _, line in ipairs(lines) do
+    table.insert(config, line)
+    if line == "}" then
+      break
+    end
+  end
+
+  vim.api.nvim_put(config, "l", true, false)
+  vim.schedule(function()
+    vim.cmd("normal! `[v`]=")
+  end)
+end
+
 M.win_enter_event = function()
   local win_id = vim.api.nvim_get_current_win()
   if utils.is_floating(win_id) then
@@ -304,8 +327,8 @@ M.setup = function(config)
   -- setup the default values for all sources
   local source_defaults = {}
   for _, source_name in ipairs(sources) do
+    local source = utils.table_copy(defaults[source_name] or {})
     local mod_root = "neo-tree.sources." .. source_name
-    local source = require(mod_root .. ".defaults")
     source.components = require(mod_root .. ".components")
     source.commands = require(mod_root .. ".commands")
     source.name = source_name
