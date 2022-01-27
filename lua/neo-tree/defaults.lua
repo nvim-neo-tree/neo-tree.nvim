@@ -95,6 +95,32 @@ local config = {
       },
     },
     --find_command = "fd",
+    ---- you can specify extra args to pass to the find command.
+    --find_args = {
+    --  "--exclude", ".git",
+    --  "--exclude",  "node_modules"
+    --},
+    ---- or use a function instead of list of strings
+    --find_args = function(cmd, path, search_term, args)
+    --  if cmd ~= "fd" then
+    --    return args
+    --  end
+    --  --maybe you want to force the filter to always include hidden files:
+    --  table.insert(args, "--hidden")
+    --  -- but no one ever wants to see .git files
+    --  table.insert(args, "--exclude")
+    --  table.insert(args, ".git")
+    --  -- or node_modules
+    --  table.insert(args, "--exclude")
+    --  table.insert(args, "node_modules")
+    --  --here is where it pays to use the function, you can exclude more for
+    --  --short search terms, or vary based on the directory
+    --  if string.len(search_term) < 4 and path == "/home/cseickel" then
+    --    table.insert(args, "--exclude")
+    --    table.insert(args, "Library")
+    --  end
+    --  return args
+    --end,
     search_limit = 50, -- max number of search results when using filters
     filters = {
       show_hidden = false,

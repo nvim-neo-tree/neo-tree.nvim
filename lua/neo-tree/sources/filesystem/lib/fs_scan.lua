@@ -110,6 +110,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       limit = state.search_limit or 50,
       path = root.path,
       term = state.search_pattern,
+      find_args = state.find_args,
       on_insert = function(err, path)
         if err and #err > 0 then
           log.error(err, path)

@@ -4,6 +4,7 @@ local Job = require("plenary.job")
 
 local M = {}
 local fd_supports_max_results = nil
+local unpack = unpack or table.unpack
 
 local test_for_max_results = function(cmd)
   if fd_supports_max_results == nil then
@@ -82,6 +83,16 @@ M.find_files = function(opts)
     append("/r", path, term)
   else
     return { "No search command found!" }
+  end
+
+  if opts.find_args then
+    if type(opts.find_args) == "string" then
+      append(opts.find_args)
+    elseif type(opts.find_args) == "table" then
+      append(unpack(opts.find_args))
+    elseif type(opts.find_args) == "function" then
+      args = opts.find_args(cmd, path, term, args)
+    end
   end
 
   Job
