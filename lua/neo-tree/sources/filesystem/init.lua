@@ -28,8 +28,11 @@ M.reveal_current_file = function()
   return manager.reveal_current_file(M.name)
 end
 
-M.follow = function(callback, force_show)
+local follow_internal = function(callback, force_show)
   log.trace("follow called")
+  if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
+    return
+  end
   local path_to_reveal = manager.get_path_to_reveal()
   if not utils.truthy(path_to_reveal) then
     return false
@@ -107,6 +110,12 @@ M.follow = function(callback, force_show)
   return true
 end
 
+M.follow = function(callback, force_show)
+  utils.debounce("neo-tree-follow", function()
+    return follow_internal(callback, force_show)
+  end, 200, utils.debounce_strategy.CALL_LAST_ONLY)
+end
+
 local navigate_internal = function(path, path_to_reveal, callback)
   log.trace("navigate_internal", path, path_to_reveal)
   local state = get_state()
@@ -127,9 +136,11 @@ local navigate_internal = function(path, path_to_reveal, callback)
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
     local follow_file = state.follow_current_file and manager.get_path_to_reveal()
+    local handled = false
     if utils.truthy(follow_file) then
-      M.follow(callback, true)
-    else
+      handled = follow_internal(callback, true)
+    end
+    if not handled then
       state.position.save()
       fs_scan.get_items_async(state, nil, nil, callback)
     end
@@ -152,7 +163,7 @@ M.navigate = function(path, path_to_reveal, callback)
   state.in_navigate = true
   utils.debounce("filesystem_navigate", function()
     navigate_internal(path, path_to_reveal, callback)
-  end, 100)
+  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 200)
 end
 
 M.reset_search = function(refresh)

@@ -30,7 +30,12 @@ end
 
 ---Calld by autocmd when any buffer is open, closed, renamed, etc.
 M.buffers_changed = function()
-  utils.debounce("buffers_changed", buffers_changed_internal, 500)
+  utils.debounce(
+    "buffers_changed",
+    buffers_changed_internal,
+    500,
+    utils.debounce_strategy.CALL_LAST_ONLY
+  )
 end
 
 ---Navigate to the given path.

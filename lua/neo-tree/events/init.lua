@@ -1,6 +1,7 @@
 local vim = vim
 local q = require("neo-tree.events.queue")
 local log = require("neo-tree.log")
+local utils = require("neo-tree.utils")
 
 local M = {
   -- Well known event names, you can make up your own
@@ -44,6 +45,7 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
       vim.cmd(string.format("autocmd! NeoTreeEvent_%s", event_name))
     end,
     debounce_frequency = debounce_frequency,
+    debounce_strategy = utils.debounce_strategy.CALL_LAST_ONLY,
   }
   log.debug("Defining autocmd event: %s", event_name)
   q.define_event(event_name, opts)

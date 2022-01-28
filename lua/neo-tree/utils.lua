@@ -23,13 +23,19 @@ local diag_severity_to_string = function(severity)
 end
 
 local tracked_functions = {}
+M.debounce_strategy = {
+  CALL_FIRST_AND_LAST = 0,
+  CALL_LAST_ONLY = 1,
+}
 
 ---Call fn, but not more than once every x milliseconds.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
+---@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
 ---@param callback function Called with the result of executing fn as: callback(success, result)
-M.debounce = function(id, fn, frequency_in_ms, callback)
+M.debounce = function(id, fn, frequency_in_ms, strategy, callback)
+  strategy = strategy or M.debounce_strategy.CALL_FIRST_AND_LAST
   local fn_data = tracked_functions[id]
   if fn_data == nil then
     -- first call for this id
@@ -40,6 +46,9 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
       postponed_callback = nil,
       in_debounce_period = true,
     }
+    if strategy == M.debounce_strategy.CALL_LAST_ONLY then
+      fn_data.in_debounce_period = true
+    end
     tracked_functions[id] = fn_data
   else
     if fn_data.in_debounce_period then
@@ -76,7 +85,7 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
     current_data.fn = nil
     current_data.in_debounce_period = false
     if _fn ~= nil then
-      M.debounce(id, _fn, current_data.frequency_in_ms, _callback)
+      M.debounce(id, _fn, current_data.frequency_in_ms, strategy, _callback)
     end
   end, frequency_in_ms)
 
