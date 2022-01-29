@@ -56,6 +56,7 @@ local define_events = function()
   end
   events.define_autocmd_event(events.VIM_DIAGNOSTIC_CHANGED, { diag_autocmd }, 500, function(args)
     args.diagnostics_lookup = utils.get_diagnostic_counts()
+    return args
   end)
 
   events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
@@ -268,7 +269,7 @@ M.buffer_enter_event = function(args)
     vim.cmd("b#")
     -- Using schedule at this point  fixes problem with syntax
     -- highlighting in the buffer. I also prevents errors with diagnostics
-    -- trying to work with gthe buffer as it's being closed.
+    -- trying to work with the buffer as it's being closed.
     vim.schedule(function()
       -- try to delete the buffer, only because if it was new it would take
       -- on options from the neo-tree window that are undesirable.
