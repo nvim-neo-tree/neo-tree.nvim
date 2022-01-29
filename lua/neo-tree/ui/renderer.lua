@@ -357,26 +357,10 @@ local enable_auto_close_floats = function()
 end
 
 create_window = function(state)
-  local winhl = string.format(
-    "Normal:%s,NormalNC:%s,CursorLine:%s",
-    highlights.NORMAL,
-    highlights.NORMALNC,
-    highlights.CURSOR_LINE
-  )
-
   local win_options = {
     size = utils.resolve_config_option(state, "window.width", "40"),
     position = utils.resolve_config_option(state, "window.position", "left"),
     relative = "editor",
-    win_options = {
-      cursorline = true,
-      number = false,
-      relativenumber = false,
-      wrap = false,
-      winhighlight = winhl,
-      list = false,
-      spell = false,
-    },
     buf_options = {
       buftype = "nowrite",
       modifiable = false,
@@ -391,6 +375,8 @@ create_window = function(state)
     -- First get the default options for floating windows.
     local sourceTitle = state.name:gsub("^%l", string.upper)
     win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+    win_options.win_options = nil
+    print(vim.inspect(win_options))
     win_options.zindex = 40
     local size = { width = 60, height = "80%" }
 

@@ -17,3 +17,13 @@ command! NeoTreeRevealToggle lua require("neo-tree").reveal_current_file("filesy
 command! NeoTreePasteConfig lua require("neo-tree").paste_default_config()
 command! -nargs=? NeoTreeSetLogLevel   lua require("neo-tree").set_log_level("<args>")
 command! NeoTreeLogs lua require("neo-tree").show_logs()
+
+augroup NeoTreePluginLoad
+  autocmd!
+  silent! autocmd! FileExplorer *
+augroup END
+
+let g:loaded_netrw = 1
+let g:loaded_netrwPlugin = 1
+let g:loaded_netrwSettings = 1
+let g:loaded_netrwFileHandlers = 1
