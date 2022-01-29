@@ -215,13 +215,6 @@ M.paste_default_config = function()
 end
 
 M.buffer_enter_event = function(args)
-  if utils.is_floating() then
-    return
-  end
-  -- if vim is trying to open a dir, then we hijack it
-  if M.hijack_netrw() then
-    return
-  end
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
     vim.cmd([[
@@ -237,6 +230,16 @@ M.buffer_enter_event = function(args)
     setlocal winhighlight=Normal:NeoTreeNormal,FloatBorder:NeoTreeFloatBorder
     setlocal nolist nospell nonumber norelativenumber
     ]])
+    return
+  end
+
+  -- there is nothing more we want to do with floating windows
+  if utils.is_floating() then
+    return
+  end
+
+  -- if vim is trying to open a dir, then we hijack it
+  if M.hijack_netrw() then
     return
   end
 

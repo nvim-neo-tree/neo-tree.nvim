@@ -111,6 +111,9 @@ local follow_internal = function(callback, force_show)
 end
 
 M.follow = function(callback, force_show)
+  if vim.fn.bufname(0) == "COMMIT_EDITMSG" then
+    return false
+  end
   utils.debounce("neo-tree-follow", function()
     return follow_internal(callback, force_show)
   end, 200, utils.debounce_strategy.CALL_LAST_ONLY)
