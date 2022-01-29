@@ -261,7 +261,15 @@ M.setup = function(config, global_config)
     require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_CHANGED,
-      handler = wrap(manager.refresh),
+      handler = function(arg)
+        local afile = arg.afile or ""
+        local source = afile:match("^neo%-tree ([%l%-]+) %[%d+%]")
+        if source then
+          log.trace("Ignoring vim_buffer_changed event from " .. source)
+          return
+        end
+        manager.refresh(M.name)
+      end,
     })
   end
 
