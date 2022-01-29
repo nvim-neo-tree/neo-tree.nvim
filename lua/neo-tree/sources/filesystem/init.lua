@@ -144,7 +144,12 @@ local navigate_internal = function(path, path_to_reveal, callback)
       handled = follow_internal(callback, true)
     end
     if not handled then
-      state.position.save()
+      local success, msg = pcall(state.position.save)
+      if success then
+        log.trace("navigate_internal: position saved")
+      else
+        log.trace("navigate_internal: FAILED to save position: ", msg)
+      end
       fs_scan.get_items_async(state, nil, nil, callback)
     end
   end

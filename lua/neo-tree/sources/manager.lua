@@ -36,7 +36,7 @@ local function create_state(tabnr, sd)
   state.dirty = true
   state.position = {
     save = function()
-      if state.tree and renderer.is_window_valid(state.winid) then
+      if state.tree and renderer.window_exists(state) then
         local node = state.tree:get_node()
         if node then
           state.position.node_id = node:get_id()
@@ -180,7 +180,7 @@ M.dir_changed = function(source_name)
   if state.path and cwd == state.path then
     return
   end
-  if renderer.window_exists(state) then
+  if state.path and renderer.window_exists(state) then
     M.navigate(source_name, cwd)
   else
     state.path = cwd

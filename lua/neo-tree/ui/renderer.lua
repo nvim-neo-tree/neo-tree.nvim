@@ -489,8 +489,10 @@ M.window_exists = function(state)
     local isvalid = M.is_window_valid(state.winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(state.winid) > 0)
     if not window_exists then
+      state.winid = nil
       local bufnr = utils.get_value(state, "bufnr", 0, true)
       if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+        state.bufnr = nil
         local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
         if not success and err:match("E523") then
           vim.schedule_wrap(function()
