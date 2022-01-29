@@ -131,7 +131,8 @@ R = refresh:          Rescan the filesystem and redraw the tree. Changes
 FILTER                                                        *neo-tree-filter*
 /     = filter_as_you_type: Filter the tree recursively, searching for
                             files and folders that contain the specified term as
-                            you type. This will fd if it is installed, or find.
+                            you type. This will use fd if it is installed, or 
+                            find, or which if you are on Windows.
 f     = filter_on_submit:   Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
 <C-x> = clear_filter:       Removes the filter.
@@ -188,7 +189,7 @@ You probably want #2:
        }
      }
    })
-
+<
 
 
 ================================================================================
@@ -213,18 +214,17 @@ By hooking into |neo-tree-events|. You can do things like always clear the
 search after opening a file, or define a custom file opener to choose what
 window will be used, or respond to file events like renames and moves.
 
-By configuring, rearranging, adding, or removing renderers for each node type.
-The renderer is a list of components, such as "icon" and "name", which
-determines how each node displayed. Use them as lego pieces to build what you
-want to see.
+By configuring, rearranging, adding, or removing |neo-tree-renderers| for each
+node type. The renderer is a list of components, such as "icon" and "name",
+which determines how each node displayed. Use them as lego pieces to build what
+you want to see.
 
-By adding or replacing components. Components are the functions called by the
-renderers, and they return the text and highlight group to be displayed. See
-|neo-tree-renderers| and |neo-tree-components| for details. If you want to
-gether extra data just one per render to be used by a custom component, you can
-do so in the "before_render" event (see |neo-tree-events|), set that data on the
-`state` object, and reference it in the component. See the wiki for some
-examples of custom components:
+By adding or replacing |neo-tree-components|. Components are the functions
+called by the renderers, and they return the text and highlight group to be
+displayed. If you want to gather extra data just once per render to be used by a
+custom component, you can do so in the "before_render" event (see
+|neo-tree-events|), set that data on the `state` object, and reference it in the
+component. See the wiki for some examples of custom components:
 https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Recipes#components
 
 
@@ -232,7 +232,7 @@ SETUP                                                           *neo-tree-setup*
 
 To override the defaults or add new functionality, call the setup() function
 with your overrides. For example, to add your own mappings in 'lua':
->
+
 >
     require("neo-tree").setup({
       filesystem = {
@@ -248,9 +248,8 @@ with your overrides. For example, to add your own mappings in 'lua':
 
 NOTE: The mappings you define will be merged with the default mappings. If you
 wish to remove a default mapping without overriding it with your own function,
-simply assign it to a command that does not exist, such as "none" or "noop".
-This will cause it to be skipped and allow any existing global mappings to
-work.
+assign it the the string "none". This will cause it to be skipped and allow any
+existing global mappings to work.
 
 Run |NeoTreePasteConfig| to dump the fully commented default config in your
 current file. Even if you don't want to use that config as your starting point,
@@ -280,14 +279,14 @@ If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
 >
-vim.fn.sign_define("LspDiagnosticsSignError",
-    {text = " ", texthl = "LspDiagnosticsSignError"})
-vim.fn.sign_define("LspDiagnosticsSignWarning",
-    {text = " ", texthl = "LspDiagnosticsSignWarning"})
-vim.fn.sign_define("LspDiagnosticsSignInformation",
-    {text = " ", texthl = "LspDiagnosticsSignInformation"})
-vim.fn.sign_define("LspDiagnosticsSignHint",
-    {text = "", texthl = "LspDiagnosticsSignHint"})
+    vim.fn.sign_define("LspDiagnosticsSignError",
+        {text = " ", texthl = "LspDiagnosticsSignError"})
+    vim.fn.sign_define("LspDiagnosticsSignWarning",
+        {text = " ", texthl = "LspDiagnosticsSignWarning"})
+    vim.fn.sign_define("LspDiagnosticsSignInformation",
+        {text = " ", texthl = "LspDiagnosticsSignInformation"})
+    vim.fn.sign_define("LspDiagnosticsSignHint",
+        {text = "", texthl = "LspDiagnosticsSignHint"})
 <
 
 To disable this feature entirely, set `enable_diagnostics = false` in your
@@ -379,12 +378,19 @@ or clear the filter. The arg is the path of the file opened.
 Fired after a file (or folder) has been renamed. The arg is an table containing
 `source` and `destination` properties.
 
+NOTE: The following events are used internally and not intended for end user
+usage. You can use them if you want, but beware that they may be debounced, and
+the details of how frequently they are fired and what events are dropped will be
+changed without warning.
+
 "vim_diagnostic_changed"
-Fired on the |DiagnosticChanged| autocmd event. The arg is a table where the keys
-are file names and the values are tables with diagnostic counts by severity level.
+Fired on the |DiagnosticChanged| autocmd event. The arg is a table with one
+property: `diagnostics_lookup`, which is a table where the keys are file names
+and the values are tables with diagnostic counts by severity level.
 
 "vim_buffer_changed"
-Fired on the following autocmd events: |BufDelete|, |BufWritePost|, |BufFilePost|, |BufNew|
+Fired on the following autocmd events: |BufDelete|, |BufWritePost|,
+|BufFilePost|, |BufNew|
 
 "vim_buffer_enter"
 Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
@@ -466,6 +472,7 @@ A component is a function that returns a single text object:
         highlight = "Comment"
       }
     }
+<
 
 The only reason to return a list of objects is to use multiple highlight groups.
 These components and renderers are defined per source by passing them in the
@@ -475,8 +482,8 @@ set of components.
 
 Each component function is called with the following args:
   `config` The config object defined in the renderer. This is how a component
-  can be made to be configurable. You may want to that if you want different
-  behavior in a directory renderer vs a file renderer.
+  can be made to be configurable. This is useful if you want different behavior
+  in a directory renderer vs a file renderer.
 
   `node` The NuiNode object for this node. The properties can vary by source, but
   each one will generally have at least id and name properties.
@@ -488,7 +495,7 @@ Each component function is called with the following args:
   "before_render" event.
 
 For example, here is the simplest possible component:
->
+
 >
     require("neo-tree").setup({
       filesystem = {
@@ -508,7 +515,7 @@ For example, here is the simplest possible component:
 
 For a more complete example, here is the actual built-in `name` component, which
 is much more dynamic and configurable:
->
+
 >
     require("neo-tree").setup({
       filesystem = {
