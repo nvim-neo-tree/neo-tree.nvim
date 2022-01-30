@@ -376,7 +376,6 @@ create_window = function(state)
     local sourceTitle = state.name:gsub("^%l", string.upper)
     win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
     win_options.win_options = nil
-    print(vim.inspect(win_options))
     win_options.zindex = 40
     local size = { width = 60, height = "80%" }
 

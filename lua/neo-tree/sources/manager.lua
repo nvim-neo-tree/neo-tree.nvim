@@ -8,9 +8,11 @@ local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
+local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 
 local M = {}
 local source_data = {}
+local default_configs = {}
 
 local get_source_data = function(source_name)
   if source_name == nil then
@@ -22,7 +24,6 @@ local get_source_data = function(source_name)
   end
   sd = {
     name = source_name,
-    default_config = {},
     state_by_tab = {},
     subscriptions = {},
   }
@@ -31,7 +32,8 @@ local get_source_data = function(source_name)
 end
 
 local function create_state(tabnr, sd)
-  local state = utils.table_copy(sd.default_config)
+  local default_config = default_configs[sd.name]
+  local state = utils.table_copy(default_config)
   state.tabnr = tabnr
   state.dirty = true
   state.position = {
@@ -68,12 +70,25 @@ local function create_state(tabnr, sd)
   return state
 end
 
+---For use in tests only, completely resets the state of all sources.
+---This closes all windows as well since they would be broken by this action.
+M._clear_state = function()
+  fs_watch.unwatch_all()
+  renderer.close_all_floating_windows()
+  for _, data in pairs(source_data) do
+    for _, state in pairs(data.state_by_tab) do
+      renderer.close(state)
+    end
+  end
+  source_data = {}
+end
+
 M.set_default_config = function(source_name, config)
   if source_name == nil then
     error("set_default_config: source_name cannot be nil")
   end
+  default_configs[source_name] = config
   local sd = get_source_data(source_name)
-  sd.default_config = config
   for tabnr, tab_config in pairs(sd.state_by_tab) do
     sd.state_by_tab[tabnr] = utils.table_merge(tab_config, config)
   end
