@@ -1,8 +1,9 @@
 local vim = vim
 local renderer = require("neo-tree.ui.renderer")
-local utils = require("neo-tree.utils")
 local file_items = require("neo-tree.sources.common.file-items")
 local popups = require("neo-tree.ui.popups")
+local log = require("neo-tree.log")
+local git = require("neo-tree.git")
 
 local M = {}
 
@@ -13,7 +14,7 @@ M.get_git_status = function(state)
     return
   end
   state.loading = true
-  local status_lookup, project_root = utils.get_git_status(true)
+  local status_lookup, project_root = git.status(true)
   state.path = project_root or state.path or vim.fn.getcwd()
   local context = file_items.create_context(state)
   -- Create root folder
@@ -31,7 +32,7 @@ M.get_git_status = function(state)
         git_status = status,
       }
     else
-      print("Error creating item for " .. path .. ": " .. item)
+      log.error("Error creating item for " .. path .. ": " .. item)
     end
   end
 
@@ -41,7 +42,6 @@ M.get_git_status = function(state)
     table.insert(state.default_expanded_nodes, id)
   end
   file_items.deep_sort(root.children)
-  state.before_render(state)
   renderer.show_nodes({ root }, state)
   state.loading = false
 end

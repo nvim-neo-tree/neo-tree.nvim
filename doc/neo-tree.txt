@@ -1,30 +1,35 @@
 *neo-tree.txt*    Plugin to browse the file system and other tree like structures
 
 CONTENTS                                                            *neo-tree*
-Introduction ........ |Neo-tree-Introduction|
-Commands ............ |Neo-tree-Commands|
-Mappings ............ |Neo-tree-Mappings|
-  Navigation ........ |Neo-tree-Navigation|
-  View Changes ...... |Neo-tree-View-Changes|
-  File Actions ...... |Neo-tree-File-Actions|
-  Filter ............ |Neo-tree-Filter|
-Configuration ....... |Neo-tree-Configuration|
-  Setup ............. |Neo-tree-Setup|
-  Diagnostics ....... |Neo-tree-Diagnostics|
-  Highlights ........ |Neo-tree-Highlights|
-Other Sources ....... |Neo-tree-Sources|
-  Buffers ........... |Neo-tree-Buffers|
-  Git Status ........ |Neo-tree-Git-Status|
+Introduction ................ |neo-tree-introduction|
+Commands .................... |neo-tree-commands|
+Mappings .................... |neo-tree-mappings|
+  Navigation ................ |neo-tree-navigation|
+  View Changes .............. |neo-tree-view-changes|
+  File Actions .............. |neo-tree-file-actions|
+  Filter .................... |neo-tree-filter|
+Configuration ............... |neo-tree-configuration|
+  Setup ..................... |neo-tree-setup|
+  Git Status ................ |neo-tree-git-status|
+  Diagnostics ............... |neo-tree-diagnostics|
+  Highlights ................ |neo-tree-highlights|
+  Events .................... |neo-tree-events|
+  Components and Renderers .. |neo-tree-renderers|
+  Buffer Variables .......... |neo-tree-buffer-variables|
+  Popups .................... |neo-tree-popups|
+Other Sources ............... |neo-tree-sources|
+  Buffers ................... |neo-tree-buffers|
+  Git Status ................ |neo-tree-git-status-source|
 
 
-INTRODUCTION                                             *Neo-tree-Introduction*
+INTRODUCTION                                             *neo-tree-introduction*
 
 Neo-tree is a plugin for nvim that can display tree structures in a sidebar or
-a floating window. The current version includes a filesystem browser and a
-buffer list.
+a floating window. The current version includes a filesystem browser, a
+buffer list, and a git status view.
 
 
-COMMANDS                                                     *Neo-tree-Commands*
+COMMANDS                                                     *neo-tree-commands*
 
 Neo-tree does not define any default keybindings for nvim. The suggested
 keybindings are:
@@ -32,6 +37,7 @@ keybindings are:
     nnoremap / :NeoTreeReveal<cr>                          
     nnoremap | :NeoTreeClose<cr>                          
     nnoremap <leader>b :NeoTreeFocus buffers<cr>
+    nnoremap <leader>s :NeoTreeFocus git_status<cr>
 
 NOTE: All of the below commands also have a Toggle variant, which will close
 the window if it is already open. i.e. NeoTreeFocusToggle, NeoTreeShowToggle,
@@ -74,13 +80,19 @@ Closes all Neo-tree windows. Takes an optional argument to specify the position
 to close, such as `left` or `right`. The position corresponds to the
 window.position setting in your config for each source.
 
+|NeoTreePasteConfig|                                        *NeoTreePasteConfig*
+This is a special command to help you get started. It will paste the complete,
+fully commented default config at the current line. You can change what you
+like, delete anything you are not going to change if you want, and pass that
+`config` table to `require("neo-tree").setup(config)`
+
 
 ===============================================================================
 MAPPINGS                                                                      ~
 ===============================================================================
-                                                            *Neo-tree-Mappings*
+                                                            *neo-tree-mappings*
 
-NAVIGATION                                                *Neo-tree-Navigation*
+NAVIGATION                                                *neo-tree-navigation*
 
 Within the neo-tree window, for the filesystem source, the following mappings
 are defined by default.
@@ -97,7 +109,7 @@ s             = open_vsplit: Same as open, but opens in a vertical split
                              selected folder.
 
 
-FILE ACTIONS                                            *Neo-tree-File-Actions*
+FILE ACTIONS                                            *neo-tree-file-actions*
 a    = add:                  Create a new file or directory.
 d    = delete:               Delete the selected file or directory.
 r    = rename:               Rename the selected file or directory.
@@ -107,7 +119,7 @@ p    = paste_from_clipboard: Copy/move each marked file in the to the
                              selected folder.
 
 
-VIEW CHANGES                                            *Neo-tree-View-Changes*
+VIEW CHANGES                                            *neo-tree-view-changes*
 H = toggle_hidden:    Toggle whether hidden files (.*) are shown or not.
 I = toggle_gitignore: Toggle whether the gitignore file is
                       respected.
@@ -116,182 +128,136 @@ R = refresh:          Rescan the filesystem and redraw the tree. Changes
                       this is useful for changes made elsewhere.
 
 
-FILTER                                                        *Neo-tree-Filter*
+FILTER                                                        *neo-tree-filter*
 /     = filter_as_you_type: Filter the tree recursively, searching for
                             files and folders that contain the specified term as
-                            you type. This will fd if it is installed, or find.
+                            you type. This will use fd if it is installed, or 
+                            find, or which if you are on Windows.
 f     = filter_on_submit:   Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
 <C-x> = clear_filter:       Removes the filter.
 
 
+CUSTOM COMMANDS                                       *neo-tree-custom-commands*
+
+If you want to define your own command, you have two options:
+  1. You can define (or override) a command in the `commands` section of the
+  config for each source, then reference that by name in a mapping.
+  2. You can map directly to a function and skip defining a command.
+
+You probably want #2:
+>
+   require("neo-tree").setup({
+     filesystem = {
+       mappings = {
+         ["?"] = functions(state)
+           local node = state.tree:get_node()
+           print(node.name)
+         end
+       }
+     }
+   })
+<
+..or
+>
+   local print_me = functions(state)
+     local node = state.tree:get_node()
+     print(node.name)
+   end
+
+   require("neo-tree").setup({
+     filesystem = {
+       mappings = {
+         ["?"] = print_me
+       }
+     }
+   })
+<
+...but if you want #1, here is how that works:
+
+>
+   require("neo-tree").setup({
+     filesystem = {
+       commands = {
+         print_me = functions(state)
+           local node = state.tree:get_node()
+           print(node.name)
+         end
+       },
+       mappings = {
+         ["?"] = "print_me"
+       }
+     }
+   })
+<
+
 
 ================================================================================
 CONFIGURATION                                                                  ~
 ================================================================================
-                                                        *Neo-tree-Configuration*
+                                                        *neo-tree-configuration*
+Neo-tree is highly configurable and you should be able to make it do whatever
+you want without having to change the internal code. Here are the ways you can
+customize it:
 
-SETUP                                                           *Neo-tree-Setup*
+By setting config options in the |neo-tree-setup| function. This is for very
+common items and is how you would configure most lua plugins. You can also
+change the look by configuring the appropriate highlight groups, see
+|neo-tree-highlights|.
+
+By creating custom mappings (see |neo-tree-mappings|). You can of course just
+change what keys are mapped to which built-in functions, but you can also map
+keys to a custom function and do whatever you want. See the wiki for some
+examples: https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Recipes#commands
+
+By hooking into |neo-tree-events|. You can do things like always clear the
+search after opening a file, or define a custom file opener to choose what
+window will be used, or respond to file events like renames and moves.
+
+By configuring, rearranging, adding, or removing |neo-tree-renderers| for each
+node type. The renderer is a list of components, such as "icon" and "name",
+which determines how each node displayed. Use them as lego pieces to build what
+you want to see.
+
+By adding or replacing |neo-tree-components|. Components are the functions
+called by the renderers, and they return the text and highlight group to be
+displayed. If you want to gather extra data just once per render to be used by a
+custom component, you can do so in the "before_render" event (see
+|neo-tree-events|), set that data on the `state` object, and reference it in the
+component. See the wiki for some examples of custom components:
+https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Recipes#components
+
+
+SETUP                                                           *neo-tree-setup*
 
 To override the defaults or add new functionality, call the setup() function
 with your overrides. For example, to add your own mappings in 'lua':
+
 >
->
-require("neo-tree").setup({
-  filesystem = {
-    window = {
-      mappings = {
-        ["<F5>"] = "refresh",
-        ["o"] = "open",
+    require("neo-tree").setup({
+      filesystem = {
+        window = {
+          mappings = {
+            ["<F5>"] = "refresh",
+            ["o"] = "open",
+          }
+        }
       }
-    }
-  }
-})
+    })
 <
 
-Below is a complete skeleton of all of the configuration options, ready for
-copy and paste into your lua config file.
+NOTE: The mappings you define will be merged with the default mappings. If you
+wish to remove a default mapping without overriding it with your own function,
+assign it the the string "none". This will cause it to be skipped and allow any
+existing global mappings to work.
 
->
-local highlights = require('neo-tree.ui.highlights')
+Run |NeoTreePasteConfig| to dump the fully commented default config in your
+current file. Even if you don't want to use that config as your starting point,
+you still may want to dump it to a blank .lua file just to read it as
+documentation.
 
-require("neo-tree").setup({
-  -- The default_source is the one used when calling require('neo-tree').show()
-  -- without a source argument.
-  default_source = "filesystem",
-  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
-  -- "NC" is a special style that works well with NormalNC set
-  enable_git_status = true,
-  enable_diagnostics = true,
-  filesystem = {
-    window = {
-      -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
-      -- for possible options. These can also be functions that return these
-      -- options.
-      position = "left", -- left, right, float
-      width = 40, -- applies to left and right positions
-      -- settings that apply to float position only
-      popop = {
-        size = {
-          height = "80%",
-          width = "50%"
-        },
-        position = "50%" -- 50% means center it
-        -- you can also specify border here, if you want a different setting from
-        -- the global popup_border_style.
-      },
-      -- Mappings for tree window. See |Neo-tree-Mappings| for built-in 
-      -- commands. You can also create your own commands by providing a 
-      -- function instead of a string. See the built-in commands for examples.
-      mappings = {
-        ["<2-LeftMouse>"] = "open",
-        ["<cr>"] = "open",
-        ["S"] = "open_split",
-        ["s"] = "open_vsplit",
-        ["<bs>"] = "navigate_up",
-        ["."] = "set_root",
-        ["H"] = "toggle_hidden",
-        ["I"] = "toggle_gitignore",
-        ["R"] = "refresh",
-        ["/"] = "filter_as_you_type",
-        ["f"] = "filter_on_submit",
-        ["<C-x>"] = "clear_filter",
-        ["a"] = "add",
-        ["d"] = "delete",
-        ["r"] = "rename",
-        ["c"] = "copy_to_clipboard",
-        ["x"] = "cut_to_clipboard",
-        ["p"] = "paste_from_clipboard",
-      }
-    },
-    search_limit = 50, -- max number of search results when using filters
-    filters = {
-      show_hidden = false,
-      respect_gitignore = true,
-    },
-    bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
-    before_render = function(state)
-      -- This function is called after the file system has been scanned,
-      -- but before the tree is rendered. You can use this to gather extra
-      -- data that can be used in the renderers.
-      local utils = require("neo-tree.utils")
-      state.git_status_lookup = utils.get_git_status()
-    end,
-    -- The components section provides custom functions that may be called by 
-    -- the renderers below. Each componment is a function that takes the
-    -- following arguments:
-    --      config: A table containing the configuration provided by the user
-    --              when declaring this component in their renderer config.
-    --      node:   A NuiNode object for the currently focused node.
-    --      state:  The current state of the source providing the items.
-    --
-    -- The function should return either a table, or a list of tables, each of which
-    -- contains the following keys:
-    --    text:      The text to display for this item.
-    --    highlight: The highlight group to apply to this text.
-    components = {
-      hello_node = function (config, node, state)
-        local text = "Hello " .. node.name
-        if state.search_term then
-          text = string.format("Hello '%s' in %s", state.search_term, node.name)
-        end
-        return {
-          text = text,
-          highlight = config.highlight or highlights.FILE_NAME,
-        }
-      end
-    },
-    -- This section provides the renderers that will be used to render the tree.
-    -- The first level is the node type.
-    -- For each node type, you can specify a list of components to render.
-    -- Components are rendered in the order they are specified.
-    -- The first field in each component is the name of the function to call.
-    -- The rest of the fields are passed to the function as the "config" argument.
-    renderers = {
-      directory = {
-        {
-          "icon",
-          folder_closed = "",
-          folder_open = "",
-          padding = " ",
-        },
-        { "current_filter" },
-        { "name" },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText"
-        },
-        { "diagnostics", errors_only = true },
-        --{ "git_status" },
-      },
-      file = {
-        {
-          "icon",
-          default = "*",
-          padding = " ",
-        },
-        --{ "hello_node", highlight = "Normal" }, -- For example, don't actually
-        -- use this!
-        {
-          "name",
-          use_git_status_colors = true
-        },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText"
-        },
-        { "diagnostics" },
-        {
-          "git_status",
-          highlight = "NeoTreeDimText"
-        }
-      },
-    }
-  }
-})
-<
 
-GIT STATUS                                           *Neo-tree_Setup-Git-Status*
+GIT STATUS                                           *neo-tree-git-status*
 
 By default, Neo-tree will attempt to get the git status for files in the
 current directory. It will use this information to add markers to the right of
@@ -302,8 +268,10 @@ config when calling the setup function. To just disable colors on file or
 directory names, you can set `use_git_status_colors = false` in the `name`
 component of your renderer(s).
 
+See also: |neo-tree-git-status-source|
 
-DIAGNOSTICS                                         *Neo-tree-Setup-Diagnostics*
+
+DIAGNOSTICS                                         *neo-tree-diagnostics*
 
 By default, Neo-tree will display diagnostic symbols next to files. It will
 display the highest severity level for files, and errors only for directories.
@@ -311,57 +279,315 @@ If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
 >
-vim.fn.sign_define("LspDiagnosticsSignError",
-    {text = " ", texthl = "LspDiagnosticsSignError"})
-vim.fn.sign_define("LspDiagnosticsSignWarning",
-    {text = " ", texthl = "LspDiagnosticsSignWarning"})
-vim.fn.sign_define("LspDiagnosticsSignInformation",
-    {text = " ", texthl = "LspDiagnosticsSignInformation"})
-vim.fn.sign_define("LspDiagnosticsSignHint",
-    {text = "", texthl = "LspDiagnosticsSignHint"})
+    vim.fn.sign_define("LspDiagnosticsSignError",
+        {text = " ", texthl = "LspDiagnosticsSignError"})
+    vim.fn.sign_define("LspDiagnosticsSignWarning",
+        {text = " ", texthl = "LspDiagnosticsSignWarning"})
+    vim.fn.sign_define("LspDiagnosticsSignInformation",
+        {text = " ", texthl = "LspDiagnosticsSignInformation"})
+    vim.fn.sign_define("LspDiagnosticsSignHint",
+        {text = "", texthl = "LspDiagnosticsSignHint"})
 <
 
 To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
 
-HIGHLIGHTS                                                 *Neo-tree-Highlights*
+
+HIGHLIGHTS                                                 *neo-tree-highlights*
 
 The following highlight groups are defined by this plugin. If you set any of
 these yourself before the plugin loads, it will not be touched. If they do not
 exist, they will be created.
 
-NeoTreeBufferNumber   The buffer number shown in the buffers source.
-NeoTreeCursorLine     |hi-CursorLine| override in Neo-tree window.
-NeoTreeDimText        Greyed out text used in various places.
-NeoTreeDirectoryName  Directory name.
-NeoTreeDirectoryIcon  Directory icon.
-NeoTreeFileIcon       File icon, when not overriden by devicons.
-NeoTreeFileName       File name, when not overwritten by another status.
-NeoTreeFileNameOpened File name when the file is open. Not used yet.
-NeoTreeFilterTerm     The filter term, as displayed in the root node.
-NeoTreeFloatBorder    The border for pop-up windows.
-NeoTreeGitAdded       File name when the git status is added.
-NeoTreeGitConflict    File name when the git status is conflict.
-NeoTreeGitModified    File name when the git status is modified.
-NeoTreeGitUntracked   File name when the git status is untracked.
-NeoTreeNormal         |hl-Normal| override in Neo-tree window.
-NeoTreeNormalNC       |hi-NormalNC| override in Neo-tree window.
-NeoTreeRootName       The name of the root node.
-NeoTreeTitleBar       Used for the title bar of pop-ups, when the border-style
-                      is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeBufferNumber       The buffer number shown in the buffers source.
+NeoTreeCursorLine         |hi-CursorLine| override in Neo-tree window.
+NeoTreeDimText            Greyed out text used in various places.
+NeoTreeDirectoryName      Directory name.
+NeoTreeDirectoryIcon      Directory icon.
+NeoTreeFileIcon           File icon, when not overriden by devicons.
+NeoTreeFileName           File name, when not overwritten by another status.
+NeoTreeFileNameOpened     File name when the file is open. Not used yet.
+NeoTreeSymbolicLinkTarget Symbolic link target.
+NeoTreeFilterTerm         The filter term, as displayed in the root node.
+NeoTreeFloatBorder        The border for pop-up windows.
+NeoTreeGitAdded           File name when the git status is added.
+NeoTreeGitConflict        File name when the git status is conflict.
+NeoTreeGitModified        File name when the git status is modified.
+NeoTreeGitUntracked       File name when the git status is untracked.
+NeoTreeNormal             |hl-Normal| override in Neo-tree window.
+NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
+NeoTreeRootName           The name of the root node.
+NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
+                          is set to "NC". This is derived from NeoTreeFloatBorder.
+
+
+EVENTS                                                        *neo-tree-events*
+
+Events are one way to customize the behavior of Neo-tree. You can add event
+handlers to your config in the `event_handlers` section, which should be a list
+of objects in the form:
+
+>
+    {
+      event = "event_name",
+      handler = function(arg)
+        -- do something, the value of arg varies by event.
+      end,
+      id = "optional unique id, only meaningful if you want to unsubscribe later"
+    }
+<
+
+The following events are available:
+
+"before_render"
+Fired after items have been collected from the source but before drawing the
+nodes of the tree. This is the best place to gather additional data to be used
+by components. The argument passed is the state of the source, which is also
+passed to components and commands down the line.
+
+"after_render"
+Fired after the tree has been rendered. The argument passed is the state of the
+source, which is also passed to components and commands down the line.
+
+"file_added"
+Fired after a file (or folder) has been created, either by using the "add"
+command or by copy and paste. The arg is the full path to the new file.
+
+"file_deleted"
+Fired after a file (or folder) has been deleted. The arg is the full path to the
+deleted file.
+
+"file_moved"
+Fired after a file (or folder) has been moved. The arg is a table containing
+`source` and `destination` properties.
+
+"file_open_requested"
+Fired just before a file is opened. The arg is a table containing the `state`
+of the source being used, the `path` of the file to be opened, and `open_cmd`,
+which is the open command that was requested. `open_cmd` will be either |edit|,
+|split|, or |vsplit|. This function should return a table with a property called
+`handled` which is true if the file open operation was handled, or false if it
+was not. If `{ handled = true }` is not returned, the file will be opened using
+the built-in logic.
+
+"file_opened"
+Fired after a file has been opened. You might use this to auto-close the window
+or clear the filter. The arg is the path of the file opened.
+
+"file_renamed"
+Fired after a file (or folder) has been renamed. The arg is an table containing
+`source` and `destination` properties.
+
+NOTE: The following events are used internally and not intended for end user
+usage. You can use them if you want, but beware that they may be debounced, and
+the details of how frequently they are fired and what events are dropped will be
+changed without warning.
+
+"vim_diagnostic_changed"
+Fired on the |DiagnosticChanged| autocmd event. The arg is a table with one
+property: `diagnostics_lookup`, which is a table where the keys are file names
+and the values are tables with diagnostic counts by severity level.
+
+"vim_buffer_changed"
+Fired on the following autocmd events: |BufDelete|, |BufWritePost|,
+|BufFilePost|, |BufNew|
+
+"vim_buffer_enter"
+Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
+
+"vim_dir_changed"
+Fired on the |DirChanged| autocmd event
+
+"vim_win_enter"
+Fired on the |WinEnter| autocmd event
+
+
+You can also define your own with:
+>
+>
+    require("neo-tree.events.queue").define_event(event_name, {
+      setup = <function>,
+      seed = <function>,
+      teardown = <function>,
+      debounce_frequency = <number>,
+      once = <boolean>,
+      cancelled = <boolean>
+    })
+<
+
+The setup function is run the first time the event is subscribed to. For an
+autocmd event, this would define the vim autocmd to connect it to fire_event().
+
+The `seed` function is run at the begining of every event firing. The diagnostics
+event uses this to collect the diagnostic information and pass it to all
+subscribers.
+
+The `teardown` function is used when the last subscriber unsubscribes, and cleans
+up. This is like Dispose in other languages.
+
+`debounce_frequency` is the minimum number of milliseconds between each invocation
+of the event. The first event is gauranteed to fire, as well as the last one, but
+in between events may be dropped if this is set to a number greater than zero.
+
+`once` means to only fire this event handler once then mark it as `cancelled`.
+
+`cancelled` means that this event handler will be skipped in all future event
+fires, and will be discarded on the next cleanup of the queue.
+
+
+COMPONENTS AND RENDERERS                                   *neo-tree-renderers*
+
+A renderer is just a list of component configs, to be rendered in order to
+create a line in the tree. Each renderer is for a specific node type, such as
+`directory` or `file`.  To view the avilable built-in components and their
+configs for each source, look at the default config by pasting it with
+|NeoTreePasteConfig| or view it online at:
+https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
+
+                                                           *neo-tree-components*
+A component is a function that returns a single text object:
+>
+    {
+      text = "Node A",
+      highlight = "Normal"
+    }
+<
+
+... or a list of text objects:
+>
+    {
+      {
+        text = "Node Name",
+        highlight = "Directory"
+      },
+      {
+        text = "[",
+        highlight = "Comment"
+      },
+      {
+        text = "I'm Sepcial!",
+        highlight = "SpecialChar"
+      },
+        text = "[",
+        highlight = "Comment"
+      }
+    }
+<
+
+The only reason to return a list of objects is to use multiple highlight groups.
+These components and renderers are defined per source by passing them in the
+setup. If you define a component with the same name of a built-in component, it
+will replace that built-in component. Otherwise it will be added to the existing
+set of components.
+
+Each component function is called with the following args:
+  `config` The config object defined in the renderer. This is how a component
+  can be made to be configurable. This is useful if you want different behavior
+  in a directory renderer vs a file renderer.
+
+  `node` The NuiNode object for this node. The properties can vary by source, but
+  each one will generally have at least id and name properties.
+
+  `state` This is the state of the plugin. This object is persistent for the
+  life of the source, with one state object per source per tab. the entirety of
+  all state and source level configuration is in this one object. Aside from
+  configuration, it can also hold anything you may want to set in a
+  "before_render" event.
+
+For example, here is the simplest possible component:
+
+>
+    require("neo-tree").setup({
+      filesystem = {
+        components = {
+
+          name = function(config, node)
+            return { 
+              text = node.name,
+              highlight = "NeoTreeFileName"
+            }
+          end
+
+        }
+      }
+    })
+<
+
+For a more complete example, here is the actual built-in `name` component, which
+is much more dynamic and configurable:
+
+>
+    require("neo-tree").setup({
+      filesystem = {
+        components = {
+
+          name = function(config, node, state)
+            local highlight = config.highlight or highlights.FILE_NAME
+            if node.type == "directory" then
+              highlight = highlights.DIRECTORY_NAME
+            end
+            if node:get_depth() == 1 then
+              highlight = highlights.ROOT_NAME
+            else
+              if config.use_git_status_colors == nil or config.use_git_status_colors then
+                local git_status = state.components.git_status({}, node, state)
+                if git_status and git_status.highlight then
+                  highlight = git_status.highlight
+                end
+              end
+            end
+            return {
+              text = node.name,
+              highlight = highlight,
+            }
+          end
+
+        }
+      }
+    })
+<
+
+
+BUFFER VARIABLES                                     *neo-tree-buffer-variables*
+
+Neo-tree sets certain buffer options and variables that you may use in custom
+code or integrations if you need it. The |filetype| of the main window is
+`neo-tree`. The buffer will also have these local variables set:
+
+`winid` The window handle of the window that it was created in.
+`tabnr` The tab number that it was created in.
+`source` The name of the source that created it, i.e. filesystem, buffers, etc.
+
+Please note that if the buffer is displayed in another window or tab, it's
+behavior is unpredictable. It is meant to be locked to it's original location,
+which is why those variables are recorded.
+
+
+POPUPS                                                         *neo-tree-popups*
+
+Popups will be created with a |filetype| of `neo-tree-popup`. You can use this
+as the target for autocmds or to exclude them from being acted upon by other
+plugins.
+
+They can also be configured by setting the `popup_border_style` in your config,
+and the colors of that border are controlled by the `NeoTreeFloatBorder`
+highlight group. If you you use the special `NC` option for
+`popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
+highlight group.
 
 
 ================================================================================
 OTHER SOURCES                                                                  ~
 ================================================================================
-                                                              *Neo-tree-Sources*
+                                                              *neo-tree-sources*
 
 Neo-tree supports other sources beside the filesystem source which is used by
 default. The rest of the sources follow the same pattern as the filesystem
 sources described above. The following sections will give an overview of each
 source and describe the options that are unique to those sources.
 
-BUFFERS                                                        *Neo-tree-Buffers*
+
+BUFFERS                                                        *neo-tree-buffers*
 
 The buffers source shows all open buffers. This is the same list that |ls| would
 show. This view adds one component, which is the buffer number, shown to the
@@ -376,9 +602,12 @@ nvim.
 As a list of files, this source shares most of the commands with the filesystem
 source, with the exception of filtering. Some of these commands make less
 sense to use here, as things like adding new files won't be visible until you
-open them by some other means.
+open them by some other means. One command that is unique to this view is
+`buffer_delete`, which issues |:bdelete| on the selected buffer. This is mapped
+to `bd` by default.
 
-GIT STATUS                                                  *Neo-tree-Git-Status*
+
+GIT STATUS                                           *neo-tree-git-status-source*
 
 The git_status view shows the output of the `git status` command in the tree.
 Unlike the other sources, this will always show the project root of the

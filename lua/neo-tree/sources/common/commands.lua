@@ -4,6 +4,7 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -17,6 +18,12 @@ M.add = function(state, callback)
     node = tree:get_node(node:get_parent_id())
   end
   fs_actions.create_node(node:get_id(), callback)
+end
+
+M.close_all_nodes = function(state)
+  renderer.collapse_all_nodes(state.tree)
+  state.tree:get_nodes()[1]:expand()
+  state.tree:render()
 end
 
 M.close_node = function(state, callback)
@@ -47,7 +54,7 @@ M.copy_to_clipboard = function(state, callback)
     state.clipboard[node.id] = nil
   else
     state.clipboard[node.id] = { action = "copy", node = node }
-    print("Copied " .. node.name .. " to clipboard")
+    log.info("Copied " .. node.name .. " to clipboard")
   end
   if callback then
     callback()
@@ -63,7 +70,7 @@ M.cut_to_clipboard = function(state, callback)
     state.clipboard[node.id] = nil
   else
     state.clipboard[node.id] = { action = "cut", node = node }
-    print("Cut " .. node.name .. " to clipboard")
+    log.info("Cut " .. node.name .. " to clipboard")
   end
   if callback then
     callback()
@@ -98,7 +105,7 @@ M.paste_from_clipboard = function(state, callback)
         -- open the folder so the user can see the new files
         local node = state.tree:get_node(folder)
         if not node then
-          print("Could not find node for " .. folder)
+          log.warn("Could not find node for " .. folder)
         end
         callback(node, destination)
       end
@@ -162,18 +169,8 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     end
     return nil
   else
-    -- find a suitable window to open the file in
-    if state.window.position == "right" then
-      vim.cmd("wincmd t")
-    else
-      vim.cmd("wincmd w")
-    end
-    local attempts = 0
-    while attempts < 4 and vim.bo.filetype == "neo-tree" do
-      attempts = attempts + 1
-      vim.cmd("wincmd w")
-    end
-    vim.cmd(open_cmd .. " " .. node:get_id())
+    local path = node:get_id()
+    utils.open_file(state, path, open_cmd)
   end
 end
 
@@ -205,6 +202,32 @@ M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
   fs_actions.rename_node(node.path, callback)
+end
+
+---Expands or collapses the current node.
+M.toggle_directory = function(state)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type ~= "directory" then
+    return
+  end
+  if node.loaded == false then
+    -- lazy load this node and pass the children to the renderer
+    local children = {}
+    renderer.show_nodes(state, children, node:get_id())
+  elseif node:has_children() then
+    local updated = false
+    if node:is_expanded() then
+      updated = node:collapse()
+    else
+      updated = node:expand()
+    end
+    if updated then
+      tree:render()
+    else
+      tree:render()
+    end
+  end
 end
 
 return M

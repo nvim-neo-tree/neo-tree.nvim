@@ -19,6 +19,10 @@ require("neo-tree").setup({
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   -- "NC" is a special style that works well with NormalNC set
   filesystem = {
+    follow_current_file = false, -- This will find and focus the file in the
+    -- active buffer every time the current file is changed, if the tree is open.
+    use_libuv_file_watcher = false, -- This will use the OS level file watchers 
+    -- to detect changes instead of relying on nvim autocmd events.
     window = {
       position = "left",
       width = 40,
@@ -36,6 +40,7 @@ require("neo-tree").setup({
         ["I"] = "toggle_gitignore",
         ["R"] = "refresh",
         ["/"] = "filter_as_you_type",
+        --["/"] = "none" -- Assigning a key to "none" will remove the default mapping
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["a"] = "add",
@@ -56,8 +61,8 @@ require("neo-tree").setup({
       -- This function is called after the file system has been scanned,
       -- but before the tree is rendered. You can use this to gather extra
       -- data that can be used in the renderers.
-      local utils = require("neo-tree.utils")
-      state.git_status_lookup = utils.get_git_status()
+      local git = require("neo-tree.git")
+      state.git_status_lookup = git.status()
     end,
     -- The components section provides custom functions that may be called by 
     -- the renderers below. Each componment is a function that takes the
@@ -99,6 +104,10 @@ require("neo-tree").setup({
         },
         { "current_filter" },
         { "name" },
+        --{
+        --  "symlink_target",
+        --  highlight = "NeoTreeSymbolicLinkTarget",
+        --},
         {
           "clipboard",
           highlight = "NeoTreeDimText"
@@ -114,6 +123,10 @@ require("neo-tree").setup({
         --{ "hello_node", highlight = "Normal" }, -- For example, don't actually
         -- use this!
         { "name" },
+        --{
+        --  "symlink_target",
+        --  highlight = "NeoTreeSymbolicLinkTarget",
+        --},
         {
           "clipboard",
           highlight = "NeoTreeDimText"

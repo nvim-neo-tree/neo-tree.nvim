@@ -1,49 +1,12 @@
 local vim = vim
+local log = require("neo-tree.log")
+-- Backwards compatibility
+table.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
+table.unpack = table.unpack or unpack
 
 local M = {}
-
-local function get_simple_git_status_code(status)
-  -- Prioritze M then A over all others
-  if status:match("U") or status == "AA" or status == "DD" then
-    return "U"
-  elseif status:match("M") then
-    return "M"
-  elseif status:match("[ACR]") then
-    return "A"
-  elseif status:match("!$") then
-    return "!"
-  elseif status:match("?$") then
-    return "?"
-  else
-    local len = #status
-    while len > 0 do
-      local char = status:sub(len, len)
-      if char ~= " " then
-        return char
-      end
-      len = len - 1
-    end
-    return status
-  end
-end
-
-local function get_priority_git_status_code(status, other_status)
-  if not status then
-    return other_status
-  elseif not other_status then
-    return status
-  elseif status == "U" or other_status == "U" then
-    return "U"
-  elseif status == "?" or other_status == "?" then
-    return "?"
-  elseif status == "M" or other_status == "M" then
-    return "M"
-  elseif status == "A" or other_status == "A" then
-    return "A"
-  else
-    return status
-  end
-end
 
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
@@ -60,13 +23,19 @@ local diag_severity_to_string = function(severity)
 end
 
 local tracked_functions = {}
+M.debounce_strategy = {
+  CALL_FIRST_AND_LAST = 0,
+  CALL_LAST_ONLY = 1,
+}
 
 ---Call fn, but not more than once every x milliseconds.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
+---@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
 ---@param callback function Called with the result of executing fn as: callback(success, result)
-M.debounce = function(id, fn, frequency_in_ms, callback)
+M.debounce = function(id, fn, frequency_in_ms, strategy, callback)
+  strategy = strategy or M.debounce_strategy.CALL_FIRST_AND_LAST
   local fn_data = tracked_functions[id]
   if fn_data == nil then
     -- first call for this id
@@ -77,6 +46,9 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
       postponed_callback = nil,
       in_debounce_period = true,
     }
+    if strategy == M.debounce_strategy.CALL_LAST_ONLY then
+      fn_data.in_debounce_period = true
+    end
     tracked_functions[id] = fn_data
   else
     if fn_data.in_debounce_period then
@@ -98,7 +70,7 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
   local success, result = pcall(fn)
 
   if not success then
-    print("Error in neo-tree.utils.debounce: ", result)
+    log.error("Error in neo-tree.utils.debounce: ", result)
   end
 
   -- Now schedule the next earliest execution.
@@ -113,7 +85,7 @@ M.debounce = function(id, fn, frequency_in_ms, callback)
     current_data.fn = nil
     current_data.in_debounce_period = false
     if _fn ~= nil then
-      M.debounce(id, _fn, current_data.frequency_in_ms, _callback)
+      M.debounce(id, _fn, current_data.frequency_in_ms, strategy, _callback)
     end
   end, frequency_in_ms)
 
@@ -160,58 +132,6 @@ M.get_diagnostic_counts = function()
     end)
   end
   return lookup
-end
-
-M.get_git_project_root = function()
-  return vim.fn.systemlist("git rev-parse --show-toplevel")[1]
-end
-
----Parse "git status" output for the current working directory.
----@return table table Table with the path as key and the status as value.
-M.get_git_status = function(exclude_directories)
-  local project_root = M.get_git_project_root()
-  local git_output = vim.fn.systemlist("git status --porcelain")
-  local git_status = {}
-  local codes = "[ACDMRTU!%?%s]"
-  codes = codes .. codes
-
-  for _, line in ipairs(git_output) do
-    local status = line:match("^(" .. codes .. ")%s")
-    local relative_path = line:match("^" .. codes .. "%s+(.+)$")
-    if not relative_path then
-      if line:match("fatal: not a git repository") then
-        return {}
-      else
-        print("Error parsing git status for: " .. line)
-      end
-      break
-    end
-    local renamed = line:match("^" .. codes .. "%s+.*%s->%s(.*)$")
-    if renamed then
-      relative_path = renamed
-    end
-    if relative_path:sub(1, 1) == '"' then
-      -- path was quoted, remove quoting
-      relative_path = relative_path:match('^"(.+)".*')
-    end
-    local absolute_path = project_root .. M.path_separator .. relative_path
-    git_status[absolute_path] = status
-
-    if not exclude_directories then
-      -- Now bubble this status up to the parent directories
-      local parts = M.split(absolute_path, M.path_separator)
-      table.remove(parts) -- pop the last part so we don't override the file's status
-      M.reduce(parts, "", function(acc, part)
-        local path = acc .. M.path_separator .. part
-        local path_status = git_status[path]
-        local file_status = get_simple_git_status_code(status)
-        git_status[path] = get_priority_git_status_code(path_status, file_status)
-        return path
-      end)
-    end
-  end
-
-  return git_status, project_root
 end
 
 ---Resolves some variable to a string. The object can be either a string or a
@@ -261,12 +181,77 @@ M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   end
 end
 
+M.is_floating = function(win_id)
+  win_id = win_id or vim.api.nvim_get_current_win()
+  local cfg = vim.api.nvim_win_get_config(win_id)
+  if cfg.relative > "" or cfg.external then
+    return true
+  end
+  return false
+end
+
 M.map = function(tbl, fn)
   local t = {}
   for k, v in pairs(tbl) do
     t[k] = fn(v)
   end
   return t
+end
+
+---Open file in the appropriate window.
+---@param state table The state of the source
+---@param path string The file to open
+---@param open_cmd string The vimcommand to use to open the file
+M.open_file = function(state, path, open_cmd)
+  open_cmd = open_cmd or "edit"
+  if M.truthy(path) then
+    local events = require("neo-tree.events")
+    local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
+      state = state,
+      path = path,
+      open_cmd = open_cmd,
+    }) or {}
+    if event_result.handled then
+      events.fire_event(events.FILE_OPENED, path)
+      return
+    end
+    -- use last window if possible
+    local suitable_window_found = false
+    local nt = require("neo-tree")
+    if nt.config.open_files_in_last_window then
+      local prior_window = nt.get_prior_window()
+      if prior_window > 0 then
+        local success = pcall(vim.api.nvim_set_current_win, prior_window)
+        if success then
+          suitable_window_found = true
+        end
+      end
+    end
+    -- find a suitable window to open the file in
+    if not suitable_window_found then
+      if state.window.position == "right" then
+        vim.cmd("wincmd t")
+      else
+        vim.cmd("wincmd w")
+      end
+    end
+    local attempts = 0
+    while attempts < 4 and vim.bo.filetype == "neo-tree" do
+      attempts = attempts + 1
+      vim.cmd("wincmd w")
+    end
+    -- TODO: make this configurable, see issue #43
+    if vim.bo.filetype == "neo-tree" then
+      -- Neo-tree must be the only window, restore it's status as a sidebar
+      local winid = vim.api.nvim_get_current_win()
+      local width = M.get_value(state, "window.width", 40)
+      vim.cmd("vsplit " .. path)
+      vim.api.nvim_win_set_width(winid, width)
+    else
+      vim.cmd(open_cmd .. " " .. path)
+    end
+    events.fire_event(events.FILE_OPENED, path)
+  end
 end
 
 M.reduce = function(list, memo, func)
@@ -283,18 +268,40 @@ M.resolve_config_option = function(state, config_option, default_value)
     if success then
       return val
     else
-      print("Error resolving config option: " .. config_option .. ": " .. val)
+      log.error("Error resolving config option: " .. config_option .. ": " .. val)
       return default_value
     end
   else
     return opt
   end
 end
+
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 if M.is_windows == true then
   M.path_separator = "\\"
+end
+
+---Normalize a path, to avoid errors when comparing paths.
+---@param path string The path to be normalize.
+---@return string string The normalized path.
+M.normalize_path = function(path)
+  if M.is_windows then
+    -- normalize the drive letter to uppercase
+    path = path:sub(1, 1):upper() .. path:sub(2)
+  end
+  return path
+end
+
+---Check if a path is a subpath of another.
+--@param base string The base path.
+--@param path string The path to check is a subpath.
+--@return boolean boolean True if it is a subpath, false otherwise.
+M.is_subpath = function(base, path)
+  base = M.normalize_path(base)
+  path = M.normalize_path(path)
+  return string.sub(path, 1, string.len(base)) == base
 end
 
 ---Split string into a table of strings using a separator.
@@ -365,6 +372,39 @@ end
 M.table_merge = function(base_table, override_table)
   local merged_table = table_merge_internal({}, base_table)
   return table_merge_internal(merged_table, override_table)
+end
+
+---Evaluate the truthiness of a value, according to js/python rules.
+---@param value any
+---@return boolean
+M.truthy = function(value)
+  if value == nil then
+    return false
+  end
+  if type(value) == "boolean" then
+    return value
+  end
+  if type(value) == "string" then
+    return value > ""
+  end
+  if type(value) == "number" then
+    return value > 0
+  end
+  if type(value) == "table" then
+    return #value > 0
+  end
+  return true
+end
+
+M.wrap = function(func, ...)
+  if type(func) ~= "function" then
+    error("Expected function, got " .. type(func))
+  end
+  local wrapped_args = { ... }
+  return function(...)
+    local all_args = table.pack(table.unpack(wrapped_args), ...)
+    func(table.unpack(all_args))
+  end
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.

@@ -3,6 +3,7 @@ local Input = require("nui.input")
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
 local highlights = require("neo-tree.ui.highlights")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -37,6 +38,7 @@ M.popup_options = function(title, min_width, override_options)
     buf_options = {
       bufhidden = "delete",
       buflisted = false,
+      filetype = "neo-tree-popup",
     },
   }
 
@@ -61,7 +63,6 @@ M.popup_options = function(title, min_width, override_options)
 end
 
 M.alert = function(title, message, size)
-  print(vim.inspect(message))
   local lines = {}
   local max_line_width = title:len()
   local add_line = function(line)
@@ -84,7 +85,6 @@ M.alert = function(title, message, size)
 
   add_line("")
   add_line(" Press <Escape> or <Enter> to close")
-  print(vim.inspect(lines))
 
   local win_options = M.popup_options(title, 80)
   win_options.zindex = 60
@@ -113,7 +113,7 @@ M.alert = function(title, message, size)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   else
-    print(msg)
+    log.error(msg)
     win:unmount()
   end
 end

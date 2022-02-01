@@ -2,6 +2,7 @@ local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local file_items = require("neo-tree.sources.common.file-items")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -39,7 +40,7 @@ M.get_open_buffers = function(state)
               is_listed = is_listed,
             }
           else
-            print("Error creating item for " .. path .. ": " .. item)
+            log.error("Error creating item for " .. path .. ": " .. item)
           end
         end
       end
@@ -51,7 +52,6 @@ M.get_open_buffers = function(state)
     table.insert(state.default_expanded_nodes, id)
   end
   file_items.deep_sort(root.children)
-  state.before_render(state)
   renderer.show_nodes({ root }, state)
   state.loading = false
 end

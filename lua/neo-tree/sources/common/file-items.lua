@@ -1,5 +1,6 @@
 local vim = vim
 local utils = require("neo-tree.utils")
+local log = require("neo-tree.log")
 
 local function sort_items(a, b)
   if a.type == b.type then
@@ -69,7 +70,7 @@ function set_parents(context, item)
     local success
     success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
-      print("error creating item for ", item.parent_path)
+      log.error("error creating item for ", item.parent_path)
     end
     context.folders[parent.id] = parent
     set_parents(context, parent)
