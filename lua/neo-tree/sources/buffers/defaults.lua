@@ -46,6 +46,7 @@ local buffers = {
   -- The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
+      { "indent", with_markers = false },
       {
         "icon",
         folder_closed = "",
@@ -56,6 +57,7 @@ local buffers = {
       { "diagnostics", errors_only = true },
     },
     file = {
+      { "indent", with_markers = false },
       {
         "icon",
         default = "*",

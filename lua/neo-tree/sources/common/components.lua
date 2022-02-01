@@ -150,7 +150,7 @@ end
 
 local indent_cache = {}
 
-M.indent = function(config, node, state)
+local indent_without_markers = function(config, node, state)
   local level = node.level
   local indent_size = state.indent_size or 2
 
@@ -175,22 +175,22 @@ end
 
 local prevent_indent = {}
 
-M.indent_with_guides = function(config, node, state)
+M.indent = function(config, node, state)
   local indent_size = state.indent_size or 2
-
   if indent_size == 0 then
     return {}
   end
 
   local level = node.level
-
-  if level < 2 then
-    return M.indent(config, node, state)
+  local with_markers = config.with_markers
+    or utils.resolve_config_option(state, "indent_with_markers", false)
+  if level < 2 or not with_markers then
+    return indent_without_markers(config, node, state)
   end
 
   local indent_marker = state.indent_marker or "│"
   local last_indent_marker = state.last_indent_marker or "└"
-  local highlight = config.highlight or highlights.INDENT_GUIDE
+  local highlight = config.highlight or highlights.INDENT_MARKER
 
   prevent_indent[level] = node.is_last_child
   local indent = {}
