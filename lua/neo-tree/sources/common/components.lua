@@ -183,7 +183,7 @@ M.indent = function(config, node, state)
 
   local level = node.level
   local with_markers = config.with_markers
-    or utils.resolve_config_option(state, "indent_with_markers", false)
+
   if level < 2 or not with_markers then
     return indent_without_markers(config, node, state)
   end
