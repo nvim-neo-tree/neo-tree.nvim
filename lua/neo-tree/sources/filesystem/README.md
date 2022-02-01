@@ -97,6 +97,12 @@ require("neo-tree").setup({
     renderers = {
       directory = {
         {
+            "indent",
+            with_markers = true,
+            indent_marker = "│",
+            last_indent_marker = "└"
+        },
+        {
           "icon",
           folder_closed = "",
           folder_open = "",
@@ -115,6 +121,12 @@ require("neo-tree").setup({
         --{ "git_status" },
       },
       file = {
+        {
+            "indent",
+            with_markers = true,
+            indent_marker = "│",
+            last_indent_marker = "└"
+        },
         {
           "icon",
           default = "*",
