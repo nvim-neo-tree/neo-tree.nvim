@@ -1,4 +1,4 @@
--- This file contains the built-in components. Each componment is a function 
+-- This file contains the built-in components. Each componment is a function
 -- that takes the following arguments:
 --      config: A table containing the configuration provided by the user
 --              when declaring this component in their renderer config.
@@ -12,29 +12,40 @@
 
 local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
-local utils  = require("neo-tree.utils")
+local utils = require("neo-tree.utils")
 
 local M = {}
 
 M.current_filter = function(config, node, state)
-    local filter = node.search_pattern or ""
-    if filter == "" then
-        return {}
-    end
+  local filter = node.search_pattern or ""
+  if filter == "" then
+    return {}
+  end
+  return {
+    {
+      text = "Find ",
+      highlight = highlights.DIM_TEXT,
+    },
+    {
+      text = string.format('"%s"', filter),
+      highlight = config.highlight or highlights.FILTER_TERM,
+    },
+    {
+      text = " in ",
+      highlight = highlights.DIM_TEXT,
+    },
+  }
+end
+
+M.symlink_target = function(config, node, state)
+  if node.is_link then
     return {
-        {
-            text = 'Find ',
-            highlight = highlights.DIM_TEXT
-        },
-        {
-            text = string.format('"%s"', filter),
-            highlight = config.highlight or highlights.FILTER_TERM
-        },
-        {
-            text = " in ",
-            highlight = highlights.DIM_TEXT
-        },
+      text = string.format(" ➛ %s", node.link_to),
+      highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
     }
+  else
+    return {}
+  end
 end
 
 return utils.table_merge(common, M)

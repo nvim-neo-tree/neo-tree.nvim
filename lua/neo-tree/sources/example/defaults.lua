@@ -1,6 +1,6 @@
-local highlights = require('neo-tree.ui.highlights')
+local highlights = require("neo-tree.ui.highlights")
 
-local filesystem = {
+local example = {
   window = {
     position = "left",
     width = 40,
@@ -12,20 +12,14 @@ local filesystem = {
       ["<2-LeftMouse>"] = "example_command",
       ["<cr>"] = "example_command",
       ["D"] = "show_debug_info",
-    }
+    },
   },
-  before_render = function(state)
-    -- This function is called after the file system has been scanned,
-    -- but before the tree is rendered. You can use this to gather extra
-    -- data that can be used in the renderers.
-    print("before_render")
-  end,
--- This section provides the renderers that will be used to render the tree.
--- The first level is the node type.
--- For each node type, you can specify a list of components to render.
--- Components are rendered in the order they are specified.
--- The first field in each component is the name of the function to call.
--- The rest of the fields are passed to the function as the "config" argument.
+  -- This section provides the renderers that will be used to render the tree.
+  -- The first level is the node type.
+  -- For each node type, you can specify a list of components to render.
+  -- Components are rendered in the order they are specified.
+  -- The first field in each component is the name of the function to call.
+  -- The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
       {
@@ -44,7 +38,7 @@ local filesystem = {
       },
       { "name" },
     },
-  }
+  },
 }
 
-return filesystem
+return example

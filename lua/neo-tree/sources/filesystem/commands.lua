@@ -1,13 +1,14 @@
 --This file should contain all commands meant to be used by mappings.
 
-local vim = vim
 local cc = require("neo-tree.sources.common.commands")
-local fs = require('neo-tree.sources.filesystem')
-local fs_actions = require('neo-tree.sources.filesystem.lib.fs_actions')
-local utils = require('neo-tree.utils')
+local fs = require("neo-tree.sources.filesystem")
+local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
+local manager = require("neo-tree.sources.manager")
 
 local M = {}
+local refresh = utils.wrap(manager.refresh, "filesystem")
+local redraw = utils.wrap(manager.redraw, "filesystem")
 
 M.add = function(state)
   cc.add(state, fs.show_new_children)
@@ -17,16 +18,17 @@ M.clear_filter = function(state)
   fs.reset_search(true)
 end
 
+M.close_all_nodes = cc.close_all_nodes
 M.close_node = cc.close_node
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
-  cc.copy_to_clipboard(state, fs.redraw)
+  cc.copy_to_clipboard(state, redraw)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
-  cc.cut_to_clipboard(state, fs.redraw)
+  cc.cut_to_clipboard(state, redraw)
 end
 
 M.show_debug_info = cc.show_debug_info
@@ -37,7 +39,7 @@ M.paste_from_clipboard = function(state)
 end
 
 M.delete = function(state)
-  cc.delete(state, fs.refresh)
+  cc.delete(state, refresh)
 end
 
 ---Shows the filter input, which will filter the tree.
@@ -53,32 +55,37 @@ end
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
+  local path_to_reveal = nil
+  local node = state.tree:get_node()
+  if node then
+    path_to_reveal = node:get_id()
+  end
   if state.search_pattern then
     fs.reset_search(false)
   end
-  fs.navigate(parent_path)
+  fs.navigate(parent_path, path_to_reveal)
 end
 
-M.open = function(state) cc.open(state, fs.toggle_directory) end
-M.open_split = function(state) cc.open_split(state, fs.toggle_directory) end
-M.open_vsplit = function(state) cc.open_vsplit(state, fs.toggle_directory) end
+M.open = function(state)
+  cc.open(state, fs.toggle_directory)
+end
+M.open_split = function(state)
+  cc.open_split(state, fs.toggle_directory)
+end
+M.open_vsplit = function(state)
+  cc.open_vsplit(state, fs.toggle_directory)
+end
 
-M.refresh = fs.refresh
+M.refresh = refresh
 
 M.rename = function(state)
-  cc.rename(state, function(original_path, new_path)
-    -- This is where you would do something like fix references to the file
-    -- with an LSP server.
-    -- <YOUR CODE HERE>
-    -- Don't forget to call fs.refresh() after you're done.
-    fs.refresh()
-  end)
+  cc.rename(state, refresh)
 end
 
 M.set_root = function(state)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == 'directory' then
+  if node.type == "directory" then
     if state.search_pattern then
       fs.reset_search(false)
     end
@@ -88,14 +95,14 @@ end
 
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
-  state.show_hidden = not state.show_hidden
-  fs.show()
+  state.filters.show_hidden = not state.filters.show_hidden
+  refresh()
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
-  state.respect_gitignore = not state.respect_gitignore
-  fs.show()
+  state.filters.respect_gitignore = not state.filters.respect_gitignore
+  refresh()
 end
 
 return M

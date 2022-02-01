@@ -1,9 +1,9 @@
-
 local vim = vim
 local Input = require("nui.input")
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
-local highlights= require("neo-tree.ui.highlights")
+local highlights = require("neo-tree.ui.highlights")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -17,7 +17,7 @@ M.popup_options = function(title, min_width, override_options)
   end
 
   local nt = require("neo-tree")
-  local popup_border_style = nt.config.popup_border_style 
+  local popup_border_style = nt.config.popup_border_style
   local popup_options = {
     relative = "cursor",
     position = {
@@ -27,7 +27,7 @@ M.popup_options = function(title, min_width, override_options)
     size = width,
     border = {
       text = {
-        top = title
+        top = title,
       },
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,
@@ -38,7 +38,8 @@ M.popup_options = function(title, min_width, override_options)
     buf_options = {
       bufhidden = "delete",
       buflisted = false,
-    }
+      filetype = "neo-tree-popup",
+    },
   }
 
   if popup_border_style == "NC" then
@@ -49,7 +50,7 @@ M.popup_options = function(title, min_width, override_options)
       highlight = highlights.FLOAT_BORDER,
       text = {
         top = text,
-        top_align = "left"
+        top_align = "left",
       },
     }
   end
@@ -62,7 +63,6 @@ M.popup_options = function(title, min_width, override_options)
 end
 
 M.alert = function(title, message, size)
-  print(vim.inspect(message))
   local lines = {}
   local max_line_width = title:len()
   local add_line = function(line)
@@ -85,13 +85,12 @@ M.alert = function(title, message, size)
 
   add_line("")
   add_line(" Press <Escape> or <Enter> to close")
-  print(vim.inspect(lines))
 
   local win_options = M.popup_options(title, 80)
   win_options.zindex = 60
   win_options.size = {
     width = max_line_width + 4,
-    height = #lines + 1
+    height = #lines + 1,
   }
   local win = NuiPopup(win_options)
   win:mount()
@@ -114,7 +113,7 @@ M.alert = function(title, message, size)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   else
-    print(msg)
+    log.error(msg)
     win:unmount()
   end
 end
