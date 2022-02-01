@@ -294,7 +294,7 @@ To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
 
 
-INDENT MARKERS                                                 *neo-tree-indent-markers*
+INDENT MARKERS                                      *neo-tree-indent-markers*
 
 By default, indent markers (aka indent guides) are disabled. In Neo-tree
 indent is a component, so to enable indent markers, you need configure the
