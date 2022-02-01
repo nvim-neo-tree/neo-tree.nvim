@@ -188,8 +188,8 @@ M.indent = function(config, node, state)
     return indent_without_markers(config, node, state)
   end
 
-  local indent_marker = state.indent_marker or "│"
-  local last_indent_marker = state.last_indent_marker or "└"
+  local indent_marker = config.indent_marker or "│"
+  local last_indent_marker = config.last_indent_marker or "└"
   local highlight = config.highlight or highlights.INDENT_MARKER
 
   prevent_indent[level] = node.is_last_child
