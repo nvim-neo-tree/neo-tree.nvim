@@ -12,6 +12,7 @@ Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Git Status ................ |neo-tree-git-status|
   Diagnostics ............... |neo-tree-diagnostics|
+  Indent markers ............ |neo-tree-indent-markers|
   Highlights ................ |neo-tree-highlights|
   Events .................... |neo-tree-events|
   Components and Renderers .. |neo-tree-renderers|
@@ -293,6 +294,45 @@ To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
 
 
+INDENT MARKERS                                                 *neo-tree-indent-markers*
+
+By default, indent markers (aka indent guides) are disabled. In Neo-tree
+indent is a component, so to enable indent markers, you need configure the
+`indent` component:
+
+>
+    require("neo-tree").setup({
+        filesystem = {
+            renderers = {
+              directory = {
+                {
+                    "indent",
+                    with_markers = true,
+                    indent_marker = "│",
+                    last_indent_marker = "└"
+                },
+                -- other renderers
+              },
+              file = {
+                { 
+                    "indent",
+                    with_markers = true,
+                    indent_marker = "│",
+                    last_indent_marker = "└"
+                },
+                -- other renderers
+              },
+            }
+        }
+    })
+<
+
+You aslo can change the marker characters. To do this, you need change
+`indent_marker` and `last_indent_marker` settings.
+
+To change highlight of indent markers, you need configure `NeoTreeIndentMarker`
+highlight group. By default, it refers to `Normal` highlight.
+
 HIGHLIGHTS                                                 *neo-tree-highlights*
 
 The following highlight groups are defined by this plugin. If you set any of
@@ -319,6 +359,8 @@ NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
                           is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeIndentMarker       The style of indentation markers (guides). By default,
+                          the "Normal" highlight is used.
 
 
 EVENTS                                                        *neo-tree-events*
