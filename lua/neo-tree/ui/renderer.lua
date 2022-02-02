@@ -113,6 +113,14 @@ create_nodes = function(source_items, state, level)
   return nodes
 end
 
+local one_line = function(text)
+  if type(text) == "string" then
+    return text:gsub("\n", " ")
+  else
+    return text
+  end
+end
+
 local prepare_node = function(item, state)
   local line = NuiLine()
   line:append(item.indent)
@@ -130,10 +138,10 @@ local prepare_node = function(item, state)
           if component_data[1] then
             -- a list of text objects
             for _, data in ipairs(component_data) do
-              line:append(data.text, data.highlight)
+              line:append(one_line(data.text), data.highlight)
             end
           else
-            line:append(component_data.text, component_data.highlight)
+            line:append(one_line(component_data.text), component_data.highlight)
           end
         else
           local name = component[1] or "[missing_name]"
