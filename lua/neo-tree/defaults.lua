@@ -135,7 +135,14 @@ local config = {
     -- The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
-        { "indent", with_markers = false, highlight = "NeoTreeIndentMarker" },
+        {
+          "indent",
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+          highlight = "NeoTreeIndentMarker",
+        },
         {
           "icon",
           folder_closed = "",
@@ -156,7 +163,14 @@ local config = {
         --{ "git_status" },
       },
       file = {
-        { "indent", with_markers = false, highlight = "NeoTreeIndentMarker" },
+        {
+          "indent",
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+          highlight = "NeoTreeIndentMarker",
+        },
         {
           "icon",
           default = "*",

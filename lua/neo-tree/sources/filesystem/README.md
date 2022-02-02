@@ -97,10 +97,12 @@ require("neo-tree").setup({
     renderers = {
       directory = {
         {
-            "indent",
-            with_markers = true,
-            indent_marker = "│",
-            last_indent_marker = "└"
+          "indent",
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+          highlight = "NeoTreeIndentMarker",
         },
         {
           "icon",
@@ -122,10 +124,12 @@ require("neo-tree").setup({
       },
       file = {
         {
-            "indent",
-            with_markers = true,
-            indent_marker = "│",
-            last_indent_marker = "└"
+          "indent",
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+          highlight = "NeoTreeIndentMarker",
         },
         {
           "icon",
