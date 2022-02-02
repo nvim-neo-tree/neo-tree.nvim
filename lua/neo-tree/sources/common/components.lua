@@ -11,7 +11,6 @@
 --    highlight: The highlight group to apply to this text.
 
 local highlights = require("neo-tree.ui.highlights")
-local utils = require("neo-tree.utils")
 
 local M = {}
 
@@ -148,44 +147,15 @@ M.name = function(config, node, state)
   }
 end
 
-local indent_cache = {}
-
-local indent_without_markers = function(config, node, state)
-  local level = node.level
-  local indent_size = state.indent_size or 2
-
-  if level == 0 or indent_size == 0 then
-    return {}
-  end
-
-  if not indent_cache[level] then
-    local indent = utils.table_copy(indent_cache[level - 1] or {})
-
-    local spaces = utils.make_spaces(indent_size)
-    table.insert(indent, { text = spaces })
-
-    indent_cache[level] = indent
-  end
-
-  local node_indent = utils.table_copy(indent_cache[level])
-  -- table.insert(node_indent, { text = " " })
-
-  return node_indent
-end
-
 local prevent_indent = {}
 
 M.indent = function(config, node, state)
-  local indent_size = state.indent_size or 2
-  if indent_size == 0 then
-    return {}
-  end
-
+  local indent_size = config.indent_size or 2
   local level = node.level
   local with_markers = config.with_markers
 
-  if level < 2 or not with_markers then
-    return indent_without_markers(config, node, state)
+  if indent_size == 0 or level < 2 or not with_markers then
+    return { text = string.rep(" ", indent_size * level) }
   end
 
   local indent_marker = config.indent_marker or "│"
@@ -208,8 +178,7 @@ M.indent = function(config, node, state)
       spaces_count = spaces_count - 1
     end
 
-    local spaces = utils.make_spaces(spaces_count)
-    table.insert(indent, { text = spaces })
+    table.insert(indent, { text = string.rep(" ", spaces_count) })
   end
 
   return indent
