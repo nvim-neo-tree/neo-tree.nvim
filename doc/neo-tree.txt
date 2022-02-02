@@ -327,7 +327,7 @@ indent is a component, so to enable indent markers, you need configure the
     })
 <
 
-You aslo can change the marker characters. To do this, you need change
+You also can change the marker characters. To do this, you need change
 `indent_marker` and `last_indent_marker` settings.
 
 To change highlight of indent markers, you need configure `NeoTreeIndentMarker`
