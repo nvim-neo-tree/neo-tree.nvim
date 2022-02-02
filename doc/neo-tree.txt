@@ -320,7 +320,7 @@ indent is a component, so to enable indent markers, you need configure the
                     indent_marker = "│",
                     last_indent_marker = "└"
                 },
-                -- other renderers
+                -- other components
               },
             }
         }
