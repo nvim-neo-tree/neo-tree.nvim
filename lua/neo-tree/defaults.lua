@@ -137,10 +137,6 @@ local config = {
       directory = {
         {
           "indent",
-          with_markers = false,
-          indent_marker = "│",
-          last_indent_marker = "└",
-          indent_size = 2,
           highlight = "NeoTreeIndentMarker",
         },
         {
@@ -165,10 +161,6 @@ local config = {
       file = {
         {
           "indent",
-          with_markers = false,
-          indent_marker = "│",
-          last_indent_marker = "└",
-          indent_size = 2,
           highlight = "NeoTreeIndentMarker",
         },
         {
