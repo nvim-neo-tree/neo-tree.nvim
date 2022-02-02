@@ -147,9 +147,12 @@ M.name = function(config, node, state)
   }
 end
 
-local prevent_indent = {}
-
 M.indent = function(config, node, state)
+  if not state.skip_marker_at_level then
+    state.skip_marker_at_level = {}
+  end
+
+  local skip_marker = state.skip_marker_at_level
   local indent_size = config.indent_size or 2
   local level = node.level
   local with_markers = config.with_markers
@@ -162,7 +165,7 @@ M.indent = function(config, node, state)
   local last_indent_marker = config.last_indent_marker or "└"
   local highlight = config.highlight or highlights.INDENT_MARKER
 
-  prevent_indent[level] = node.is_last_child
+  skip_marker[level] = node.is_last_child
   local indent = {}
 
   for i = 1, level do
@@ -173,7 +176,7 @@ M.indent = function(config, node, state)
       marker = last_indent_marker
     end
 
-    if i > 1 and not prevent_indent[i] or i == level then
+    if i > 1 and not skip_marker[i] or i == level then
       table.insert(indent, { text = marker, highlight = highlight })
       spaces_count = spaces_count - 1
     end
