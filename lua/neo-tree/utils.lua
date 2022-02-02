@@ -422,11 +422,4 @@ M.unique = function(list)
   return result
 end
 
----Returns a string with spaces of length `count`.
----@param count number Count of spaces.
----@return string string The string with spaces.
-M.make_spaces = function(count)
-  return string.rep(" ", count)
-end
-
 return M
