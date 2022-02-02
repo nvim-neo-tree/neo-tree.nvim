@@ -404,10 +404,10 @@ M.setup = function(config)
   M.config = utils.table_merge(default_config, config)
 
   for _, source_name in ipairs(sources) do
-    local renderers = config[source_name].renderers
+    local renderers = M.config[source_name].renderers
     if renderers then
-      add_global_components_config(renderers.file, config)
-      add_global_components_config(renderers.directory, config)
+      add_global_components_config(renderers.file, M.config)
+      add_global_components_config(renderers.directory, M.config)
     end
 
     manager.setup(source_name, M.config[source_name], M.config)
