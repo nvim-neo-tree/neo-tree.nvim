@@ -341,7 +341,7 @@ M.set_log_level = function(level)
   log.set_level(level)
 end
 
-function add_global_components_config(components)
+local function add_global_components_config(components)
   for i, component in ipairs(components) do
     local name = component[1]
     local global_config = M.config[name .. "_renderer"]
