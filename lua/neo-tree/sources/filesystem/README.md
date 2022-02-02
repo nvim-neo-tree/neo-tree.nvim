@@ -98,7 +98,7 @@ require("neo-tree").setup({
       directory = {
         {
           "indent",
-          with_markers = true,
+          with_markers = false,
           indent_marker = "│",
           last_indent_marker = "└",
           indent_size = 2,
@@ -125,7 +125,7 @@ require("neo-tree").setup({
       file = {
         {
           "indent",
-          with_markers = true,
+          with_markers = false,
           indent_marker = "│",
           last_indent_marker = "└",
           indent_size = 2,

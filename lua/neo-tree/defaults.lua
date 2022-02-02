@@ -137,7 +137,7 @@ local config = {
       directory = {
         {
           "indent",
-          with_markers = true,
+          with_markers = false,
           indent_marker = "│",
           last_indent_marker = "└",
           indent_size = 2,
@@ -165,7 +165,7 @@ local config = {
       file = {
         {
           "indent",
-          with_markers = true,
+          with_markers = false,
           indent_marker = "│",
           last_indent_marker = "└",
           indent_size = 2,

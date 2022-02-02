@@ -307,7 +307,7 @@ indent is a component, so to enable indent markers, you need configure the
               directory = {
                 {
                   "indent",
-                  with_markers = true,
+                  with_markers = false,
                   indent_marker = "│",
                   last_indent_marker = "└",
                   indent_size = 2,
@@ -318,7 +318,7 @@ indent is a component, so to enable indent markers, you need configure the
               file = {
                 {
                   "indent",
-                  with_markers = true,
+                  with_markers = false,
                   indent_marker = "│",
                   last_indent_marker = "└",
                   indent_size = 2,
