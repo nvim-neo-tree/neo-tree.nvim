@@ -341,10 +341,10 @@ M.set_log_level = function(level)
   log.set_level(level)
 end
 
-local function add_global_components_config(components)
+local function add_global_components_config(components, config)
   for i, component in ipairs(components) do
     local name = component[1]
-    local global_config = M.config[name .. "_renderer"]
+    local global_config = config[name .. "_renderer"]
     if global_config then
       components[i] = utils.table_merge(global_config, component)
     end
@@ -404,9 +404,11 @@ M.setup = function(config)
   M.config = utils.table_merge(default_config, config)
 
   for _, source_name in ipairs(sources) do
-    local renderers = M.config[source_name].renderers
-    add_global_components_config(renderers.file)
-    add_global_components_config(renderers.directory)
+    local renderers = config[source_name].renderers
+    if renderers then
+      add_global_components_config(renderers.file, config)
+      add_global_components_config(renderers.directory, config)
+    end
 
     manager.setup(source_name, M.config[source_name], M.config)
   end
