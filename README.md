@@ -47,6 +47,12 @@ use {
       "MunifTanjim/nui.nvim" 
     },
     config = function ()
+      -- See ":help neo-tree-highlights" for a list of available highlight groups
+      vim.cmd([[
+        hi link NeoTreeDirectoryName Directory
+        hi link NeoTreeDirectoryIcon NeoTreeDirectoryName
+      ]])
+
       require("neo-tree").setup({
         popup_border_style = "rounded",
         enable_git_status = true,
@@ -84,7 +90,6 @@ use {
               ["c"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
-              ["bd"] = "buffer_delete",
             }
           }
         },
@@ -106,6 +111,7 @@ use {
               ["c"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
+              ["bd"] = "buffer_delete",
             }
           },
         },
