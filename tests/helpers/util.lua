@@ -23,21 +23,40 @@ utils.setup_test_fs = function()
         name = "foo",
         type = "dir",
         content = {
+          {
+            name = "bar",
+            type = "dir",
+            content = {
+              { name = "baz1.txt", type = "file" },
+              { name = "baz2.txt", type = "file" },
+            },
+          },
           { name = "foofile1.txt", type = "file" },
           { name = "foofile2.txt", type = "file" },
         },
       },
-      { name = "bar", type = "dir" },
-      { name = "topfile1.txt", type = "file" },
+      { name = "bar", type = "dir", id = "empty_dir" },
+      { name = "topfile1.txt", type = "file", id = "topfile1" },
+      { name = "topfile2.txt", type = "file", id = "topfile2" },
     },
+    lookup = {},
   }
-  local function makefs(content, basedir)
+
+  local function makefs(content, basedir, relative_root_path)
+    relative_root_path = relative_root_path or "."
     for _, info in ipairs(content) do
+      local relative_path = relative_root_path .. "/" .. info.name
+      -- create lookups
+      fs.lookup[relative_path] = info
+      if info.id then
+        fs.lookup[info.id] = info
+      end
+      -- create actual files and directories
       if info.type == "dir" then
         info.abspath = Path:new(basedir, info.name):absolute()
         vim.fn.mkdir(info.abspath, "p")
         if info.content then
-          makefs(info.content, info.abspath)
+          makefs(info.content, info.abspath, relative_path)
         end
       elseif info.type == "file" then
         info.abspath = Path:new(basedir, info.name):absolute()
@@ -46,6 +65,7 @@ utils.setup_test_fs = function()
     end
   end
   makefs(fs.content, testdir)
+
   vim.cmd("tcd " .. testdir)
   return fs
 end
