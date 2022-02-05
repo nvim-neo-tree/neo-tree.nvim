@@ -83,7 +83,22 @@ M.show_filter = function(state, search_as_you_type)
       else
         log.trace("Setting search in on_change to: " .. value)
         state.search_pattern = value
-        manager.refresh("filesystem")
+        local len = #value
+        local delay = 500
+
+        if len > 5 then
+          delay = 100
+        elseif len > 3 then
+          delay = 200
+        elseif len > 2 then
+          delay = 400
+        end
+        utils.debounce(
+          "filesystem_filter",
+          fs._navigate_internal,
+          delay,
+          utils.debounce_strategy.CALL_LAST_ONLY
+        )
       end
     end,
   })

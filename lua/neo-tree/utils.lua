@@ -34,33 +34,44 @@ M.debounce_strategy = {
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
 ---@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
 ---@param callback function Called with the result of executing fn as: callback(success, result)
-M.debounce = function(id, fn, frequency_in_ms, strategy, callback)
-  strategy = strategy or M.debounce_strategy.CALL_FIRST_AND_LAST
+M.debounce = function(id, fn, frequency_in_ms, strategy)
   local fn_data = tracked_functions[id]
+
+  local defer_function = function()
+    fn_data.in_debounce_period = true
+    vim.defer_fn(function()
+      local current_data = tracked_functions[id]
+      local _fn = current_data.fn
+      current_data.fn = nil
+      current_data.in_debounce_period = false
+      if _fn ~= nil then
+        M.debounce(id, _fn, current_data.frequency_in_ms, strategy)
+      end
+    end, frequency_in_ms)
+  end
+
   if fn_data == nil then
     -- first call for this id
     fn_data = {
       id = id,
-      fn = nil,
+      in_debounce_period = false,
+      fn = fn,
       frequency_in_ms = frequency_in_ms,
-      postponed_callback = nil,
-      in_debounce_period = true,
     }
-    if strategy == M.debounce_strategy.CALL_LAST_ONLY then
-      fn_data.in_debounce_period = true
-    end
     tracked_functions[id] = fn_data
-  else
-    if fn_data.in_debounce_period then
-      -- This id was called recently and can't be executed again yet.
-      -- Just keep track of the details for this request so it
-      -- can be executed at the end of the debounce period.
-      -- Last one in wins.
-      fn_data.fn = fn
-      fn_data.frequency_in_ms = frequency_in_ms
-      fn_data.postponed_callback = callback
+    if strategy == M.debounce_strategy.CALL_LAST_ONLY then
+      defer_function()
       return
     end
+  else
+    fn_data.fn = fn
+    fn_data.frequency_in_ms = frequency_in_ms
+  end
+
+  if fn_data.in_debounce_period then
+    -- This id was called recently and can't be executed again yet.
+    -- Last one in wins.
+    return
   end
 
   -- Run the requested function normally.
@@ -68,30 +79,23 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, callback)
   -- this call throws an error.
   fn_data.in_debounce_period = true
   local success, result = pcall(fn)
+  fn_data.fn = nil
+  fn = nil
 
   if not success then
-    log.error("Error in neo-tree.utils.debounce: ", result)
+    log.error(result)
   end
 
-  -- Now schedule the next earliest execution.
-  -- If there are no calls to run the same function between now
-  -- and when this deferred executes, nothing will happen.
-  -- If there are several calls, only the last one in will run.
-  vim.defer_fn(function()
-    local current_data = tracked_functions[id]
-    local _callback = current_data.postponed_callback
-    local _fn = current_data.fn
-    current_data.postponed_callback = nil
-    current_data.fn = nil
-    current_data.in_debounce_period = false
-    if _fn ~= nil then
-      M.debounce(id, _fn, current_data.frequency_in_ms, strategy, _callback)
-    end
-  end, frequency_in_ms)
-
-  -- The callback function is outside the scope of the debounce period
-  if type(callback) == "function" then
-    callback(success, result)
+  if strategy == M.debounce_strategy.CALL_LAST_ONLY then
+    -- We are done with this debounce
+    tracked_functions[id] = nil
+  else
+    -- Now schedule the next earliest execution.
+    -- If there are no calls to run the same function between now
+    -- and when this deferred executes, nothing will happen.
+    -- If there are several calls, only the last one in will run.
+    strategy = M.debounce_strategy.CALL_LAST_ONLY
+    defer_function()
   end
 end
 

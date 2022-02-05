@@ -116,10 +116,10 @@ M.follow = function(callback, force_show)
   end
   utils.debounce("neo-tree-follow", function()
     return follow_internal(callback, force_show)
-  end, 200, utils.debounce_strategy.CALL_LAST_ONLY)
+  end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
 end
 
-local navigate_internal = function(path, path_to_reveal, callback)
+M._navigate_internal = function(path, path_to_reveal, callback)
   log.trace("navigate_internal", path, path_to_reveal)
   local state = get_state()
   state.dirty = false
@@ -138,7 +138,8 @@ local navigate_internal = function(path, path_to_reveal, callback)
     state.position.set(path_to_reveal)
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
-    local follow_file = state.follow_current_file and manager.get_path_to_reveal()
+    local is_search = utils.truthy(state.search_pattern)
+    local follow_file = not is_search and state.follow_current_file and manager.get_path_to_reveal()
     local handled = false
     if utils.truthy(follow_file) then
       handled = follow_internal(callback, true)
@@ -170,8 +171,8 @@ M.navigate = function(path, path_to_reveal, callback)
   local state = get_state()
   state.in_navigate = true
   utils.debounce("filesystem_navigate", function()
-    navigate_internal(path, path_to_reveal, callback)
-  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 200)
+    M._navigate_internal(path, path_to_reveal, callback)
+  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 500)
 end
 
 M.reset_search = function(refresh)
@@ -268,6 +269,7 @@ M.setup = function(config, global_config)
           log.trace("Ignoring vim_buffer_changed event from " .. source)
           return
         end
+        log.trace("refreshing due to vim_buffer_changed event: ", afile)
         manager.refresh(M.name)
       end,
     })

@@ -304,11 +304,11 @@ end
 
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function(source_name, callback)
-  log.trace(source_name, " refresh")
   local current_tabnr = vim.api.nvim_get_current_tabpage()
   local sd = get_source_data(source_name)
   for _, state in pairs(sd.state_by_tab) do
     if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
+      log.trace(source_name, " refresh")
       if type(callback) ~= "function" then
         callback = nil
       end
