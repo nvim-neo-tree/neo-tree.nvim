@@ -37,7 +37,7 @@ M.show_filter = function(state, search_as_you_type)
     default_value = state.search_pattern,
     on_submit = function(value)
       if value == "" then
-        fs.reset_search()
+        fs.reset_search(state)
       else
         state.search_pattern = value
         manager.refresh("filesystem", function()
@@ -78,7 +78,7 @@ M.show_filter = function(state, search_as_you_type)
         if type(state.open_folders_before_search) == "table" then
           original_open_folders = utils.table_copy(state.open_folders_before_search)
         end
-        fs.reset_search()
+        fs.reset_search(state)
         state.open_folders_before_search = original_open_folders
       else
         log.trace("Setting search in on_change to: " .. value)
@@ -95,7 +95,7 @@ M.show_filter = function(state, search_as_you_type)
         end
         utils.debounce(
           "filesystem_filter",
-          fs._navigate_internal,
+          utils.wrap(fs._navigate_internal, state),
           delay,
           utils.debounce_strategy.CALL_LAST_ONLY
         )

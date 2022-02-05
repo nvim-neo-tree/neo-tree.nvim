@@ -11,11 +11,11 @@ local refresh = utils.wrap(manager.refresh, "filesystem")
 local redraw = utils.wrap(manager.redraw, "filesystem")
 
 M.add = function(state)
-  cc.add(state, fs.show_new_children)
+  cc.add(state, utils.wrap(fs.show_new_children, state))
 end
 
 M.clear_filter = function(state)
-  fs.reset_search(true)
+  fs.reset_search(state, true)
 end
 
 M.close_all_nodes = cc.close_all_nodes
@@ -35,7 +35,7 @@ M.show_debug_info = cc.show_debug_info
 
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
-  cc.paste_from_clipboard(state, fs.show_new_children)
+  cc.paste_from_clipboard(state, utils.wrap(fs.show_new_children, state))
 end
 
 M.delete = function(state)
@@ -61,19 +61,19 @@ M.navigate_up = function(state)
     path_to_reveal = node:get_id()
   end
   if state.search_pattern then
-    fs.reset_search(false)
+    fs.reset_search(state, false)
   end
-  fs.navigate(parent_path, path_to_reveal)
+  fs.navigate(state, parent_path, path_to_reveal)
 end
 
 M.open = function(state)
-  cc.open(state, fs.toggle_directory)
+  cc.open(state, utils.wrap(fs.toggle_directory, state))
 end
 M.open_split = function(state)
-  cc.open_split(state, fs.toggle_directory)
+  cc.open_split(state, utils.wrap(fs.toggle_directory, state))
 end
 M.open_vsplit = function(state)
-  cc.open_vsplit(state, fs.toggle_directory)
+  cc.open_vsplit(state, utils.wrap(fs.toggle_directory, state))
 end
 
 M.refresh = refresh
@@ -87,9 +87,9 @@ M.set_root = function(state)
   local node = tree:get_node()
   if node.type == "directory" then
     if state.search_pattern then
-      fs.reset_search(false)
+      fs.reset_search(state, false)
     end
-    fs.navigate(node.id)
+    fs.navigate(state, node.id)
   end
 end
 

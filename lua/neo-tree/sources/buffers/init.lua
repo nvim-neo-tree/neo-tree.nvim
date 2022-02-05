@@ -40,8 +40,7 @@ end
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(path)
-  local state = get_state()
+M.navigate = function(state, path)
   state.dirty = false
   local path_changed = false
   if path == nil then

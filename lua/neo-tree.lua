@@ -81,9 +81,14 @@ local check_source = function(source_name)
   return source_name
 end
 
+local get_position = function(source_name)
+  local pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
+  return pos
+end
+
 M.close_all_except = function(source_name)
   source_name = check_source(source_name)
-  local target_pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
+  local target_pos = get_position(source_name)
   for _, name in ipairs(sources) do
     if name ~= source_name then
       local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
@@ -101,7 +106,7 @@ M.close_all = function(at_position)
   renderer.close_all_floating_windows()
   if type(at_position) == "string" and at_position > "" then
     for _, name in ipairs(sources) do
-      local pos = utils.get_value(M, "config." .. name .. ".window.position", "left")
+      local pos = get_position(name)
       if pos == at_position then
         manager.close(name)
       end
@@ -129,6 +134,11 @@ end
 --TODO: Remove the close_others option in 2.0
 M.focus = function(source_name, close_others, toggle_if_open)
   source_name = check_source(source_name)
+  if get_position(source_name) == "split" then
+    M.show_in_split(source_name, toggle_if_open)
+    return
+  end
+
   if toggle_if_open then
     if manager.close(source_name) then
       -- It was open, and now it's not.
@@ -159,6 +169,10 @@ end
 
 M.reveal_current_file = function(source_name, toggle_if_open)
   source_name = check_source(source_name)
+  if get_position(source_name) == "split" then
+    M.reveal_in_split(source_name, toggle_if_open)
+    return
+  end
   if toggle_if_open then
     if manager.close(source_name) then
       -- It was open, and now it's not.
@@ -166,6 +180,30 @@ M.reveal_current_file = function(source_name, toggle_if_open)
     end
   end
   manager.reveal_current_file(source_name)
+end
+
+M.reveal_in_split = function(source_name, toggle_if_open)
+  source_name = check_source(source_name)
+  if toggle_if_open then
+    local state = manager.get_state(source_name, nil, vim.api.nvim_get_current_win())
+    if renderer.close(state) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
+  manager.reveal_in_split(source_name)
+end
+
+M.show_in_split = function(source_name, toggle_if_open)
+  source_name = check_source(source_name)
+  if toggle_if_open then
+    local state = manager.get_state(source_name, nil, vim.api.nvim_get_current_win())
+    if renderer.close(state) then
+      -- It was open, and now it's not.
+      return
+    end
+  end
+  manager.show_in_split(source_name)
 end
 
 M.get_prior_window = function()
@@ -245,12 +283,19 @@ M.buffer_enter_event = function(args)
   end
 
   -- For all others, make sure another buffer is not hijacking our window
+  -- ..but not if the position is "split"
   local prior_buf = vim.fn.bufnr("#")
   if prior_buf < 1 then
     return
   end
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
+    local position = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_position")
+    if position == "split" then
+      -- nothing to do here, files are supposed to open in same window
+      return
+    end
+
     local current_tabnr = vim.api.nvim_get_current_tabpage()
     local neo_tree_tabnr = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabnr")
     if neo_tree_tabnr ~= current_tabnr then
@@ -276,7 +321,7 @@ M.buffer_enter_event = function(args)
       pcall(vim.cmd, "bdelete " .. bufname)
       local fake_state = {
         window = {
-          position = "left",
+          position = position,
         },
       }
       utils.open_file(fake_state, bufname)
@@ -318,6 +363,11 @@ end
 --TODO: Remove the do_not_focus and close_others options in 2.0
 M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
   source_name = check_source(source_name)
+  if get_position(source_name) == "split" then
+    M.show_in_split(source_name, toggle_if_open)
+    return
+  end
+
   if toggle_if_open then
     if manager.close(source_name) then
       -- It was open, and now it's not.
@@ -374,6 +424,22 @@ M.setup = function(config)
     source.components = require(mod_root .. ".components")
     source.commands = require(mod_root .. ".commands")
     source.name = source_name
+
+    --validate the window.position
+    local pos_key = source_name .. ".window.position"
+    local position = utils.get_value(config, pos_key, "left", true)
+    local valid_positions = {
+      left = true,
+      right = true,
+      top = true,
+      bottom = true,
+      float = true,
+      split = true,
+    }
+    if not valid_positions[position] then
+      log.error("Invalid value for ", pos_key, ": ", position)
+      config[source_name].window.position = "left"
+    end
 
     -- Make sure all the mappings are normalized so they will merge properly.
     normalize_mappings(source)

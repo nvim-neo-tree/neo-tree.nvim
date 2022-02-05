@@ -219,40 +219,44 @@ M.open_file = function(state, path, open_cmd)
       events.fire_event(events.FILE_OPENED, path)
       return
     end
-    -- use last window if possible
-    local suitable_window_found = false
-    local nt = require("neo-tree")
-    if nt.config.open_files_in_last_window then
-      local prior_window = nt.get_prior_window()
-      if prior_window > 0 then
-        local success = pcall(vim.api.nvim_set_current_win, prior_window)
-        if success then
-          suitable_window_found = true
+    if state.current_position == "split" then
+      vim.cmd(open_cmd .. " " .. path)
+    else
+      -- use last window if possible
+      local suitable_window_found = false
+      local nt = require("neo-tree")
+      if nt.config.open_files_in_last_window then
+        local prior_window = nt.get_prior_window()
+        if prior_window > 0 then
+          local success = pcall(vim.api.nvim_set_current_win, prior_window)
+          if success then
+            suitable_window_found = true
+          end
         end
       end
-    end
-    -- find a suitable window to open the file in
-    if not suitable_window_found then
-      if state.window.position == "right" then
-        vim.cmd("wincmd t")
-      else
+      -- find a suitable window to open the file in
+      if not suitable_window_found then
+        if state.current_position == "right" then
+          vim.cmd("wincmd t")
+        else
+          vim.cmd("wincmd w")
+        end
+      end
+      local attempts = 0
+      while attempts < 4 and vim.bo.filetype == "neo-tree" do
+        attempts = attempts + 1
         vim.cmd("wincmd w")
       end
-    end
-    local attempts = 0
-    while attempts < 4 and vim.bo.filetype == "neo-tree" do
-      attempts = attempts + 1
-      vim.cmd("wincmd w")
-    end
-    -- TODO: make this configurable, see issue #43
-    if vim.bo.filetype == "neo-tree" then
-      -- Neo-tree must be the only window, restore it's status as a sidebar
-      local winid = vim.api.nvim_get_current_win()
-      local width = M.get_value(state, "window.width", 40)
-      vim.cmd("vsplit " .. path)
-      vim.api.nvim_win_set_width(winid, width)
-    else
-      vim.cmd(open_cmd .. " " .. path)
+      -- TODO: make this configurable, see issue #43
+      if vim.bo.filetype == "neo-tree" then
+        -- Neo-tree must be the only window, restore it's status as a sidebar
+        local winid = vim.api.nvim_get_current_win()
+        local width = M.get_value(state, "window.width", 40)
+        vim.cmd("vsplit " .. path)
+        vim.api.nvim_win_set_width(winid, width)
+      else
+        vim.cmd(open_cmd .. " " .. path)
+      end
     end
     events.fire_event(events.FILE_OPENED, path)
   end

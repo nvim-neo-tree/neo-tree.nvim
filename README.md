@@ -164,9 +164,9 @@ You can then change what you want in the pasted `config` table and pass it to
 `require("neo-tree").setup(config)`
 
 
-### Commands
+### Commands (for sidebar and float postions)
 
-Here are the various ways to open the tree:
+Here are the various ways to open the tree as a sidebar or float:
 
 ```
 :NeoTreeReveal
@@ -200,11 +200,33 @@ window if it is already open: `NeoTreeRevealToggle` `NeoTreeShowToggle`
 
 You can also close the tree with: `:NeoTreeClose `
 
-Complete documentation can be find in the vim help file `:h neo-tree` or online
-at [neo-tree.txt](/doc/neo-tree.txt)
 
-An example configuration for the filesystem source with proper syntax
-highlighting can also be viewed at the [filesystem README](/lua/neo-tree/sources/filesystem/README.md)
+### Commands (for netrw/split style)
+
+If you specify `window.position = "split"` for a given source, all of the above
+commands will work within the current window like netrw would instead of opening
+sidebars or floats. If you want to use both styles, you can leave your default
+position as left/right/float, but explicitly open Neo-tree within the current
+split as needed using the following commands:
+
+```
+:NeoTreeRevealInSplit
+``` 
+```
+:NeoTreeRevealInSplitToggle
+``` 
+This will show the tree within the current window, and will find the current
+file in the tree and focus it. If the current file is not within the current
+working directory, you will be prompted to change the cwd.
+
+```
+:NeoTreeShow 
+```
+```
+:NeoTreeShowToggle
+```
+This will show the tree within the current window. If you have used the tree
+within this window previously, you will resume that session.
 
 
 ## Sources

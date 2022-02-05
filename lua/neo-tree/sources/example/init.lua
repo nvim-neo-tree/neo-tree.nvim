@@ -9,8 +9,7 @@ local M = { name = "example" }
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(path)
-  local state = manager.get_state(M.name)
+M.navigate = function(state, path)
   if path == nil then
     path = vim.fn.getcwd()
   end
