@@ -25,16 +25,18 @@ local get_source_data = function(source_name)
   sd = {
     name = source_name,
     state_by_tab = {},
+    state_by_win = {},
     subscriptions = {},
   }
   source_data[source_name] = sd
   return sd
 end
 
-local function create_state(tabnr, sd)
+local function create_state(tabnr, sd, winid)
   local default_config = default_configs[sd.name]
   local state = utils.table_copy(default_config)
   state.tabnr = tabnr
+  state.id = winid or tabnr
   state.dirty = true
   state.position = {
     save = function()
@@ -70,6 +72,15 @@ local function create_state(tabnr, sd)
   return state
 end
 
+local for_each_state = function(source_name, action)
+  local sd = get_source_data(source_name)
+  for _, tbl in ipairs({ sd.state_by_tab, sd.state_by_win }) do
+    for _, state in pairs(tbl) do
+      action(state)
+    end
+  end
+end
+
 ---For use in tests only, completely resets the state of all sources.
 ---This closes all windows as well since they would be broken by this action.
 M._clear_state = function()
@@ -77,6 +88,9 @@ M._clear_state = function()
   renderer.close_all_floating_windows()
   for _, data in pairs(source_data) do
     for _, state in pairs(data.state_by_tab) do
+      renderer.close(state)
+    end
+    for _, state in pairs(data.state_by_win) do
       renderer.close(state)
     end
   end
@@ -94,18 +108,29 @@ M.set_default_config = function(source_name, config)
   end
 end
 
-M.get_state = function(source_name, tabnr)
+--TODO: we need to track state per window when working with netwrw style "split"
+--position. How do we know which one to return when this is called?
+M.get_state = function(source_name, tabnr, winid)
   if source_name == nil then
     error("get_state: source_name cannot be nil")
   end
   tabnr = tabnr or vim.api.nvim_get_current_tabpage()
   local sd = get_source_data(source_name)
-  local state = sd.state_by_tab[tabnr]
-  if state then
-    return state
+  if type(winid) == "number" then
+    local win_state = sd.state_by_win[winid]
+    if not win_state then
+      win_state = create_state(tabnr, sd, winid)
+      sd.state_by_win[winid] = win_state
+    end
+    return win_state
+  else
+    local tab_state = sd.state_by_tab[tabnr]
+    if not tab_state then
+      tab_state = create_state(tabnr, sd)
+      sd.state_by_tab[tabnr] = tab_state
+    end
+    return tab_state
   end
-  sd.state_by_tab[tabnr] = create_state(tabnr, sd)
-  return sd.state_by_tab[tabnr]
 end
 
 M.get_path_to_reveal = function()
@@ -180,27 +205,34 @@ end
 
 ---Redraws the tree with updated diagnostics without scanning the filesystem again.
 M.diagnostics_changed = function(source_name, args)
-  local state = M.get_state(source_name)
-  args = args or {}
-  state.diagnostics_lookup = args.diagnostics_lookup
-  if renderer.window_exists(state) then
-    state.tree:render()
+  if not type(args) == "table" then
+    error("diagnostics_changed: args must be a table")
   end
+  for_each_state(source_name, function(state)
+    state.diagnostics_lookup = args.diagnostics_lookup
+    if state.path and renderer.window_exists(state) then
+      state.tree:render()
+    end
+  end)
 end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function(source_name)
-  local state = M.get_state(source_name)
-  local cwd = vim.fn.getcwd()
-  if state.path and cwd == state.path then
-    return
-  end
-  if state.path and renderer.window_exists(state) then
-    M.navigate(source_name, cwd)
-  else
-    state.path = cwd
-    state.dirty = true
-  end
+  for_each_state(source_name, function(state)
+    local tabnr = state.tabnr
+    -- the id is either the tabnr for sidebars or the winid for splits
+    local winid = state.id == tabnr and -1 or state.id
+    local cwd = vim.fn.getcwd(winid, tabnr)
+    if state.path and cwd == state.path then
+      return
+    end
+    if state.path and renderer.window_exists(state) then
+      M.navigate(state, cwd)
+    else
+      state.path = cwd
+      state.dirty = true
+    end
+  end)
 end
 
 M.dispose = function(source_name, tabnr)
@@ -208,23 +240,28 @@ M.dispose = function(source_name, tabnr)
   if type(source_name) == "string" then
     sources = { source_name }
   else
+    -- Just do all available sources if none is specified
     sources = {}
     for n, _ in pairs(source_data) do
       table.insert(sources, n)
     end
   end
   for _, sname in ipairs(sources) do
-    local state = M.get_state(sname, tabnr)
-    log.trace(state.name, " disposing of tab: ", tabnr)
-    fs_scan.stop_watchers(state)
-    renderer.close(state)
-    source_data[sname].state_by_tab[state.tabnr] = nil
+    for_each_state(sname, function(state)
+      if not tabnr or tabnr == state.tabnr then
+        log.trace(state.name, " disposing of tab: ", tabnr)
+        fs_scan.stop_watchers(state)
+        renderer.close(state)
+        source_data[sname].state_by_tab[state.id] = nil
+        source_data[sname].state_by_win[state.id] = nil
+      end
+    end)
   end
 end
 
 M.float = function(source_name)
   local state = M.get_state(source_name)
-  state.force_float = true
+  state.current_position = "float"
   local path_to_reveal = M.get_path_to_reveal()
   M.navigate(source_name, state.path, path_to_reveal)
 end
@@ -234,6 +271,7 @@ end
 ---@param callback function Callback to call after the items are loaded.
 M.focus = function(source_name, path_to_reveal, callback)
   local state = M.get_state(source_name)
+  state.current_position = nil
   if path_to_reveal then
     M.navigate(source_name, state.path, path_to_reveal, callback)
   else
@@ -249,14 +287,52 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
-M.navigate = function(source_name, path, path_to_reveal, callback)
+M.navigate = function(state_or_source_name, path, path_to_reveal, callback)
+  local state, source_name
+  if type(state_or_source_name) == "string" then
+    state = M.get_state(state_or_source_name)
+    source_name = state_or_source_name
+  elseif type(state_or_source_name) == "table" then
+    state = state_or_source_name
+    source_name = state.name
+  else
+    log.error("navigate: state_or_source_name must be a string or a table")
+  end
   log.trace("navigate", source_name, path, path_to_reveal)
-  require("neo-tree.sources." .. source_name).navigate(path, path_to_reveal, callback)
+  require("neo-tree.sources." .. source_name).navigate(state, path, path_to_reveal, callback)
+end
+
+---Redraws the tree without scanning the filesystem again. Use this after
+-- making changes to the nodes that would affect how their components are
+-- rendered.
+M.redraw = function(source_name)
+  for_each_state(source_name, function(state)
+    if state.tree and renderer.window_exists(state) then
+      state.tree:render()
+    end
+  end)
+end
+
+---Refreshes the tree by scanning the filesystem again.
+M.refresh = function(source_name, callback)
+  local current_tabnr = vim.api.nvim_get_current_tabpage()
+  for_each_state(source_name, function(state)
+    if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
+      log.trace(source_name, " refresh")
+      if type(callback) ~= "function" then
+        callback = nil
+      end
+      M.navigate(state, state.path, nil, callback)
+    else
+      state.dirty = true
+    end
+  end)
 end
 
 M.reveal_current_file = function(source_name)
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
+  state.current_position = nil
 
   -- When events trigger that try to restore the position of the cursor in the tree window,
   -- we want them to ignore this "iteration" as the user is trying to explicitly focus a
@@ -292,31 +368,29 @@ M.reveal_current_file = function(source_name)
   end
 end
 
----Redraws the tree without scanning the filesystem again. Use this after
--- making changes to the nodes that would affect how their components are
--- rendered.
-M.redraw = function(source_name)
+M.reveal_in_split = function(source_name)
+  local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
+  state.current_position = "split"
+  local path_to_reveal = M.get_path_to_reveal()
+  M.navigate(state, state.path, path_to_reveal)
+end
+
+---Opens the tree and displays the current path or cwd, without focusing it.
+M.show = function(source_name)
   local state = M.get_state(source_name)
-  if state.tree and renderer.window_exists(state) then
-    state.tree:render()
+  state.current_position = nil
+  if not renderer.window_exists(state) then
+    local current_win = vim.api.nvim_get_current_win()
+    M.navigate(source_name, state.path, nil, function()
+      vim.api.nvim_set_current_win(current_win)
+    end)
   end
 end
 
----Refreshes the tree by scanning the filesystem again.
-M.refresh = function(source_name, callback)
-  local current_tabnr = vim.api.nvim_get_current_tabpage()
-  local sd = get_source_data(source_name)
-  for _, state in pairs(sd.state_by_tab) do
-    if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
-      log.trace(source_name, " refresh")
-      if type(callback) ~= "function" then
-        callback = nil
-      end
-      M.navigate(source_name, state.path, nil, callback)
-    else
-      state.dirty = true
-    end
-  end
+M.show_in_split = function(source_name)
+  local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
+  state.current_position = "split"
+  M.navigate(state, state.path)
 end
 
 M.validate_source = function(source_name, module)
@@ -367,17 +441,6 @@ M.setup = function(source_name, config, global_config)
     end
   else
     log.error("Source " .. source_name .. " is invalid: " .. err)
-  end
-end
-
----Opens the tree and displays the current path or cwd, without focusing it.
-M.show = function(source_name)
-  local state = M.get_state(source_name)
-  if not renderer.window_exists(state) then
-    local current_win = vim.api.nvim_get_current_win()
-    M.navigate(source_name, state.path, nil, function()
-      vim.api.nvim_set_current_win(current_win)
-    end)
   end
 end
 

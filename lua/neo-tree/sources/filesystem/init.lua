@@ -119,9 +119,8 @@ M.follow = function(callback, force_show)
   end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
 end
 
-M._navigate_internal = function(path, path_to_reveal, callback)
+M._navigate_internal = function(state, path, path_to_reveal, callback)
   log.trace("navigate_internal", path, path_to_reveal)
-  local state = get_state()
   state.dirty = false
   local path_changed = false
   if path == nil then
@@ -157,7 +156,8 @@ M._navigate_internal = function(path, path_to_reveal, callback)
 
   if path_changed then
     if state.bind_to_cwd then
-      vim.api.nvim_command("tcd " .. path)
+      local cmd = state.current_position == "split" and "lcd " or "tcd "
+      vim.api.nvim_command(cmd .. path)
     end
   end
 end
@@ -166,18 +166,15 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
-M.navigate = function(path, path_to_reveal, callback)
+M.navigate = function(state, path, path_to_reveal, callback)
   log.trace("navigate", path, path_to_reveal)
-  local state = get_state()
-  state.in_navigate = true
   utils.debounce("filesystem_navigate", function()
-    M._navigate_internal(path, path_to_reveal, callback)
+    M._navigate_internal(state, path, path_to_reveal, callback)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 500)
 end
 
-M.reset_search = function(refresh)
+M.reset_search = function(state, refresh)
   log.trace("reset_search")
-  local state = get_state()
   if refresh == nil then
     refresh = true
   end
@@ -191,12 +188,11 @@ M.reset_search = function(refresh)
   state.search_pattern = nil
   state.open_folders_before_search = nil
   if refresh then
-    manager.refresh(M.name)
+    M.navigate(state)
   end
 end
 
-M.show_new_children = function(node_or_path)
-  local state = get_state()
+M.show_new_children = function(state, node_or_path)
   local node = node_or_path
   if node_or_path == nil then
     node = state.tree:get_node()
@@ -215,11 +211,11 @@ M.show_new_children = function(node_or_path)
   end
 
   if node:is_expanded() then
-    manager.refresh(M.name)
+    M.navigate(state)
   else
     fs_scan.get_items_async(state, nil, false, function()
       local new_node = state.tree:get_node(node:get_id())
-      M.toggle_directory(new_node)
+      M.toggle_directory(state, new_node)
     end)
   end
 end
@@ -301,8 +297,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(node)
-  local state = get_state()
+M.toggle_directory = function(state, node)
   local tree = state.tree
   if not node then
     node = tree:get_node()

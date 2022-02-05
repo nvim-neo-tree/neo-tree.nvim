@@ -24,9 +24,13 @@ Other Sources ............... |neo-tree-sources|
 
 INTRODUCTION                                             *neo-tree-introduction*
 
-Neo-tree is a plugin for nvim that can display tree structures in a sidebar or
-a floating window. The current version includes a filesystem browser, a
-buffer list, and a git status view.
+Neo-tree is a plugin for nvim that can display tree structures in a sidebar,
+floating window, or in a split. The current version includes a filesystem
+browser, a buffer list, and a git status view.
+
+If you want to use this in splits like |netrw| instead of as a sidebar or
+floating window, use the *Split commands, such as |NeoTreeRevealInSplit|. You
+may use both styles at the same time if you want.
 
 
 COMMANDS                                                     *neo-tree-commands*
@@ -34,8 +38,8 @@ COMMANDS                                                     *neo-tree-commands*
 Neo-tree does not define any default keybindings for nvim. The suggested
 keybindings are:
 
-    nnoremap / :NeoTreeReveal<cr>                          
-    nnoremap | :NeoTreeClose<cr>                          
+    nnoremap / :NeoTreeRevealInSplitToggle<cr>                          
+    nnoremap | :NeoTreeRevealToggle<cr>                          
     nnoremap <leader>b :NeoTreeFocus buffers<cr>
     nnoremap <leader>s :NeoTreeFocus git_status<cr>
 
@@ -48,8 +52,12 @@ NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
 to the neo-tree window if it is already open. Takes an optional argument to
 specify the source to focus, such as `filesystem` or `buffers`.
 
-If you specify `window.position: float` in your configuration, this will
+If you specify `window.position = "float"` in your configuration, this will
 act like |NeoTreeFloat| but will not reveal the current file.
+
+If you specify `window.position = "split"` in your configuration, this will act
+like |NeoTreeShowInSplit|.
+
 
 |NeoTreeShow|                                                      *NeoTreeShow*
 You can also use NeoTreeShow which will open the tree, but leave the current
@@ -58,11 +66,43 @@ window focused. Takes an optional argument to specify the source to show.
 If you specify `window.position: float` in your configuration, this will
 act like |NeoTreeFloat| but will not reveal the current file.
 
+If you specify `window.position = "split"` in your configuration, this will act
+like |NeoTreeShowInSplit|.
+
+
+|NeoTreeShowInSplit|                                        *NeoTreeShowInSplit*
+This will show the tree in the currently focused window instead of a sidebar or
+float, like |netrw| would. Opening a file from this tree will then open in the
+same window as well. Please not that windows opened in this way will not react
+to the `follow_current_file` option, as that applies to sidebars only.
+
+This command is particularly useful if you want to use a mix of sidebars and
+split style trees. If you only want netrw/split style, you can also specify
+`window.position = "split"` in your config and the other commands will redirect
+here.
+
+
 |NeoTreeReveal|                                                  *NeoTreeReveal*
 NeoTreeReveal is like NeoTreeFocus, but it will also find whatever file is in
 the current buffer, expand all nodes needed to reveal it, and set the cursor on
 that file. If the current file is not in the current working directory, you will
 be prompted to change it.
+
+If you specify `window.position = "split"` in your configuration, this will act
+like |NeoTreeRevealInSplit|.
+
+
+|NeoTreeRevealInSplit|                                    *NeoTreeRevealInSplit*
+Same idea as NeoTreeReveal, but this will use the current window instead of a
+sidebar or float, like |netrw| would. Opening a file from this tree will then
+open in the same window as well. Please not that windows opened in this way will
+not react to the `follow_current_file` option, as that applies to sidebars only.
+
+This command is particularly useful if you want to use a mix of sidebars and
+split style trees. If you only want netrw/split style, you can also specify
+`window.position = "split"` in your config and the other commands will redirect
+here.
+
 
 |NeoTreeFloat|                                                    *NeoTreeFloat*
 You can also use NeoTreeFloat which will open the tree in a floating window. The
@@ -75,10 +115,12 @@ config, it works as a one time override. If the current source is currently
 displayed in a sidebar, it will be closed and recreated with the same state in
 a floating window.
 
+
 |NeoTreeClose|                                                    *NeoTreeClose*
 Closes all Neo-tree windows. Takes an optional argument to specify the position
 to close, such as `left` or `right`. The position corresponds to the
 window.position setting in your config for each source.
+
 
 |NeoTreePasteConfig|                                        *NeoTreePasteConfig*
 This is a special command to help you get started. It will paste the complete,
