@@ -219,22 +219,53 @@ end
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function(source_name)
   for_each_state(source_name, function(state)
-    local tabnr = state.tabnr
-    -- the id is either the tabnr for sidebars or the winid for splits
-    local winid = state.id == tabnr and -1 or state.id
-    local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
-    if success then
-      if state.path and cwd == state.path then
-        return
-      end
-      if state.path and renderer.window_exists(state) then
-        M.navigate(state, cwd)
-      else
-        state.path = cwd
-        state.dirty = true
-      end
+    local cwd = M.get_cwd(state)
+    if state.path and cwd == state.path then
+      return
+    end
+    if state.path and renderer.window_exists(state) then
+      M.navigate(state, cwd)
+    else
+      state.path = cwd
+      state.dirty = true
     end
   end)
+end
+
+M.get_cwd = function(state)
+  local tabnr = state.tabnr
+  -- the id is either the tabnr for sidebars or the winid for splits
+  local winid = state.id == tabnr and -1 or state.id
+  local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  if success then
+    return cwd
+  else
+    success, cwd = pcall(vim.fn.getcwd)
+    if success then
+      return cwd
+    else
+      return state.path
+    end
+  end
+end
+
+M.set_cwd = function(state)
+  if not state.path then
+    return
+  end
+
+  local tabnr = state.tabnr
+  -- the id is either the tabnr for sidebars or the winid for splits
+  local winid = state.id == tabnr and -1 or state.id
+  local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+
+  if state.path ~= cwd then
+    if winid > 0 then
+      vim.cmd("lcd " .. state.path)
+    else
+      vim.cmd("tcd " .. state.path)
+    end
+  end
 end
 
 M.dispose = function(source_name, tabnr)
@@ -352,7 +383,7 @@ M.reveal_current_file = function(source_name)
   end
   local cwd = state.path
   if cwd == nil then
-    cwd = vim.fn.getcwd()
+    cwd = M.get_cwd(state)
   end
   if not utils.is_subpath(cwd, path) then
     cwd, _ = utils.split_path(path)

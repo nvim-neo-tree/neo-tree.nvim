@@ -83,7 +83,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy)
   fn = nil
 
   if not success then
-    log.error(result)
+    log.error("debounce ", id, " error: ", result)
   end
 
   if strategy == M.debounce_strategy.CALL_LAST_ONLY then
