@@ -103,7 +103,6 @@ end
 
 M.icon = function(config, node, state)
   local icon = config.default or " "
-  local padding = config.padding or " "
   local highlight = config.highlight or highlights.FILE_ICON
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_ICON
@@ -121,15 +120,19 @@ M.icon = function(config, node, state)
     end
   end
   return {
-    text = icon .. padding,
+    text = icon .. " ",
     highlight = highlight,
   }
 end
 
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME
+  local text = node.name
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_NAME
+    if config.trailing_slash then
+      text = text .. "/"
+    end
   end
   if node:get_depth() == 1 then
     highlight = highlights.ROOT_NAME

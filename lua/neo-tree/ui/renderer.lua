@@ -414,9 +414,11 @@ create_window = function(state)
     win.source_name = state.name
     table.insert(floating_windows, win)
 
-    win:map("n", "<esc>", function(_)
-      win:unmount()
-    end, { noremap = true })
+    if require("neo-tree").config.close_floats_on_escape_key then
+      win:map("n", "<esc>", function(_)
+        win:unmount()
+      end, { noremap = true })
+    end
 
     win:on({ "BufHidden" }, function()
       vim.schedule(function()

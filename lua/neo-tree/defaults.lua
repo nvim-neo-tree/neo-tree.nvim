@@ -4,6 +4,7 @@ local config = {
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  close_floats_on_escape_key = true,
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_in_last_window = true, -- false = open files in top left window
@@ -47,18 +48,17 @@ local config = {
   --  },
   --},
   filesystem = {
-    follow_current_file = false, -- This will find and focus the file in the
-    -- active buffer every time the current file is changed while the tree is open.
-    use_libuv_file_watcher = false, -- This will use the OS level file watchers
-    -- to detect changes instead of relying on nvim autocmd events.
-    window = {
-      -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
-      -- for possible options. These can also be functions that return these
-      -- options.
+    follow_current_file = false, -- This will find and focus the file in the active buffer
+                                 -- every time the current file is changed while the tree
+                                 -- is open.
+    use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect
+                                    -- changes instead of relying on nvim autocmd events.
+    window = {  -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
+                -- for possible options. These can also be functions that return these
+                -- options.
       position = "left", -- left, right, float, split
       width = 40, -- applies to left and right positions
-      -- settings that apply to float position only
-      popup = {
+      popup = {   -- settings that apply to float position only
         size = {
           height = "80%",
           width = "50%",
@@ -67,10 +67,8 @@ local config = {
         -- you can also specify border here, if you want a different setting from
         -- the global popup_border_style.
       },
-      -- Mappings for tree window. See https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/sources/filesystem/commands.lua
-      -- for built-in commands. You can also create your own commands by
-      -- providing a function instead of a string. See the built-in
-      -- commands for examples.
+      -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
+      -- You can also create your own commands by providing a function instead of a string.
       mappings = {
         ["<2-LeftMouse>"] = "open",
         ["<cr>"] = "open",
@@ -95,8 +93,7 @@ local config = {
       },
     },
     --find_command = "fd",
-    ---- you can specify extra args to pass to the find command.
-    --find_args = {
+    --find_args = {  -- you can specify extra args to pass to the find command.
     --  "--exclude", ".git",
     --  "--exclude",  "node_modules"
     --},
@@ -127,19 +124,19 @@ local config = {
       respect_gitignore = true,
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
-    -- This section provides the renderers that will be used to render the tree.
-    -- The first level is the node type.
-    -- For each node type, you can specify a list of components to render.
-    -- Components are rendered in the order they are specified.
-    -- The first field in each component is the name of the function to call.
-    -- The rest of the fields are passed to the function as the "config" argument.
+    -- The renderer section provides the renderers that will be used to render the tree.
+    --   The first level is the node type.
+    --   For each node type, you can specify a list of components to render.
+    --       Components are rendered in the order they are specified.
+    --         The first field in each component is the name of the function to call.
+    --         The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
         {
           "icon",
           folder_closed = "",
           folder_open = "",
-          padding = " ",
+          trailing_slash = false,
         },
         { "current_filter" },
         { "name" },
@@ -158,7 +155,6 @@ local config = {
         {
           "icon",
           default = "*",
-          padding = " ",
         },
         {
           "name",
@@ -184,10 +180,6 @@ local config = {
     window = {
       position = "left",
       width = 40,
-      -- Mappings for tree window. See https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/sources/filesystem/commands.lua
-      -- for built-in commands. You can also create your own commands by
-      -- providing a function instead of a string. See the built-in
-      -- commands for examples.
       mappings = {
         ["<2-LeftMouse>"] = "open",
         ["<cr>"] = "open",
@@ -206,19 +198,13 @@ local config = {
       },
     },
     bind_to_cwd = true,
-    -- This section provides the renderers that will be used to render the tree.
-    -- The first level is the node type.
-    -- For each node type, you can specify a list of components to render.
-    -- Components are rendered in the order they are specified.
-    -- The first field in each component is the name of the function to call.
-    -- The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
         {
           "icon",
           folder_closed = "",
           folder_open = "",
-          padding = " ",
+          trailing_slash = false,
         },
         { "name" },
         { "diagnostics", errors_only = true },
@@ -231,7 +217,6 @@ local config = {
         {
           "icon",
           default = "*",
-          padding = " ",
         },
         { "name" },
         { "bufnr" },
@@ -251,10 +236,6 @@ local config = {
     window = {
       position = "left",
       width = 40,
-      -- Mappings for tree window. See https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/sources/filesystem/commands.lua
-      -- for built-in commands. You can also create your own commands by
-      -- providing a function instead of a string. See the built-in
-      -- commands for examples.
       mappings = {
         ["<2-LeftMouse>"] = "open",
         ["<cr>"] = "open",
@@ -276,19 +257,12 @@ local config = {
         ["gg"] = "git_commit_and_push",
       },
     },
-    -- This section provides the renderers that will be used to render the tree.
-    -- The first level is the node type.
-    -- For each node type, you can specify a list of components to render.
-    -- Components are rendered in the order they are specified.
-    -- The first field in each component is the name of the function to call.
-    -- The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
         {
           "icon",
           folder_closed = "",
           folder_open = "",
-          padding = " ",
         },
         { "name" },
         { "diagnostics", errors_only = true },

@@ -45,6 +45,10 @@ M.close_node = function(state, callback)
   end
 end
 
+M.close_window = function(state)
+  renderer.close(state)
+end
+
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state, callback)
   local node = state.tree:get_node()

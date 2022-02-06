@@ -222,15 +222,17 @@ M.dir_changed = function(source_name)
     local tabnr = state.tabnr
     -- the id is either the tabnr for sidebars or the winid for splits
     local winid = state.id == tabnr and -1 or state.id
-    local cwd = vim.fn.getcwd(winid, tabnr)
-    if state.path and cwd == state.path then
-      return
-    end
-    if state.path and renderer.window_exists(state) then
-      M.navigate(state, cwd)
-    else
-      state.path = cwd
-      state.dirty = true
+    local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+    if success then
+      if state.path and cwd == state.path then
+        return
+      end
+      if state.path and renderer.window_exists(state) then
+        M.navigate(state, cwd)
+      else
+        state.path = cwd
+        state.dirty = true
+      end
     end
   end)
 end
@@ -250,8 +252,8 @@ M.dispose = function(source_name, tabnr)
     for_each_state(sname, function(state)
       if not tabnr or tabnr == state.tabnr then
         log.trace(state.name, " disposing of tab: ", tabnr)
-        fs_scan.stop_watchers(state)
-        renderer.close(state)
+        pcall(fs_scan.stop_watchers, state)
+        pcall(renderer.close, state)
         source_data[sname].state_by_tab[state.id] = nil
         source_data[sname].state_by_win[state.id] = nil
       end
@@ -322,7 +324,10 @@ M.refresh = function(source_name, callback)
       if type(callback) ~= "function" then
         callback = nil
       end
-      M.navigate(state, state.path, nil, callback)
+      local success, err = pcall(M.navigate, state, state.path, nil, callback)
+      if not success then
+        log.error(err)
+      end
     else
       state.dirty = true
     end
