@@ -10,8 +10,10 @@ Mappings .................... |neo-tree-mappings|
   Filter .................... |neo-tree-filter|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
+  Component Configs ......... |neo-tree-component-configs|
   Git Status ................ |neo-tree-git-status|
   Diagnostics ............... |neo-tree-diagnostics|
+  Indent markers ............ |neo-tree-indent-markers|
   Highlights ................ |neo-tree-highlights|
   Events .................... |neo-tree-events|
   Components and Renderers .. |neo-tree-renderers|
@@ -323,7 +325,36 @@ you still may want to dump it to a blank .lua file just to read it as
 documentation.
 
 
-GIT STATUS                                           *neo-tree-git-status*
+COMPONENT CONFIGS                                   *neo-tree-component-configs*
+
+The visual display of a node is made up of a series of components rendered in a
+certain order and with certain configuration options. See |neo-tree-components|
+for a deeper dive into customizing this aspect. If you wish to configure those
+components in a universal way, the best place to do that is in the
+`default_component_configs` section of the config.
+
+For example, to add indent markers, you can apply your settings in each renderer
+for each source, or just do it once in the default_component_configs section:
+
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        indent = {
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+        },
+      },
+    })
+<
+See |neo-tree-indent-markers| for more details.
+
+The default config has more examples of component configuration, use
+|NeoTreePasteConfig| to view that default config.
+
+
+GIT STATUS                                                 *neo-tree-git-status*
 
 By default, Neo-tree will attempt to get the git status for files in the
 current directory. It will use this information to add markers to the right of
@@ -337,7 +368,7 @@ component of your renderer(s).
 See also: |neo-tree-git-status-source|
 
 
-DIAGNOSTICS                                         *neo-tree-diagnostics*
+DIAGNOSTICS                                               *neo-tree-diagnostics*
 
 By default, Neo-tree will display diagnostic symbols next to files. It will
 display the highest severity level for files, and errors only for directories.
@@ -357,6 +388,62 @@ define those somewhere in your nvim configuration. Here is an example:
 
 To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
+
+
+INDENT MARKERS                                      *neo-tree-indent-markers*
+
+By default, indent markers (aka indent guides) are disabled. In Neo-tree
+indent is a component, so to enable indent markers, you need configure the
+`indent` component:
+
+...at the global level:
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        indent = {
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          indent_size = 2,
+        },
+      },
+    })
+<
+
+...or in each renderer:
+>
+    require("neo-tree").setup({
+        filesystem = {
+            renderers = {
+              directory = {
+                {
+                  "indent",
+                  with_markers = true,
+                  indent_marker = "│",
+                  last_indent_marker = "└",
+                  indent_size = 2,
+                },
+                -- other components
+              },
+              file = {
+                {
+                  "indent",
+                  with_markers = true,
+                  indent_marker = "│",
+                  last_indent_marker = "└",
+                  indent_size = 2,
+                -- other components
+              },
+            }
+        }
+    })
+<
+
+You also can change the marker characters. To do this, you need change
+`indent_marker` and `last_indent_marker` settings.
+
+To change highlight of indent markers, you need configure `NeoTreeIndentMarker`
+highlight group. By default, it refers to `Normal` highlight.
 
 
 HIGHLIGHTS                                                 *neo-tree-highlights*
@@ -385,6 +472,8 @@ NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
                           is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeIndentMarker       The style of indentation markers (guides). By default,
+                          the "Normal" highlight is used.
 
 
 EVENTS                                                        *neo-tree-events*
@@ -549,7 +638,10 @@ set of components.
 Each component function is called with the following args:
   `config` The config object defined in the renderer. This is how a component
   can be made to be configurable. This is useful if you want different behavior
-  in a directory renderer vs a file renderer.
+  in a directory renderer vs a file renderer. The config is a combination of any
+  options specified in the default_component_configs
+  (|neo-tree-default-component-configs|), which can be overriden by settings
+  specified within each renderer config.
 
   `node` The NuiNode object for this node. The properties can vary by source, but
   each one will generally have at least id and name properties.

@@ -393,8 +393,47 @@ M.set_log_level = function(level)
   log.set_level(level)
 end
 
+local function merge_global_components_config(components, config)
+  local indent_exists = false
+  local merged_components = {}
+  for _, component in ipairs(components) do
+    local name = component[1]
+    if type(name) == "string" then
+      if name == "indent" then
+        indent_exists = true
+      end
+      local merged = { name }
+      local global_config = config.default_component_configs[name]
+      if global_config then
+        for k, v in pairs(global_config) do
+          merged[k] = v
+        end
+      end
+      for k, v in pairs(component) do
+        merged[k] = v
+      end
+      table.insert(merged_components, merged)
+    else
+      log.error("component name is the wrong type", component)
+    end
+  end
+
+  -- If the indent component is not specified, then add it.
+  -- We do this because it used to be implicitly added, so we don't want to
+  -- break any existing configs.
+  if not indent_exists then
+    local indent = { "indent" }
+    for k, v in pairs(config.default_component_configs.indent or {}) do
+      indent[k] = v
+    end
+    table.insert(merged_components, 1, indent)
+  end
+  return merged_components
+end
+
 M.setup = function(config)
-  config = config or {}
+  local default_config = vim.deepcopy(defaults)
+  config = vim.deepcopy(config or {})
   if config.log_level ~= nil then
     M.set_log_level(config.log_level)
   end
@@ -419,13 +458,13 @@ M.setup = function(config)
   highlights.setup()
 
   -- setup the default values for all sources
-  local source_defaults = {}
+  local merged_source_config = {}
   for _, source_name in ipairs(sources) do
-    local source = utils.table_copy(defaults[source_name] or {})
+    local default_source_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
-    source.components = require(mod_root .. ".components")
-    source.commands = require(mod_root .. ".commands")
-    source.name = source_name
+    default_source_config.components = require(mod_root .. ".components")
+    default_source_config.commands = require(mod_root .. ".commands")
+    default_source_config.name = source_name
 
     --validate the window.position
     local pos_key = source_name .. ".window.position"
@@ -444,26 +483,27 @@ M.setup = function(config)
     end
 
     -- Make sure all the mappings are normalized so they will merge properly.
-    normalize_mappings(source)
+    normalize_mappings(default_source_config)
     normalize_mappings(config[source_name])
 
     -- if user sets renderers, completely wipe the default ones
-    if utils.get_value(config, source_name .. ".renderers.directory") then
-      source.renderers.directory = {}
+    for name, _ in pairs(default_source_config.renderers) do
+      local user = utils.get_value(config, source_name .. ".renderers." .. name)
+      if user then
+        default_source_config.renderers[name] = nil
+      end
     end
-    if utils.get_value(config, source_name .. ".renderers.file") then
-      source.renderers.file = {}
-    end
-    source_defaults[source_name] = source
   end
-  local default_config = utils.table_merge(defaults, source_defaults)
 
   -- apply the users config
   M.config = utils.table_merge(default_config, config)
 
-  -- setup the sources with the combined config
   for _, source_name in ipairs(sources) do
+    for name, rndr in pairs(M.config[source_name].renderers) do
+      M.config[source_name].renderers[name] = merge_global_components_config(rndr, M.config)
+    end
     manager.setup(source_name, M.config[source_name], M.config)
+    manager.redraw(source_name)
   end
 
   local event_handler = {
