@@ -170,22 +170,56 @@ M.navigate = function(state, path, path_to_reveal, callback)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 500)
 end
 
-M.reset_search = function(state, refresh)
+M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
   if refresh == nil then
     refresh = true
   end
   if state.open_folders_before_search then
-    log.trace("reset_search: open_folders_before_search")
     state.force_open_folders = utils.table_copy(state.open_folders_before_search)
   else
-    log.trace("reset_search: why are there no open_folders_before_search?")
     state.force_open_folders = nil
   end
   state.search_pattern = nil
   state.open_folders_before_search = nil
   if refresh then
-    M.navigate(state)
+    if open_current_node then
+      local node = state.tree:get_node()
+      if node then
+        local path = node:get_id()
+        state.position.set(path)
+        if node.type == "directory" then
+          log.trace("opening directory from search: ", path)
+          M.navigate(state, nil, path, function()
+            -- this callback is to focus the selected node
+            local event = {
+              event = events.AFTER_RENDER,
+              id = "neo-tree-open-from-search:" .. tostring(state),
+            }
+            events.unsubscribe(event) -- if there is a prior event waiting, replace it
+
+            event.handler = function(arg)
+              if arg ~= state then
+                return -- this is not our event
+              end
+              pcall(renderer.focus_node, state, path, false)
+              event.cancelled = true
+            end
+
+            events.subscribe(event)
+          end)
+        else
+          if state.current_position == "split" then
+            utils.open_file(state, node:get_id())
+          else
+            utils.open_file(state, path)
+            M.navigate(state, nil, path)
+          end
+        end
+      end
+    else
+      M.navigate(state)
+    end
   end
 end
 

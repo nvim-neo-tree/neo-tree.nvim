@@ -143,28 +143,40 @@ Note: The "selected" item is the line the cursor is currently on.
 
 <2-LeftMouse> = open:        Expand or collapse a folder. If a file is selected,
                              open it in the window closest to the tree.
+
 <cr>          = open:        Same as above.
+
 S             = open_split:  Same as open, but opens in a new horizontal split.
+
 s             = open_vsplit: Same as open, but opens in a vertical split
+
 <bs>          = navigate_up: Moves the root directory up one level.
+
 .             = set_root:    Changes the root directory to the currently 
                              selected folder.
 
 
 FILE ACTIONS                                            *neo-tree-file-actions*
 a    = add:                  Create a new file or directory.
+
 d    = delete:               Delete the selected file or directory.
+
 r    = rename:               Rename the selected file or directory.
+
 c    = copy_to_clipboard:    Mark file to be copied.
+
 x    = cut_to_clipboard:     Mark file to be cut (moved).
+
 p    = paste_from_clipboard: Copy/move each marked file in the to the
                              selected folder.
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
 H = toggle_hidden:    Toggle whether hidden files (.*) are shown or not.
+
 I = toggle_gitignore: Toggle whether the gitignore file is
                       respected.
+
 R = refresh:          Rescan the filesystem and redraw the tree. Changes
                       made within nvim should be detected automatically, but
                       this is useful for changes made elsewhere.
@@ -175,15 +187,27 @@ FILTER                                                        *neo-tree-filter*
                             files and folders that contain the specified term as
                             you type. This will use fd if it is installed, or 
                             find, or which if you are on Windows.
+
+                            As of v1.28, this acts like a fuzzy finder,
+                            meaning that pressing up/down while the filter
+                            window is open will move the cursor up and down in
+                            the tree, and pressing `<enter>` will open that
+                            item and clear the filter. Any other method of
+                            closing the filter window will also clear the
+                            filter.
+
 f     = filter_on_submit:   Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
+                            Also useful if you want to leave the tree
+                            filtered.
+
 <C-x> = clear_filter:       Removes the filter.
 
 
 CUSTOM COMMANDS                                       *neo-tree-custom-commands*
 
 If you want to define your own command, you have two options:
-  1. You can define (or override) a command in the `commands` section of the
+  1. You can define (or oVErride) a command in the `commands` section of the
   config for each source, then reference that by name in a mapping.
   2. You can map directly to a function and skip defining a command.
 

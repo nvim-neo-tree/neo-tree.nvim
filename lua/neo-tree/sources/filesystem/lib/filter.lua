@@ -13,7 +13,7 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
-M.show_filter = function(state, search_as_you_type)
+M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   local width = vim.fn.winwidth(0) - 2
   local row = vim.api.nvim_win_get_height(0) - 3
   local popup_options = popups.popup_options("Enter Filter Pattern:", width, {
@@ -39,6 +39,12 @@ M.show_filter = function(state, search_as_you_type)
       if value == "" then
         fs.reset_search(state)
       else
+        if search_as_you_type and fuzzy_finder_mode then
+          state.search_pattern = nil
+          fs.reset_search(state, true, true)
+          require("neo-tree.sources.filesystem.commands").open(state)
+          return
+        end
         state.search_pattern = value
         manager.refresh("filesystem", function()
           -- focus first file
@@ -107,11 +113,31 @@ M.show_filter = function(state, search_as_you_type)
 
   input:map("i", "<esc>", function(bufnr)
     input:unmount()
+    if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
+      fs.reset_search(state, true)
+    end
   end, { noremap = true })
 
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
+    if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
+      fs.reset_search(state, true)
+    end
   end, { once = true })
+
+  if fuzzy_finder_mode then
+    local move_cursor_down = function()
+      renderer.focus_node(state, nil, true, 1, 3)
+    end
+    local move_cursor_up = function()
+      renderer.focus_node(state, nil, true, -1, 3)
+      vim.cmd("redraw!")
+    end
+    input:map("i", "<down>", move_cursor_down, { noremap = true })
+    input:map("i", "<C-n>", move_cursor_down, { noremap = true })
+    input:map("i", "<up>", move_cursor_up, { noremap = true })
+    input:map("i", "<C-p>", move_cursor_up, { noremap = true })
+  end
 end
 
 return M

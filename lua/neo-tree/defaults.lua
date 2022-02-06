@@ -49,16 +49,16 @@ local config = {
   --},
   filesystem = {
     follow_current_file = false, -- This will find and focus the file in the active buffer
-                                 -- every time the current file is changed while the tree
-                                 -- is open.
+    -- every time the current file is changed while the tree
+    -- is open.
     use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect
-                                    -- changes instead of relying on nvim autocmd events.
-    window = {  -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
-                -- for possible options. These can also be functions that return these
-                -- options.
+    -- changes instead of relying on nvim autocmd events.
+    window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup
+      -- for possible options. These can also be functions that return these
+      -- options.
       position = "left", -- left, right, float, split
       width = 40, -- applies to left and right positions
-      popup = {   -- settings that apply to float position only
+      popup = { -- settings that apply to float position only
         size = {
           height = "80%",
           width = "50%",
@@ -81,7 +81,8 @@ local config = {
         ["H"] = "toggle_hidden",
         ["I"] = "toggle_gitignore",
         ["R"] = "refresh",
-        ["/"] = "filter_as_you_type",
+        ["/"] = "fuzzy_finder",
+        --["/"] = "filter_as_you_type", -- this was the default until v1.28
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["a"] = "add",

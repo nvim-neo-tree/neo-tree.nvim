@@ -191,6 +191,7 @@ M.reveal_in_split = function(source_name, toggle_if_open)
       return
     end
   end
+  --TODO: if we are currently in a sidebar, don't replace it with a split style
   manager.reveal_in_split(source_name)
 end
 
@@ -203,6 +204,7 @@ M.show_in_split = function(source_name, toggle_if_open)
       return
     end
   end
+  --TODO: if we are currently in a sidebar, don't replace it with a split style
   manager.show_in_split(source_name)
 end
 
