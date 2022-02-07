@@ -69,8 +69,11 @@ use {
           icon = {
             folder_closed = "",
             folder_open = "",
-            trailing_slash = false,
             default_icon = "*",
+          },
+          name = {
+            trailing_slash = false,
+            use_git_status_colors = true,
           },
           git_status = {
             highlight = "NeoTreeDimText", -- if you remove this the status will be colorful
@@ -273,9 +276,11 @@ This source can be used to:
 
 Another available source is `buffers`, which displays your open buffers. This is
 the same list you would see from `:ls`. To show with the `buffers` list, use:
+
 ```
 :NeoTreeShow buffers
 ```
+
 or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
 
 ### git_status

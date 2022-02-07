@@ -59,8 +59,11 @@ local config = {
     icon = {
       folder_closed = "",
       folder_open = "",
-      trailing_slash = false,
       default_icon = "*",
+    },
+    name = {
+      trailing_slash = false,
+      use_git_status_colors = true,
     },
     git_status = {
       highlight = "NeoTreeDimText",
