@@ -86,21 +86,15 @@ local create_nodes
 create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
-  local indent = " "
-  local indent_size = state.indent_size or 2
-  for _ = 1, level do
-    for _ = 1, indent_size do
-      indent = indent .. " "
-    end
-  end
 
-  for _, item in ipairs(source_items) do
+  for i, item in ipairs(source_items) do
+    local is_last_child = i == #source_items
+
     local nodeData = {
       id = item.id,
       name = item.name,
       type = item.type,
       loaded = item.loaded,
-      indent = indent,
       extra = item.extra,
       is_link = item.is_link,
       link_to = item.link_to,
@@ -109,6 +103,8 @@ create_nodes = function(source_items, state, level)
       path = item.path,
       ext = item.ext,
       search_pattern = item.search_pattern,
+      level = level,
+      is_last_child = is_last_child,
     }
 
     local node_children = nil
@@ -135,7 +131,6 @@ end
 
 local prepare_node = function(item, state)
   local line = NuiLine()
-  line:append(item.indent)
 
   local renderer = state.renderers[item.type]
   if not renderer then
@@ -161,7 +156,8 @@ local prepare_node = function(item, state)
           line:append(msg, highlights.NORMAL)
         end
       else
-        log.error("Neo-tree: Component " .. component[1] .. " not found.")
+        local name = component[1] or "[missing_name]"
+        log.error("Neo-tree: Component " .. name .. " not found.")
       end
     end
   end

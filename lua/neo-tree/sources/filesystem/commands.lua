@@ -99,6 +99,8 @@ M.set_root = function(state)
   end
 end
 
+M.show_debug_info = cc.show_debug_info
+
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
   state.filters.show_hidden = not state.filters.show_hidden

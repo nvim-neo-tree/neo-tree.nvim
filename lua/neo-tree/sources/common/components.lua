@@ -150,4 +150,48 @@ M.name = function(config, node, state)
   }
 end
 
+M.indent = function(config, node, state)
+  if not state.skip_marker_at_level then
+    state.skip_marker_at_level = {}
+  end
+
+  local skip_marker = state.skip_marker_at_level
+  local indent_size = config.indent_size or 2
+  local padding = config.padding or 0
+  local level = node.level
+  local with_markers = config.with_markers
+
+  if indent_size == 0 or level < 2 or not with_markers then
+    return { text = string.rep(" ", indent_size * level + padding) }
+  end
+
+  local indent_marker = config.indent_marker or "│"
+  local last_indent_marker = config.last_indent_marker or "└"
+  local highlight = config.highlight or highlights.INDENT_MARKER
+
+  skip_marker[level] = node.is_last_child
+  local indent = {}
+  if padding > 0 then
+    table.insert(indent, { text = string.rep(" ", padding) })
+  end
+
+  for i = 1, level do
+    local spaces_count = indent_size
+    local marker = indent_marker
+
+    if i == level and node.is_last_child then
+      marker = last_indent_marker
+    end
+
+    if i > 1 and not skip_marker[i] or i == level then
+      table.insert(indent, { text = marker, highlight = highlight })
+      spaces_count = spaces_count - 1
+    end
+
+    table.insert(indent, { text = string.rep(" ", spaces_count) })
+  end
+
+  return indent
+end
+
 return M

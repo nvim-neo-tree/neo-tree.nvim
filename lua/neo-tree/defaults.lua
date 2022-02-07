@@ -47,6 +47,25 @@ local config = {
   --    end
   --  },
   --},
+  default_component_configs = {
+    indent = {
+      indent_size = 2,
+      padding = 1,
+      with_markers = false,
+      indent_marker = "│",
+      last_indent_marker = "└",
+      highlight = "NeoTreeIndentMarker",
+    },
+    icon = {
+      folder_closed = "",
+      folder_open = "",
+      trailing_slash = false,
+      default_icon = "*",
+    },
+    git_status = {
+      highlight = "NeoTreeDimText",
+    },
+  },
   filesystem = {
     follow_current_file = false, -- This will find and focus the file in the active buffer
     -- every time the current file is changed while the tree
@@ -133,30 +152,21 @@ local config = {
     --         The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
-        {
-          "icon",
-          folder_closed = "",
-          folder_open = "",
-          trailing_slash = false,
-        },
+        { "indent" },
+        { "icon" },
         { "current_filter" },
         { "name" },
         -- {
         --   "symlink_target",
         --   highlight = "NeoTreeSymbolicLinkTarget",
         -- },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "clipboard" },
         { "diagnostics", errors_only = true },
         --{ "git_status" },
       },
       file = {
-        {
-          "icon",
-          default = "*",
-        },
+        { "indent" },
+        { "icon" },
         {
           "name",
           use_git_status_colors = true,
@@ -165,15 +175,9 @@ local config = {
         --   "symlink_target",
         --   highlight = "NeoTreeSymbolicLinkTarget",
         -- },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "clipboard" },
         { "diagnostics" },
-        {
-          "git_status",
-          highlight = "NeoTreeDimText",
-        },
+        { "git_status" },
       },
     },
   },
@@ -201,35 +205,20 @@ local config = {
     bind_to_cwd = true,
     renderers = {
       directory = {
-        {
-          "icon",
-          folder_closed = "",
-          folder_open = "",
-          trailing_slash = false,
-        },
+        { "indent" },
+        { "icon" },
         { "name" },
         { "diagnostics", errors_only = true },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "clipboard" },
       },
       file = {
-        {
-          "icon",
-          default = "*",
-        },
+        { "indent" },
+        { "icon" },
         { "name" },
         { "bufnr" },
         { "diagnostics" },
-        {
-          "git_status",
-          highlight = "NeoTreeDimText",
-        },
-        {
-          "clipboard",
-          highlight = "NeoTreeDimText",
-        },
+        { "git_status" },
+        { "clipboard" },
       },
     },
   },
@@ -260,26 +249,17 @@ local config = {
     },
     renderers = {
       directory = {
-        {
-          "icon",
-          folder_closed = "",
-          folder_open = "",
-        },
+        { "indent" },
+        { "icon" },
         { "name" },
         { "diagnostics", errors_only = true },
       },
       file = {
-        {
-          "icon",
-          default = "*",
-          padding = " ",
-        },
+        { "indent" },
+        { "icon" },
         { "name" },
         { "diagnostics" },
-        {
-          "git_status",
-          highlight = "NeoTreeDimText",
-        },
+        { "git_status" },
       },
     },
   },
