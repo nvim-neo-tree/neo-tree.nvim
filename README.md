@@ -12,6 +12,24 @@ knowingly push a breaking change and interrupt your day. Bugs happen, but
 breaking changes can always be avoided. When breaking changes are needed, there
 will be a new branch that you can opt into, when it is a good time for you.
 
+As of v1.30, a breaking change is defined as anything that _changes_ existing:
+
+- vim commands (`:NeoTreeShow`, `:NeoTreeReveal`, etc)
+- configuration options that are passed into the `setup()` function
+- `NeoTree*` highlight groups
+- lua functions exported in the following modules that are not prefixed with `_`:
+    * `neo-tree`
+    * `neo-tree.events`
+    * `neo-tree.sources.manager`
+    * `neo-tree.sources.*` (init.lua files)
+    * `neo-tree.sources.*.commands`
+    * `neo-tree.ui.renderer`
+    * `neo-tree.utils`
+
+If there are other functions you would like to use that are not yet considered
+part of the public API, please open an issue so we can discuss it.
+
+
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
 
 Aside from being polite about breaking changes, Neo-tree is also focused on the
