@@ -69,7 +69,7 @@ use {
           icon = {
             folder_closed = "",
             folder_open = "",
-            default_icon = "*",
+            default = "*",
           },
           name = {
             trailing_slash = false,
