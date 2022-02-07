@@ -1,7 +1,8 @@
 # Neo-tree.nvim
 
 Neo-tree is a Neovim plugin to browse the file system and other tree like
-structures in a sidebar **or** floating window. 
+structures in whatever style suits you, including sidebars, floating windows,
+netrw split style, or all of them at once!
 
 ![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-filesystem.png)
 
@@ -251,6 +252,8 @@ sidebars or floats. If you want to use both styles, you can leave your default
 position as left/right/float, but explicitly open Neo-tree within the current
 split as needed using the following commands:
 
+#### Reveal
+
 ```
 :NeoTreeRevealInSplit
 ``` 
@@ -260,6 +263,9 @@ split as needed using the following commands:
 This will show the tree within the current window, and will find the current
 file in the tree and focus it. If the current file is not within the current
 working directory, you will be prompted to change the cwd.
+
+
+#### Show
 
 ```
 :NeoTreeShow 
