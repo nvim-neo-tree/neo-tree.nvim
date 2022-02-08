@@ -81,27 +81,53 @@ local check_source = function(source_name)
   return source_name
 end
 
-local hijack_netrw = function()
-  local bufname = vim.api.nvim_buf_get_name(0)
-  local stats = vim.loop.fs_stat(bufname)
-  local is_dir = stats and stats.type == "directory"
-  if is_dir then
-    local bufnr = vim.api.nvim_get_current_buf()
-    vim.cmd("silent! b#") -- to make the alternate buffer correct after wiping the directory buffer
-    manager.navigate("filesystem", bufname, nil, function()
-      vim.schedule(function()
-        vim.cmd("silent! bwipeout! " .. bufnr)
-      end)
-    end)
-    return true
-  else
-    return false
-  end
-end
-
 local get_position = function(source_name)
   local pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
   return pos
+end
+
+local hijack_netrw = function()
+  local option = "filesystem.hijack_netrw_behavior"
+  local hijack_behavior = utils.get_value(M.config, option, "open_default")
+  if hijack_behavior == "disabled" then
+    return false
+  end
+
+  local bufname = vim.api.nvim_buf_get_name(0)
+  local stats = vim.loop.fs_stat(bufname)
+  local is_dir = stats and stats.type == "directory"
+  if not is_dir then
+    return false
+  end
+
+  local winid = vim.api.nvim_get_current_win()
+
+  -- We will want to replace the "directory" buffer with either the "alternate"
+  -- buffer or a new blank one.
+  local dir_bufnr = vim.api.nvim_get_current_buf()
+  local replace_bufnr = vim.fn.bufnr("#")
+  if replace_bufnr == dir_bufnr or replace_bufnr < 1 then
+    print("creating new buffer")
+    replace_bufnr = vim.api.nvim_create_buf(true, false)
+  end
+  vim.api.nvim_win_set_buf(winid, replace_bufnr)
+  local remove_dir_buf = vim.schedule_wrap(function()
+    pcall(vim.api.nvim_buf_delete, dir_bufnr, { force = true })
+  end)
+
+  if get_position("filesystem") == "split" or hijack_behavior == "open_split" then
+    vim.schedule(function()
+      local state = manager.get_state("filesystem", nil, winid)
+      state.current_position = "split"
+      manager.navigate(state, bufname, nil, remove_dir_buf)
+    end)
+  else
+    vim.schedule(function()
+      manager.navigate("filesystem", bufname, nil, remove_dir_buf)
+    end)
+  end
+
+  return true
 end
 
 M.close_all_except = function(source_name)
