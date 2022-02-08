@@ -317,6 +317,7 @@ M.focus = function(source_name, path_to_reveal, callback)
 end
 
 ---Navigate to the given path.
+---@param state_or_source_name string|table The state or source name to navigate.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.

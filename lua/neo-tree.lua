@@ -81,6 +81,22 @@ local check_source = function(source_name)
   return source_name
 end
 
+local hijack_netrw = function()
+  local bufname = vim.api.nvim_buf_get_name(0)
+  local stats = vim.loop.fs_stat(bufname)
+  local is_dir = stats and stats.type == "directory"
+  if is_dir then
+    local bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("silent! b#") -- to make the alternate buffer correct after wiping the directory buffer
+    manager.navigate("filesystem", bufname, nil, function()
+      vim.cmd("bwipeout! " .. bufnr)
+    end)
+    return true
+  else
+    return false
+  end
+end
+
 local get_position = function(source_name)
   local pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
   return pos
@@ -152,19 +168,6 @@ M.focus = function(source_name, close_others, toggle_if_open)
     M.close_all_except(source_name)
   end
   manager.focus(source_name)
-end
-
-M.hijack_netrw = function()
-  local bufname = vim.api.nvim_buf_get_name(0)
-  local stats = vim.loop.fs_stat(bufname)
-  local is_dir = stats and stats.type == "directory"
-  if is_dir then
-    vim.cmd("bwipeout!")
-    manager.navigate("filesystem", bufname)
-    return true
-  else
-    return false
-  end
 end
 
 M.reveal_current_file = function(source_name, toggle_if_open)
@@ -280,7 +283,7 @@ M.buffer_enter_event = function(args)
   end
 
   -- if vim is trying to open a dir, then we hijack it
-  if M.hijack_netrw() then
+  if hijack_netrw() then
     return
   end
 
