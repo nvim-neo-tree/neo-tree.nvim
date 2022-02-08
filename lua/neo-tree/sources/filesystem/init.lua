@@ -39,6 +39,9 @@ local follow_internal = function(callback, force_show)
   end
 
   local state = get_state()
+  if not state.path then
+    return false
+  end
   local window_exists = renderer.window_exists(state)
   if window_exists then
     local node = state.tree and state.tree:get_node()

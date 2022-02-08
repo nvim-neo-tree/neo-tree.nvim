@@ -93,29 +93,41 @@ local hijack_netrw = function()
     return false
   end
 
+  local succuss, is_hijacked = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_hijacked")
+  if succuss and is_hijacked then
+    -- the navigation is async so it is probably scheduled to be replaced
+    return true
+  end
   local bufname = vim.api.nvim_buf_get_name(0)
   local stats = vim.loop.fs_stat(bufname)
-  local is_dir = stats and stats.type == "directory"
-  if not is_dir then
+  if not stats then
+    return false
+  end
+  if stats.type ~= "directory" then
     return false
   end
 
+  local should_open_split = hijack_behavior == "open_split" or get_position("filesystem") == "split"
   local winid = vim.api.nvim_get_current_win()
 
   -- We will want to replace the "directory" buffer with either the "alternate"
   -- buffer or a new blank one.
   local dir_bufnr = vim.api.nvim_get_current_buf()
+  pcall(vim.api.nvim_buf_set_var, dir_bufnr, "neo_tree_hijacked", true)
   local replace_bufnr = vim.fn.bufnr("#")
-  if replace_bufnr == dir_bufnr or replace_bufnr < 1 then
-    print("creating new buffer")
-    replace_bufnr = vim.api.nvim_create_buf(true, false)
+  if not should_open_split then
+    if replace_bufnr == dir_bufnr or replace_bufnr < 1 then
+      replace_bufnr = vim.api.nvim_create_buf(true, false)
+    end
   end
-  vim.api.nvim_win_set_buf(winid, replace_bufnr)
+  if replace_bufnr > 0 then
+    pcall(vim.api.nvim_win_set_buf, winid, replace_bufnr)
+  end
   local remove_dir_buf = vim.schedule_wrap(function()
     pcall(vim.api.nvim_buf_delete, dir_bufnr, { force = true })
   end)
 
-  if get_position("filesystem") == "split" or hijack_behavior == "open_split" then
+  if should_open_split then
     vim.schedule(function()
       local state = manager.get_state("filesystem", nil, winid)
       state.current_position = "split"
