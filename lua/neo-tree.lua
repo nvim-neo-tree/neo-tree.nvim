@@ -89,7 +89,9 @@ local hijack_netrw = function()
     local bufnr = vim.api.nvim_get_current_buf()
     vim.cmd("silent! b#") -- to make the alternate buffer correct after wiping the directory buffer
     manager.navigate("filesystem", bufname, nil, function()
-      vim.cmd("bwipeout! " .. bufnr)
+      vim.schedule(function()
+        vim.cmd("silent! bwipeout! " .. bufnr)
+      end)
     end)
     return true
   else
