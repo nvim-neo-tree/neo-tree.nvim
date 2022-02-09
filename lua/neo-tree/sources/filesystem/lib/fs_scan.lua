@@ -92,13 +92,10 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
     file_items.deep_sort(root.children)
     if parent_id then
       -- lazy loading a child folder
-      renderer.show_nodes(root.children, state, parent_id)
+      renderer.show_nodes(root.children, state, parent_id, callback)
     else
       -- full render of the tree
-      renderer.show_nodes({ root }, state)
-    end
-    if callback then
-      callback()
+      renderer.show_nodes({ root }, state, nil, callback)
     end
   end
 

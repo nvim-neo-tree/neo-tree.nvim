@@ -90,25 +90,11 @@ local follow_internal = function(callback, force_show)
 
   state.position.is.restorable = false -- we will handle setting cursor position here
   fs_scan.get_items_async(state, nil, path_to_reveal, function()
-    local event = {
-      event = events.AFTER_RENDER,
-      id = "neo-tree-follow:" .. tostring(state),
-    }
-    events.unsubscribe(event) -- if there is a prior event waiting, replace it
-    event.handler = function(arg)
-      if arg ~= state then
-        return -- this is not our event
-      end
-      event.cancelled = true
-      log.trace(event.id .. ": handler called")
-      show_only_explicitly_opened()
-      renderer.focus_node(state, path_to_reveal, true)
-      if type(callback) == "function" then
-        callback()
-      end
+    show_only_explicitly_opened()
+    renderer.focus_node(state, path_to_reveal, true)
+    if type(callback) == "function" then
+      callback()
     end
-
-    events.subscribe(event)
   end)
   return true
 end
@@ -194,22 +180,7 @@ M.reset_search = function(state, refresh, open_current_node)
         if node.type == "directory" then
           log.trace("opening directory from search: ", path)
           M.navigate(state, nil, path, function()
-            -- this callback is to focus the selected node
-            local event = {
-              event = events.AFTER_RENDER,
-              id = "neo-tree-open-from-search:" .. tostring(state),
-            }
-            events.unsubscribe(event) -- if there is a prior event waiting, replace it
-
-            event.handler = function(arg)
-              if arg ~= state then
-                return -- this is not our event
-              end
-              pcall(renderer.focus_node, state, path, false)
-              event.cancelled = true
-            end
-
-            events.subscribe(event)
+            pcall(renderer.focus_node, state, path, false)
           end)
         else
           if state.current_position == "split" then

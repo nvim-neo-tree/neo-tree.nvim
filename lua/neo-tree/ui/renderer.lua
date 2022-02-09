@@ -625,7 +625,7 @@ end
 --@param state table The current state of the plugin.
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
-M.show_nodes = function(sourceItems, state, parentId)
+M.show_nodes = function(sourceItems, state, parentId, callback)
   local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
   utils.debounce(id, function()
     events.fire_event(events.BEFORE_RENDER, state)
@@ -638,9 +638,13 @@ M.show_nodes = function(sourceItems, state, parentId)
     end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)
+
     vim.schedule(function()
       events.fire_event(events.AFTER_RENDER, state)
     end)
+    if type(callback) == "function" then
+      vim.schedule(callback)
+    end
   end, 100)
 end
 

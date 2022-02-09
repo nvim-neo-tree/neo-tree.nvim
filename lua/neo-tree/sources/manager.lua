@@ -405,11 +405,11 @@ M.reveal_current_file = function(source_name)
   end
 end
 
-M.reveal_in_split = function(source_name)
+M.reveal_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "split"
   local path_to_reveal = M.get_path_to_reveal()
-  M.navigate(state, state.path, path_to_reveal)
+  M.navigate(state, state.path, path_to_reveal, callback)
 end
 
 ---Opens the tree and displays the current path or cwd, without focusing it.
@@ -424,10 +424,10 @@ M.show = function(source_name)
   end
 end
 
-M.show_in_split = function(source_name)
+M.show_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "split"
-  M.navigate(state, state.path)
+  M.navigate(state, state.path, nil, callback)
 end
 
 M.validate_source = function(source_name, module)

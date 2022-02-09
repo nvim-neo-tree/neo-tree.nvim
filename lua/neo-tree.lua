@@ -93,11 +93,7 @@ local hijack_netrw = function()
     return false
   end
 
-  local succuss, is_hijacked = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_hijacked")
-  if succuss and is_hijacked then
-    -- the navigation is async so it is probably scheduled to be replaced
-    return true
-  end
+  -- ensure this is a directory
   local bufname = vim.api.nvim_buf_get_name(0)
   local stats = vim.loop.fs_stat(bufname)
   if not stats then
@@ -107,37 +103,45 @@ local hijack_netrw = function()
     return false
   end
 
+  -- record where we are now
   local should_open_split = hijack_behavior == "open_split" or get_position("filesystem") == "split"
   local winid = vim.api.nvim_get_current_win()
+  local dir_bufnr = vim.api.nvim_get_current_buf()
 
   -- We will want to replace the "directory" buffer with either the "alternate"
   -- buffer or a new blank one.
-  local dir_bufnr = vim.api.nvim_get_current_buf()
-  pcall(vim.api.nvim_buf_set_var, dir_bufnr, "neo_tree_hijacked", true)
-  local replace_bufnr = vim.fn.bufnr("#")
+  local replace_with_bufnr = vim.fn.bufnr("#")
+  if
+    replace_with_bufnr > 0
+    and vim.api.nvim_buf_get_option(replace_with_bufnr, "filetype") == "neo-tree"
+  then
+    replace_with_bufnr = -1
+  end
   if not should_open_split then
-    if replace_bufnr == dir_bufnr or replace_bufnr < 1 then
-      replace_bufnr = vim.api.nvim_create_buf(true, false)
+    if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
+      replace_with_bufnr = vim.api.nvim_create_buf(true, false)
     end
   end
-  if replace_bufnr > 0 then
-    pcall(vim.api.nvim_win_set_buf, winid, replace_bufnr)
+  if replace_with_bufnr > 0 then
+    pcall(vim.api.nvim_win_set_buf, winid, replace_with_bufnr)
   end
   local remove_dir_buf = vim.schedule_wrap(function()
     pcall(vim.api.nvim_buf_delete, dir_bufnr, { force = true })
   end)
 
-  if should_open_split then
-    vim.schedule(function()
-      local state = manager.get_state("filesystem", nil, winid)
+  -- Now actually open the tree, with a very quick debounce because this may be
+  -- called multiple times in quick succession.
+  utils.debounce("hijack_netrw_" .. winid, function()
+    local state
+    if should_open_split then
+      state = manager.get_state("filesystem", nil, winid)
       state.current_position = "split"
-      manager.navigate(state, bufname, nil, remove_dir_buf)
-    end)
-  else
-    vim.schedule(function()
-      manager.navigate("filesystem", bufname, nil, remove_dir_buf)
-    end)
-  end
+    else
+      M.close_all_except("filesystem")
+      state = manager.get_state("filesystem")
+    end
+    require("neo-tree.sources.filesystem")._navigate_internal(state, bufname, nil, remove_dir_buf)
+  end, 10, utils.debounce_strategy.CALL_LAST_ONLY)
 
   return true
 end
