@@ -13,22 +13,7 @@ knowingly push a breaking change and interrupt your day. Bugs happen, but
 breaking changes can always be avoided. When breaking changes are needed, there
 will be a new branch that you can opt into, when it is a good time for you.
 
-As of v1.30, a breaking change is defined as anything that _changes_ existing:
-
-- vim commands (`:NeoTreeShow`, `:NeoTreeReveal`, etc)
-- configuration options that are passed into the `setup()` function
-- `NeoTree*` highlight groups
-- lua functions exported in the following modules that are not prefixed with `_`:
-    * `neo-tree`
-    * `neo-tree.events`
-    * `neo-tree.sources.manager`
-    * `neo-tree.sources.*` (init.lua files)
-    * `neo-tree.sources.*.commands`
-    * `neo-tree.ui.renderer`
-    * `neo-tree.utils`
-
-If there are other functions you would like to use that are not yet considered
-part of the public API, please open an issue so we can discuss it.
+See [What is a Breaking Change?](#what-is-a-breaking-change) for details.
 
 
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
@@ -103,10 +88,15 @@ use {
             show_hidden = false,
             respect_gitignore = true,
           },
-          follow_current_file = false, -- This will find and focus the file in the
-          -- active buffer every time the current file is changed while the tree is open.
+          follow_current_file = false, -- This will find and focus the file in the active buffer every
+                                       -- time the current file is changed while the tree is open.
           use_libuv_file_watcher = false, -- This will use the OS level file watchers
-          -- to detect changes instead of relying on nvim autocmd events.
+                                          -- to detect changes instead of relying on nvim autocmd events.
+          hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
+                                                  -- in whatever position is specified in window.position
+                                -- "open_split",  -- netrw disabled, opening a directory opens within the
+                                                  -- window like netrw would, regardless of window.position
+                                -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
           window = {
             position = "left",
             width = 40,
@@ -393,6 +383,25 @@ Neo-tree follows in the spirit of plugins like
 configurable and take either strings, tables, or functions. You can take sane
 defaults or build your tree items from scratch. There should be the ability to
 add any features you can think of through existing hooks in the setup function.
+
+## What is a Breaking Change?
+
+As of v1.30, a breaking change is defined as anything that _changes_ existing:
+
+- vim commands (`:NeoTreeShow`, `:NeoTreeReveal`, etc)
+- configuration options that are passed into the `setup()` function
+- `NeoTree*` highlight groups
+- lua functions exported in the following modules that are not prefixed with `_`:
+    * `neo-tree`
+    * `neo-tree.events`
+    * `neo-tree.sources.manager`
+    * `neo-tree.sources.*` (init.lua files)
+    * `neo-tree.sources.*.commands`
+    * `neo-tree.ui.renderer`
+    * `neo-tree.utils`
+
+If there are other functions you would like to use that are not yet considered
+part of the public API, please open an issue so we can discuss it.
 
 ## Contributions
 
