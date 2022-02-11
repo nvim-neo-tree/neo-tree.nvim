@@ -39,7 +39,7 @@ end
 
 local ensure_config = function()
   if not M.config then
-    M.setup({ log_to_file = false })
+    M.setup({ log_to_file = false }, true)
   end
 end
 
@@ -86,9 +86,23 @@ local get_position = function(source_name)
   return pos
 end
 
-local hijack_netrw = function()
+local get_hijack_netrw_behavior = function()
   local option = "filesystem.hijack_netrw_behavior"
   local hijack_behavior = utils.get_value(M.config, option, "open_default")
+  if hijack_behavior == "disabled" then
+    return hijack_behavior
+  elseif hijack_behavior == "open_default" then
+    return hijack_behavior
+  elseif hijack_behavior == "open_split" then
+    return hijack_behavior
+  else
+    log.error("Invalid value for " .. option .. ": " .. hijack_behavior)
+    return "disabled"
+  end
+end
+
+local hijack_netrw = function()
+  local hijack_behavior = get_hijack_netrw_behavior()
   if hijack_behavior == "disabled" then
     return false
   end
@@ -111,11 +125,10 @@ local hijack_netrw = function()
   -- We will want to replace the "directory" buffer with either the "alternate"
   -- buffer or a new blank one.
   local replace_with_bufnr = vim.fn.bufnr("#")
-  if
-    replace_with_bufnr > 0
-    and vim.api.nvim_buf_get_option(replace_with_bufnr, "filetype") == "neo-tree"
-  then
-    replace_with_bufnr = -1
+  if replace_with_bufnr > 0 then
+    if vim.api.nvim_buf_get_option(replace_with_bufnr, "filetype") == "neo-tree" then
+      replace_with_bufnr = -1
+    end
   end
   if not should_open_split then
     if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
@@ -478,7 +491,7 @@ local function merge_global_components_config(components, config)
   return merged_components
 end
 
-M.setup = function(config)
+M.setup = function(config, is_auto_config)
   local default_config = vim.deepcopy(defaults)
   config = vim.deepcopy(config or {})
   if config.log_level ~= nil then
@@ -563,6 +576,10 @@ M.setup = function(config)
   else
     events.unsubscribe(event_handler)
     config.prior_windows = nil
+  end
+
+  if not is_auto_config and get_hijack_netrw_behavior() ~= "disabled" then
+    vim.cmd("silent! autocmd! FileExplorer *")
   end
 end
 

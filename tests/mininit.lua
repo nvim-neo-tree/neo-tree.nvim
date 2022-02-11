@@ -6,11 +6,10 @@ vim.opt.rtp = {
 }
 
 vim.cmd([[
+  filetype on
   packadd plenary.nvim
   packadd nui.nvim
 ]])
-
-require("neo-tree").setup()
 
 vim.opt.swapfile = false
 
