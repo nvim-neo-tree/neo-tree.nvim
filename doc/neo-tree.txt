@@ -10,6 +10,7 @@ Mappings .................... |neo-tree-mappings|
   Filter .................... |neo-tree-filter|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
+  Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
   Git Status ................ |neo-tree-git-status|
   Diagnostics ............... |neo-tree-diagnostics|
@@ -323,6 +324,33 @@ Run |NeoTreePasteConfig| to dump the fully commented default config in your
 current file. Even if you don't want to use that config as your starting point,
 you still may want to dump it to a blank .lua file just to read it as
 documentation.
+
+
+NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*
+
+Neo-tree can and does hijack Netrw by default. This is configurable and can be
+disabled if you use Netrw, or have other plugins that use Netrw functionality.
+This can be controlled by setting the `filesystem.hijack_netrw_behavior` option
+to one of:
+
+disabled               Netrw left alone, neo-tree does not handle opening dirs.
+
+open_default (default) Netrw disabled, opening a directory opens neo-tree
+                       in whatever position is specified in `window.position`.
+
+open_split             Netrw disabled, opening a directory opens within the
+                       window like netrw would, regardless of `window.position`.
+
+>
+    require("neo-tree").setup({
+      filesystem = {
+        hijack_netrw_behavior = "open_default",
+                             -- "open_split",  
+                             -- "disabled", 
+    })
+<
+
+
 
 
 COMPONENT CONFIGS                                   *neo-tree-component-configs*

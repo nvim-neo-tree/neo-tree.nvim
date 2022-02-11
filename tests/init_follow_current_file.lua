@@ -6,12 +6,14 @@ vim.opt.rtp = {
 }
 
 vim.cmd([[
+  filetype on
   packadd plenary.nvim
   packadd nui.nvim
 ]])
 
 require("neo-tree").setup({
   filesystem = {
+    netrw_hijack_behavior = "disabled",
     follow_current_file = true,
   },
 })
