@@ -106,7 +106,9 @@ M.icon = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_ICON
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_ICON
-    if node:is_expanded() then
+    if node.loaded and not node:has_children() then
+      icon = config.folder_empty or config.folder_open or "-"
+    elseif node:is_expanded() then
       icon = config.folder_open or "-"
     else
       icon = config.folder_closed or "+"
