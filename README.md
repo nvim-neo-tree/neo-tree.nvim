@@ -261,13 +261,24 @@ working directory, you will be prompted to change the cwd.
 #### Show
 
 ```
-:NeoTreeShow 
+:NeoTreeShowInSplit
 ```
 ```
-:NeoTreeShowToggle
+:NeoTreeShowInSplitToggle
 ```
 This will show the tree within the current window. If you have used the tree
 within this window previously, you will resume that session.
+
+### Netrw Hijack
+
+```
+:edit .
+:[v]split .
+```
+
+If `"filesystem.window.position"` is set to `"split"`, or if you have specified
+`filesystem.netrw_hijack_behavior = "open_split"`, then any command
+that would open a directory will open neo-tree in the specified window.
 
 
 ## Sources
