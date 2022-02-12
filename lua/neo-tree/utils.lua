@@ -33,7 +33,6 @@ M.debounce_strategy = {
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
 ---@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
----@param callback function Called with the result of executing fn as: callback(success, result)
 M.debounce = function(id, fn, frequency_in_ms, strategy)
   local fn_data = tracked_functions[id]
 

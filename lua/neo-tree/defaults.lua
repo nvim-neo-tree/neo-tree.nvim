@@ -5,6 +5,7 @@ local config = {
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   close_floats_on_escape_key = true,
   enable_git_status = true,
   enable_diagnostics = true,
