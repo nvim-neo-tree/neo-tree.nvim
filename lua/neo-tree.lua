@@ -239,7 +239,6 @@ M.reveal_current_file = function(source_name, toggle_if_open, force_cwd)
       return
     end
   end
-  print("Revealing current file, force_cwd: " .. tostring(force_cwd))
   manager.reveal_current_file(source_name, nil, force_cwd)
 end
 
@@ -397,6 +396,22 @@ M.win_enter_event = function()
   if utils.is_floating(win_id) then
     return
   end
+
+  if M.config.close_if_last_window then
+    local tabnr = vim.api.nvim_get_current_tabpage()
+    local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
+    local prior_exists = utils.truthy(wins)
+    local win_count = #vim.api.nvim_tabpage_list_wins(tabnr)
+    log.trace("checking if last window")
+    log.trace("prior window is ", prior_exists)
+    log.trace("win_count: ", win_count)
+    if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
+      log.trace("last window, closing")
+      vim.api.nvim_win_close(0, true)
+      return
+    end
+  end
+
   if vim.o.filetype == "neo-tree" then
     -- it's a neo-tree window, ignore
     return
@@ -572,7 +587,7 @@ M.setup = function(config, is_auto_config)
     handler = M.win_enter_event,
     id = "neo-tree-win-enter",
   }
-  if config.open_files_in_last_window then
+  if config.open_files_in_last_window or config.close_if_last_window then
     events.subscribe(event_handler)
   else
     events.unsubscribe(event_handler)
