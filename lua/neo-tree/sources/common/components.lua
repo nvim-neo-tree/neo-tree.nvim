@@ -147,7 +147,7 @@ M.name = function(config, node, state)
     end
   end
   return {
-    text = node.name,
+    text = text,
     highlight = highlight,
   }
 end
