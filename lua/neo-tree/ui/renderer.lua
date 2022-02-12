@@ -363,33 +363,6 @@ create_tree = function(state)
   })
 end
 
-local auto_close_floats_is_set = false
-
-local enable_auto_close_floats = function()
-  if auto_close_floats_is_set then
-    log.trace("Auto close floats is already set.")
-    return
-  end
-  local event_handler = {
-    event = events.VIM_WIN_ENTER,
-    handler = function()
-      local win_id = vim.api.nvim_get_current_win()
-      local cfg = vim.api.nvim_win_get_config(win_id)
-      if cfg.relative > "" or cfg.external then
-        -- floating window, ignore
-        log.trace("Ignoring floating window", cfg)
-        return
-      end
-      log.trace("Closing all floating windows")
-      require("neo-tree").close_all("float")
-    end,
-    id = "neo-tree-auto-close-floats",
-  }
-  log.trace("Enabling auto close floats")
-  events.subscribe(event_handler)
-  auto_close_floats_is_set = true
-end
-
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
@@ -445,7 +418,6 @@ create_window = function(state)
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
-    enable_auto_close_floats()
   elseif state.current_position == "split" then
     local winid = vim.api.nvim_get_current_win()
     local bufnr = vim.fn.bufnr(bufname)

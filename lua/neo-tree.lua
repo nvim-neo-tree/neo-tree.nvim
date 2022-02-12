@@ -397,6 +397,9 @@ M.win_enter_event = function()
     return
   end
 
+  -- if the new win is not a floating window, make sure all neo-tree floats are closed
+  require("neo-tree").close_all("float")
+
   if M.config.close_if_last_window then
     local tabnr = vim.api.nvim_get_current_tabpage()
     local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
@@ -407,7 +410,7 @@ M.win_enter_event = function()
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
       log.trace("last window, closing")
-      vim.api.nvim_win_close(0, true)
+      vim.cmd("q!")
       return
     end
   end
@@ -582,17 +585,11 @@ M.setup = function(config, is_auto_config)
     manager.redraw(source_name)
   end
 
-  local event_handler = {
+  events.subscribe({
     event = events.VIM_WIN_ENTER,
     handler = M.win_enter_event,
     id = "neo-tree-win-enter",
-  }
-  if config.open_files_in_last_window or config.close_if_last_window then
-    events.subscribe(event_handler)
-  else
-    events.unsubscribe(event_handler)
-    config.prior_windows = nil
-  end
+  })
 
   if not is_auto_config and get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
