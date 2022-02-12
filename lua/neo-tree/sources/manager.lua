@@ -366,7 +366,7 @@ M.refresh = function(source_name, callback)
   end)
 end
 
-M.reveal_current_file = function(source_name)
+M.reveal_current_file = function(source_name, callback, force_cwd)
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
   state.current_position = nil
@@ -386,21 +386,25 @@ M.reveal_current_file = function(source_name)
   if cwd == nil then
     cwd = M.get_cwd(state)
   end
-  if not utils.is_subpath(cwd, path) then
+  if force_cwd then
+    if not utils.is_subpath(cwd, path) then
+      state.path, _ = utils.split_path(path)
+    end
+  elseif not utils.is_subpath(cwd, path) then
     cwd, _ = utils.split_path(path)
     inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
       if response == true then
         state.path = cwd
-        M.focus(source_name, path)
+        M.focus(source_name, path, callback)
       else
-        M.focus(source_name)
+        M.focus(source_name, nil, callback)
       end
     end)
     return
   end
   if path then
     if not renderer.focus_node(state, path) then
-      M.focus(source_name, path)
+      M.focus(source_name, path, callback)
     end
   end
 end
@@ -409,6 +413,13 @@ M.reveal_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "split"
   local path_to_reveal = M.get_path_to_reveal()
+  local cwd = state.path
+  if cwd == nil then
+    cwd = M.get_cwd(state)
+  end
+  if not utils.is_subpath(cwd, path_to_reveal) then
+    state.path = utils.split_path(path_to_reveal)[1]
+  end
   M.navigate(state, state.path, path_to_reveal, callback)
 end
 

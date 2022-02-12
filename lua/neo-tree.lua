@@ -227,7 +227,7 @@ M.focus = function(source_name, close_others, toggle_if_open)
   manager.focus(source_name)
 end
 
-M.reveal_current_file = function(source_name, toggle_if_open)
+M.reveal_current_file = function(source_name, toggle_if_open, force_cwd)
   source_name = check_source(source_name)
   if get_position(source_name) == "split" then
     M.reveal_in_split(source_name, toggle_if_open)
@@ -239,7 +239,8 @@ M.reveal_current_file = function(source_name, toggle_if_open)
       return
     end
   end
-  manager.reveal_current_file(source_name)
+  print("Revealing current file, force_cwd: " .. tostring(force_cwd))
+  manager.reveal_current_file(source_name, nil, force_cwd)
 end
 
 M.reveal_in_split = function(source_name, toggle_if_open)

@@ -73,6 +73,7 @@ use {
           icon = {
             folder_closed = "",
             folder_open = "",
+            folder_empty = "ﰊ",
             default = "*",
           },
           name = {
@@ -206,7 +207,8 @@ Here are the various ways to open the tree as a sidebar or float:
 ``` 
 This will find the current file in the tree and focus it. If the current file
 is not within the current working directory, you will be prompted to change the
-cwd.
+cwd. Add `!` to the command to force it to change the working directory without
+prompting.
 
 ```
 :NeoTreeFocus 

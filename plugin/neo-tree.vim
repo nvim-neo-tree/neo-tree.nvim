@@ -7,14 +7,14 @@ command! -nargs=? NeoTreeClose         lua require("neo-tree").close_all("<args>
 command! -nargs=? NeoTreeFloat         lua require("neo-tree").float("<args>")
 command! -nargs=? NeoTreeFocus         lua require("neo-tree").focus("<args>")
 command! -nargs=? NeoTreeShow          lua require("neo-tree").show("<args>", true)
-command!          NeoTreeReveal        lua require("neo-tree").reveal_current_file("filesystem", false) 
+command! -bang    NeoTreeReveal        lua require("neo-tree").reveal_current_file("filesystem", false, "<bang>" == "!") 
 command!          NeoTreeRevealInSplit lua require("neo-tree").reveal_in_split("filesystem", false)
 command!          NeoTreeShowInSplit   lua require("neo-tree").show_in_split("filesystem", false)
 
 command! -nargs=? NeoTreeFloatToggle   lua require("neo-tree").float("<args>", true)
 command! -nargs=? NeoTreeFocusToggle   lua require("neo-tree").focus("<args>", true, true)
 command! -nargs=? NeoTreeShowToggle    lua require("neo-tree").show("<args>", true, true, true)
-command!    NeoTreeRevealToggle        lua require("neo-tree").reveal_current_file("filesystem", true)
+command! -bang    NeoTreeRevealToggle  lua require("neo-tree").reveal_current_file("filesystem", true, "<bang>" == "!")
 command!    NeoTreeRevealInSplitToggle lua require("neo-tree").reveal_in_split("filesystem", true)
 command!    NeoTreeShowInSplitToggle   lua require("neo-tree").show_in_split("filesystem", true)
 
