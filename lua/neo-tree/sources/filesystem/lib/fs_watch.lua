@@ -31,6 +31,11 @@ end
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
 M.watch_folder = function(path)
+  if path:find("/%.git$") or path:find("/%.git/") then
+    -- git folders seem to throw off fs events constantly.
+    log.debug("watch_folder(path): Skipping git folder: ", path)
+    return
+  end
   local h = watched[path]
   if h == nil then
     log.trace("Starting new fs watch on: ", path)
