@@ -23,8 +23,23 @@ local function clear_buffer(path)
   end
 end
 
-local get_unused_name
+local function create_all_parents(path)
+  local create_all_as_folders
+  function create_all_as_folders(in_path)
+    if not loop.fs_stat(in_path) then
+      local parent, _ = utils.split_path(in_path)
+      if parent then
+        create_all_as_folders(parent)
+      end
+      loop.fs_mkdir(in_path, 493)
+    end
+  end
 
+  local parent_path, _ = utils.split_path(path)
+  create_all_as_folders(parent_path)
+end
+
+local get_unused_name
 function get_unused_name(destination, name_chosen_callback)
   if loop.fs_stat(destination) then
     local parent_path, name = utils.split_path(destination)
@@ -92,10 +107,10 @@ M.create_node = function(in_directory, callback)
       return
     end
 
+    create_all_parents(destination)
     if vim.endswith(destination, "/") then
       loop.fs_mkdir(destination, 493)
     else
-      --create_dirs_if_needed(parent_path)
       local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
       local fd = loop.fs_open(destination, "w", open_mode)
       if not fd then

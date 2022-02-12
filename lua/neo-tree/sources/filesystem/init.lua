@@ -206,6 +206,10 @@ M.show_new_children = function(state, node_or_path)
     if node == nil then
       local parent_path, _ = utils.split_path(node_or_path)
       node = state.tree:get_node(parent_path)
+      if node == nil then
+        M.navigate(state, nil, node_or_path)
+        return
+      end
     end
   else
     node = node_or_path

@@ -151,12 +151,15 @@ end
 
 ---Open file or directory
 ---@param state table The state of the source
----@param open_cmd string The vimcommand to use to open the file
+---@param open_cmd string The vim command to use to open the file
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 local open_with_cmd = function(state, open_cmd, toggle_directory)
   local tree = state.tree
   local node = tree:get_node()
+  if not node then
+    return
+  end
   if node.type == "directory" then
     if toggle_directory then
       toggle_directory(node)
