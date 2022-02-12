@@ -173,8 +173,8 @@ M.reset_search = function(state, refresh, open_current_node)
   state.open_folders_before_search = nil
   if refresh then
     if open_current_node then
-      local node = state.tree:get_node()
-      if node then
+      local success, node = pcall(state.tree.get_node, state.tree)
+      if success and node then
         local path = node:get_id()
         state.position.set(path)
         if node.type == "directory" then

@@ -413,11 +413,15 @@ M.reveal_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "split"
   local path_to_reveal = M.get_path_to_reveal()
+  if not path_to_reveal then
+    M.navigate(state, nil, nil, callback)
+    return
+  end
   local cwd = state.path
   if cwd == nil then
     cwd = M.get_cwd(state)
   end
-  if not utils.is_subpath(cwd, path_to_reveal) then
+  if cwd and not utils.is_subpath(cwd, path_to_reveal) then
     state.path = utils.split_path(path_to_reveal)[1]
   end
   M.navigate(state, state.path, path_to_reveal, callback)
