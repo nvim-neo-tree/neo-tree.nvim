@@ -109,7 +109,7 @@ M.follow = function(callback, force_show)
 end
 
 M._navigate_internal = function(state, path, path_to_reveal, callback)
-  log.trace("navigate_internal", path, path_to_reveal)
+  log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
   local path_changed = false
   if path == nil then
@@ -133,7 +133,11 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
     local is_search = utils.truthy(state.search_pattern)
-    local follow_file = not is_search and state.follow_current_file and manager.get_path_to_reveal()
+    local is_split = state.current_position == "split"
+    local follow_file = state.follow_current_file
+      and not is_search
+      and not is_split
+      and manager.get_path_to_reveal()
     local handled = false
     if utils.truthy(follow_file) then
       handled = follow_internal(callback, true)
