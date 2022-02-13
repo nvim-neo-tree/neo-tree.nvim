@@ -147,11 +147,11 @@ local hijack_netrw = function()
   utils.debounce("hijack_netrw_" .. winid, function()
     local state
     if should_open_split then
-      log.info("hijack_netrw: opening split")
+      log.debug("hijack_netrw: opening split")
       state = manager.get_state("filesystem", nil, winid)
       state.current_position = "split"
     else
-      log.info("hijack_netrw: opening default")
+      log.debug("hijack_netrw: opening default")
       M.close_all_except("filesystem")
       state = manager.get_state("filesystem")
     end
