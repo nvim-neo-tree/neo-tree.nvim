@@ -16,10 +16,22 @@ local log = require("neo-tree.log")
 local M = {}
 
 local function clear_buffer(path)
-  for _, buf in pairs(api.nvim_list_bufs()) do
-    if api.nvim_buf_get_name(buf) == path then
-      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  local buf = utils.find_buffer_by_name(path)
+  local alt = vim.fn.bufnr("#")
+  -- Check all windows to see if they are using the buffer
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(win) == buf then
+      -- if there is no alternate buffer yet, create a blank one now
+      if alt < 1 or alt == buf then
+        alt = vim.api.nvim_create_buf(true, false)
+      end
+      -- replace the buffer displayed in this window with the alternate buffer
+      vim.api.nvim_win_set_buf(win, alt)
     end
+  end
+  local success, msg = pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  if not success then
+    log.error("Could not clear buffer: ", msg)
   end
 end
 
@@ -184,11 +196,11 @@ M.delete_node = function(path, callback)
             return false
           end
         else
-          clear_buffer(child_path)
           local success = loop.fs_unlink(child_path)
           if not success then
             return false
           end
+          clear_buffer(child_path)
         end
       end
       return loop.fs_rmdir(dir_path)

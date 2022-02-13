@@ -409,9 +409,13 @@ M.win_enter_event = function()
     log.trace("prior window is ", prior_exists)
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
-      log.trace("last window, closing")
-      vim.cmd("q!")
-      return
+      local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
+      if position ~= "split" then
+        -- close_if_last_window just doesn't make sense for a split style
+        log.trace("last window, closing")
+        vim.cmd("q!")
+        return
+      end
     end
   end
 
