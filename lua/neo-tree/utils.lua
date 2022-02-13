@@ -98,6 +98,16 @@ M.debounce = function(id, fn, frequency_in_ms, strategy)
   end
 end
 
+M.find_buffer_by_name = function(name)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local buf_name = vim.api.nvim_buf_get_name(buf)
+    if buf_name == name then
+      return buf
+    end
+  end
+  return -1
+end
+
 ---Gets diagnostic severity counts for all files
 ---@return table table { file_path = { Error = int, Warning = int, Information = int, Hint = int, Unknown = int } }
 M.get_diagnostic_counts = function()
@@ -207,6 +217,14 @@ end
 ---@param open_cmd string The vimcommand to use to open the file
 M.open_file = function(state, path, open_cmd)
   open_cmd = open_cmd or "edit"
+  if open_cmd == "edit" then
+    -- If the file is already open, switch to it.
+    local bufnr = M.find_buffer_by_name(path)
+    if bufnr > 0 then
+      open_cmd = "b"
+    end
+  end
+
   if M.truthy(path) then
     local events = require("neo-tree.events")
     local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
