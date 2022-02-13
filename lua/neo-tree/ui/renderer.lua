@@ -26,7 +26,7 @@ M.close = function(state)
         window_existed = true
         if state.current_position == "split" then
           -- we are going to hide the buffer instead of closing the window
-          state.position.save()
+          M.position.save(state)
           local new_buf = vim.fn.bufnr("#")
           if new_buf < 1 then
             new_buf = vim.api.nvim_create_buf(true, false)
@@ -171,6 +171,7 @@ end
 ---otherwise.
 M.focus_node = function(state, id, do_not_focus_window, relative_movement, bottom_scroll_padding)
   if not id and not relative_movement then
+    log.debug("focus_node called with no id and no relative movement")
     return nil
   end
   relative_movement = relative_movement or 0
@@ -178,19 +179,23 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
 
   local tree = state.tree
   if not tree then
+    log.debug("focus_node called with no tree")
     return false
   end
   local node = tree:get_node(id)
   if not node then
+    log.debug("focus_node cannot find node with id ", id)
     return false
   end
   id = node:get_id() -- in case nil was passed in for id, meaning current node
 
   local bufnr = utils.get_value(state, "bufnr", 0, true)
   if bufnr == 0 then
+    log.debug("focus_node: state has no bufnr ", state.bufnr, " / ", state.winid)
     return false
   end
   if not vim.api.nvim_buf_is_valid(bufnr) then
+    log.debug("focus_node: bufnr is not valid")
     return false
   end
   local lines = vim.api.nvim_buf_line_count(state.bufnr)
@@ -241,11 +246,13 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
           end
           return success
         else
+          log.debug("focus_node: window does not exist")
           return false
         end
       end
     else
       --must be out of nodes
+      log.debug("focus_node: node not found")
       return false
     end
   end
@@ -311,6 +318,43 @@ M.collapse_all_nodes = function(tree)
   local root = tree:get_nodes()[1]
   root:expand()
 end
+
+---Functions to save and restore the focused node.
+M.position = {
+  save = function(state)
+    if state.tree and M.window_exists(state) then
+      local node = state.tree:get_node()
+      if node then
+        state.position.node_id = node:get_id()
+      end
+    end
+    -- Only need to restore the cursor state once per save, comes
+    -- into play when some actions fire multiple times per "iteration"
+    -- within the scope of where we need to perform the restore operation
+    state.position.is.restorable = true
+  end,
+  set = function(state, node_id)
+    if not type(node_id) == "string" and node_id > "" then
+      return
+    end
+    state.position.node_id = node_id
+    state.position.is.restorable = true
+  end,
+  restore = function(state)
+    if not state.position.node_id then
+      log.debug("No node_id to restore to")
+      return
+    end
+    if state.position.is.restorable then
+      log.debug("Restoring position to node_id: " .. state.position.node_id)
+      M.focus_node(state, state.position.node_id, true)
+    else
+      log.debug("Position is not restorable")
+    end
+    state.position.is.restorable = false
+  end,
+  is = { restorable = true },
+}
 
 ---Visits all nodes in the tree and returns a list of all nodes that match the
 ---given predicate.
@@ -414,6 +458,7 @@ create_window = function(state)
     end, { once = true })
     state.winid = win.winid
     state.bufnr = win.bufnr
+    log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
 
     -- why is this necessary?
@@ -449,7 +494,7 @@ create_window = function(state)
 
   if win == nil then
     autocmd.buf.define(state.bufnr, "WinLeave", function()
-      state.position.save()
+      M.position.save(state)
     end)
   else
     -- Used to track the position of the cursor within the tree as it gains and loses focus
@@ -459,7 +504,7 @@ create_window = function(state)
     -- to mention that it would be too late to register `WinEnter` here for the first
     -- iteration of that event on the tree window)
     win:on({ "WinLeave" }, function()
-      state.position.save()
+      M.position.save(state)
     end)
 
     win:on({ "BufDelete" }, function()
@@ -589,7 +634,7 @@ draw = function(nodes, state, parent_id)
 
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
-  state.position.restore()
+  M.position.restore(state)
 end
 
 ---Shows the given items as a tree.

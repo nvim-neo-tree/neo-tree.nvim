@@ -123,7 +123,13 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
   end
 
   if path_to_reveal then
-    state.position.set(path_to_reveal)
+    renderer.position.set(state, path_to_reveal)
+    log.debug(
+      "navigate_internal: in path_to_reveal, state.position is ",
+      state.position.node_id,
+      ", restorable = ",
+      state.position.is.restorable
+    )
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
     local is_search = utils.truthy(state.search_pattern)
@@ -133,7 +139,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
       handled = follow_internal(callback, true)
     end
     if not handled then
-      local success, msg = pcall(state.position.save)
+      local success, msg = pcall(renderer.position.save, state)
       if success then
         log.trace("navigate_internal: position saved")
       else
@@ -176,7 +182,7 @@ M.reset_search = function(state, refresh, open_current_node)
       local success, node = pcall(state.tree.get_node, state.tree)
       if success and node then
         local path = node:get_id()
-        state.position.set(path)
+        renderer.position.set(state, path)
         if node.type == "directory" then
           log.trace("opening directory from search: ", path)
           M.navigate(state, nil, path, function()
