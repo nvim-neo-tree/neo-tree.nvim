@@ -18,7 +18,7 @@ local M = {}
 local function clear_buffer(path)
   for _, buf in pairs(api.nvim_list_bufs()) do
     if api.nvim_buf_get_name(buf) == path then
-      api.nvim_command(":bwipeout! " .. buf)
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
     end
   end
 end
