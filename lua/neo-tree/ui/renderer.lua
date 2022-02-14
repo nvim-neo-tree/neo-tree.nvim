@@ -234,15 +234,21 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
 
             -- make sure we are not scrolled down if it can all fit on the screen
             local win_height = vim.api.nvim_win_get_height(state.winid)
-            if linenr > (win_height - bottom_scroll_padding) then
-              execute_win_command("normal! zz")
+            local expected_bottom_line = math.min(lines, linenr + 5) + bottom_scroll_padding
+            if expected_bottom_line > win_height then
+              execute_win_command("normal! zb")
+              local top = vim.fn.line("w0", state.winid)
+              local bottom = vim.fn.line("w$", state.winid)
+              local offset_top = top + (expected_bottom_line - bottom)
+              execute_win_command("normal! " .. offset_top .. "zt")
+              pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
             elseif win_height > linenr then
               execute_win_command("normal! zb")
             elseif linenr < (win_height / 2) then
               execute_win_command("normal! zz")
             end
           else
-            log.warn("Failed to set cursor: " .. err)
+            log.debug("Failed to set cursor: " .. err)
           end
           return success
         else
