@@ -17,6 +17,9 @@ local M = {}
 
 local function clear_buffer(path)
   local buf = utils.find_buffer_by_name(path)
+  if buf < 1 then
+    return
+  end
   local alt = vim.fn.bufnr("#")
   -- Check all windows to see if they are using the buffer
   for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -52,10 +55,11 @@ local function create_all_parents(path)
 end
 
 local get_unused_name
-function get_unused_name(destination, name_chosen_callback)
+function get_unused_name(destination, name_chosen_callback, first_message)
   if loop.fs_stat(destination) then
     local parent_path, name = utils.split_path(destination)
-    inputs.input(name .. " already exists. Please enter a new name: ", name, function(new_name)
+    local message = first_message or name .. " already exists. Please enter a new name: "
+    inputs.input(message, name, function(new_name)
       if new_name and string.len(new_name) > 0 then
         local new_path = parent_path .. utils.path_separator .. new_name
         get_unused_name(new_path, name_chosen_callback)
@@ -67,7 +71,9 @@ function get_unused_name(destination, name_chosen_callback)
 end
 -- Move Node
 M.move_node = function(source, destination, callback)
-  get_unused_name(destination, function(dest)
+  local parent_path, name = utils.split_path(source)
+  get_unused_name(destination or source, function(dest)
+    create_all_parents(dest)
     loop.fs_rename(source, dest, function(err)
       if err then
         log.error("Could not move the files")
@@ -83,18 +89,17 @@ M.move_node = function(source, destination, callback)
         end
       end)
     end)
-  end)
+  end, 'Move "' .. name .. '" to:')
 end
 
 -- Copy Node
 M.copy_node = function(source, _destination, callback)
-  get_unused_name(_destination, function(destination)
-    loop.fs_copyfile(source, destination)
-    local handle
-    handle = loop.spawn("cp", { args = { "-r", source, destination } }, function(code)
-      handle:close()
-      if code ~= 0 then
-        log.error("copy failed")
+  local parent_path, name = utils.split_path(source)
+  get_unused_name(_destination or source, function(destination)
+    create_all_parents(destination)
+    loop.fs_copyfile(source, destination, function(err)
+      if err then
+        log.error("Could not copy the files")
         return
       end
       vim.schedule(function()
@@ -104,7 +109,7 @@ M.copy_node = function(source, _destination, callback)
         end
       end)
     end)
-  end)
+  end, 'Copy "' .. name .. '" to:')
 end
 
 -- Create Node

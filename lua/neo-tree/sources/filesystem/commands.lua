@@ -22,6 +22,10 @@ M.close_all_nodes = cc.close_all_nodes
 M.close_node = cc.close_node
 M.close_window = cc.close_window
 
+M.copy = function(state)
+  cc.copy(state, refresh)
+end
+
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, redraw)
@@ -30,6 +34,10 @@ end
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, redraw)
+end
+
+M.move = function(state)
+  cc.move(state, refresh)
 end
 
 M.show_debug_info = cc.show_debug_info

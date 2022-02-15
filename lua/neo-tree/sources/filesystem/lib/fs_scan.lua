@@ -35,12 +35,14 @@ local function do_scan(context, path_to_scan)
     on_exit = vim.schedule_wrap(function()
       if state.use_libuv_file_watcher then
         local root = context.folders[path_to_scan]
-        if root.is_link then
-          log.trace("Adding fs watcher for ", root.link_to)
-          fs_watch.watch_folder(root.link_to)
-        else
-          log.trace("Adding fs watcher for ", root.path)
-          fs_watch.watch_folder(root.path)
+        if root then
+          if root.is_link then
+            log.trace("Adding fs watcher for ", root.link_to)
+            fs_watch.watch_folder(root.link_to)
+          else
+            log.trace("Adding fs watcher for ", root.path)
+            fs_watch.watch_folder(root.path)
+          end
         end
       end
       local scanned_folder = folders[path_to_scan]

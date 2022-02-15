@@ -142,6 +142,22 @@ M.paste_from_clipboard = function(state, callback)
   end
 end
 
+---Copies a node to a new location, using typed input.
+---@param state table The state of the source
+---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+M.copy = function(state, callback)
+  local node = state.tree:get_node()
+  fs_actions.copy_node(node.path, nil, callback)
+end
+
+---Moves a node to a new location, using typed input.
+---@param state table The state of the source
+---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+M.move = function(state, callback)
+  local node = state.tree:get_node()
+  fs_actions.move_node(node.path, nil, callback)
+end
+
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()

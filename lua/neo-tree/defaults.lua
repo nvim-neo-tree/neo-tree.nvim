@@ -118,6 +118,9 @@ local config = {
         ["c"] = "copy_to_clipboard",
         ["x"] = "cut_to_clipboard",
         ["p"] = "paste_from_clipboard",
+        ["y"] = "copy", -- takes text input for destination
+        ["m"] = "move", -- takes text input for destination
+        ["q"] = "close_window",
       },
     },
     --find_command = "fd",
