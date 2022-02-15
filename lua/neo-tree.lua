@@ -406,9 +406,12 @@ M.win_enter_event = function()
     local tabnr = vim.api.nvim_get_current_tabpage()
     local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
     local prior_exists = utils.truthy(wins)
-    local win_count = #vim.api.nvim_tabpage_list_wins(tabnr)
+    local non_floating_wins = vim.tbl_filter(function(win)
+      return not utils.is_floating(win)
+    end, vim.api.nvim_tabpage_list_wins(tabnr))
+    local win_count = #non_floating_wins
     log.trace("checking if last window")
-    log.trace("prior window is ", prior_exists)
+    log.trace("prior window exists = ", prior_exists)
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
       local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
