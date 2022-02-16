@@ -18,14 +18,16 @@ local function do_scan(context, path_to_scan)
   local paths_to_load = context.paths_to_load
   local folders = context.folders
   local filters = state.filters or {}
+  local use_gitignore_table = filters.respect_gitignore and filters.gitignore_source == "git"
 
   scan.scan_dir_async(path_to_scan, {
     hidden = filters.show_hidden or false,
     search_pattern = state.search_pattern or nil,
+    respect_gitignore = filters.respect_gitignore and filters.gitignore_source == "plenary",
     add_dirs = true,
     depth = 1,
     on_insert = function(path, _type)
-      if not filters.respect_gitignore or not git.is_ignored(state.git_ignored, path, _type) then
+      if not use_gitignore_table or not git.is_ignored(state.git_ignored, path, _type) then
         local success, _ = pcall(file_items.create_item, context, path, _type)
         if not success then
           log.error("error creating item for ", path)
@@ -126,8 +128,8 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
     context.paths_to_load = {}
     if parent_id == nil then
       if utils.truthy(state.force_open_folders) then
-        for _, path in ipairs(state.force_open_folders) do
-          table.insert(context.paths_to_load, path)
+        for _, f in ipairs(state.force_open_folders) do
+          table.insert(context.paths_to_load, f)
         end
       elseif state.tree then
         context.paths_to_load = renderer.get_expanded_nodes(state.tree, state.path)
@@ -148,7 +150,11 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
 
-      state.git_ignored = state.filters.respect_gitignore and git.load_ignored(state.path) or {}
+      if state.filters.respect_gitignore and state.filters.gitignore_source == "git" then
+        state.git_ignored = git.load_ignored(state.path) or {}
+      else
+        state.git_ignored = {}
+      end
     end
     do_scan(context, parent_id or state.path)
   end
