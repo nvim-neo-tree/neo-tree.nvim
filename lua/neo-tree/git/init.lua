@@ -1,5 +1,6 @@
 local Path = require("plenary.path")
 local utils = require("neo-tree.utils")
+local log = require("neo-tree.log")
 
 local os_sep = Path.path.sep
 
@@ -122,6 +123,24 @@ M.status = function(exclude_directories)
   end
 
   return git_status, git_root
+end
+
+M.load_ignored_per_directory = function(path)
+  if type(path) ~= "string" then
+    log.error("load_ignored_per_directory: path must be a string")
+    return {}
+  end
+  path = utils.path_join(path, "*")
+  local cmd = 'git check-ignore "' .. path .. '"'
+  local result = vim.fn.systemlist(cmd)
+  if vim.v.shell_error == 128 then
+    if utils.truthy(result) and vim.startswith(result[1], "fatal: not a git repository") then
+      return {}
+    end
+    log.error("Failed to load ignored files for ", path, ": ", result)
+    return {}
+  end
+  return result
 end
 
 M.load_ignored = function(path)

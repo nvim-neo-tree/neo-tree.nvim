@@ -18,7 +18,7 @@ local function do_scan(context, path_to_scan)
   local paths_to_load = context.paths_to_load
   local folders = context.folders
   local filters = state.filters or {}
-  local use_gitignore_table = filters.respect_gitignore and filters.gitignore_source == "git"
+  local use_gitignore_table = filters.respect_gitignore and utils.truthy(state.git_ignored)
 
   scan.scan_dir_async(path_to_scan, {
     hidden = filters.show_hidden or false,
@@ -150,11 +150,18 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
 
-      if state.filters.respect_gitignore and state.filters.gitignore_source == "git" then
-        state.git_ignored = git.load_ignored(state.path) or {}
-      else
-        state.git_ignored = {}
+      local ignored = {}
+      if state.filters.respect_gitignore then
+        if state.filters.gitignore_source == "git status" then
+          ignored = git.load_ignored(state.path)
+        elseif state.filters.gitignore_source == "git check-ignore" then
+          ignored = git.load_ignored_per_directory(state.path)
+          for _, p in ipairs(context.paths_to_load) do
+            vim.list_extend(ignored, git.load_ignored_per_directory(p))
+          end
+        end
       end
+      state.git_ignored = ignored
     end
     do_scan(context, parent_id or state.path)
   end

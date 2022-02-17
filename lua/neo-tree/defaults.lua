@@ -153,7 +153,7 @@ local config = {
     filters = {
       show_hidden = false,
       respect_gitignore = true,
-      gitignore_source = "git", -- or "plenary", which may be faster in a slow repo but less accurate
+      gitignore_source = "git status", -- or "git check-ignored", which may be faster in some repos
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
     -- The renderer section provides the renderers that will be used to render the tree.
