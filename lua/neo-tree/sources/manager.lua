@@ -203,6 +203,21 @@ M.dir_changed = function(source_name)
     end
   end)
 end
+--
+---Redraws the tree with updated git_status without scanning the filesystem again.
+M.git_status_changed = function(source_name, args)
+  if not type(args) == "table" then
+    error("git_status_changed: args must be a table")
+  end
+  for_each_state(source_name, function(state)
+    if utils.is_subpath(args.git_root, state.path) then
+      state.git_status_lookup = args.git_status
+      if renderer.window_exists(state) then
+        state.tree:render()
+      end
+    end
+  end)
+end
 
 M.get_cwd = function(state)
   local tabnr = state.tabnr

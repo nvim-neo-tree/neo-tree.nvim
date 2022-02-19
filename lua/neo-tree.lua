@@ -66,7 +66,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
-
+  events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
 end
 

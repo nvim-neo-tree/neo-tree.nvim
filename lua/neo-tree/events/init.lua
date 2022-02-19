@@ -15,6 +15,7 @@ local M = {
   FILE_RENAMED = "file_renamed",
   FS_EVENT = "fs_event",
   GIT_EVENT = "git_event",
+  GIT_STATUS_CHANGED = "git_status_changed",
   VIM_BUFFER_ADDED = "vim_buffer_added",
   VIM_BUFFER_CHANGED = "vim_buffer_changed",
   VIM_BUFFER_DELETED = "vim_buffer_deleted",
