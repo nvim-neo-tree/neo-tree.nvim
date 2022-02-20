@@ -5,7 +5,6 @@ local vim = vim
 local utils = require("neo-tree.utils")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
-local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
@@ -111,6 +110,7 @@ end
 M._navigate_internal = function(state, path, path_to_reveal, callback)
   log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
+  local is_search = utils.truthy(state.search_pattern)
   local path_changed = false
   if path == nil then
     log.debug("navigate_internal: path is nil, using cwd")
@@ -132,7 +132,6 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
     )
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
-    local is_search = utils.truthy(state.search_pattern)
     local is_split = state.current_position == "split"
     local follow_file = state.follow_current_file
       and not is_search
@@ -155,6 +154,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
 
   if path_changed and state.bind_to_cwd then
     manager.set_cwd(state)
+  end
+  if not is_search and require("neo-tree").config.git_status_async then
+    git.status_async(state.path)
   end
 end
 
@@ -254,6 +256,11 @@ M.setup = function(config, global_config)
           config.before_render(this_state)
         end
       end,
+    })
+  elseif global_config.git_status_async then
+    manager.subscribe(M.name, {
+      event = events.GIT_STATUS_CHANGED,
+      handler = wrap(manager.git_status_changed),
     })
   elseif global_config.enable_git_status then
     manager.subscribe(M.name, {

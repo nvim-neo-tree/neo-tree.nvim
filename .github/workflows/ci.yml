@@ -17,7 +17,7 @@ jobs:
       uses: JohnnyMorganz/stylua-action@1.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        args: --check lua/
+        args: --glob '*.lua' --glob '!defaults.lua' --check lua 
 
   plenary-tests:
     runs-on: ubuntu-20.04
