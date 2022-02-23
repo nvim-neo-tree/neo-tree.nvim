@@ -162,6 +162,14 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         end
       end
       state.git_ignored = ignored
+    else
+      -- just update the ignored list for this dir if we are using the per dir 'check-ignore' option
+      if
+        state.filters.respect_gitignore and state.filters.gitignore_source == "git check-ignore"
+      then
+        state.git_ignored = state.git_ignored or {}
+        vim.list_extend(state.git_ignored, git.load_ignored_per_directory(parent_id))
+      end
     end
     do_scan(context, parent_id or state.path)
   end

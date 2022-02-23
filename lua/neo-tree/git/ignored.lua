@@ -9,8 +9,8 @@ M.load_ignored_per_directory = function(path)
     log.error("load_ignored_per_directory: path must be a string")
     return {}
   end
-  path = utils.path_join(path, "*")
-  local cmd = 'git check-ignore "' .. path .. '"'
+  path = vim.fn.shellescape(path) .. utils.path_separator .. "*"
+  local cmd = "git check-ignore " .. path
   local result = vim.fn.systemlist(cmd)
   if vim.v.shell_error == 128 then
     if utils.truthy(result) and vim.startswith(result[1], "fatal: not a git repository") then
@@ -18,6 +18,15 @@ M.load_ignored_per_directory = function(path)
     end
     log.error("Failed to load ignored files for ", path, ": ", result)
     return {}
+  end
+
+  --check-ignore does not indicate directories the same as 'status' so we need to
+  --add the trailing slash to the path manually.
+  for i, item in ipairs(result) do
+    local stat = vim.loop.fs_stat(item)
+    if stat and stat.type == "directory" then
+      result[i] = item .. utils.path_separator
+    end
   end
   return result
 end

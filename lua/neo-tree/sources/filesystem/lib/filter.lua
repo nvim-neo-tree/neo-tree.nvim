@@ -25,6 +25,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     vim.api.nvim_win_set_height(winid, row)
     popup_options = popups.popup_options("Enter Filter Pattern:", width, {
       relative = "win",
+      winid = winid,
       position = {
         row = row,
         col = 0,
@@ -36,6 +37,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     local row = height - 3
     popup_options = popups.popup_options("Enter Filter Pattern:", width, {
       relative = "win",
+      winid = winid,
       position = {
         row = row,
         col = 0,
