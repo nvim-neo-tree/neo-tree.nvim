@@ -173,7 +173,7 @@ end
 local open_with_cmd = function(state, open_cmd, toggle_directory)
   local tree = state.tree
   local success, node = pcall(tree.get_node, tree)
-  if not success and node then
+  if not (success and node) then
     log.debug("Could not get node.")
     return
   end
