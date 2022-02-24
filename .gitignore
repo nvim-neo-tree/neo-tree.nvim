@@ -41,6 +41,3 @@ luac.out
 
 # Vim tag files
 tags
-
-# Scripts used for repo maintenance
-*.sh
