@@ -113,11 +113,11 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
         local len = #value
         local delay = 500
 
-        if len > 5 then
+        if len > 3 then
           delay = 100
-        elseif len > 3 then
-          delay = 200
         elseif len > 2 then
+          delay = 200
+        elseif len > 1 then
           delay = 400
         end
         utils.debounce(
