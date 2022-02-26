@@ -10,4 +10,4 @@ test:
 
 .PHONY: format
 format:
-	stylua ./lua ./tests
+	stylua --glob '*.lua' --glob '!defaults.lua' .
