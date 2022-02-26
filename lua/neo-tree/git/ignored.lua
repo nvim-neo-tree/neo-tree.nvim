@@ -68,7 +68,7 @@ end
 M.is_ignored = function(ignored, path, _type)
   path = _type == "directory" and (path .. sep) or path
   for _, v in ipairs(ignored) do
-    if v:sub(-1) == utils.path_separator then
+    if v:sub(-1) == utils.path_separator or (utils.is_windows and _type == "directory") then
       -- directory ignore
       if vim.startswith(path, v) then
         return true
