@@ -347,13 +347,6 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
----The file system path separator for the current platform.
-M.path_separator = "/"
-M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
-  M.path_separator = "\\"
-end
-
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
