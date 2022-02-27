@@ -120,7 +120,6 @@ M.find_files = function(opts)
     end
   end
 
-  log.info(cmd, args)
   Job
     :new({
       command = cmd,
