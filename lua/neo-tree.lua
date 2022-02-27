@@ -66,6 +66,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200)
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+  events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
 end
@@ -593,6 +594,12 @@ M.setup = function(config, is_auto_config)
     manager.setup(source_name, M.config[source_name], M.config)
     manager.redraw(source_name)
   end
+
+  events.subscribe({
+    event = events.VIM_COLORSCHEME,
+    handler = highlights.setup,
+    id = "neo-tree-highlight",
+  })
 
   events.subscribe({
     event = events.VIM_WIN_ENTER,
