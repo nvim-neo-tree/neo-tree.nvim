@@ -123,6 +123,11 @@ local config = {
         ["q"] = "close_window",
       },
     },
+    find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
+                                      -- `true` will change the filter into a full path
+                                      -- search with space as an implicit ".*", so 
+                                      -- `fi init`
+                                      -- will match: `./sources/filesystem/init.lua
     --find_command = "fd",
     --find_args = {  -- you can specify extra args to pass to the find command.
     --  "--exclude", ".git",

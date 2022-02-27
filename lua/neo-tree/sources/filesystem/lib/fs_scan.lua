@@ -112,6 +112,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       path = root.path,
       term = state.search_pattern,
       find_args = state.find_args,
+      --find_by_full_path_words = state.find_by_full_path_words,
       on_insert = function(err, path)
         if err and #err > 0 then
           log.error(err, path)
