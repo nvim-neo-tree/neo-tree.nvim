@@ -586,7 +586,7 @@ Fired on the |DirChanged| autocmd event
 Fired on the |WinEnter| autocmd event
 
 "vim_colorscheme"
-Fired on the ColorScheme autocmd event
+Fired on the |ColorScheme| autocmd event
 
 
 You can also define your own with:
