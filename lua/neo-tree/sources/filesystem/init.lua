@@ -333,8 +333,10 @@ M.toggle_directory = function(state, node)
   end
   state.explicitly_opened_directories = state.explicitly_opened_directories or {}
   if node.loaded == false then
-    state.explicitly_opened_directories[node:get_id()] = true
-    fs_scan.get_items_async(state, node.id, true)
+    local id = node:get_id()
+    state.explicitly_opened_directories[id] = true
+    renderer.position.set(state, nil)
+    fs_scan.get_items_async(state, id, true)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
