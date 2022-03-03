@@ -499,8 +499,8 @@ NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
-NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
-                          is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeTitleBar           Used for the title bar of pop-ups. This is derived from
+                          NeoTreeFloatBorder.
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
 
@@ -761,9 +761,8 @@ plugins.
 
 They can also be configured by setting the `popup_border_style` in your config,
 and the colors of that border are controlled by the `NeoTreeFloatBorder`
-highlight group. If you you use the special `NC` option for
-`popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
-highlight group.
+highlight group. The title bar of that popup uses the `NeoTreeTitleBar` highlight
+group.
 
 
 ================================================================================
