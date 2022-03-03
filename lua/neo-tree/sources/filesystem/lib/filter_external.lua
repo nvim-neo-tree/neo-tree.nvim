@@ -124,24 +124,33 @@ M.find_files = function(opts)
   if fd_supports_max_results then
     maximum_results = nil
   end
+  local item_count = 0
+  local over_limit = false
   Job
     :new({
       command = cmd,
       cwd = path,
       args = args,
       enable_recording = false,
-      maximum_results = maximum_results,
       on_stdout = function(err, line)
-        if opts.on_insert then
-          opts.on_insert(err, line)
+        if not over_limit then
+          if opts.on_insert then
+            opts.on_insert(err, line)
+          end
+          item_count = item_count + 1
+          over_limit = maximum_results and item_count > maximum_results
         end
       end,
       on_stderr = function(err, line)
-        if opts.on_insert then
-          if not err then
-            err = line
+        if not over_limit then
+          if opts.on_insert then
+            if not err then
+              err = line
+            end
+            opts.on_insert(err, line)
           end
-          opts.on_insert(err, line)
+          item_count = item_count + 1
+          over_limit = maximum_results and item_count > maximum_results
         end
       end,
       on_exit = function(_, return_val)
