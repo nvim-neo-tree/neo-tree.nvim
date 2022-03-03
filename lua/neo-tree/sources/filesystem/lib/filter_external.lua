@@ -120,13 +120,17 @@ M.find_files = function(opts)
     end
   end
 
+  local maximum_results = limit or 100
+  if fd_supports_max_results then
+    maximum_results = nil
+  end
   Job
     :new({
       command = cmd,
       cwd = path,
       args = args,
       enable_recording = false,
-      maximum_results = limit or 100,
+      maximum_results = maximum_results,
       on_stdout = function(err, line)
         if opts.on_insert then
           opts.on_insert(err, line)

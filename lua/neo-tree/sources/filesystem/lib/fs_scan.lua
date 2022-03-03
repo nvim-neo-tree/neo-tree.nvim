@@ -114,8 +114,8 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       find_args = state.find_args,
       find_by_full_path_words = state.find_by_full_path_words,
       on_insert = function(err, path)
-        if err and #err > 0 then
-          log.error(err, path)
+        if err then
+          log.debug(err)
         else
           file_items.create_item(context, path)
         end
