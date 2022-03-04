@@ -12,6 +12,7 @@ M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
 M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
+M.FLOAT_TITLE = "NeoTreeFloatTitle"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
 M.GIT_MODIFIED = "NeoTreeGitModified"
@@ -94,6 +95,7 @@ M.setup = function()
     "444444"
   )
 
+  create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
   create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
