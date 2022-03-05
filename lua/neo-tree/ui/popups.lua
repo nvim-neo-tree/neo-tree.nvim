@@ -18,6 +18,7 @@ M.popup_options = function(title, min_width, override_options)
 
   local nt = require("neo-tree")
   local popup_border_style = nt.config.popup_border_style
+  local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
   local popup_options = {
     relative = "cursor",
     position = {
@@ -27,7 +28,7 @@ M.popup_options = function(title, min_width, override_options)
     size = width,
     border = {
       text = {
-        top = NuiText(" " .. title .. " ", highlights.FLOAT_BORDER),
+        top = popup_border_text
       },
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,
@@ -44,11 +45,12 @@ M.popup_options = function(title, min_width, override_options)
 
   if popup_border_style == "NC" then
     local blank = NuiText(" ", highlights.TITLE_BAR)
+    popup_border_text = NuiText(" " .. title .. " ", highlights.TITLE_BAR)
     popup_options.border = {
       style = { "▕", blank, "▏", "▏", " ", "▔", " ", "▕" },
       highlight = highlights.FLOAT_BORDER,
       text = {
-        top = NuiText(" " .. title .. " ", highlights.TITLE_BAR),
+        top = popup_border_text,
         top_align = "left",
       },
     }
