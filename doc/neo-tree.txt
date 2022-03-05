@@ -492,6 +492,11 @@ NeoTreeFileNameOpened     File name when the file is open. Not used yet.
 NeoTreeSymbolicLinkTarget Symbolic link target.
 NeoTreeFilterTerm         The filter term, as displayed in the root node.
 NeoTreeFloatBorder        The border for pop-up windows.
+NeoTreeFloatTitle         Used for the title text of pop-ups when the border-style
+                          is set to another style than "NC". This is derived
+                          from NeoTreeFloatBorder.
+NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
+                          is set to "NC". This is derived from NeoTreeFloatBorder.
 NeoTreeGitAdded           File name when the git status is added.
 NeoTreeGitConflict        File name when the git status is conflict.
 NeoTreeGitModified        File name when the git status is modified.
@@ -499,8 +504,6 @@ NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
-NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
-                          is set to "NC". This is derived from NeoTreeFloatBorder.
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
 
