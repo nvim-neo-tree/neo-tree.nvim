@@ -44,7 +44,7 @@ Example for packer:
 ```lua
 use {
   "nvim-neo-tree/neo-tree.nvim",
-    branch = "v1.x",
+    branch = "v2.x",
     requires = { 
       "nvim-lua/plenary.nvim",
       "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
@@ -86,13 +86,23 @@ use {
           },
         },
         filesystem = {
-          filters = { --These filters are applied to both browsing and searching
-            show_hidden = false,
-            respect_gitignore = true,
+          filtered_items = {
+            visible = false, -- when true, they will just be displayed differently than normal items
+            hide_dotfiles = true,
+            hide_gitignored = true,
+            hide_by_name = {
+              ".DS_Store",
+              "thumbs.db"
+              --"node_modules"
+            },
+            never_show = { -- remains hidden even if visible is toggled to true
+              --".DS_Store",
+              --"thumbs.db"
+            },
           },
-          follow_current_file = false, -- This will find and focus the file in the active buffer every
+          follow_current_file = true, -- This will find and focus the file in the active buffer every
                                        -- time the current file is changed while the tree is open.
-          use_libuv_file_watcher = false, -- This will use the OS level file watchers
+          use_libuv_file_watcher = true, -- This will use the OS level file watchers
                                           -- to detect changes instead of relying on nvim autocmd events.
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                                   -- in whatever position is specified in window.position

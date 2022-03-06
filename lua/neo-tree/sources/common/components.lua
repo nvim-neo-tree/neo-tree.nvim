@@ -79,7 +79,11 @@ M.git_status = function(config, node, state)
   end
   local git_status = git_status_lookup[node.path]
   if not git_status then
-    return {}
+    if node.filtered_by and node.filtered_by.gitignored then
+      git_status = "!!"
+    else
+      return {}
+    end
   end
 
   local highlight = highlights.FILE_NAME
@@ -93,12 +97,37 @@ M.git_status = function(config, node, state)
     highlight = highlights.GIT_MODIFIED
   elseif git_status:match("[ACRT]") then
     highlight = highlights.GIT_ADDED
+  elseif git_status:match("!") then
+    highlight = highlights.GIT_IGNORED
   end
 
   return {
     text = " [" .. git_status .. "]",
     highlight = config.highlight or highlight,
   }
+end
+
+M.filtered_by = function(config, node, state)
+  if type(node.filtered_by) == "table" then
+    local fby = node.filtered_by
+    if fby.name then
+      return {
+        text = " (hide by name)",
+        highlight = highlights.HIDDEN_BY_NAME,
+      }
+    elseif fby.gitignored then
+      return {
+        text = " (gitignored)",
+        highlight = highlights.GIT_IGNORED,
+      }
+    elseif fby.dotfiles then
+      return {
+        text = " (dotfile)",
+        highlight = highlights.DOTFILE,
+      }
+    end
+  end
+  return {}
 end
 
 M.icon = function(config, node, state)
@@ -121,9 +150,12 @@ M.icon = function(config, node, state)
       highlight = hl or highlight
     end
   end
+
+  local filtered_by = M.filtered_by(config, node, state)
+
   return {
     text = icon .. " ",
-    highlight = highlight,
+    highlight = filtered_by.highlight or highlight,
   }
 end
 
@@ -136,6 +168,7 @@ M.name = function(config, node, state)
       text = text .. "/"
     end
   end
+
   if node:get_depth() == 1 then
     highlight = highlights.ROOT_NAME
   else
@@ -146,9 +179,12 @@ M.name = function(config, node, state)
       end
     end
   end
+
+  local filtered_by = M.filtered_by(config, node, state)
+
   return {
     text = text,
-    highlight = highlight,
+    highlight = filtered_by.highlight or highlight,
   }
 end
 
