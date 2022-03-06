@@ -107,6 +107,29 @@ M.git_status = function(config, node, state)
   }
 end
 
+M.filtered_by = function(config, node, state)
+  if type(node.filtered_by) == "table" then
+    local fby = node.filtered_by
+    if fby.name then
+      return {
+        text = " (hide by name)",
+        highlight = highlights.HIDDEN_BY_NAME,
+      }
+    elseif fby.gitignored then
+      return {
+        text = " (gitignored)",
+        highlight = highlights.GIT_IGNORED,
+      }
+    elseif fby.dotfiles then
+      return {
+        text = " (dotfile)",
+        highlight = highlights.DOTFILE,
+      }
+    end
+  end
+  return {}
+end
+
 M.icon = function(config, node, state)
   local icon = config.default or " "
   local highlight = config.highlight or highlights.FILE_ICON
@@ -127,9 +150,12 @@ M.icon = function(config, node, state)
       highlight = hl or highlight
     end
   end
+
+  local filtered_by = M.filtered_by(config, node, state)
+
   return {
     text = icon .. " ",
-    highlight = highlight,
+    highlight = filtered_by.highlight or highlight,
   }
 end
 
@@ -154,20 +180,11 @@ M.name = function(config, node, state)
     end
   end
 
-  if type(node.filtered_by) == "table" then
-    local fby = node.filtered_by
-    if fby.name then
-      highlight = highlights.HIDDEN_BY_NAME
-    elseif fby.dotfiles then
-      highlight = highlights.DOTFILE
-    elseif fby.gitignored then
-      highlight = highlights.GIT_IGNORED
-    end
-  end
+  local filtered_by = M.filtered_by(config, node, state)
 
   return {
     text = text,
-    highlight = highlight,
+    highlight = filtered_by.highlight or highlight,
   }
 end
 

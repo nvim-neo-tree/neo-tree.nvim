@@ -541,7 +541,7 @@ M.setup = function(config, is_auto_config)
     vim.defer_fn(function ()
       vim.cmd("split")
       vim.api.nvim_win_set_buf(0, buf)
-    end, 1000)
+    end, 100)
   end
 
   if config.log_level ~= nil then

@@ -72,13 +72,65 @@ local config = {
     },
   },
   filesystem = {
+    bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
+    -- The renderer section provides the renderers that will be used to render the tree.
+    --   The first level is the node type.
+    --   For each node type, you can specify a list of components to render.
+    --       Components are rendered in the order they are specified.
+    --         The first field in each component is the name of the function to call.
+    --         The rest of the fields are passed to the function as the "config" argument.
+    filtered_items = {
+      visible = false, -- when true, they will just be displayed differently than normal items
+      hide_dotfiles = true,
+      hide_gitignored = true,
+      hide_by_name = {
+        "node_modules"
+      },
+      never_show = {
+        ".DS_Store",
+        "thumbs.db"
+      },
+      gitignore_source = "git check-ignored", -- or "git status", which may be faster in some repos
+    },
+    find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
+                                      -- `true` will change the filter into a full path
+                                      -- search with space as an implicit ".*", so 
+                                      -- `fi init`
+                                      -- will match: `./sources/filesystem/init.lua
+    --find_command = "fd",
+    --find_args = {  -- you can specify extra args to pass to the find command.
+    --  "--exclude", ".git",
+    --  "--exclude",  "node_modules"
+    --},
+    ---- or use a function instead of list of strings
+    --find_args = function(cmd, path, search_term, args)
+    --  if cmd ~= "fd" then
+    --    return args
+    --  end
+    --  --maybe you want to force the filter to always include hidden files:
+    --  table.insert(args, "--hidden")
+    --  -- but no one ever wants to see .git files
+    --  table.insert(args, "--exclude")
+    --  table.insert(args, ".git")
+    --  -- or node_modules
+    --  table.insert(args, "--exclude")
+    --  table.insert(args, "node_modules")
+    --  --here is where it pays to use the function, you can exclude more for
+    --  --short search terms, or vary based on the directory
+    --  if string.len(search_term) < 4 and path == "/home/cseickel" then
+    --    table.insert(args, "--exclude")
+    --    table.insert(args, "Library")
+    --  end
+    --  return args
+    --end,
+    search_limit = 50, -- max number of search results when using filters
+    follow_current_file = false, -- This will find and focus the file in the active buffer every time
+                                 -- the current file is changed while the tree is open.
     hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                             -- in whatever position is specified in window.position
                           -- "open_split",  -- netrw disabled, opening a directory opens within the
                                             -- window like netrw would, regardless of window.position
                           -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
-    follow_current_file = false, -- This will find and focus the file in the active buffer every time
-                                 -- the current file is changed while the tree is open.
     use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect changes
                                     -- instead of relying on nvim autocmd events.
     window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
@@ -123,68 +175,6 @@ local config = {
         ["q"] = "close_window",
       },
     },
-    find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
-                                      -- `true` will change the filter into a full path
-                                      -- search with space as an implicit ".*", so 
-                                      -- `fi init`
-                                      -- will match: `./sources/filesystem/init.lua
-    --find_command = "fd",
-    --find_args = {  -- you can specify extra args to pass to the find command.
-    --  "--exclude", ".git",
-    --  "--exclude",  "node_modules"
-    --},
-    ---- or use a function instead of list of strings
-    --find_args = function(cmd, path, search_term, args)
-    --  if cmd ~= "fd" then
-    --    return args
-    --  end
-    --  --maybe you want to force the filter to always include hidden files:
-    --  table.insert(args, "--hidden")
-    --  -- but no one ever wants to see .git files
-    --  table.insert(args, "--exclude")
-    --  table.insert(args, ".git")
-    --  -- or node_modules
-    --  table.insert(args, "--exclude")
-    --  table.insert(args, "node_modules")
-    --  --here is where it pays to use the function, you can exclude more for
-    --  --short search terms, or vary based on the directory
-    --  if string.len(search_term) < 4 and path == "/home/cseickel" then
-    --    table.insert(args, "--exclude")
-    --    table.insert(args, "Library")
-    --  end
-    --  return args
-    --end,
-    search_limit = 50, -- max number of search results when using filters
-    --filters = {
-    --  show_hidden = false,
-    --  respect_gitignore = true,
-    --  gitignore_source = "git status", -- or "git check-ignored", which may be faster in some repos
-    --  exclude_items = {}, -- List of item names to skip, such as:
-    --                      -- { 'node-module', '.DS_Store' }
-    --  show_filtered = { -- Instead of hiding them completely, show them with a different
-    --    exclude = true, -- highlight group
-    --    gitignore = true,
-    --    hidden = true
-    --},
-    filtered_items = {
-      visible = false, -- if true, they will just be displayed differently than normal items
-      hide_dotfiles = true,
-      hide_gitignored = true,
-      hide_by_name = {
-        "node_modules"
-      },
-      never_show = {
-        ".DS_Store",
-        "thumbs.db"
-      },
-    },
-    bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
-    -- The renderer section provides the renderers that will be used to render the tree.
-    --   The first level is the node type.
-    --   For each node type, you can specify a list of components to render.
-    --       Components are rendered in the order they are specified.
-    --         The first field in each component is the name of the function to call.
-    --         The rest of the fields are passed to the function as the "config" argument.
     renderers = {
       directory = {
         { "indent" },
@@ -217,6 +207,7 @@ local config = {
     },
   },
   buffers = {
+    bind_to_cwd = true,
     window = {
       position = "left",
       width = 40,
@@ -237,7 +228,6 @@ local config = {
         ["bd"] = "buffer_delete",
       },
     },
-    bind_to_cwd = true,
     renderers = {
       directory = {
         { "indent" },

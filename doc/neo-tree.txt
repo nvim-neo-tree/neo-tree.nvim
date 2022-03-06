@@ -10,6 +10,7 @@ Mappings .................... |neo-tree-mappings|
   Filter .................... |neo-tree-filter|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
+  Filtered Items ............ |neo-tree-filtered-items|
   Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
   Git Status ................ |neo-tree-git-status|
@@ -176,14 +177,11 @@ p    = paste_from_clipboard: Copy/move each marked file in the to the
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
-H = toggle_hidden:    Toggle whether hidden files (.*) are shown or not.
+H = toggle_hidden: Toggle whether hidden (filtered items) are shown or not.
 
-I = toggle_gitignore: Toggle whether the gitignore file is
-                      respected.
-
-R = refresh:          Rescan the filesystem and redraw the tree. Changes
-                      made within nvim should be detected automatically, but
-                      this is useful for changes made elsewhere.
+R = refresh:       Rescan the filesystem and redraw the tree. Changes made 
+                   within nvim should be detected automatically, but this is
+                   useful for changes made elsewhere.
 
 
 FILTER                                                        *neo-tree-filter*
@@ -324,7 +322,42 @@ existing global mappings to work.
 Run |NeoTreePasteConfig| to dump the fully commented default config in your
 current file. Even if you don't want to use that config as your starting point,
 you still may want to dump it to a blank .lua file just to read it as
-documentation.
+documentation. SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!
+
+
+FILTERED ITEMS                                         *neo-tree-filtered-items*
+
+The `filesystem` source has a `filtered_items` section in it's config that
+allows you to specify what files and folders should be hidden. By default, any
+item identified by these filters will not be visible, but that visibility can
+be toggled on and off with a command. Each type of filter has a corresponding
+highlight group which will be applied when they are visible, see 
+|neo-tree-highlights| for details. The following options are available:
+
+>
+    require("neo-tree").setup({
+      filesystem = {
+        filtered_items = {
+          visible = false, -- when true, they will just be displayed differently than normal items
+          hide_dotfiles = true,
+          hide_gitignored = true,
+          hide_by_name = {
+            "node_modules"
+          },
+          never_show = {
+            ".DS_Store",
+            "thumbs.db"
+          },
+        },
+      }
+    })
+<
+The `visible` option just defines the default value. This value is toggled by
+the "toggle_hidden" command, which is mapped to H by default.
+
+The `never_show` option is the same as `hide_by_name`, except that those items
+will remain hidden even if you toggle `visible` to true. This section takes
+precedence over the others.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*
@@ -484,25 +517,28 @@ exist, they will be created.
 NeoTreeBufferNumber       The buffer number shown in the buffers source.
 NeoTreeCursorLine         |hi-CursorLine| override in Neo-tree window.
 NeoTreeDimText            Greyed out text used in various places.
-NeoTreeDirectoryName      Directory name.
 NeoTreeDirectoryIcon      Directory icon.
+NeoTreeDirectoryName      Directory name.
+NeoTreeDotfile            Used for icons and names when dotfiles are filtered.
 NeoTreeFileIcon           File icon, when not overriden by devicons.
 NeoTreeFileName           File name, when not overwritten by another status.
 NeoTreeFileNameOpened     File name when the file is open. Not used yet.
-NeoTreeSymbolicLinkTarget Symbolic link target.
 NeoTreeFilterTerm         The filter term, as displayed in the root node.
 NeoTreeFloatBorder        The border for pop-up windows.
 NeoTreeGitAdded           File name when the git status is added.
 NeoTreeGitConflict        File name when the git status is conflict.
+NeoTreeGitIgnored         File name when the git status is ignored.
 NeoTreeGitModified        File name when the git status is modified.
 NeoTreeGitUntracked       File name when the git status is untracked.
+NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
+NeoTreeIndentMarker       The style of indentation markers (guides). By default,
+                          the "Normal" highlight is used.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
+NeoTreeSymbolicLinkTarget Symbolic link target.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
                           is set to "NC". This is derived from NeoTreeFloatBorder.
-NeoTreeIndentMarker       The style of indentation markers (guides). By default,
-                          the "Normal" highlight is used.
 
 
 EVENTS                                                        *neo-tree-events*
