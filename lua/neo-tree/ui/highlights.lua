@@ -4,23 +4,26 @@ local M = {}
 M.BUFFER_NUMBER = "NeoTreeBufferNumber"
 M.CURSOR_LINE = "NeoTreeCursorLine"
 M.DIM_TEXT = "NeoTreeDimText"
-M.DIRECTORY_NAME = "NeoTreeDirectoryName"
 M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
+M.DIRECTORY_NAME = "NeoTreeDirectoryName"
+M.DOTFILE = "NeoTreeDotfile"
 M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
-M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
+M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
+M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
+M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
+M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.TITLE_BAR = "NeoTreeTitleBar"
-M.INDENT_MARKER = "NeoTreeIndentMarker"
 
 local function dec_to_hex(n)
   local hex = string.format("%06x", n)
@@ -111,6 +114,9 @@ M.setup = function()
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  create_highlight_group(M.DOTFILE, {}, nil, "626262")
+  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
+  create_highlight_group(M.HIDDEN_BY_NAME, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
   create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
   create_highlight_group(M.DIRECTORY_ICON, {}, nil, "73cef4")

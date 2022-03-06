@@ -44,7 +44,7 @@ local get_find_command = function(state)
 end
 
 M.find_files = function(opts)
-  local filters = opts.filters
+  local filters = opts.filtered_items
   local limit = opts.limit or 200
   local cmd = get_find_command(opts)
   local path = opts.path
@@ -73,10 +73,10 @@ M.find_files = function(opts)
   end
 
   if cmd == "fd" or cmd == "fdfind" then
-    if filters.show_hidden then
+    if filters.visible or not filters.hide_dotfiles then
       append("--hidden")
     end
-    if not filters.respect_gitignore then
+    if filters.visible or not filters.hide_gitignored then
       append("--no-ignore")
     end
     if full_path_words then
@@ -92,7 +92,7 @@ M.find_files = function(opts)
   elseif cmd == "find" then
     append(path)
     append("-type", "f,d")
-    if not filters.show_hidden then
+    if not filters.visible and filters.hide_dotfiles then
       append("-not", "-path", "*/.*")
     end
     if full_path_words then

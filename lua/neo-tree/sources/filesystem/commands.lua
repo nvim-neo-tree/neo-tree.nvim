@@ -5,6 +5,7 @@ local fs = require("neo-tree.sources.filesystem")
 local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
 local manager = require("neo-tree.sources.manager")
+local log = require("neo-tree.log")
 
 local M = {}
 local refresh = utils.wrap(manager.refresh, "filesystem")
@@ -111,14 +112,15 @@ M.show_debug_info = cc.show_debug_info
 
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
-  state.filters.show_hidden = not state.filters.show_hidden
+  state.filtered_items.visible = not state.filtered_items.visible
+  log.info("Toggling hidden files: " .. tostring(state.filtered_items.visible))
   refresh()
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
 M.toggle_gitignore = function(state)
-  state.filters.respect_gitignore = not state.filters.respect_gitignore
-  refresh()
+  log.warn("`toggle_gitignore` has been removed, running toggle_hidden instead.")
+  M.toggle_hidden(state)
 end
 
 return M

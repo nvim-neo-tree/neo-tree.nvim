@@ -1,6 +1,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local git = require("neo-tree.git")
 
 local function sort_items(a, b)
   if a.type == b.type then
@@ -23,6 +24,7 @@ local create_item, set_parents
 
 function create_item(context, path, _type)
   local parent_path, name = utils.split_path(path)
+
   if _type == nil then
     local stat = vim.loop.fs_stat(path)
     _type = stat and stat.type or "unknown"
@@ -51,6 +53,27 @@ function create_item(context, path, _type)
   else
     item.ext = item.name:match("%.(%w+)$")
   end
+
+  local state = context.state
+  local f = state.filtered_items
+  if f then
+    if f.hide_by_name[name] then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.name = true
+    elseif f.never_show[name] then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.never_show = true
+    elseif f.hide_dotfiles and string.sub(item.name, 1, 1) == "." then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.dotfiles = true
+    elseif f.hide_gitignored and utils.truthy(state.git_ignored) then
+      if git.is_ignored(state.git_ignored, path, _type) then
+        item.filtered_by = item.filtered_by or {}
+        item.filtered_by.gitignored = true
+      end
+    end
+  end
+
   set_parents(context, item)
   return item
 end
@@ -77,6 +100,10 @@ function set_parents(context, item)
   end
   table.insert(parent.children, item)
   context.existing_items[item.id] = true
+
+  if item.filtered_by == nil and type(parent.filtered_by) == "table" then
+    item.filtered_by = vim.deepcopy(parent.filtered_by)
+  end
 end
 
 local create_context = function(state)
