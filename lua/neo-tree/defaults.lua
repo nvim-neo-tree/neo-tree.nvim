@@ -84,11 +84,13 @@ local config = {
       hide_dotfiles = true,
       hide_gitignored = true,
       hide_by_name = {
-        "node_modules"
-      },
-      never_show = {
         ".DS_Store",
         "thumbs.db"
+        --"node_modules"
+      },
+      never_show = { -- remains hidden even if visible is toggled to true
+        --".DS_Store",
+        --"thumbs.db"
       },
       gitignore_source = "git check-ignored", -- or "git status", which may be faster in some repos
     },

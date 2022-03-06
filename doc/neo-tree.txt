@@ -342,11 +342,13 @@ highlight group which will be applied when they are visible, see
           hide_dotfiles = true,
           hide_gitignored = true,
           hide_by_name = {
-            "node_modules"
-          },
-          never_show = {
             ".DS_Store",
             "thumbs.db"
+            --"node_modules"
+          },
+          never_show = { -- remains hidden even if visible is toggled to true
+            --".DS_Store",
+            --"thumbs.db"
           },
         },
       }
