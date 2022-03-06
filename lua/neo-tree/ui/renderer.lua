@@ -75,6 +75,22 @@ M.close_all_floating_windows = function()
   end
 end
 
+local remove_filtered = function(source_items, filtered_items)
+  local filtered = {}
+  for _, child in ipairs(source_items) do
+    local fby = child.filtered_by
+    if type(fby) == "table" then
+      log.info("filtered_by is a table", fby)
+      if filtered_items.visible and not fby.never_show then
+        table.insert(filtered, child)
+      end
+    else
+      table.insert(filtered, child)
+    end
+  end
+  return filtered
+end
+
 local create_nodes
 ---Transforms a list of items into a collection of TreeNodes.
 ---@param source_items table The list of items to transform. The expected
@@ -86,6 +102,7 @@ local create_nodes
 create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
+  source_items = remove_filtered(source_items, state.filtered_items)
 
   for i, item in ipairs(source_items) do
     local is_last_child = i == #source_items
@@ -95,11 +112,12 @@ create_nodes = function(source_items, state, level)
       name = item.name,
       type = item.type,
       loaded = item.loaded,
+      filtered_by = item.filtered_by,
       extra = item.extra,
+      -- TODO: The below properties are not universal and should not be here.
+      -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,
       link_to = item.link_to,
-      -- TODO: The below properties are not universal and should not be here.
-      -- Maybe they should be moved to a a "data" or "extra" field?
       path = item.path,
       ext = item.ext,
       search_pattern = item.search_pattern,
@@ -596,6 +614,7 @@ M.window_exists = function(state)
   end
   return window_exists
 end
+
 
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.

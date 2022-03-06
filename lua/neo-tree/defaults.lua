@@ -155,10 +155,28 @@ local config = {
     --  return args
     --end,
     search_limit = 50, -- max number of search results when using filters
-    filters = {
-      show_hidden = false,
-      respect_gitignore = true,
-      gitignore_source = "git status", -- or "git check-ignored", which may be faster in some repos
+    --filters = {
+    --  show_hidden = false,
+    --  respect_gitignore = true,
+    --  gitignore_source = "git status", -- or "git check-ignored", which may be faster in some repos
+    --  exclude_items = {}, -- List of item names to skip, such as:
+    --                      -- { 'node-module', '.DS_Store' }
+    --  show_filtered = { -- Instead of hiding them completely, show them with a different
+    --    exclude = true, -- highlight group
+    --    gitignore = true,
+    --    hidden = true
+    --},
+    filtered_items = {
+      visible = false, -- if true, they will just be displayed differently than normal items
+      hide_dotfiles = true,
+      hide_gitignored = true,
+      hide_by_name = {
+        "node_modules"
+      },
+      never_show = {
+        ".DS_Store",
+        "thumbs.db"
+      },
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
     -- The renderer section provides the renderers that will be used to render the tree.

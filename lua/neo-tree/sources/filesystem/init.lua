@@ -245,6 +245,10 @@ end
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
+  config.filters = config.filters or {}
+  local exclude = config.filters.exclude_items or {}
+  config.filters.exclude_items = utils.list_to_dict(exclude)
+
   --Configure events for before_render
   if config.before_render then
     --convert to new event system

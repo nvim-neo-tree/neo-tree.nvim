@@ -79,7 +79,11 @@ M.git_status = function(config, node, state)
   end
   local git_status = git_status_lookup[node.path]
   if not git_status then
-    return {}
+    if node.filtered_by and node.filtered_by.gitignored then
+      git_status = "!!"
+    else
+      return {}
+    end
   end
 
   local highlight = highlights.FILE_NAME
@@ -93,6 +97,8 @@ M.git_status = function(config, node, state)
     highlight = highlights.GIT_MODIFIED
   elseif git_status:match("[ACRT]") then
     highlight = highlights.GIT_ADDED
+  elseif git_status:match("!") then
+    highlight = highlights.GIT_IGNORED
   end
 
   return {
@@ -136,6 +142,7 @@ M.name = function(config, node, state)
       text = text .. "/"
     end
   end
+
   if node:get_depth() == 1 then
     highlight = highlights.ROOT_NAME
   else
@@ -146,6 +153,18 @@ M.name = function(config, node, state)
       end
     end
   end
+
+  if type(node.filtered_by) == "table" then
+    local fby = node.filtered_by
+    if fby.name then
+      highlight = highlights.HIDDEN_BY_NAME
+    elseif fby.dotfiles then
+      highlight = highlights.DOTFILE
+    elseif fby.gitignored then
+      highlight = highlights.GIT_IGNORED
+    end
+  end
+
   return {
     text = text,
     highlight = highlight,

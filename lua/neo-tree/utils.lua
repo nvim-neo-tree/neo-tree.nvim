@@ -240,6 +240,22 @@ M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   end
 end
 
+---Sets a value at a path in a table, creating any missing tables along the way.
+---@param sourceObject table The table to set a value in.
+---@param valuePath string The path to the value to set.
+---@param value any The value to set.
+M.set_value = function (sourceObject, valuePath, value)
+  local pathParts = M.split(valuePath, ".")
+  local currentTable = sourceObject
+  for i, part in ipairs(pathParts) do
+    if i == #pathParts then
+      currentTable[part] = value
+    else
+      currentTable = currentTable[part]
+    end
+  end
+end
+  
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
@@ -247,6 +263,23 @@ M.is_floating = function(win_id)
     return true
   end
   return false
+end
+
+---Creates a new table from an array with the array items as keys. If a dict like
+---table is passed in, those keys will be copied to a new table.
+---@param tbl table The table to copy items from.
+---@return table table A new dictionary style table.
+M.list_to_dict = function(tbl)
+  local dict = {}
+  -- leave the existing keys
+  for key,val in pairs(tbl) do
+    dict[key] = val
+  end
+  -- and convert the number indexed items
+  for _,item in ipairs(tbl) do
+    dict[item] = true
+  end
+  return dict
 end
 
 M.map = function(tbl, fn)

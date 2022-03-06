@@ -16,11 +16,14 @@ M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
 M.GIT_MODIFIED = "NeoTreeGitModified"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
+M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
 M.TITLE_BAR = "NeoTreeTitleBar"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
+M.DOTFILE = "NeoTreeDotfile"
+M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 
 local function dec_to_hex(n)
   local hex = string.format("%06x", n)
@@ -111,6 +114,9 @@ M.setup = function()
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  create_highlight_group(M.DOTFILE, {}, nil, "626262")
+  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
+  create_highlight_group(M.HIDDEN_BY_NAME, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
   create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
   create_highlight_group(M.DIRECTORY_ICON, {}, nil, "73cef4")

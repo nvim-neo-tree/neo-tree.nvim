@@ -17,21 +17,18 @@ local function do_scan(context, path_to_scan)
   local state = context.state
   local paths_to_load = context.paths_to_load
   local folders = context.folders
-  local filters = state.filters or {}
-  local use_gitignore_table = filters.respect_gitignore and utils.truthy(state.git_ignored)
+  local filters = state.filtered_items or {}
 
   scan.scan_dir_async(path_to_scan, {
-    hidden = filters.show_hidden or false,
     search_pattern = state.search_pattern or nil,
-    respect_gitignore = filters.respect_gitignore and filters.gitignore_source == "plenary",
+    hidden = true,
+    respect_gitignore = false,
     add_dirs = true,
     depth = 1,
     on_insert = function(path, _type)
-      if not use_gitignore_table or not git.is_ignored(state.git_ignored, path, _type) then
-        local success, _ = pcall(file_items.create_item, context, path, _type)
-        if not success then
-          log.error("error creating item for ", path)
-        end
+      local success, _ = pcall(file_items.create_item, context, path, _type)
+      if not success then
+        log.error("error creating item for ", path)
       end
     end,
     on_exit = vim.schedule_wrap(function()
@@ -106,7 +103,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   if state.search_pattern then
     -- Use the external command because the plenary search is slow
     filter_external.find_files({
-      filters = state.filters,
+      filtered_items = state.filtered_items,
       find_command = state.find_command,
       limit = state.search_limit or 50,
       path = root.path,
@@ -151,11 +148,12 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
 
+      local f = state.filtered_items or {}
       local ignored = {}
-      if state.filters.respect_gitignore then
-        if state.filters.gitignore_source == "git status" then
+      if f.hide_gitignored then
+        if f.gitignore_source == "git status" then
           ignored = git.load_ignored(state.path)
-        elseif state.filters.gitignore_source == "git check-ignore" then
+        elseif f.gitignore_source == "git check-ignore" then
           ignored = git.load_ignored_per_directory(state.path)
           for _, p in ipairs(context.paths_to_load) do
             vim.list_extend(ignored, git.load_ignored_per_directory(p))
@@ -165,9 +163,8 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
       state.git_ignored = ignored
     else
       -- just update the ignored list for this dir if we are using the per dir 'check-ignore' option
-      if
-        state.filters.respect_gitignore and state.filters.gitignore_source == "git check-ignore"
-      then
+      local f = state.filtered_items or {}
+      if f.hide_gitignored and f.gitignore_source == "git check-ignore" then
         state.git_ignored = state.git_ignored or {}
         vim.list_extend(state.git_ignored, git.load_ignored_per_directory(parent_id))
       end
