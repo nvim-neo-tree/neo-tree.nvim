@@ -11,6 +11,7 @@
 --    highlight: The highlight group to apply to this text.
 
 local highlights = require("neo-tree.ui.highlights")
+local utils      = require("neo-tree.utils")
 
 local M = {}
 
@@ -86,25 +87,83 @@ M.git_status = function(config, node, state)
     end
   end
 
-  local highlight = highlights.FILE_NAME
-  if git_status:match("?$") then
-    highlight = highlights.GIT_UNTRACKED
-  elseif git_status:match("U") then
-    highlight = highlights.GIT_CONFLICT
-  elseif git_status == "AA" then
-    highlight = highlights.GIT_CONFLICT
-  elseif git_status:match("M") then
-    highlight = highlights.GIT_MODIFIED
-  elseif git_status:match("[ACRT]") then
-    highlight = highlights.GIT_ADDED
-  elseif git_status:match("!") then
-    highlight = highlights.GIT_IGNORED
+  local symbols = config.symbols or {}
+  local status_symbol
+  local status_highlt = highlights.FILE_NAME
+  local staged_symbol = symbols.unstaged
+  local staged_highlt = highlights.GIT_CONFLICT
+
+  if git_status:sub(2, 2) == " " then
+    staged_symbol = symbols.staged
+    staged_highlt = highlights.GIT_ADDED
   end
 
-  return {
-    text = " [" .. git_status .. "]",
-    highlight = config.highlight or highlight,
-  }
+  if git_status:match("?$") then
+    staged_symbol = nil
+    staged_highlt = highlights.GIT_UNTRACKED
+    status_symbol = symbols.untracked
+    status_highlt = highlights.GIT_UNTRACKED
+  -- all variations of merge conflicts
+  elseif git_status == "DD" then
+    staged_symbol = symbols.conflict
+    staged_highlt = highlights.GIT_CONFLICT
+    status_symbol = symbols.deleted
+    status_highlt = highlights.GIT_CONFLICT
+  elseif git_status == "UU" then
+    staged_symbol = symbols.conflict
+    staged_highlt = highlights.GIT_CONFLICT
+    status_symbol = symbols.modified
+    status_highlt = highlights.GIT_CONFLICT
+  elseif git_status == "AA" then
+    staged_symbol = symbols.conflict
+    staged_highlt = highlights.GIT_CONFLICT
+    status_symbol = symbols.added
+    status_highlt = highlights.GIT_CONFLICT
+  elseif git_status:match("U") then
+    staged_symbol = symbols.conflict
+    staged_highlt = highlights.GIT_CONFLICT
+    if git_status:match("A") then
+      status_symbol = symbols.added
+    elseif git_status:match("D") then
+      status_symbol = symbols.deleted
+    end
+    status_highlt = highlights.GIT_CONFLICT
+  -- end merge conflict section
+  elseif git_status:match("M") then
+    status_symbol = symbols.modified
+    status_highlt = highlights.GIT_MODIFIED
+  elseif git_status:match("R") then
+    status_symbol = symbols.renamed
+    status_highlt = highlights.GIT_MODIFIED
+  elseif git_status:match("[ACT]") then
+    status_symbol = symbols.added
+    status_highlt = highlights.GIT_ADDED
+  elseif git_status:match("!") then
+    staged_symbol = nil
+    status_symbol = symbols.ignored
+    status_highlt = highlights.GIT_IGNORED
+  end
+
+  if status_symbol then
+    local components = {}
+    components[1] = {
+      text = " " .. status_symbol,
+      highlight = status_highlt,
+    }
+    if staged_symbol then
+      components[2] = {
+        text = " " .. staged_symbol,
+        highlight = staged_highlt,
+      }
+    end
+    return components
+  else
+    return {
+      text = " [" .. git_status .. "]",
+      highlight = config.highlight or status_highlt,
+    }
+  end
+
 end
 
 M.filtered_by = function(config, node, state)

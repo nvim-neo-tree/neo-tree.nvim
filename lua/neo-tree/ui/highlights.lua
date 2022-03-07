@@ -14,6 +14,7 @@ M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
+M.GIT_DELETED = "NeoTreeGitDeleted"
 M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
@@ -41,6 +42,8 @@ end
 --is not defined and it is not linked to another group.
 ---@param foreground string The foreground color to use, in hex, if the highlight group
 --is not defined and it is not linked to another group.
+---@gui string The gui to use, if the highlight group is not defined and it is not linked
+--to another group.
 ---@return table table The highlight group values.
 local function create_highlight_group(hl_group_name, link_to_if_exists, background, foreground, gui)
   local success, hl_group = pcall(vim.api.nvim_get_hl_by_name, hl_group_name, true)
@@ -99,18 +102,16 @@ M.setup = function()
 
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
-  create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
-
-  create_highlight_group(M.GIT_CONFLICT, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
-
-  local modified = create_highlight_group(
+  local added = create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
+  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
+  create_highlight_group(
     M.GIT_MODIFIED,
     { "GitGutterChange", "GitSignsChange" },
     nil,
     "d7af5f"
   )
-
-  create_highlight_group(M.GIT_UNTRACKED, {}, nil, modified.foreground, "italic")
+  create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
+  create_highlight_group(M.GIT_UNTRACKED, {}, nil, added.foreground, "italic")
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")

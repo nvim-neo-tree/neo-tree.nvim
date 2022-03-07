@@ -68,7 +68,18 @@ local config = {
       use_git_status_colors = true,
     },
     git_status = {
-      highlight = "NeoTreeDimText",
+      symbols = {
+        added = "✚",
+        --conflict = "ﲅ",
+        conflict = "",
+        deleted = "✖",
+        ignored = "○",
+        modified = "",
+        renamed = "🠊",
+        staged = "",
+        unstaged = "",
+        untracked = "",
+      }
     },
   },
   filesystem = {
