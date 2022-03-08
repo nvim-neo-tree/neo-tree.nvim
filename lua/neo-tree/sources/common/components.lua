@@ -88,79 +88,79 @@ M.git_status = function(config, node, state)
   end
 
   local symbols = config.symbols or {}
-  local status_symbol
-  local status_highlt = highlights.FILE_NAME
-  local staged_symbol = symbols.unstaged
-  local staged_highlt = highlights.GIT_CONFLICT
+  local change_symbol
+  local change_highlt = highlights.FILE_NAME
+  local status_symbol = symbols.unstaged
+  local status_highlt = highlights.GIT_CONFLICT
 
   if git_status:sub(2, 2) == " " then
-    staged_symbol = symbols.staged
-    staged_highlt = highlights.GIT_ADDED
+    status_symbol = symbols.staged
+    status_highlt = highlights.GIT_ADDED
   end
 
   if git_status:match("?$") then
-    staged_symbol = nil
-    staged_highlt = highlights.GIT_UNTRACKED
-    status_symbol = symbols.untracked
+    status_symbol = nil
     status_highlt = highlights.GIT_UNTRACKED
+    change_symbol = symbols.untracked
+    change_highlt = highlights.GIT_UNTRACKED
   -- all variations of merge conflicts
   elseif git_status == "DD" then
-    staged_symbol = symbols.conflict
-    staged_highlt = highlights.GIT_CONFLICT
-    status_symbol = symbols.deleted
+    status_symbol = symbols.conflict
     status_highlt = highlights.GIT_CONFLICT
+    change_symbol = symbols.deleted
+    change_highlt = highlights.GIT_CONFLICT
   elseif git_status == "UU" then
-    staged_symbol = symbols.conflict
-    staged_highlt = highlights.GIT_CONFLICT
-    status_symbol = symbols.modified
+    status_symbol = symbols.conflict
     status_highlt = highlights.GIT_CONFLICT
+    change_symbol = symbols.modified
+    change_highlt = highlights.GIT_CONFLICT
   elseif git_status == "AA" then
-    staged_symbol = symbols.conflict
-    staged_highlt = highlights.GIT_CONFLICT
-    status_symbol = symbols.added
+    status_symbol = symbols.conflict
     status_highlt = highlights.GIT_CONFLICT
+    change_symbol = symbols.added
+    change_highlt = highlights.GIT_CONFLICT
   elseif git_status:match("U") then
-    staged_symbol = symbols.conflict
-    staged_highlt = highlights.GIT_CONFLICT
-    if git_status:match("A") then
-      status_symbol = symbols.added
-    elseif git_status:match("D") then
-      status_symbol = symbols.deleted
-    end
+    status_symbol = symbols.conflict
     status_highlt = highlights.GIT_CONFLICT
+    if git_status:match("A") then
+      change_symbol = symbols.added
+    elseif git_status:match("D") then
+      change_symbol = symbols.deleted
+    end
+    change_highlt = highlights.GIT_CONFLICT
   -- end merge conflict section
   elseif git_status:match("M") then
-    status_symbol = symbols.modified
-    status_highlt = highlights.GIT_MODIFIED
+    change_symbol = symbols.modified
+    change_highlt = highlights.GIT_MODIFIED
   elseif git_status:match("R") then
-    status_symbol = symbols.renamed
-    status_highlt = highlights.GIT_MODIFIED
+    change_symbol = symbols.renamed
+    change_highlt = highlights.GIT_RENAMED
   elseif git_status:match("[ACT]") then
-    status_symbol = symbols.added
-    status_highlt = highlights.GIT_ADDED
+    change_symbol = symbols.added
+    change_highlt = highlights.GIT_ADDED
   elseif git_status:match("!") then
-    staged_symbol = nil
-    status_symbol = symbols.ignored
-    status_highlt = highlights.GIT_IGNORED
+    status_symbol = nil
+    change_symbol = symbols.ignored
+    change_highlt = highlights.GIT_IGNORED
   end
 
-  if status_symbol then
+  if change_symbol then
     local components = {}
     components[1] = {
-      text = " " .. status_symbol,
-      highlight = status_highlt,
+      text = " " .. change_symbol,
+      highlight = change_highlt,
     }
-    if staged_symbol then
+    if status_symbol then
       components[2] = {
-        text = " " .. staged_symbol,
-        highlight = staged_highlt,
+        text = " " .. status_symbol,
+        highlight = status_highlt,
       }
     end
     return components
   else
     return {
       text = " [" .. git_status .. "]",
-      highlight = config.highlight or status_highlt,
+      highlight = config.highlight or change_highlt,
     }
   end
 

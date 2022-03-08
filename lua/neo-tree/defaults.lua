@@ -69,16 +69,17 @@ local config = {
     },
     git_status = {
       symbols = {
-        added = "✚",
-        --conflict = "ﲅ",
-        conflict = "",
-        deleted = "✖",
-        ignored = "○",
-        modified = "",
-        renamed = "🠊",
-        staged = "",
-        unstaged = "",
+        -- Change type
+        added     = "✚",
+        deleted   = "✖",
+        modified  = "",
+        renamed   = "",
+        -- Status type
         untracked = "",
+        ignored   = "",
+        unstaged  = "",
+        staged    = "",
+        conflict  = "",
       }
     },
   },

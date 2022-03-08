@@ -436,15 +436,17 @@ the following properties:
     require("neo-tree").setup({
       default_component_configs = {
         symbols = {
-          added = "✚",
-          conflict = "",
-          deleted = "✖",
-          ignored = "○",
-          modified = "",
-          renamed = "🠊",
-          staged = "",
-          unstaged = "",
+          -- Change type
+          added     = "✚",
+          deleted   = "✖",
+          modified  = "",
+          renamed   = "",
+          -- Status type
           untracked = "",
+          ignored   = "",
+          unstaged  = "",
+          staged    = "",
+          conflict  = "",
         }
       }
     })

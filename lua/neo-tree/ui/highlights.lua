@@ -17,6 +17,7 @@ M.GIT_CONFLICT = "NeoTreeGitConflict"
 M.GIT_DELETED = "NeoTreeGitDeleted"
 M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
+M.GIT_RENAMED = "NeoTreeGitRenamed"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
@@ -111,12 +112,13 @@ M.setup = function()
     "d7af5f"
   )
   create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
+  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
+  create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
   create_highlight_group(M.GIT_UNTRACKED, {}, nil, added.foreground, "italic")
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
   create_highlight_group(M.DOTFILE, {}, nil, "626262")
-  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.HIDDEN_BY_NAME, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
   create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
