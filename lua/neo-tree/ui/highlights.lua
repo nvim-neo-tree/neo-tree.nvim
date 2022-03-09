@@ -15,8 +15,10 @@ M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.FLOAT_TITLE = "NeoTreeFloatTitle"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
+M.GIT_DELETED = "NeoTreeGitDeleted"
 M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
+M.GIT_RENAMED = "NeoTreeGitRenamed"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
@@ -42,6 +44,8 @@ end
 --is not defined and it is not linked to another group.
 ---@param foreground string The foreground color to use, in hex, if the highlight group
 --is not defined and it is not linked to another group.
+---@gui string The gui to use, if the highlight group is not defined and it is not linked
+--to another group.
 ---@return table table The highlight group values.
 local function create_highlight_group(hl_group_name, link_to_if_exists, background, foreground, gui)
   local success, hl_group = pcall(vim.api.nvim_get_hl_by_name, hl_group_name, true)
@@ -101,23 +105,22 @@ M.setup = function()
   create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
-  create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
-
-  create_highlight_group(M.GIT_CONFLICT, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
-
-  local modified = create_highlight_group(
+  local added = create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
+  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
+  create_highlight_group(
     M.GIT_MODIFIED,
     { "GitGutterChange", "GitSignsChange" },
     nil,
     "d7af5f"
   )
-
-  create_highlight_group(M.GIT_UNTRACKED, {}, nil, modified.foreground, "italic")
+  local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
+  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
+  create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
+  create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
   create_highlight_group(M.DOTFILE, {}, nil, "626262")
-  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.HIDDEN_BY_NAME, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
   create_highlight_group(M.DIRECTORY_NAME, {}, "NONE", "NONE")
