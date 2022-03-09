@@ -142,19 +142,24 @@ M.git_status = function(config, node, state)
     status_symbol = nil
     change_symbol = symbols.ignored
     change_highlt = highlights.GIT_IGNORED
+  elseif git_status:match("D") then
+    change_symbol = symbols.deleted
+    change_highlt = highlights.GIT_DELETED
   end
 
-  if change_symbol then
+  if change_symbol or status_symbol then
     local components = {}
-    components[1] = {
-      text = " " .. change_symbol,
-      highlight = change_highlt,
-    }
-    if status_symbol then
-      components[2] = {
+    if type(change_symbol) == "string" and #change_symbol > 0 then
+      table.insert(components, {
+        text = " " .. change_symbol,
+        highlight = change_highlt,
+      })
+    end
+    if type(status_symbol) == "string" and #status_symbol > 0 then
+      table.insert(components, {
         text = " " .. status_symbol,
         highlight = status_highlt,
-      }
+      })
     end
     return components
   else
