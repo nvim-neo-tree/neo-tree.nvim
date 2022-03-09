@@ -4,7 +4,7 @@ Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in whatever style suits you, including sidebars, floating windows,
 netrw split style, or all of them at once!
 
-![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-filesystem.png)
+![Neo-tree file system](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-2.0-with-git-symbols.png)
 
 ### Breaking Changes BAD :bomb: :imp:
 
@@ -82,7 +82,19 @@ use {
             use_git_status_colors = true,
           },
           git_status = {
-            highlight = "NeoTreeDimText", -- if you remove this the status will be colorful
+            symbols = {
+              -- Change type
+              added     = "✚",
+              deleted   = "✖",
+              modified  = "",
+              renamed   = "",
+              -- Status type
+              untracked = "",
+              ignored   = "",
+              unstaged  = "",
+              staged    = "",
+              conflict  = "",
+            }
           },
         },
         filesystem = {
