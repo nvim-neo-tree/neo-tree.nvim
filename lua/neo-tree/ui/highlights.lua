@@ -111,10 +111,10 @@ M.setup = function()
     nil,
     "d7af5f"
   )
-  create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
+  local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
   create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
-  create_highlight_group(M.GIT_UNTRACKED, {}, nil, added.foreground, "italic")
+  create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
