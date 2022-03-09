@@ -80,7 +80,6 @@ local remove_filtered = function(source_items, filtered_items)
   for _, child in ipairs(source_items) do
     local fby = child.filtered_by
     if type(fby) == "table" then
-      log.info("filtered_by is a table", fby)
       if filtered_items.visible and not fby.never_show then
         table.insert(filtered, child)
       end

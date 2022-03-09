@@ -429,6 +429,50 @@ config when calling the setup function. To just disable colors on file or
 directory names, you can set `use_git_status_colors = false` in the `name`
 component of your renderer(s).
 
+Starting with 2.0, this will display symbols by default. The default symbols
+will require a nerd font to be installed. To change these symbols, you can set
+the following properties:
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        symbols = {
+          -- Change type
+          added     = "✚",
+          deleted   = "✖",
+          modified  = "",
+          renamed   = "",
+          -- Status type
+          untracked = "",
+          ignored   = "",
+          unstaged  = "",
+          staged    = "",
+          conflict  = "",
+        }
+      }
+    })
+<
+To change the color of these symbols, you can edit the corresponding highlight
+groups:
+
+    NeoTreeGitAdded
+    NeoTreeGitConflict
+    NeoTreeGitDeleted
+    NeoTreeGitIgnored
+    NeoTreeGitModified
+    NeoTreeGitUntracked
+
+To revert to the previous behavior of passing the git status through as-is
+with codes like `[M ]` for changed/unstaged, and `[ M]` for changed/staged,
+you can set the `symbols` property to nil or false:
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        git_status = {
+          symbols = false
+        }
+      }
+    })
+<
 See also: |neo-tree-git-status-source|
 
 
@@ -529,6 +573,7 @@ NeoTreeFilterTerm         The filter term, as displayed in the root node.
 NeoTreeFloatBorder        The border for pop-up windows.
 NeoTreeGitAdded           File name when the git status is added.
 NeoTreeGitConflict        File name when the git status is conflict.
+NeoTreeGitDeleted         File name when the git status is deleted.
 NeoTreeGitIgnored         File name when the git status is ignored.
 NeoTreeGitModified        File name when the git status is modified.
 NeoTreeGitUntracked       File name when the git status is untracked.
