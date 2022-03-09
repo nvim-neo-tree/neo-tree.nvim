@@ -461,6 +461,30 @@ groups:
     NeoTreeGitModified
     NeoTreeGitUntracked
 
+If you'd like to disable certain symbols, you can set them to an empty string.
+For example, it is actually redundant to show the change type if you use the
+default behavior of highlighting the file name according to the change type.
+The following config will remove those change type symbols:
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        symbols = {
+          -- Change type
+          added     = "",
+          deleted   = "",
+          modified  = "",
+          renamed   = "",
+          -- Status type
+          untracked = "",
+          ignored   = "",
+          unstaged  = "",
+          staged    = "",
+          conflict  = "",
+        }
+      }
+    })
+<
+
 To revert to the previous behavior of passing the git status through as-is
 with codes like `[M ]` for changed/unstaged, and `[ M]` for changed/staged,
 you can set the `symbols` property to nil or false:
