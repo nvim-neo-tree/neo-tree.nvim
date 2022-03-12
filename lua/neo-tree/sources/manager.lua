@@ -409,7 +409,7 @@ M.reveal_in_split = function(source_name, callback)
     cwd = M.get_cwd(state)
   end
   if cwd and not utils.is_subpath(cwd, path_to_reveal) then
-    state.path = utils.split_path(path_to_reveal)[1]
+    state.path, _ = utils.split_path(path_to_reveal)
   end
   M.navigate(state, state.path, path_to_reveal, callback)
 end
