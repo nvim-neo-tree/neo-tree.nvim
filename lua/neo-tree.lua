@@ -94,7 +94,7 @@ local get_hijack_netrw_behavior = function()
     return hijack_behavior
   elseif hijack_behavior == "open_default" then
     return hijack_behavior
-  elseif hijack_behavior == "open_split" then
+  elseif hijack_behavior == "open_current" then
     return hijack_behavior
   else
     log.error("Invalid value for " .. option .. ": " .. hijack_behavior)
@@ -119,7 +119,7 @@ local hijack_netrw = function()
   end
 
   -- record where we are now
-  local should_open_split = hijack_behavior == "open_split" or get_position("filesystem") == "split"
+  local should_open_current = hijack_behavior == "open_current" or get_position("filesystem") == "current"
   local winid = vim.api.nvim_get_current_win()
   local dir_bufnr = vim.api.nvim_get_current_buf()
 
@@ -131,7 +131,7 @@ local hijack_netrw = function()
       replace_with_bufnr = -1
     end
   end
-  if not should_open_split then
+  if not should_open_current then
     if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
       replace_with_bufnr = vim.api.nvim_create_buf(true, false)
     end
@@ -147,10 +147,10 @@ local hijack_netrw = function()
   -- called multiple times in quick succession.
   utils.debounce("hijack_netrw_" .. winid, function()
     local state
-    if should_open_split then
-      log.debug("hijack_netrw: opening split")
+    if should_open_current then
+      log.debug("hijack_netrw: opening current")
       state = manager.get_state("filesystem", nil, winid)
-      state.current_position = "split"
+      state.current_position = "current"
     else
       log.debug("hijack_netrw: opening default")
       M.close_all_except("filesystem")
@@ -162,7 +162,9 @@ local hijack_netrw = function()
   return true
 end
 
+--DEPRECATED in v2.x
 M.close_all_except = function(source_name)
+  -- this entire function is faulty now that position can be overriden at runtime
   source_name = check_source(source_name)
   local target_pos = get_position(source_name)
   for _, name in ipairs(sources) do
@@ -176,8 +178,10 @@ M.close_all_except = function(source_name)
   renderer.close_all_floating_windows()
 end
 
+--DEPRECATED in v2.x
 M.close = manager.close
 
+--DEPRECATED in v2.x, use manager.close_all()
 M.close_all = function(at_position)
   renderer.close_all_floating_windows()
   if type(at_position) == "string" and at_position > "" then
@@ -194,6 +198,7 @@ M.close_all = function(at_position)
   end
 end
 
+--DEPRECATED in v2.x, use commands.execute()
 M.float = function(source_name, toggle_if_open)
   source_name = check_source(source_name)
   if toggle_if_open then
@@ -207,10 +212,10 @@ M.float = function(source_name, toggle_if_open)
   manager.float(source_name)
 end
 
---TODO: Remove the close_others option in 2.0
+--DEPRECATED in v2.x, use commands.execute()
 M.focus = function(source_name, close_others, toggle_if_open)
   source_name = check_source(source_name)
-  if get_position(source_name) == "split" then
+  if get_position(source_name) == "current" then
     M.show_in_split(source_name, toggle_if_open)
     return
   end
@@ -230,9 +235,10 @@ M.focus = function(source_name, close_others, toggle_if_open)
   manager.focus(source_name)
 end
 
+--DEPRECATED in v2.x, use commands.execute()
 M.reveal_current_file = function(source_name, toggle_if_open, force_cwd)
   source_name = check_source(source_name)
-  if get_position(source_name) == "split" then
+  if get_position(source_name) == "current" then
     M.reveal_in_split(source_name, toggle_if_open)
     return
   end
@@ -245,6 +251,7 @@ M.reveal_current_file = function(source_name, toggle_if_open, force_cwd)
   manager.reveal_current_file(source_name, nil, force_cwd)
 end
 
+--DEPRECATED in v2.x, use commands.execute()
 M.reveal_in_split = function(source_name, toggle_if_open)
   source_name = check_source(source_name)
   if toggle_if_open then
@@ -258,6 +265,7 @@ M.reveal_in_split = function(source_name, toggle_if_open)
   manager.reveal_in_split(source_name)
 end
 
+--DEPRECATED in v2.x, use commands.execute()
 M.show_in_split = function(source_name, toggle_if_open)
   source_name = check_source(source_name)
   if toggle_if_open then
@@ -348,7 +356,7 @@ M.buffer_enter_event = function(args)
   end
 
   -- For all others, make sure another buffer is not hijacking our window
-  -- ..but not if the position is "split"
+  -- ..but not if the position is "current"
   local prior_buf = vim.fn.bufnr("#")
   if prior_buf < 1 then
     return
@@ -356,7 +364,7 @@ M.buffer_enter_event = function(args)
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
     local position = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_position")
-    if position == "split" then
+    if position == "current" then
       -- nothing to do here, files are supposed to open in same window
       return
     end
@@ -416,7 +424,7 @@ M.win_enter_event = function()
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
       local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
-      if position ~= "split" then
+      if position ~= "current" then
         -- close_if_last_window just doesn't make sense for a split style
         log.trace("last window, closing")
         vim.cmd("q!")
@@ -451,10 +459,12 @@ M.win_enter_event = function()
   end
 end
 
---TODO: Remove the do_not_focus and close_others options in 2.0
-M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
+--DEPRECATED in v2.x
+--BREAKING CHANGE: Removed the do_not_focus and close_others options in 2.0
+--M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
+M.show = function(source_name, toggle_if_open)
   source_name = check_source(source_name)
-  if get_position(source_name) == "split" then
+  if get_position(source_name) == "current" then
     M.show_in_split(source_name, toggle_if_open)
     return
   end
@@ -465,17 +475,9 @@ M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
       return
     end
   end
-  if close_others == nil then
-    close_others = true
-  end
-  if close_others then
-    M.close_all_except(source_name)
-  end
-  if do_not_focus then
-    manager.show(source_name)
-  else
-    manager.focus(source_name)
-  end
+
+  M.close_all_except(source_name)
+  manager.show(source_name)
 end
 
 M.set_log_level = function(level)
@@ -585,7 +587,7 @@ M.setup = function(config, is_auto_config)
       top = true,
       bottom = true,
       float = true,
-      split = true,
+      current = true,
     }
     if not valid_positions[position] then
       log.error("Invalid value for ", pos_key, ": ", position)

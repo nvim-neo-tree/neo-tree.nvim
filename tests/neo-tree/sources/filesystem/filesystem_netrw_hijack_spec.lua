@@ -54,10 +54,10 @@ describe("Filesystem netrw hijack", function()
   vim.cmd("edit " .. file)
   require("neo-tree").setup({
     filesystem = {
-      hijack_netrw_behavior = "open_split",
+      hijack_netrw_behavior = "open_current",
     },
   })
-  it("opens in in splits when behavior is open_split", function()
+  it("opens in in splits when behavior is open_current", function()
     vim.cmd("edit .")
     verify.eventually(100, function()
       if #vim.api.nvim_list_wins() ~= 1 then

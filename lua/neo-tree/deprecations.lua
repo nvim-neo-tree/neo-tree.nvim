@@ -15,6 +15,14 @@ local migrate = function (config)
     end
   end
 
+  local renamed_value = function(key, old_value, new_value)
+    local value = utils.get_value(config, key)
+    if value == old_value then
+      utils.set_value(config, key, new_value)
+      messages[#messages + 1] = string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
+    end
+  end
+    
   local opposite = function (value)
     return not value
   end
@@ -23,6 +31,10 @@ local migrate = function (config)
   moved("filesystem.filters.show_hidden", "filesystem.filtered_items.hide_dotfiles", opposite)
   moved("filesystem.filters.respect_gitignore", "filesystem.filtered_items.hide_gitignored")
   moved("filesystem.filters.gitignore_source", "filesystem.filtered_items.gitignore_source")
+  renamed_value("filesystem.hijack_netrw_behavior", "open_split", "open_current")
+  for _, source in ipairs({"filesystem", "buffers", "git_status"}) do
+    renamed_value(source .. "window.position", "split", "current")
+  end
 
   return messages
 end

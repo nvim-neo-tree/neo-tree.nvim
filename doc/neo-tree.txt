@@ -37,102 +37,100 @@ floating window, use the *Split commands, such as |NeoTreeRevealInSplit|. You
 may use both styles at the same time if you want.
 
 
-COMMANDS                                                     *neo-tree-commands*
+COMMANDS                                       *:Neotree*  *neo-tree-commands*
 
 Neo-tree does not define any default keybindings for nvim. The suggested
 keybindings are:
 
-    nnoremap / :NeoTreeRevealInSplitToggle<cr>                          
-    nnoremap | :NeoTreeRevealToggle<cr>                          
-    nnoremap <leader>b :NeoTreeFocus buffers<cr>
-    nnoremap <leader>s :NeoTreeFocus git_status<cr>
+    nnoremap / :Neotree toggle current reveal_force_cwd<cr>
+    nnoremap | :Neotree reveal<cr>
+    nnoremap gd :Neotree float reveal_file=<cfile> reveal_force_cwd<cr>
+    nnoremap <leader>b :Neotree toggle show buffers right<cr>
+    nnoremap <leader>s :Neotree float git_status<cr>
 
-NOTE: All of the below commands also have a Toggle variant, which will close
-the window if it is already open. i.e. NeoTreeFocusToggle, NeoTreeShowToggle,
-etc.
+The single |:Neotree| command accepts a range of arguments that give you full
+control over the details of what and where it will show. Arguments can be
+specified as either a key=value pair or just as the value. The key=value form
+is more verbose but may help with clarity. For example, the "buffers" command
+above can also be specified as:
 
-|NeoTreeFocus|                                                    *NeoTreeFocus*
-NeoTreeFocus will open the sidebar and focus it if it is closed, and just switch
-to the neo-tree window if it is already open. Takes an optional argument to
-specify the source to focus, such as `filesystem` or `buffers`.
+    :Neotree action=show source=buffers position=right toggle=true
 
-If you specify `window.position = "float"` in your configuration, this will
-act like |NeoTreeFloat| but will not reveal the current file.
+These arguments can be specified in any order. Here is the full list of 
+arguments you can use:
 
-If you specify `window.position = "split"` in your configuration, this will act
-like |NeoTreeShowInSplit|.
+action~
+What to do. Can be one of:
 
+    focus : Show and/or switch focus to the specified Neotree window. DEFAULT
+    show  : Show the window, but keep focus on your current window.
+    close : Close the window(s) specified. Can be combined with "position" 
+            and/or "source" to specify which window(s) to close.
 
-|NeoTreeShow|                                                      *NeoTreeShow*
-You can also use NeoTreeShow which will open the tree, but leave the current
-window focused. Takes an optional argument to specify the source to show.
+source~
+What to show. Can be one of:
 
-If you specify `window.position: float` in your configuration, this will
-act like |NeoTreeFloat| but will not reveal the current file.
+    filesystem : Show a file browser. DEFAULT
+    buffers    : Show a list of currently open buffers.
+    git_status : Show the ouput of `git status` in a tree layout.
 
-If you specify `window.position = "split"` in your configuration, this will act
-like |NeoTreeShowInSplit|.
+position~
+Where to show it, can be one of:
 
+    left    : Open as left hand sidebar. DEFAULT
+    right   : Open as right hand sidebar.
+    float   : Open as floating window.
+    current : Open within the current window, like netrw or vinegar would.
 
-|NeoTreeShowInSplit|                                        *NeoTreeShowInSplit*
-This will show the tree in the currently focused window instead of a sidebar or
-float, like |netrw| would. Opening a file from this tree will then open in the
-same window as well. Please not that windows opened in this way will not react
-to the `follow_current_file` option, as that applies to sidebars only.
+toggle~
+This is a boolean flag. Adding this means that the window will be closed if it
+is already open.
 
-This command is particularly useful if you want to use a mix of sidebars and
-split style trees. If you only want netrw/split style, you can also specify
-`window.position = "split"` in your config and the other commands will redirect
-here.
+dir~
+The directory to set as the root/cwd of the specified window. If you include a
+directory as one of the arguments, it will be assumed to be this option, you
+don't need the full dir=/path. You may use any value that can be passed to the
+'expand' function, such as `%:p:h:h` to specify two directories up from the
+current file.
 
+reveal~
+This is a boolean flag. Adding this will make Neotree automatically find and 
+focus the current file when it opens.
 
-|NeoTreeReveal|                                                  *NeoTreeReveal*
-NeoTreeReveal is like NeoTreeFocus, but it will also find whatever file is in
-the current buffer, expand all nodes needed to reveal it, and set the cursor on
-that file. If the current file is not in the current working directory, you will
-be prompted to change it. Add `!` to the command to force it to change the
-working directory without prompting.
+reveal_path~
+A path to a file to reveal. This supersedes the "reveal" flag so there is no
+need to specify both. Use this if you want to reveal something other than the
+current file. If you include a path to a file as one of the arguments, it will
+be assumed to be this option. Like "dir", you can pass any value that can be
+passed to the 'expand' function.
 
-If you specify `window.position = "split"` in your configuration, this will act
-like |NeoTreeRevealInSplit|.
+reveal_force_cwd~
+This is a boolean flag. Normally, if you use one of the reveal options and the
+given file is not within the current working directory, you will be asked if you
+want to change the current working directory. If you include this flag, it will
+automatically change the directory without prompting. This option implies
+"reveal", so you do not need to specify both.
 
+DEPRECATED_COMMANDS
 
-|NeoTreeRevealInSplit|                                    *NeoTreeRevealInSplit*
-Same idea as NeoTreeReveal, but this will use the current window instead of a
-sidebar or float, like |netrw| would. Opening a file from this tree will then
-open in the same window as well. Please not that windows opened in this way will
-not react to the `follow_current_file` option, as that applies to sidebars only.
+The following commands from Neotree v1.x will remain until v3.0 for backwards
+compatability. You should not use them if you are a new user, and existing users
+should change their mapping to the new |:Neotree| command specified above.
 
-This command is particularly useful if you want to use a mix of sidebars and
-split style trees. If you only want netrw/split style, you can also specify
-`window.position = "split"` in your config and the other commands will redirect
-here.
+    :NeoTreeFocus         -> :Neotree
+    :NeoTreeShow          -> :Neotree show
+    :NeoTreeShowInSplit   -> :Neotree show current
+    :NeoTreeReveal        -> :Neotree reveal
+    :NeoTreeRevealInSplit -> :Neotree reveal current
+    :NeoTreeFloat         -> :Neotree float
+    :NeoTreeClose         -> :Neotree close
+    :NeoTreePasteConfig   -> :lua require("neo-tree").paste_default_config()
 
-
-|NeoTreeFloat|                                                    *NeoTreeFloat*
-You can also use NeoTreeFloat which will open the tree in a floating window. The
-filesystem source will always reveal the current file if it is within the cwd
-when called in this way. Takes an optional argument to specify the source to
-show.
-
-This will work even if you specify `left` or `right` for the position in your
-config, it works as a one time override. If the current source is currently
-displayed in a sidebar, it will be closed and recreated with the same state in
-a floating window.
-
-
-|NeoTreeClose|                                                    *NeoTreeClose*
-Closes all Neo-tree windows. Takes an optional argument to specify the position
-to close, such as `left` or `right`. The position corresponds to the
-window.position setting in your config for each source.
-
-
-|NeoTreePasteConfig|                                        *NeoTreePasteConfig*
-This is a special command to help you get started. It will paste the complete,
-fully commented default config at the current line. You can change what you
-like, delete anything you are not going to change if you want, and pass that
-`config` table to `require("neo-tree").setup(config)`
-
+Once you have migrated your mappings, it is recommended that you remove the old
+commands by adding this option before the Neotree config is run:
+>
+  let g:neo_tree_remove_legacy_commands = 1
+<
 
 ===============================================================================
 MAPPINGS                                                                      ~
@@ -374,14 +372,14 @@ disabled               Netrw left alone, neo-tree does not handle opening dirs.
 open_default (default) Netrw disabled, opening a directory opens neo-tree
                        in whatever position is specified in `window.position`.
 
-open_split             Netrw disabled, opening a directory opens within the
+open_current           Netrw disabled, opening a directory opens within the
                        window like netrw would, regardless of `window.position`.
 
 >
     require("neo-tree").setup({
       filesystem = {
         hijack_netrw_behavior = "open_default",
-                             -- "open_split",  
+                             -- "open_current",  
                              -- "disabled", 
     })
 <

@@ -28,7 +28,7 @@ utils.setup_test_fs = function()
             type = "dir",
             content = {
               { name = "baz1.txt", type = "file" },
-              { name = "baz2.txt", type = "file" },
+              { name = "baz2.txt", type = "file", id="deepfile2" },
             },
           },
           { name = "foofile1.txt", type = "file" },

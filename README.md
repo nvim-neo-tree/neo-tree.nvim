@@ -53,6 +53,7 @@ use {
     config = function ()
       -- See ":help neo-tree-highlights" for a list of available highlight groups
       vim.cmd([[
+        let g:neo_tree_remove_legacy_commands = 1
         hi link NeoTreeDirectoryName Directory
         hi link NeoTreeDirectoryIcon NeoTreeDirectoryName
       ]])
@@ -118,7 +119,7 @@ use {
                                           -- to detect changes instead of relying on nvim autocmd events.
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                                   -- in whatever position is specified in window.position
-                                -- "open_split",  -- netrw disabled, opening a directory opens within the
+                                -- "open_current",  -- netrw disabled, opening a directory opens within the
                                                   -- window like netrw would, regardless of window.position
                                 -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
           window = {
@@ -199,7 +200,7 @@ use {
           }
         }
       })
-      vim.cmd([[nnoremap \ :NeoTreeReveal<cr>]])
+      vim.cmd([[nnoremap \ :Neotree reveal<cr>]])
     end
 }
 ```
@@ -216,7 +217,7 @@ See `:h neo-tree` for full documentation. You can also preview that online at
 
 To see all of the default config options with commentary, you can view it online
 at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
-into your config after installing Neo-tree by running `:NeoTreePasteConfig`,
+into your config after installing Neo-tree by running `:lua require("neo-tree").paste_default_config()`,
 which will paste the default config as a `config` table into the current buffer.
 You can then change what you want in the pasted `config` table and pass it to
 `require("neo-tree").setup(config)`
@@ -224,73 +225,20 @@ You can then change what you want in the pasted `config` table and pass it to
 
 ### Commands (for sidebar and float postions)
 
-Here are the various ways to open the tree as a sidebar or float:
+
+Neo-tree does not define any default keybindings for nvim. The suggested
+keybindings are:
 
 ```
-:NeoTreeReveal
-``` 
-This will find the current file in the tree and focus it. If the current file
-is not within the current working directory, you will be prompted to change the
-cwd. Add `!` to the command to force it to change the working directory without
-prompting.
-
+    nnoremap / :Neotree toggle current reveal_force_cwd<cr>
+    nnoremap | :Neotree reveal<cr>
+    nnoremap gd :Neotree float reveal_file=<cfile> reveal_force_cwd<cr>
+    nnoremap <leader>b :Neotree toggle show buffers right<cr>
+    nnoremap <leader>s :Neotree float git_status<cr>
 ```
-:NeoTreeFocus 
-```
-This will open the window and switch to it. If Neo-tree is already open, it
-will just switch focus to that window.
 
-```
-:NeoTreeShow 
-```
-This will show the window WITHOUT focusing it, leaving the focus on the current
-file.
+See `:h neo-tree-commands` for details and a full listing of available arguments.
 
-```
-:NeoTreeFloat
-```
-This will open the tree in a floating window instead of a sidebar:
-
-![Neo-tree floating](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-floating.png)
-
-There are also Toggle variants of the above commands, which will close the
-window if it is already open: `NeoTreeRevealToggle` `NeoTreeShowToggle`
-`NeoTreeFocusToggle` `NeoTreeFloatToggle`
-
-You can also close the tree with: `:NeoTreeClose `
-
-
-### Commands (for netrw/split style)
-
-If you specify `window.position = "split"` for a given source, all of the above
-commands will work within the current window like netrw would instead of opening
-sidebars or floats. If you want to use both styles, you can leave your default
-position as left/right/float, but explicitly open Neo-tree within the current
-split as needed using the following commands:
-
-#### Reveal
-
-```
-:NeoTreeRevealInSplit
-``` 
-```
-:NeoTreeRevealInSplitToggle
-``` 
-This will show the tree within the current window, and will find the current
-file in the tree and focus it. If the current file is not within the current
-working directory, you will be prompted to change the cwd.
-
-
-#### Show
-
-```
-:NeoTreeShowInSplit
-```
-```
-:NeoTreeShowInSplitToggle
-```
-This will show the tree within the current window. If you have used the tree
-within this window previously, you will resume that session.
 
 ### Netrw Hijack
 
@@ -299,8 +247,8 @@ within this window previously, you will resume that session.
 :[v]split .
 ```
 
-If `"filesystem.window.position"` is set to `"split"`, or if you have specified
-`filesystem.netrw_hijack_behavior = "open_split"`, then any command
+If `"filesystem.window.position"` is set to `"current"`, or if you have specified
+`filesystem.netrw_hijack_behavior = "open_current"`, then any command
 that would open a directory will open neo-tree in the specified window.
 
 
@@ -329,16 +277,15 @@ Another available source is `buffers`, which displays your open buffers. This is
 the same list you would see from `:ls`. To show with the `buffers` list, use:
 
 ```
-:NeoTreeShow buffers
+:Neotree buffers
 ```
 
-or `:NeoTreeFocus buffers` or `:NeoTreeShow buffers` or `:NeoTreeFloat buffers`
 
 ### git_status
 This view take the results of the `git status` command and display them in a
 tree. It includes commands for adding, unstaging, reverting, and committing.
 
-The screenshot below shows the result of `:NeoTreeFloat git_status` while the 
+The screenshot below shows the result of `:Neotree float git_status` while the 
 filesystem is open in a sidebar:
 
 ![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
