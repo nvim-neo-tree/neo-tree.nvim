@@ -80,7 +80,7 @@ M.set_default_config = function(source_name, config)
   end
 end
 
---TODO: we need to track state per window when working with netwrw style "split"
+--TODO: we need to track state per window when working with netwrw style "current"
 --position. How do we know which one to return when this is called?
 M.get_state = function(source_name, tabnr, winid)
   if source_name == nil then
@@ -170,9 +170,36 @@ M.unsubscribe_all = function(source_name)
   sd.subscriptions = {}
 end
 
-M.close = function(source_name)
+M.close = function(source_name, at_position)
   local state = M.get_state(source_name)
-  return renderer.close(state)
+  if at_position then
+    if state.current_position == at_position then
+      return renderer.close(state)
+    else
+      return false
+    end
+  else
+    return renderer.close(state)
+  end
+end
+
+M.close_all = function(at_position)
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  for source_name, _ in pairs(source_data) do
+    for_each_state(source_name, function(state)
+      if state.tabnr == tabnr then
+        if at_position then
+          if state.current_position == at_position then
+            log.trace("Closing " .. source_name .. " at position " .. at_position)
+            pcall(renderer.close, state)
+          end
+        else
+          log.trace("Closing " .. source_name)
+          pcall(renderer.close, state)
+        end
+      end
+    end)
+  end
 end
 
 ---Redraws the tree with updated diagnostics without scanning the filesystem again.
@@ -398,7 +425,7 @@ end
 
 M.reveal_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
-  state.current_position = "split"
+  state.current_position = "current"
   local path_to_reveal = M.get_path_to_reveal()
   if not path_to_reveal then
     M.navigate(state, nil, nil, callback)
@@ -428,7 +455,7 @@ end
 
 M.show_in_split = function(source_name, callback)
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
-  state.current_position = "split"
+  state.current_position = "current"
   M.navigate(state, state.path, nil, callback)
 end
 

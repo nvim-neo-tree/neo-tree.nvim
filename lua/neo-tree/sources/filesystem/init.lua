@@ -132,7 +132,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
     )
     fs_scan.get_items_async(state, nil, path_to_reveal, callback)
   else
-    local is_split = state.current_position == "split"
+    local is_split = state.current_position == "current"
     local follow_file = state.follow_current_file
       and not is_search
       and not is_split
@@ -195,7 +195,7 @@ M.reset_search = function(state, refresh, open_current_node)
             pcall(renderer.focus_node, state, path, false)
           end)
         else
-          if state.current_position == "split" then
+          if state.current_position == "current" then
             utils.open_file(state, node:get_id())
           else
             utils.open_file(state, path)

@@ -38,6 +38,9 @@ verify.buf_name_endswith = function(buf_name, timeout)
       local n = vim.api.nvim_buf_get_name(0)
       if n:sub(-#buf_name) == buf_name then
         return true
+      else
+        print(n)
+        return false
       end
     end,
     string.format("Current buffer name is expected to be end with '%s' but it does not", buf_name)
@@ -50,11 +53,7 @@ verify.buf_name_is = function(buf_name, timeout)
     function()
       return buf_name == vim.api.nvim_buf_get_name(0)
     end,
-    string.format(
-      "Current buffer name is expected to be '%s' but is %s",
-      buf_name,
-      vim.api.nvim_buf_get_name(0)
-    )
+    string.format("Current buffer name is expected to be '%s' but is not", buf_name)
   )
 end
 
@@ -64,9 +63,9 @@ verify.tree_focused = function(timeout)
   end, "Current buffer is not a 'neo-tree' filetype")
 end
 
-verify.tree_node_is = function(source_name, expected_node_id, timeout)
+verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
   verify.eventually(timeout or 500, function()
-    local state = require("neo-tree.sources.manager").get_state(source_name)
+    local state = require("neo-tree.sources.manager").get_state(source_name, nil, winid)
     if not state.tree then
       return false
     end
@@ -85,16 +84,16 @@ verify.tree_node_is = function(source_name, expected_node_id, timeout)
   end, string.format("Tree node '%s' not focused", expected_node_id))
 end
 
-verify.filesystem_tree_node_is = function(expected_node_id, timeout)
-  verify.tree_node_is("filesystem", expected_node_id, timeout)
+verify.filesystem_tree_node_is = function(expected_node_id, winid, timeout)
+  verify.tree_node_is("filesystem", expected_node_id, winid, timeout)
 end
 
-verify.buffers_tree_node_is = function(expected_node_id, timeout)
-  verify.tree_node_is("buffers", expected_node_id, timeout)
+verify.buffers_tree_node_is = function(expected_node_id, winid, timeout)
+  verify.tree_node_is("buffers", expected_node_id, winid, timeout)
 end
 
-verify.git_status_tree_node_is = function(expected_node_id, timeout)
-  verify.tree_node_is("git_status", expected_node_id, timeout)
+verify.git_status_tree_node_is = function(expected_node_id, winid, timeout)
+  verify.tree_node_is("git_status", expected_node_id, winid, timeout)
 end
 
 verify.window_handle_is = function(winid, timeout)

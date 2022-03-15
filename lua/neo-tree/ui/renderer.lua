@@ -24,7 +24,7 @@ M.close = function(state)
       -- another buffer, so we can't delete it now
       if bufnr == state.bufnr then
         window_existed = true
-        if state.current_position == "split" then
+        if state.current_position == "current" then
           -- we are going to hide the buffer instead of closing the window
           M.position.save(state)
           local new_buf = vim.fn.bufnr("#")
@@ -339,7 +339,9 @@ M.collapse_all_nodes = function(tree)
   end
   -- but make sure the root is expanded
   local root = tree:get_nodes()[1]
-  root:expand()
+  if root then
+    root:expand()
+  end
 end
 
 ---Functions to save and restore the focused node.
@@ -486,7 +488,7 @@ create_window = function(state)
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
-  elseif state.current_position == "split" then
+  elseif state.current_position == "current" then
     local winid = vim.api.nvim_get_current_win()
     local bufnr = vim.fn.bufnr(bufname)
     if bufnr < 1 then
@@ -591,7 +593,7 @@ M.window_exists = function(state)
 
   if winid == 0 then
     window_exists = false
-  elseif position == "split" then
+  elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
       and vim.api.nvim_buf_is_valid(bufnr)
       and vim.api.nvim_win_get_buf(winid) == bufnr

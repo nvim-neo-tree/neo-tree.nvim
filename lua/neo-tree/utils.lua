@@ -315,7 +315,7 @@ M.open_file = function(state, path, open_cmd)
       events.fire_event(events.FILE_OPENED, path)
       return
     end
-    if state.current_position == "split" then
+    if state.current_position == "current" then
       vim.cmd(open_cmd .. " " .. path)
     else
       -- use last window if possible
