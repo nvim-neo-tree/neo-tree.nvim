@@ -213,29 +213,99 @@ See `:h neo-tree` for full documentation. You can also preview that online at
 [doc/neo-tree.txt](doc/neo-tree.txt), although it's best viewed within vim.
 
 
-### Config Options
-
 To see all of the default config options with commentary, you can view it online
 at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
-into your config after installing Neo-tree by running `:lua require("neo-tree").paste_default_config()`,
-which will paste the default config as a `config` table into the current buffer.
-You can then change what you want in the pasted `config` table and pass it to
-`require("neo-tree").setup(config)`
-
-
-### Commands (for sidebar and float postions)
-
-
-Neo-tree does not define any default keybindings for nvim. The suggested
-keybindings are:
+into a buffer after installing Neo-tree by running: 
 
 ```
-    nnoremap / :Neotree toggle current reveal_force_cwd<cr>
-    nnoremap | :Neotree reveal<cr>
-    nnoremap gd :Neotree float reveal_file=<cfile> reveal_force_cwd<cr>
-    nnoremap <leader>b :Neotree toggle show buffers right<cr>
-    nnoremap <leader>s :Neotree float git_status<cr>
+:lua require("neo-tree").paste_default_config()
 ```
+
+
+## The `:Neotree` Command
+
+The single `:Neotree` command accepts a range of arguments that give you full
+control over the details of what and where it will show. For example, the following 
+command will open a file browser on the right hand side, "revealing" the currently
+active file:
+
+```
+:Neotree filesystem reveal right
+```
+
+Arguments can be specified as either a key=value pair or just as the value. The
+key=value form is more verbose but may help with clarity. For example, the command
+above can also be specified as:
+
+```
+:Neotree source=filesystem reveal=true position=right
+```
+
+All arguments are optional and can be specified in any order. Here is the full list of 
+arguments you can use:
+
+#### `action`
+What to do. Can be one of:
+
+| Option | Description |
+|--------|-------------|
+| `focus` | Show and/or switch focus to the specified Neotree window. DEFAULT |
+| `show`  | Show the window, but keep focus on your current window. |
+| `close` | Close the window(s) specified. Can be combined with "position" and/or "source" to specify which window(s) to close. |
+
+#### `source`
+What to show. Can be one of:
+
+| Option | Description |
+|--------|-------------|
+| filesystem | Show a file browser. DEFAULT |
+| buffers    | Show a list of currently open buffers. |
+| git_status | Show the ouput of `git status` in a tree layout. |
+
+#### `position`
+Where to show it, can be one of:
+
+| Option | Description |
+|--------|-------------|
+| left    | Open as left hand sidebar. DEFAULT |
+| right   | Open as right hand sidebar. |
+| float   | Open as floating window. |
+| current | Open within the current window, like netrw or vinegar would. |
+
+#### `toggle`
+This is a boolean flag. Adding this means that the window will be closed if it
+is already open.
+
+#### `dir`
+The directory to set as the root/cwd of the specified window. If you include a
+directory as one of the arguments, it will be assumed to be this option, you
+don't need the full dir=/path. You may use any value that can be passed to the
+'expand' function, such as `%:p:h:h` to specify two directories up from the
+current file.
+
+#### `reveal`
+This is a boolean flag. Adding this will make Neotree automatically find and 
+focus the current file when it opens.
+
+#### `reveal_path`
+A path to a file to reveal. This supersedes the "reveal" flag so there is no
+need to specify both. Use this if you want to reveal something other than the
+current file. If you include a path to a file as one of the arguments, it will
+be assumed to be this option. Like "dir", you can pass any value that can be
+passed to the 'expand' function. One neat trick you can do with this is to open
+a Neotree window which is focused on the file under the cursor using the `<cfile>`
+keyword:
+
+```
+nnoremap gd :Neotree float reveal_file=<cfile> reveal_force_cwd<cr>
+```
+
+#### `reveal_force_cwd`
+This is a boolean flag. Normally, if you use one of the reveal options and the
+given file is not within the current working directory, you will be asked if you
+want to change the current working directory. If you include this flag, it will
+automatically change the directory without prompting. This option implies
+"reveal", so you do not need to specify both.
 
 See `:h neo-tree-commands` for details and a full listing of available arguments.
 
