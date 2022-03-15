@@ -27,7 +27,7 @@ should you!
 - Neo-tree won't let other buffers take over it's window.
 - Neo-tree won't leave it's window scrolled to the last line when there is
   plenty of room to display the whole tree.
-- Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher=true`)
+- Neo-tree does not need to be manually refreshed
 - Neo-tree can intelligently follow the current file (set `follow_current_file=true`)
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
@@ -115,8 +115,6 @@ use {
           },
           follow_current_file = true, -- This will find and focus the file in the active buffer every
                                        -- time the current file is changed while the tree is open.
-          use_libuv_file_watcher = true, -- This will use the OS level file watchers
-                                          -- to detect changes instead of relying on nvim autocmd events.
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                                   -- in whatever position is specified in window.position
                                 -- "open_current",  -- netrw disabled, opening a directory opens within the
