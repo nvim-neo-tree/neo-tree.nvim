@@ -58,7 +58,17 @@ M.diagnostics = function(config, node, state)
     return {}
   end
   local severity = diag_state.severity_string
-  local defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. severity)
+  local defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
+  if not defined then
+    -- backwards compatibility...
+    local old_severity = severity
+    if severity == "Warning" then
+      old_severity = "Warn"
+    elseif severity == "Information" then
+      old_severity = "Info"
+    end
+    defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
+  end
   defined = defined and defined[1]
   if defined and defined.text and defined.texthl then
     return {
@@ -68,7 +78,7 @@ M.diagnostics = function(config, node, state)
   else
     return {
       text = " " .. severity:sub(1, 1),
-      highlight = "LspDiagnosticsDefault" .. severity,
+      highlight = "Diagnostic" .. severity,
     }
   end
 end

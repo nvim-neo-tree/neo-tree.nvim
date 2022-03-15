@@ -12,9 +12,9 @@ local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
     return "Error"
   elseif severity == vim.diagnostic.severity.WARN then
-    return "Warning"
+    return "Warn"
   elseif severity == vim.diagnostic.severity.INFO then
-    return "Information"
+    return "Info"
   elseif severity == vim.diagnostic.severity.HINT then
     return "Hint"
   else
