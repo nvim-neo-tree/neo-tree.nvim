@@ -142,9 +142,10 @@ use {
               ["a"] = "add",
               ["d"] = "delete",
               ["r"] = "rename",
-              ["c"] = "copy_to_clipboard",
+              ["y"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
+              ["c"] = "copy", -- takes text input for destination
               ["m"] = "move", -- takes text input for destination
               ["q"] = "close_window",
             }
@@ -165,7 +166,7 @@ use {
               ["a"] = "add",
               ["d"] = "delete",
               ["r"] = "rename",
-              ["c"] = "copy_to_clipboard",
+              ["y"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
               ["bd"] = "buffer_delete",
@@ -184,7 +185,7 @@ use {
               ["R"] = "refresh",
               ["d"] = "delete",
               ["r"] = "rename",
-              ["c"] = "copy_to_clipboard",
+              ["y"] = "copy_to_clipboard",
               ["x"] = "cut_to_clipboard",
               ["p"] = "paste_from_clipboard",
               ["A"]  = "git_add_all",
