@@ -114,7 +114,11 @@ M.find_files = function(opts)
     if type(opts.find_args) == "string" then
       append(opts.find_args)
     elseif type(opts.find_args) == "table" then
-      append(unpack(opts.find_args))
+      if opts.find_args[1] then
+        append(unpack(opts.find_args))
+      elseif opts.find_args[cmd] then
+        append(unpack(opts.find_args[cmd]))
+      end
     elseif type(opts.find_args) == "function" then
       args = opts.find_args(cmd, path, glob, args)
     end

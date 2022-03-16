@@ -111,10 +111,12 @@ local config = {
                                       -- search with space as an implicit ".*", so 
                                       -- `fi init`
                                       -- will match: `./sources/filesystem/init.lua
-    --find_command = "fd",
+    --find_command = "fd", -- this is determined automatically, you probably don't need to set it
     --find_args = {  -- you can specify extra args to pass to the find command.
-    --  "--exclude", ".git",
-    --  "--exclude",  "node_modules"
+    --  fd = {
+      --  "--exclude", ".git",
+      --  "--exclude",  "node_modules"
+    --  }
     --},
     ---- or use a function instead of list of strings
     --find_args = function(cmd, path, search_term, args)
