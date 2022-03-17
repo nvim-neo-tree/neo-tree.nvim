@@ -25,7 +25,7 @@ M.get_hijack_netrw_behavior = function()
   end
 end
 
-M.hijack_netrw = function()
+M.hijack = function()
   local hijack_behavior = M.get_hijack_netrw_behavior()
   if hijack_behavior == "disabled" then
     return false

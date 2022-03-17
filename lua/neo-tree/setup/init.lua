@@ -284,13 +284,40 @@ M.merge_config = function(config, is_auto_config)
   highlights.setup()
 
   -- setup the default values for all sources
-  local merged_source_config = {}
+  normalize_mappings(default_config)
   for _, source_name in ipairs(sources) do
-    local default_source_config = default_config[source_name]
+    local source_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
-    default_source_config.components = require(mod_root .. ".components")
-    default_source_config.commands = require(mod_root .. ".commands")
-    default_source_config.name = source_name
+    source_config.components = require(mod_root .. ".components")
+    source_config.commands = require(mod_root .. ".commands")
+    source_config.name = source_name
+
+    -- Make sure all the mappings are normalized so they will merge properly.
+    normalize_mappings(source_config)
+    normalize_mappings(config[source_name])
+
+    -- merge the global config with the source specific config
+    source_config.window = utils.table_merge(default_config.window or {}, source_config.window or {})
+    source_config.renderers = source_config.renderers or {}
+    -- if source does not specify a renderer, use the global default
+    for name, renderer in pairs(default_config.renderers or {}) do
+      if source_config.renderers[name] == nil then
+        local r = {}
+        for  _, value in ipairs(renderer) do
+          if value[1] and source_config.components[value[1]] ~= nil then
+            table.insert(r, value)
+          end
+        end
+        source_config.renderers[name] = r
+      end
+    end
+    -- if user sets renderers, completely wipe the default ones
+    for name, _ in pairs(source_config.renderers) do
+      local user = utils.get_value(config, source_name .. ".renderers." .. name)
+      if user then
+        source_config.renderers[name] = nil
+      end
+    end
 
     --validate the window.position
     local pos_key = source_name .. ".window.position"
@@ -306,18 +333,6 @@ M.merge_config = function(config, is_auto_config)
     if not valid_positions[position] then
       log.error("Invalid value for ", pos_key, ": ", position)
       config[source_name].window.position = "left"
-    end
-
-    -- Make sure all the mappings are normalized so they will merge properly.
-    normalize_mappings(default_source_config)
-    normalize_mappings(config[source_name])
-
-    -- if user sets renderers, completely wipe the default ones
-    for name, _ in pairs(default_source_config.renderers) do
-      local user = utils.get_value(config, source_name .. ".renderers." .. name)
-      if user then
-        default_source_config.renderers[name] = nil
-      end
     end
   end
 
@@ -344,7 +359,7 @@ M.merge_config = function(config, is_auto_config)
     id = "neo-tree-win-enter",
   })
 
-  if not is_auto_config and M.get_hijack_netrw_behavior() ~= "disabled" then
+  if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
   end
 

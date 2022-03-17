@@ -204,10 +204,42 @@ f     = filter_on_submit:   Same as above, but does not search until you hit
 <C-x> = clear_filter:       Removes the filter.
 
 
+CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
+
+If you want to change the mappings, you can do so in two places. Mappings
+defined in `window.mappings` apply to all sources, and mappings defined at the
+source level, such as `filesystem.window.mappings` will override and extend
+those global mappings for that particular source. 
+
+For example:
+>
+   require("neo-tree").setup({
+     window = {
+       mappings = {
+         ["A"] = "command_a"
+       }
+     },
+     filesystem = {
+       window = {
+         mappings = {
+           ["A"] = "command_b"
+         }
+       }
+     }
+   })
+<
+The above config will map `A` to command_a for all sources except for
+filesystem, which will use command_b instead.
+
+NOTE: Not all commands work for all sources. If it is defined in the source
+section in the default config instead of at the root level, that means it is
+specific to that source and will not work for others.
+
+
 CUSTOM COMMANDS                                       *neo-tree-custom-commands*
 
 If you want to define your own command, you have two options:
-  1. You can define (or oVErride) a command in the `commands` section of the
+  1. You can define (or override) a command in the `commands` section of the
   config for each source, then reference that by name in a mapping.
   2. You can map directly to a function and skip defining a command.
 
@@ -215,11 +247,13 @@ You probably want #2:
 >
    require("neo-tree").setup({
      filesystem = {
-       mappings = {
-         ["?"] = functions(state)
-           local node = state.tree:get_node()
-           print(node.name)
-         end
+       window = {
+         mappings = {
+           ["?"] = functions(state)
+             local node = state.tree:get_node()
+             print(node.name)
+           end
+         }
        }
      }
    })
@@ -233,8 +267,10 @@ You probably want #2:
 
    require("neo-tree").setup({
      filesystem = {
-       mappings = {
-         ["?"] = print_me
+       window = {
+         mappings = {
+           ["?"] = print_me
+         }
        }
      }
    })
@@ -738,7 +774,10 @@ A renderer is just a list of component configs, to be rendered in order to
 create a line in the tree. Each renderer is for a specific node type, such as
 `directory` or `file`.  To view the avilable built-in components and their
 configs for each source, look at the default config by pasting it with
-|NeoTreePasteConfig| or view it online at:
+>
+    :lua require("neo-tree").paste_default_config()
+<
+or view it online at:
 https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
 
                                                            *neo-tree-components*

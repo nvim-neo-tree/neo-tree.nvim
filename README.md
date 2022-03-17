@@ -106,6 +106,34 @@ use {
             }
           },
         },
+        window = {
+          position = "left",
+          width = 40,
+          mappings = {
+            ["<2-LeftMouse>"] = "open",
+            ["<cr>"] = "open",
+            ["S"] = "open_split",
+            ["s"] = "open_vsplit",
+            ["C"] = "close_node",
+            ["<bs>"] = "navigate_up",
+            ["."] = "set_root",
+            ["H"] = "toggle_hidden",
+            ["I"] = "toggle_gitignore",
+            ["R"] = "refresh",
+            ["/"] = "fuzzy_finder",
+            ["f"] = "filter_on_submit",
+            ["<c-x>"] = "clear_filter",
+            ["a"] = "add",
+            ["d"] = "delete",
+            ["r"] = "rename",
+            ["y"] = "copy_to_clipboard",
+            ["x"] = "cut_to_clipboard",
+            ["p"] = "paste_from_clipboard",
+            ["c"] = "copy", -- takes text input for destination
+            ["m"] = "move", -- takes text input for destination
+            ["q"] = "close_window",
+          }
+        },
         filesystem = {
           filtered_items = {
             visible = false, -- when true, they will just be displayed differently than normal items
@@ -128,55 +156,11 @@ use {
                                 -- "open_current",  -- netrw disabled, opening a directory opens within the
                                                   -- window like netrw would, regardless of window.position
                                 -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
-          window = {
-            position = "left",
-            width = 40,
-            mappings = {
-              ["<2-LeftMouse>"] = "open",
-              ["<cr>"] = "open",
-              ["S"] = "open_split",
-              ["s"] = "open_vsplit",
-              ["C"] = "close_node",
-              ["<bs>"] = "navigate_up",
-              ["."] = "set_root",
-              ["H"] = "toggle_hidden",
-              ["I"] = "toggle_gitignore",
-              ["R"] = "refresh",
-              ["/"] = "fuzzy_finder",
-              --["/"] = "filter_as_you_type", -- this was the default until v1.28
-              --["/"] = "none" -- Assigning a key to "none" will remove the default mapping
-              ["f"] = "filter_on_submit",
-              ["<c-x>"] = "clear_filter",
-              ["a"] = "add",
-              ["d"] = "delete",
-              ["r"] = "rename",
-              ["y"] = "copy_to_clipboard",
-              ["x"] = "cut_to_clipboard",
-              ["p"] = "paste_from_clipboard",
-              ["c"] = "copy", -- takes text input for destination
-              ["m"] = "move", -- takes text input for destination
-              ["q"] = "close_window",
-            }
-          }
         },
         buffers = {
           show_unloaded = true,
           window = {
-            position = "left",
             mappings = {
-              ["<2-LeftMouse>"] = "open",
-              ["<cr>"] = "open",
-              ["S"] = "open_split",
-              ["s"] = "open_vsplit",
-              ["<bs>"] = "navigate_up",
-              ["."] = "set_root",
-              ["R"] = "refresh",
-              ["a"] = "add",
-              ["d"] = "delete",
-              ["r"] = "rename",
-              ["y"] = "copy_to_clipboard",
-              ["x"] = "cut_to_clipboard",
-              ["p"] = "paste_from_clipboard",
               ["bd"] = "buffer_delete",
             }
           },
@@ -185,17 +169,6 @@ use {
           window = {
             position = "float",
             mappings = {
-              ["<2-LeftMouse>"] = "open",
-              ["<cr>"] = "open",
-              ["S"] = "open_split",
-              ["s"] = "open_vsplit",
-              ["C"] = "close_node",
-              ["R"] = "refresh",
-              ["d"] = "delete",
-              ["r"] = "rename",
-              ["y"] = "copy_to_clipboard",
-              ["x"] = "cut_to_clipboard",
-              ["p"] = "paste_from_clipboard",
               ["A"]  = "git_add_all",
               ["gu"] = "git_unstage_file",
               ["ga"] = "git_add_file",

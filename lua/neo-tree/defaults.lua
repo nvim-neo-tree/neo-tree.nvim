@@ -83,7 +83,83 @@ local config = {
       }
     },
   },
+  window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
+             -- possible options. These can also be functions that return these options.
+    position = "left", -- left, right, float, current
+    width = 40, -- applies to left and right positions
+    popup = { -- settings that apply to float position only
+      size = {
+        height = "80%",
+        width = "50%",
+      },
+      position = "50%", -- 50% means center it
+      -- you can also specify border here, if you want a different setting from
+      -- the global popup_border_style.
+    },
+    -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
+    -- You can also create your own commands by providing a function instead of a string.
+    mappings = {
+      ["<2-LeftMouse>"] = "open",
+      ["<cr>"] = "open",
+      ["S"] = "open_split",
+      ["s"] = "open_vsplit",
+      ["C"] = "close_node",
+      ["z"] = "close_all_nodes",
+      ["<bs>"] = "navigate_up",
+      ["."] = "set_root",
+      ["R"] = "refresh",
+      ["a"] = "add",
+      ["d"] = "delete",
+      ["r"] = "rename",
+      ["y"] = "copy_to_clipboard",
+      ["x"] = "cut_to_clipboard",
+      ["p"] = "paste_from_clipboard",
+      ["c"] = "copy", -- takes text input for destination
+      ["m"] = "move", -- takes text input for destination
+      ["q"] = "close_window",
+    },
+  },
+  renderers = {
+    directory = {
+      { "indent" },
+      { "icon" },
+      { "current_filter" },
+      { "name" },
+      -- {
+      --   "symlink_target",
+      --   highlight = "NeoTreeSymbolicLinkTarget",
+      -- },
+      { "clipboard" },
+      { "diagnostics", errors_only = true },
+      --{ "git_status" },
+    },
+    file = {
+      { "indent" },
+      { "icon" },
+      {
+        "name",
+        use_git_status_colors = true,
+      },
+      -- {
+      --   "symlink_target",
+      --   highlight = "NeoTreeSymbolicLinkTarget",
+      -- },
+      { "bufnr" },
+      { "clipboard" },
+      { "diagnostics" },
+      { "git_status" },
+    },
+  },
   filesystem = {
+    window = {
+      mappings = {
+        ["H"] = "toggle_hidden",
+        ["/"] = "fuzzy_finder",
+        --["/"] = "filter_as_you_type", -- this was the default until v1.28
+        ["f"] = "filter_on_submit",
+        ["<C-x>"] = "clear_filter",
+      }
+    },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
     -- The renderer section provides the renderers that will be used to render the tree.
     --   The first level is the node type.
@@ -149,136 +225,18 @@ local config = {
                           -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
     use_libuv_file_watcher = true, -- This will use the OS level file watchers to detect changes
                                     -- instead of relying on nvim autocmd events.
-    window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
-               -- possible options. These can also be functions that return these options.
-      position = "left", -- left, right, float, current
-      width = 40, -- applies to left and right positions
-      popup = { -- settings that apply to float position only
-        size = {
-          height = "80%",
-          width = "50%",
-        },
-        position = "50%", -- 50% means center it
-        -- you can also specify border here, if you want a different setting from
-        -- the global popup_border_style.
-      },
-      -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
-      -- You can also create your own commands by providing a function instead of a string.
-      mappings = {
-        ["<2-LeftMouse>"] = "open",
-        ["<cr>"] = "open",
-        ["S"] = "open_split",
-        ["s"] = "open_vsplit",
-        ["C"] = "close_node",
-        ["z"] = "close_all_nodes",
-        ["<bs>"] = "navigate_up",
-        ["."] = "set_root",
-        ["H"] = "toggle_hidden",
-        ["I"] = "toggle_gitignore",
-        ["R"] = "refresh",
-        ["/"] = "fuzzy_finder",
-        --["/"] = "filter_as_you_type", -- this was the default until v1.28
-        ["f"] = "filter_on_submit",
-        ["<C-x>"] = "clear_filter",
-        ["a"] = "add",
-        ["d"] = "delete",
-        ["r"] = "rename",
-        ["y"] = "copy_to_clipboard",
-        ["x"] = "cut_to_clipboard",
-        ["p"] = "paste_from_clipboard",
-        ["c"] = "copy", -- takes text input for destination
-        ["m"] = "move", -- takes text input for destination
-        ["q"] = "close_window",
-      },
-    },
-    renderers = {
-      directory = {
-        { "indent" },
-        { "icon" },
-        { "current_filter" },
-        { "name" },
-        -- {
-        --   "symlink_target",
-        --   highlight = "NeoTreeSymbolicLinkTarget",
-        -- },
-        { "clipboard" },
-        { "diagnostics", errors_only = true },
-        --{ "git_status" },
-      },
-      file = {
-        { "indent" },
-        { "icon" },
-        {
-          "name",
-          use_git_status_colors = true,
-        },
-        -- {
-        --   "symlink_target",
-        --   highlight = "NeoTreeSymbolicLinkTarget",
-        -- },
-        { "clipboard" },
-        { "diagnostics" },
-        { "git_status" },
-      },
-    },
   },
   buffers = {
     bind_to_cwd = true,
     window = {
-      position = "left",
-      width = 40,
       mappings = {
-        ["<2-LeftMouse>"] = "open",
-        ["<cr>"] = "open",
-        ["S"] = "open_split",
-        ["s"] = "open_vsplit",
-        ["<bs>"] = "navigate_up",
-        ["."] = "set_root",
-        ["R"] = "refresh",
-        ["a"] = "add",
-        ["d"] = "delete",
-        ["r"] = "rename",
-        ["y"] = "copy_to_clipboard",
-        ["x"] = "cut_to_clipboard",
-        ["p"] = "paste_from_clipboard",
         ["bd"] = "buffer_delete",
-      },
-    },
-    renderers = {
-      directory = {
-        { "indent" },
-        { "icon" },
-        { "name" },
-        { "diagnostics", errors_only = true },
-        { "clipboard" },
-      },
-      file = {
-        { "indent" },
-        { "icon" },
-        { "name" },
-        { "bufnr" },
-        { "diagnostics" },
-        { "git_status" },
-        { "clipboard" },
       },
     },
   },
   git_status = {
     window = {
-      position = "left",
-      width = 40,
       mappings = {
-        ["<2-LeftMouse>"] = "open",
-        ["<cr>"] = "open",
-        ["S"] = "open_split",
-        ["s"] = "open_vsplit",
-        ["C"] = "close_node",
-        ["R"] = "refresh",
-        ["d"] = "delete",
-        ["r"] = "rename",
-        ["y"] = "copy_to_clipboard",
-        ["x"] = "cut_to_clipboard",
-        ["p"] = "paste_from_clipboard",
         ["A"] = "git_add_all",
         ["gu"] = "git_unstage_file",
         ["ga"] = "git_add_file",
@@ -286,21 +244,6 @@ local config = {
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
-      },
-    },
-    renderers = {
-      directory = {
-        { "indent" },
-        { "icon" },
-        { "name" },
-        { "diagnostics", errors_only = true },
-      },
-      file = {
-        { "indent" },
-        { "icon" },
-        { "name" },
-        { "diagnostics" },
-        { "git_status" },
       },
     },
   },
