@@ -1,7 +1,33 @@
 local utils = require "neo-tree.utils"
 
-local migrate = function (config)
-  local messages = {}
+local M = {}
+
+local migrations = {}
+
+M.show_migrations = function()
+  if #migrations > 0 then
+    for i, message in ipairs(migrations) do
+      migrations[i] = "  * " .. message
+    end
+    table.insert(migrations, 1, "# Neo-tree configuration has been updated. Please review the changes below.")
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, migrations)
+    vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
+    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+    vim.api.nvim_buf_set_option(buf, "buflisted", false)
+    vim.api.nvim_buf_set_option(buf, "swapfile", false)
+    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+    vim.api.nvim_buf_set_name(buf, "Neo-tree migrations")
+    vim.defer_fn(function ()
+      vim.cmd(string.format("%ssplit", #migrations))
+      vim.api.nvim_win_set_buf(0, buf)
+    end, 100)
+  end
+end
+
+M.migrate = function (config)
+  migrations = {}
 
   local moved = function (old, new, converter)
     local exising = utils.get_value(config, old)
@@ -11,7 +37,7 @@ local migrate = function (config)
       end
       utils.set_value(config, new, exising)
       config[old] = nil
-      messages[#messages + 1] = string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
+      migrations[#migrations + 1] = string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
     end
   end
 
@@ -19,10 +45,10 @@ local migrate = function (config)
     local value = utils.get_value(config, key)
     if value == old_value then
       utils.set_value(config, key, new_value)
-      messages[#messages + 1] = string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
+      migrations[#migrations + 1] = string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
     end
   end
-    
+
   local opposite = function (value)
     return not value
   end
@@ -36,9 +62,7 @@ local migrate = function (config)
     renamed_value(source .. "window.position", "split", "current")
   end
 
-  return messages
+  return migrations
 end
 
-return {
-  migrate = migrate
-}
+return M

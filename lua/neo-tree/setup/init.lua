@@ -240,24 +240,12 @@ M.merge_config = function(config, is_auto_config)
   local default_config = vim.deepcopy(defaults)
   config = vim.deepcopy(config or {})
 
-  local messages = require("neo-tree.setup.deprecations").migrate(config)
-  if #messages > 0 then
-    for i, message in ipairs(messages) do
-      messages[i] = "  * " .. message
-    end
-    table.insert(messages, 1, "# Neo-tree configuration has been updated. Please review the changes below.")
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, messages)
-    vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "buflisted", false)
-    vim.api.nvim_buf_set_option(buf, "swapfile", false)
-    vim.api.nvim_buf_set_option(buf, "modifiable", false)
-    vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+  local migrations = require("neo-tree.setup.deprecations").migrate(config)
+  if #migrations > 0 then
+    -- defer to make sure it is the last message printed
     vim.defer_fn(function ()
-      vim.cmd("split")
-      vim.api.nvim_win_set_buf(0, buf)
-    end, 100)
+      vim.cmd("echohl WarningMsg | echo 'Some options have changed, please run `:Neotree migrations` to see the changes' | echohl NONE")
+    end, 50)
   end
 
   if config.log_level ~= nil then

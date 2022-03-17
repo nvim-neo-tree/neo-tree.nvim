@@ -33,6 +33,7 @@ local arguments = {
       "filesystem",
       "buffers",
       "git_status",
+      "migrations",
     }
   },
   dir = { type = M.PATH, stat_type = "directory" },
