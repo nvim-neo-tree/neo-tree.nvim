@@ -37,6 +37,7 @@ local M = {
 ---  dir = string      The root directory to set.
 M.execute = function(args)
   local nt = require("neo-tree")
+  nt.ensure_config()
 
   args.action = args.action or "focus"
 
