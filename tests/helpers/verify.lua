@@ -39,7 +39,6 @@ verify.buf_name_endswith = function(buf_name, timeout)
       if n:sub(-#buf_name) == buf_name then
         return true
       else
-        print(n)
         return false
       end
     end,

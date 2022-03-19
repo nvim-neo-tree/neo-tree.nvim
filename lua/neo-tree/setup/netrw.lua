@@ -1,7 +1,7 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
-
+local command = require("neo-tree.command")
 local M = {}
 
 
@@ -11,8 +11,9 @@ local get_position = function(source_name)
 end
 
 M.get_hijack_netrw_behavior = function()
+  local nt = require("neo-tree")
   local option = "filesystem.hijack_netrw_behavior"
-  local hijack_behavior = utils.get_value(M.config, option, "open_default")
+  local hijack_behavior = utils.get_value(nt.config, option, "open_default")
   if hijack_behavior == "disabled" then
     return hijack_behavior
   elseif hijack_behavior == "open_default" then
@@ -76,7 +77,7 @@ M.hijack = function()
       state.current_position = "current"
     else
       log.debug("hijack_netrw: opening default")
-      M.close_all_except("filesystem")
+      manager.close_all_except("filesystem")
       state = manager.get_state("filesystem")
     end
     require("neo-tree.sources.filesystem")._navigate_internal(state, bufname, nil, remove_dir_buf)

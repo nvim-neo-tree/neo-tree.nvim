@@ -202,6 +202,18 @@ M.close_all = function(at_position)
   end
 end
 
+M.close_all_except = function(except_source_name)
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  for source_name, _ in pairs(source_data) do
+    for_each_state(source_name, function(state)
+      if state.tabnr == tabnr and source_name ~= except_source_name then
+        log.trace("Closing " .. source_name)
+        pcall(renderer.close, state)
+      end
+    end)
+  end
+end
+
 ---Redraws the tree with updated diagnostics without scanning the filesystem again.
 M.diagnostics_changed = function(source_name, args)
   if not type(args) == "table" then
