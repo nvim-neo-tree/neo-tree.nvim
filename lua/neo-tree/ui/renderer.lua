@@ -387,7 +387,7 @@ M.position = {
 ---@param selector_func function The predicate function, should return true for
 ---nodes that should be included in the result.
 ---@return table table A list of nodes that match the predicate.
-M.select_nodes = function(tree, selector_func)
+M.select_nodes = function(tree, selector_func, limit)
   if type(selector_func) ~= "function" then
     error("selector_func must be a function")
   end
@@ -396,6 +396,9 @@ M.select_nodes = function(tree, selector_func)
   visit = function(node)
     if selector_func(node) then
       table.insert(found_nodes, node)
+      if limit and #found_nodes >= limit then
+        return
+      end
     end
     if node:has_children() then
       for _, child in ipairs(tree:get_nodes(node:get_id())) do
@@ -405,6 +408,9 @@ M.select_nodes = function(tree, selector_func)
   end
   for _, node in ipairs(tree:get_nodes()) do
     visit(node)
+    if limit and #found_nodes >= limit then
+      break
+    end
   end
   return found_nodes
 end

@@ -10,6 +10,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
+local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
@@ -122,7 +123,17 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
         end
         utils.debounce(
           "filesystem_filter",
-          utils.wrap(fs._navigate_internal, state),
+          function()
+            local is_file = function(node)
+              return node.type == "file"
+            end
+            fs._navigate_internal(state, nil, nil, function ()
+              local files = renderer.select_nodes(state.tree, is_file, 1)
+              if #files > 0 then
+                renderer.focus_node(state, files[1]:get_id(), true)
+              end
+            end)
+          end,
           delay,
           utils.debounce_strategy.CALL_LAST_ONLY
         )
