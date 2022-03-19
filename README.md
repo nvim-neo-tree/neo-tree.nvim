@@ -15,6 +15,9 @@ will be a new branch that you can opt into, when it is a good time for you.
 
 See [What is a Breaking Change?](#what-is-a-breaking-change) for details.
 
+See [Changelog 2.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#20)
+for breaking changes and deprecations in 2.0.
+
 
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
 
