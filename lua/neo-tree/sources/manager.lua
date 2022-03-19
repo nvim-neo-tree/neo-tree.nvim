@@ -34,7 +34,7 @@ end
 
 local function create_state(tabnr, sd, winid)
   local default_config = default_configs[sd.name]
-  local state = utils.table_copy(default_config)
+  local state = vim.deepcopy(default_config, { noref = 1 })
   state.tabnr = tabnr
   state.id = winid or tabnr
   state.dirty = true
@@ -76,7 +76,7 @@ M.set_default_config = function(source_name, config)
   default_configs[source_name] = config
   local sd = get_source_data(source_name)
   for tabnr, tab_config in pairs(sd.state_by_tab) do
-    sd.state_by_tab[tabnr] = utils.table_merge(tab_config, config)
+    sd.state_by_tab[tabnr] = vim.tbl_deep_extend("force", tab_config, config)
   end
 end
 

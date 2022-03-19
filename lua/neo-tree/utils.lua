@@ -476,8 +476,8 @@ local table_merge_internal
 table_merge_internal = function(base_table, override_table)
   for k, v in pairs(override_table) do
     if type(v) == "table" then
-      if type(base_table[k] or false) == "table" then
-        table_merge_internal(base_table[k] or {}, override_table[k] or {})
+      if type(base_table[k]) == "table" then
+        table_merge_internal(base_table[k], v)
       else
         base_table[k] = v
       end
@@ -488,17 +488,12 @@ table_merge_internal = function(base_table, override_table)
   return base_table
 end
 
----Creates a deep copy of a table.
----@param source_table table The table to copy.
----@return table table The copied table.
+---DEPRECATED: Use vim.deepcopy(source_table, { noref = 1 }) instead.
 M.table_copy = function(source_table)
-  return table_merge_internal({}, source_table)
+  return vim.deepcopy(source_table, { noref = 1 })
 end
 
----Returns a new table that is the result of a deep merge two tables.
----@param base_table table The base table that provides default values.
----@param override_table table The table to override the base table with.
----@return table table The merged table.
+---DEPRECATED: Use vim.tbl_deep_extend("force", base_table, source_table) instead.
 M.table_merge = function(base_table, override_table)
   local merged_table = table_merge_internal({}, base_table)
   return table_merge_internal(merged_table, override_table)

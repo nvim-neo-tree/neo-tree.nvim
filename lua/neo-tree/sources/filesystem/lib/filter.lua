@@ -103,7 +103,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
         log.trace("Resetting search in on_change")
         local original_open_folders = nil
         if type(state.open_folders_before_search) == "table" then
-          original_open_folders = utils.table_copy(state.open_folders_before_search)
+          original_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
         end
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders

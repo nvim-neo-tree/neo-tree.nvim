@@ -285,7 +285,11 @@ M.merge_config = function(config, is_auto_config)
     normalize_mappings(config[source_name])
 
     -- merge the global config with the source specific config
-    source_config.window = utils.table_merge(default_config.window or {}, source_config.window or {})
+    source_config.window = vim.tbl_deep_extend(
+      "force",
+      default_config.window or {},
+      source_config.window or {},
+      config.window or {})
     source_config.renderers = source_config.renderers or {}
     -- if source does not specify a renderer, use the global default
     for name, renderer in pairs(default_config.renderers or {}) do
@@ -325,7 +329,7 @@ M.merge_config = function(config, is_auto_config)
   end
 
   -- apply the users config
-  M.config = utils.table_merge(default_config, config)
+  M.config = vim.tbl_deep_extend("force", default_config, config)
 
   for _, source_name in ipairs(sources) do
     for name, rndr in pairs(M.config[source_name].renderers) do

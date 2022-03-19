@@ -48,4 +48,4 @@ M.symlink_target = function(config, node, state)
   end
 end
 
-return utils.table_merge(common, M)
+return vim.tbl_deep_extend("force", common, M)

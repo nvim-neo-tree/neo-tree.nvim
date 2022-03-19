@@ -541,18 +541,21 @@ create_window = function(state)
     ["none"] = true,
     ["nop"] = true,
     ["noop"] = true,
-    [""] = true,
-    [{}] = true,
   }
   local map_options = { noremap = true, nowait = true }
   local mappings = utils.get_value(state, "window.mappings", {}, true)
   for cmd, func in pairs(mappings) do
-    if func then
+    if utils.truthy(func) then
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
       else
         if type(func) == "string" then
-          func = state.commands[func]
+          local func_ref = state.commands[func]
+          if func_ref then
+            func = func_ref
+          else
+            log.error(string.format("Could not find command %s for mapping %s in %s", func, cmd, state.name))
+          end
         end
         if type(func) == "function" then
           keymap.set(state.bufnr, "n", cmd, function()

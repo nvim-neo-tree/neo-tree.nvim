@@ -50,4 +50,4 @@ M.bufnr = function(config, node, state)
   }
 end
 
-return utils.table_merge(common, M)
+return vim.tbl_deep_extend("force", common, M)
