@@ -95,6 +95,7 @@ M.add = function(state)
 end
 
 M.close_node = cc.close_node
+M.close_all_nodes = cc.close_all_nodes
 M.close_window = cc.close_window
 
 ---Marks node as copied, so that it can be pasted somewhere else.
