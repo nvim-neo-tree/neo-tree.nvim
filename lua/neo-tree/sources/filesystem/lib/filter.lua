@@ -158,9 +158,12 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
 
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
-    if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
-      fs.reset_search(state, true)
-    end
+    -- If this was closed due to submit, that function will handle the reset_search
+    vim.defer_fn(function ()
+      if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
+        fs.reset_search(state, true)
+      end
+    end, 100)
     restore_height()
   end, { once = true })
 
