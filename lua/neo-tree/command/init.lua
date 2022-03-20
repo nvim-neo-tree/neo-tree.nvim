@@ -95,7 +95,7 @@ M.execute = function(args)
   -- Handle setting directory if requested
   local path_changed = false
   if args.dir then
-    if args.dir:sub(-1) == utils.path_separator then
+    if #args.dir > 1 and args.dir:sub(-1) == utils.path_separator then
       args.dir = args.dir:sub(1, -2)
     end
     path_changed = state.path ~= args.dir

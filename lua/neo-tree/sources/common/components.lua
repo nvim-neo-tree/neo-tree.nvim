@@ -238,7 +238,7 @@ M.name = function(config, node, state)
   local text = node.name
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_NAME
-    if config.trailing_slash then
+    if config.trailing_slash and text ~= "/" then
       text = text .. "/"
     end
   end
