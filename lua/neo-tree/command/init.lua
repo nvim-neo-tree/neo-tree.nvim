@@ -112,7 +112,7 @@ M.execute = function(args)
 
   -- All set, now show or focus the window
   local force_navigate = path_changed or do_reveal or state.dirty
-  if position_changed then
+  if position_changed and args.position ~= "current" and current_position ~= "current" then
     manager.close(args.source)
   end
   if do_reveal then
