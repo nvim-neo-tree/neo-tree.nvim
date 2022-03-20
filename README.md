@@ -121,7 +121,6 @@ use {
             ["<bs>"] = "navigate_up",
             ["."] = "set_root",
             ["H"] = "toggle_hidden",
-            ["I"] = "toggle_gitignore",
             ["R"] = "refresh",
             ["/"] = "fuzzy_finder",
             ["f"] = "filter_on_submit",
