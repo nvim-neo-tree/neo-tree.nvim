@@ -1,6 +1,6 @@
 #/bin/bash
 VERSION=$1
-MAJOR_VERSION="v1.x"
+MAJOR_VERSION="v2.x"
 git fetch
 git checkout main
 git pull
