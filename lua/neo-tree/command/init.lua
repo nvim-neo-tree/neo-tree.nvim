@@ -62,8 +62,7 @@ M.execute = function(args)
 
   -- Now get the correct state
   local state
-  local default_position = nt.config[args.source].window.position
-  if args.position == "current" or default_position == "current" then
+  if args.position == "current" then
     local winid = vim.api.nvim_get_current_win()
     state = manager.get_state(args.source, nil, winid)
   else
@@ -88,6 +87,9 @@ M.execute = function(args)
   end
 
   -- Handle position override
+  local default_position = nt.config[args.source].window.position
+  local current_position = state.current_position or default_position
+  local position_changed = args.position ~= current_position
   state.current_position = args.position
 
   -- Handle setting directory if requested
@@ -110,6 +112,9 @@ M.execute = function(args)
 
   -- All set, now show or focus the window
   local force_navigate = path_changed or do_reveal or state.dirty
+  if position_changed then
+    manager.close(args.source)
+  end
   if do_reveal then
     handle_reveal(args, state)
   else
