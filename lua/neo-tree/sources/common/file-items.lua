@@ -56,7 +56,8 @@ function create_item(context, path, _type)
 
   local state = context.state
   local f = state.filtered_items
-  if f then
+  local is_not_root = context.state.path ~= path
+  if f and is_not_root then
     if f.hide_by_name[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.name = true
