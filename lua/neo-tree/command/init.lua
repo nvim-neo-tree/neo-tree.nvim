@@ -89,8 +89,11 @@ M.execute = function(args)
   -- Handle position override
   local default_position = nt.config[args.source].window.position
   local current_position = state.current_position or default_position
-  local position_changed = args.position ~= current_position
-  state.current_position = args.position
+  local position_changed = false
+  if args.position then
+    state.position = args.position
+    position_changed = args.position ~= current_position
+  end
 
   -- Handle setting directory if requested
   local path_changed = false
