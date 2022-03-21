@@ -51,6 +51,12 @@ local function get_priority_git_status_code(status, other_status)
 end
 
 local parse_git_status_line = function(context, line)
+  if type(line) ~= "string" then
+    return
+  end
+  if #line < 4 then
+    return
+  end
   local git_root = context.git_root
   local git_status = context.git_status
   local exclude_directories = context.exclude_directories
