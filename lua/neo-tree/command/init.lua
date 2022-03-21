@@ -91,7 +91,7 @@ M.execute = function(args)
   local current_position = state.current_position or default_position
   local position_changed = false
   if args.position then
-    state.position = args.position
+    state.current_position = args.position
     position_changed = args.position ~= current_position
   end
 

@@ -348,9 +348,9 @@ end
 M.position = {
   save = function(state)
     if state.tree and M.window_exists(state) then
-      local node = state.tree:get_node()
-      if node then
-        state.position.node_id = node:get_id()
+      local success, node = pcall(state.tree.get_node, state.tree)
+      if success and node then
+        _, state.position.node_id = pcall(node.get_id, node)
       end
     end
     -- Only need to restore the cursor state once per save, comes
