@@ -1,4 +1,5 @@
 local vim = vim
+local files_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local git = require("neo-tree.git")
@@ -23,6 +24,11 @@ end
 local create_item, set_parents
 
 function create_item(context, path, _type)
+  -- avoid creating duplicate items
+  if context.folders[path] or context.nesting[path] then
+    return context.folders[path] or context.nesting[path]
+  end
+
   local parent_path, name = utils.split_path(path)
 
   if _type == nil then
@@ -51,7 +57,14 @@ function create_item(context, path, _type)
       table.insert(context.state.default_expanded_nodes, item.id)
     end
   else
-    item.ext = item.name:match("%.(%w+)$")
+    item.base = item.name:match("^([-_,()%s%w%i]+)%.")
+    item.ext = item.name:match("%.([-_,()%s%w%i]+)$")
+    item.exts = item.name:match("^[-_,()%s%w%i]+%.(.*)")
+
+    if files_nesting.can_have_nesting(item) then
+      item.children = {}
+      context.nesting[path] = item
+    end
   end
 
   local state = context.state
@@ -89,8 +102,27 @@ function set_parents(context, item)
   if not item.parent_path then
     return
   end
+
+  local nesting_parent_path = files_nesting.get_parent(item)
+  local nesting_parent = context.nesting[nesting_parent_path]
+
+  if
+    nesting_parent_path
+    and not nesting_parent
+    and utils.truthy(vim.loop.fs_stat(nesting_parent_path))
+  then
+    local success
+    success, nesting_parent = pcall(create_item, context, nesting_parent_path)
+    if not success then
+      log.error("error, creating item for ", nesting_parent_path)
+    end
+  end
+
   local parent = context.folders[item.parent_path]
-  if parent == nil then
+  if not utils.truthy(item.parent_path) then
+    return
+  end
+  if parent == nil and nesting_parent == nil then
     local success
     success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
@@ -99,7 +131,7 @@ function set_parents(context, item)
     context.folders[parent.id] = parent
     set_parents(context, parent)
   end
-  table.insert(parent.children, item)
+  table.insert((nesting_parent and nesting_parent.children) or parent.children, item)
   context.existing_items[item.id] = true
 
   if item.filtered_by == nil and type(parent.filtered_by) == "table" then
@@ -111,6 +143,7 @@ local create_context = function(state)
   local context = {
     state = state,
     folders = {},
+    nesting = {},
     existing_items = {},
   }
   return context

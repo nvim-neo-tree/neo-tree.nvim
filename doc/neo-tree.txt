@@ -16,6 +16,8 @@ Configuration ............... |neo-tree-configuration|
   Git Status ................ |neo-tree-git-status|
   Diagnostics ............... |neo-tree-diagnostics|
   Indent markers ............ |neo-tree-indent-markers|
+  Expanders ................. |neo-tree-expanders|
+  File nesting .............. |neo-tree-file-nesting|
   Highlights ................ |neo-tree-highlights|
   Events .................... |neo-tree-events|
   Components and Renderers .. |neo-tree-renderers|
@@ -612,6 +614,41 @@ To change highlight of indent markers, you need configure `NeoTreeIndentMarker`
 highlight group. By default, it refers to `Normal` highlight.
 
 
+EXPANDERS                                                   *neo-tree-expanders*
+Is hightly recommended enable if file nesting is enabled (this is the default
+behavior if `with_expanders` is nil). The config can be done inside the `indent`
+component:
+>
+    require("neo-tree").setup({
+        default_component_configs = {
+            indent = {
+                with_expanders = true,
+                expander_collapsed = "",
+                expander_expanded = "",
+                expander_highlight = "NeoTreeExpander",
+            },
+        },
+    })
+<
+
+FILE NESTING                                             *neo-tree-file-nesting*
+
+By default, file nesting is disabled since `nesting_rules` table is empty,
+there is not files to apply the nesting, this can be enabled filling the
+`nesting_rules` table with the following structure:
+>
+    require("neo-tree").setup({
+        nesting_rules = {
+            ["js"] = { "js.map" }
+        }
+    })
+<
+This will render:
+>
+    FILENAME.js
+        FILENAME.js.map
+<
+
 HIGHLIGHTS                                                 *neo-tree-highlights*
 
 The following highlight groups are defined by this plugin. If you set any of
@@ -643,6 +680,7 @@ NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
+NeoTreeExpander           Used for collapsed/expanded icons.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.

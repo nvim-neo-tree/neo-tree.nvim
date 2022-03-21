@@ -6,6 +6,17 @@ local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 
+---Gets the node parent folder recursively
+---@param tree tree to look for nodes
+---@param node node to look for folder parent
+---@return node
+local function get_folder_node(tree, node)
+  if node.type == "directory" then
+    return node
+  end
+  return get_folder_node(tree, tree:get_node(node:get_parent_id()))
+end
+
 local M = {}
 
 ---Add a new file or dir at the current node
@@ -13,16 +24,13 @@ local M = {}
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add = function(state, callback)
   local tree = state.tree
-  local node = tree:get_node()
-  if node.type == "file" then
-    node = tree:get_node(node:get_parent_id())
-  end
+  local node = get_folder_node(tree, tree:get_node())
+
   fs_actions.create_node(node:get_id(), callback)
 end
 
 M.close_all_nodes = function(state)
   renderer.collapse_all_nodes(state.tree)
-  state.tree:get_nodes()[1]:expand()
   state.tree:render()
 end
 
@@ -32,13 +40,13 @@ M.close_node = function(state, callback)
   local parent_node = tree:get_node(node:get_parent_id())
   local target_node
 
-  if node.type == "directory" and node:is_expanded() then
+  if node:has_children() and node:is_expanded() then
     target_node = node
   else
     target_node = parent_node
   end
 
-  if target_node then
+  if target_node and target_node:has_children() then
     target_node:collapse()
     tree:render()
     renderer.focus_node(state, target_node:get_id())
@@ -90,12 +98,7 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
   if state.clipboard then
-    local at_node = state.tree:get_node()
-    local folder = at_node:get_id()
-    if at_node.type == "file" then
-      folder = at_node:get_parent_id()
-    end
-
+    local folder = get_folder_node(state.tree, state.tree:get_node()):get_id()
     -- Convert to list so to make it easier to pop items from the stack.
     local clipboard_list = {}
     for _, item in pairs(state.clipboard) do
@@ -177,10 +180,20 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     log.debug("Could not get node.")
     return
   end
-  if node.type == "directory" then
-    if toggle_directory then
+
+  local function open()
+    local path = node:get_id()
+    utils.open_file(state, path, open_cmd)
+  end
+
+  if utils.is_expandable(node) then
+    if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
+      if node:is_expanded() and node.type == "file" then
+        return open()
+      end
+
       local updated = false
       if node:is_expanded() then
         updated = node:collapse()
@@ -191,10 +204,8 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
         tree:render()
       end
     end
-    return nil
   else
-    local path = node:get_id()
-    utils.open_file(state, path, open_cmd)
+    open()
   end
 end
 
@@ -247,8 +258,6 @@ M.toggle_directory = function(state)
       updated = node:expand()
     end
     if updated then
-      tree:render()
-    else
       tree:render()
     end
   end
