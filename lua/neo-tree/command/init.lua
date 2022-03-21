@@ -157,9 +157,10 @@ do_show_or_focus = function(args, state, force_navigate)
     end)
   elseif args.action == "focus" then
     -- "focus" mean open and jump to the window if closed, and just focus it if already opened
-    if window_exists and not force_navigate then
+    if window_exists then
       vim.api.nvim_set_current_win(state.winid)
-    else
+    end
+    if force_navigate or not window_exists then
       close_other_sources()
       manager.navigate(state, state.path, args.reveal_file)
     end
