@@ -236,7 +236,7 @@ the default config.
 ### Tab Completion
 
 Neotree supports tab completion for all arguments. Once a given argument has a value,
-it will stop suggesting those completion. It will also offer completions for paths.
+it will stop suggesting those completions. It will also offer completions for paths.
 The simplest way to disambiguate a path from another type of argument is to start
 them with `/` or `./`.
 
