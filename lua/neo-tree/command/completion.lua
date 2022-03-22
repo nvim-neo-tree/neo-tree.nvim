@@ -1,8 +1,8 @@
 local parser = require("neo-tree.command.parser")
-local utils   = require("neo-tree.utils")
+local utils = require("neo-tree.utils")
 
 local M = {
-  show_key_value_completions = false,
+  show_key_value_completions = true,
 }
 
 local get_path_completions = function(key_prefix, base_path)
@@ -12,6 +12,15 @@ local get_path_completions = function(key_prefix, base_path)
   local path_completions = vim.fn.glob(expanded .. "*", false, true)
   for _, completion in ipairs(path_completions) do
     if expanded ~= base_path then
+      -- we need to recreate the relative path from the aboluste path
+      -- first strip trailing slashes to normalize
+      if expanded:sub(-1) == utils.path_separator then
+        expanded = expanded:sub(1, -2)
+      end
+      if base_path:sub(-1) == utils.path_separator then
+        base_path = base_path:sub(1, -2)
+      end
+      -- now put just the current completion onto the base_path being used
       completion = base_path .. string.sub(completion, #expanded + 1)
     end
     table.insert(completions, key_prefix .. completion)

@@ -223,8 +223,26 @@ above can also be specified as:
 :Neotree source=filesystem reveal=true position=right
 ```
 
-All arguments are optional and can be specified in any order. Here is the full list of 
-arguments you can use:
+All arguments are optional and can be specified in any order. If you issue the command
+without any arguments, it will use default values for everything. For example:
+
+```
+:Neotree
+```
+
+will open the filesystem source on the left hand side and focus it, if you are using 
+the default config.
+
+### Tab Completion
+
+Neotree supports tab completion for all arguments. Once a given argument has a value,
+it will stop suggesting those completion. It will also offer completions for paths.
+The simplest way to disambiguate a path from another type of argument is to start
+them with `/` or `./`.
+
+### Arguments
+
+Here is the full list of arguments you can use:
 
 #### `action`
 What to do. Can be one of:
@@ -263,20 +281,34 @@ The directory to set as the root/cwd of the specified window. If you include a
 directory as one of the arguments, it will be assumed to be this option, you
 don't need the full dir=/path. You may use any value that can be passed to the
 'expand' function, such as `%:p:h:h` to specify two directories up from the
-current file.
+current file. For example:
+
+```
+:NeoTree ./relative/path
+:NeoTree /home/user/relative/path
+:NeoTree dir=/home/user/relative/path
+:NeoTree position=current dir=relative/path
+```
 
 #### `reveal`
 This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.
 
-#### `reveal_path`
+#### `reveal_file`
 A path to a file to reveal. This supersedes the "reveal" flag so there is no
 need to specify both. Use this if you want to reveal something other than the
 current file. If you include a path to a file as one of the arguments, it will
 be assumed to be this option. Like "dir", you can pass any value that can be
-passed to the 'expand' function. One neat trick you can do with this is to open
-a Neotree window which is focused on the file under the cursor using the `<cfile>`
-keyword:
+passed to the 'expand' function. For example:
+
+```
+:NeoTree reveal_file=/home/user/my/file.text
+:NeoTree position=current dir=%:p:h:h reveal_file=%:p
+:NeoTree current %:p:h:h %:p
+```
+
+One neat trick you can do with this is to open a Neotree window which is
+focused on the file under the cursor using the `<cfile>` keyword:
 
 ```
 nnoremap gd :Neotree float reveal_file=<cfile> reveal_force_cwd<cr>
