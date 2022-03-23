@@ -71,13 +71,13 @@ function create_item(context, path, _type)
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)
   if f and is_not_root then
-    if f.hide_by_name[name] then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.name = true
-    elseif f.never_show[name] then
+    if f.never_show[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.never_show = true
-    elseif f.hide_dotfiles and string.sub(item.name, 1, 1) == "." then
+    elseif f.hide_by_name[name] then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.name = true
+    elseif f.hide_dotfiles and string.sub(name, 1, 1) == "." then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.dotfiles = true
     elseif f.hide_gitignored and utils.truthy(state.git_ignored) then

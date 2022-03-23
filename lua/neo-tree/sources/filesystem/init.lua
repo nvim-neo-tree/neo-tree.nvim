@@ -246,8 +246,14 @@ end
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   config.filters = config.filters or {}
-  local exclude = config.filters.exclude_items or {}
-  config.filters.exclude_items = utils.list_to_dict(exclude)
+  local hide_by_name = utils.get_value(config, "filtered_items.hide_by_name")
+  if hide_by_name then
+    config.filtered_items.hide_by_name = utils.list_to_dict(hide_by_name)
+  end
+  local never_show = utils.get_value(config, "filtered_items.never_show")
+  if never_show then
+    config.filtered_items.never_show = utils.list_to_dict(never_show)
+  end
 
   --Configure events for before_render
   if config.before_render then
