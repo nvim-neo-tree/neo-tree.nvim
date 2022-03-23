@@ -38,6 +38,9 @@ local follow_internal = function(callback, force_show)
   end
 
   local state = get_state()
+  if state.current_position == "float" then
+    return false
+  end
   if not state.path then
     return false
   end
@@ -183,7 +186,6 @@ M.reset_search = function(state, refresh, open_current_node)
   end
   state.search_pattern = nil
   state.open_folders_before_search = nil
-  if refresh then
     if open_current_node then
       local success, node = pcall(state.tree.get_node, state.tree)
       if success and node then
@@ -195,15 +197,13 @@ M.reset_search = function(state, refresh, open_current_node)
             pcall(renderer.focus_node, state, path, false)
           end)
         else
-          if state.current_position == "current" then
-            utils.open_file(state, node:get_id())
-          else
-            utils.open_file(state, path)
+          utils.open_file(state, path)
+          if refresh and state.current_position ~= "current" and state.current_position ~= "float" then
             M.navigate(state, nil, path)
           end
         end
       end
-    else
+    else if refresh then
       M.navigate(state)
     end
   end

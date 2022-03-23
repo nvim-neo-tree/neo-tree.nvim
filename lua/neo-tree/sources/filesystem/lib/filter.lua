@@ -62,9 +62,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
         fs.reset_search(state)
       else
         if search_as_you_type and fuzzy_finder_mode then
-          state.search_pattern = nil
           fs.reset_search(state, true, true)
-          require("neo-tree.sources.filesystem.commands").open(state)
           return
         end
         state.search_pattern = value
@@ -149,6 +147,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     end
   end)
   input:map("i", "<esc>", function(bufnr)
+    vim.cmd("stopinsert")
     input:unmount()
     if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
       fs.reset_search(state, true)
@@ -157,6 +156,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   end, { noremap = true })
 
   input:on({ event.BufLeave, event.BufDelete }, function()
+    vim.cmd("stopinsert")
     input:unmount()
     -- If this was closed due to submit, that function will handle the reset_search
     vim.defer_fn(function ()

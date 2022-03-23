@@ -1,7 +1,5 @@
 local vim = vim
 local Input = require("nui.input")
-local NuiText = require("nui.text")
-local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
 local utils = require("neo-tree.utils")
 
@@ -15,7 +13,8 @@ end
 M.show_input = function(input, callback)
   input:mount()
 
-  input:map("i", "<esc>", function(bufnr)
+  input:map("i", "<esc>", function()
+    vim.cmd("stopinsert")
     input:unmount()
   end, { noremap = true })
 
