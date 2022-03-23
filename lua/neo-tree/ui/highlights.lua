@@ -27,6 +27,8 @@ M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
 M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.TITLE_BAR = "NeoTreeTitleBar"
+M.INDENT_MARKER = "NeoTreeIndentMarker"
+M.EXPANDER = "NeoTreeExpander"
 
 local function dec_to_hex(n)
   local hex = string.format("%06x", n)
@@ -105,14 +107,14 @@ M.setup = function()
   create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
-  local added = create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
-  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
-  create_highlight_group(
-    M.GIT_MODIFIED,
-    { "GitGutterChange", "GitSignsChange" },
+  local added = create_highlight_group(
+    M.GIT_ADDED,
+    { "GitGutterAdd", "GitSignsAdd" },
     nil,
-    "d7af5f"
+    "5faf5f"
   )
+  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
+  create_highlight_group(M.GIT_MODIFIED, { "GitGutterChange", "GitSignsChange" }, nil, "d7af5f")
   local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
   create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
@@ -132,6 +134,7 @@ M.setup = function()
   create_highlight_group(M.FILTER_TERM, { "SpecialChar", "Normal" })
   create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
   create_highlight_group(M.INDENT_MARKER, { M.DIM_TEXT })
+  create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
 end
 
 return M

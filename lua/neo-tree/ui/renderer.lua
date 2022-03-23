@@ -335,7 +335,9 @@ M.collapse_all_nodes = function(tree)
   local expanded = M.get_expanded_nodes(tree)
   for _, id in ipairs(expanded) do
     local node = tree:get_node(id)
-    node:collapse(id)
+    if utils.is_expandable(node) then
+      node:collapse(id)
+    end
   end
   -- but make sure the root is expanded
   local root = tree:get_nodes()[1]
@@ -560,7 +562,9 @@ create_window = function(state)
           if func_ref then
             func = func_ref
           else
-            log.error(string.format("Could not find command %s for mapping %s in %s", func, cmd, state.name))
+            log.error(
+              string.format("Could not find command %s for mapping %s in %s", func, cmd, state.name)
+            )
           end
         end
         if type(func) == "function" then
@@ -624,7 +628,6 @@ M.window_exists = function(state)
   end
   return window_exists
 end
-
 
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.

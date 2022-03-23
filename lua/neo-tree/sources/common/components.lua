@@ -11,7 +11,8 @@
 --    highlight: The highlight group to apply to this text.
 
 local highlights = require("neo-tree.ui.highlights")
-local utils      = require("neo-tree.utils")
+local utils = require("neo-tree.utils")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 
 local M = {}
 
@@ -113,7 +114,7 @@ M.git_status = function(config, node, state)
     status_highlt = highlights.GIT_UNTRACKED
     change_symbol = symbols.untracked
     change_highlt = highlights.GIT_UNTRACKED
-  -- all variations of merge conflicts
+    -- all variations of merge conflicts
   elseif git_status == "DD" then
     status_symbol = symbols.conflict
     status_highlt = highlights.GIT_CONFLICT
@@ -138,7 +139,7 @@ M.git_status = function(config, node, state)
       change_symbol = symbols.deleted
     end
     change_highlt = highlights.GIT_CONFLICT
-  -- end merge conflict section
+    -- end merge conflict section
   elseif git_status:match("M") then
     change_symbol = symbols.modified
     change_highlt = highlights.GIT_MODIFIED
@@ -178,7 +179,6 @@ M.git_status = function(config, node, state)
       highlight = config.highlight or change_highlt,
     }
   end
-
 end
 
 M.filtered_by = function(config, node, state)
@@ -267,19 +267,40 @@ M.indent = function(config, node, state)
     state.skip_marker_at_level = {}
   end
 
+  local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
   local level = node.level
   local with_markers = config.with_markers
+  local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
+    or config.with_expanders
+  local marker_highlight = config.highlight or highlights.INDENT_MARKER
+  local expander_highlight = config.expander_highlight or config.highlight or highlights.EXPANDER
+
+  local function get_expander()
+    if with_expanders and utils.is_expandable(node) then
+      return node:is_expanded() and (config.expander_expanded or "")
+        or (config.expander_collapsed or "")
+    end
+  end
 
   if indent_size == 0 or level < 2 or not with_markers then
-    return { text = string.rep(" ", indent_size * level + padding) }
+    local len = indent_size * level + padding
+    local expander = get_expander()
+    if level == 0 or not expander then
+      return {
+        text = string.rep(" ", len),
+      }
+    end
+    return {
+      text = string.rep(" ", len - strlen(expander) - 1) .. expander .. " ",
+      highlight = expander_highlight,
+    }
   end
 
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
-  local highlight = config.highlight or highlights.INDENT_MARKER
 
   skip_marker[level] = node.is_last_child
   local indent = {}
@@ -288,19 +309,26 @@ M.indent = function(config, node, state)
   end
 
   for i = 1, level do
+    local char = ""
     local spaces_count = indent_size
-    local marker = indent_marker
-
-    if i == level and node.is_last_child then
-      marker = last_indent_marker
-    end
+    local highlight = nil
 
     if i > 1 and not skip_marker[i] or i == level then
-      table.insert(indent, { text = marker, highlight = highlight })
       spaces_count = spaces_count - 1
+      char = indent_marker
+      highlight = marker_highlight
+      if i == level then
+        local expander = get_expander()
+        if expander then
+          char = expander
+          highlight = expander_highlight
+        elseif node.is_last_child then
+          char = last_indent_marker
+        end
+      end
     end
 
-    table.insert(indent, { text = string.rep(" ", spaces_count) })
+    table.insert(indent, { text = char .. string.rep(" ", spaces_count), highlight = highlight })
   end
 
   return indent

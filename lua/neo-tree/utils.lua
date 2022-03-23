@@ -244,7 +244,7 @@ end
 ---@param sourceObject table The table to set a value in.
 ---@param valuePath string The path to the value to set.
 ---@param value any The value to set.
-M.set_value = function (sourceObject, valuePath, value)
+M.set_value = function(sourceObject, valuePath, value)
   local pathParts = M.split(valuePath, ".")
   local currentTable = sourceObject
   for i, part in ipairs(pathParts) do
@@ -255,7 +255,7 @@ M.set_value = function (sourceObject, valuePath, value)
     end
   end
 end
-  
+
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
@@ -272,11 +272,11 @@ end
 M.list_to_dict = function(tbl)
   local dict = {}
   -- leave the existing keys
-  for key,val in pairs(tbl) do
+  for key, val in pairs(tbl) do
     dict[key] = val
   end
   -- and convert the number indexed items
-  for _,item in ipairs(tbl) do
+  for _, item in ipairs(tbl) do
     dict[item] = true
   end
   return dict
@@ -516,9 +516,13 @@ M.truthy = function(value)
     return value > 0
   end
   if type(value) == "table" then
-    return #value > 0
+    return #vim.tbl_values(value) > 0
   end
   return true
+end
+
+M.is_expandable = function(node)
+  return node.type == "directory" or node:has_children()
 end
 
 M.windowize_path = function(path)

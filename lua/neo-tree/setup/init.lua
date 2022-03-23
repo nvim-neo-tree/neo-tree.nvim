@@ -3,6 +3,7 @@ local defaults = require("neo-tree.defaults")
 local mapping_helper = require("neo-tree.setup.mapping-helper")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 local highlights = require("neo-tree.ui.highlights")
 local manager = require("neo-tree.sources.manager")
 local netrw   = require("neo-tree.setup.netrw")
@@ -193,7 +194,6 @@ M.win_enter_event = function()
   end
 end
 
-
 M.set_log_level = function(level)
   log.set_level(level)
 end
@@ -243,8 +243,10 @@ M.merge_config = function(config, is_auto_config)
   local migrations = require("neo-tree.setup.deprecations").migrate(config)
   if #migrations > 0 then
     -- defer to make sure it is the last message printed
-    vim.defer_fn(function ()
-      vim.cmd("echohl WarningMsg | echo 'Some options have changed, please run `:Neotree migrations` to see the changes' | echohl NONE")
+    vim.defer_fn(function()
+      vim.cmd(
+        "echohl WarningMsg | echo 'Some options have changed, please run `:Neotree migrations` to see the changes' | echohl NONE"
+      )
     end, 50)
   end
 
@@ -289,13 +291,14 @@ M.merge_config = function(config, is_auto_config)
       "force",
       default_config.window or {},
       source_config.window or {},
-      config.window or {})
+      config.window or {}
+    )
     source_config.renderers = source_config.renderers or {}
     -- if source does not specify a renderer, use the global default
     for name, renderer in pairs(default_config.renderers or {}) do
       if source_config.renderers[name] == nil then
         local r = {}
-        for  _, value in ipairs(renderer) do
+        for _, value in ipairs(renderer) do
           if value[1] and source_config.components[value[1]] ~= nil then
             table.insert(r, value)
           end
@@ -330,6 +333,8 @@ M.merge_config = function(config, is_auto_config)
 
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, config)
+
+  file_nesting.setup(M.config.nesting_rules)
 
   for _, source_name in ipairs(sources) do
     for name, rndr in pairs(M.config[source_name].renderers) do

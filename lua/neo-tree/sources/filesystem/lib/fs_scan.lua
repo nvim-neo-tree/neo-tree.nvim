@@ -54,7 +54,8 @@ local function do_scan(context, path_to_scan)
         next_path = table.remove(paths_to_load)
         -- ensure that the path is still valid
         local success, result = pcall(vim.loop.fs_stat, next_path)
-        if success and result then
+        -- ensure that the result is a directory
+        if success and result and result.type == "directory" then
           -- ensure that it is not already loaded
           local existing = folders[next_path]
           if existing and existing.loaded then
