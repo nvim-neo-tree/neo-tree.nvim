@@ -189,7 +189,6 @@ local config = {
         --".DS_Store",
         --"thumbs.db"
       },
-      gitignore_source = "git check-ignored", -- or "git status", which may be faster in some repos
     },
     find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
                                       -- `true` will change the filter into a full path

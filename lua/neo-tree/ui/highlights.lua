@@ -107,19 +107,6 @@ M.setup = function()
   create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
 
-  local added = create_highlight_group(
-    M.GIT_ADDED,
-    { "GitGutterAdd", "GitSignsAdd" },
-    nil,
-    "5faf5f"
-  )
-  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
-  create_highlight_group(M.GIT_MODIFIED, { "GitGutterChange", "GitSignsChange" }, nil, "d7af5f")
-  local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
-  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
-  create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
-  create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
-
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
   create_highlight_group(M.DOTFILE, {}, nil, "626262")
@@ -135,6 +122,19 @@ M.setup = function()
   create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
   create_highlight_group(M.INDENT_MARKER, { M.DIM_TEXT })
   create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
+
+  local added = create_highlight_group(
+    M.GIT_ADDED,
+    { "GitGutterAdd", "GitSignsAdd" },
+    nil,
+    "5faf5f"
+  )
+  create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
+  create_highlight_group(M.GIT_MODIFIED, { "GitGutterChange", "GitSignsChange" }, nil, "d7af5f")
+  local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
+  create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
+  create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
+  create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 end
 
 return M

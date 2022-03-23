@@ -41,6 +41,14 @@ M.migrate = function (config)
     end
   end
 
+  local removed = function(key)
+    local value = utils.get_value(config, key)
+    if type(value) ~= "nil" then
+      utils.set_value(config, key, nil)
+      migrations[#migrations + 1] = string.format("The `%s` option has been removed.", key)
+    end
+  end
+
   local renamed_value = function(key, old_value, new_value)
     local value = utils.get_value(config, key)
     if value == old_value then
@@ -56,7 +64,8 @@ M.migrate = function (config)
   moved("filesystem.filters", "filesystem.filtered_items")
   moved("filesystem.filters.show_hidden", "filesystem.filtered_items.hide_dotfiles", opposite)
   moved("filesystem.filters.respect_gitignore", "filesystem.filtered_items.hide_gitignored")
-  moved("filesystem.filters.gitignore_source", "filesystem.filtered_items.gitignore_source")
+  removed("filesystem.filters.gitignore_source")
+  removed("filesystem.filter_items.gitignore_source")
   renamed_value("filesystem.hijack_netrw_behavior", "open_split", "open_current")
   for _, source in ipairs({"filesystem", "buffers", "git_status"}) do
     renamed_value(source .. "window.position", "split", "current")
