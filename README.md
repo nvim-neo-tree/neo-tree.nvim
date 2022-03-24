@@ -334,7 +334,7 @@ See `:h neo-tree-commands` for details and a full listing of available arguments
 
 ### File Nesting
 
-See `:h neo-tree-file-nesting` for mmore details about file nesting
+See `:h neo-tree-file-nesting` for more details about file nesting.
 
 
 ### Netrw Hijack
