@@ -76,7 +76,7 @@ M.move_node = function(source, destination, callback)
     create_all_parents(dest)
     loop.fs_rename(source, dest, function(err)
       if err then
-        log.error("Could not move the files")
+        log.error("Could not move the files from", source, "to", dest, ":", err)
         return
       end
       vim.schedule(function()
@@ -99,7 +99,7 @@ M.copy_node = function(source, _destination, callback)
     create_all_parents(destination)
     loop.fs_copyfile(source, destination, function(err)
       if err then
-        log.error("Could not copy the files")
+        log.error("Could not copy the files from", source, "to", destination, ":", err)
         return
       end
       vim.schedule(function()

@@ -305,6 +305,7 @@ M.open_file = function(state, path, open_cmd)
   end
 
   if M.truthy(path) then
+    local escaped_path = vim.fn.fnameescape(path)
     local events = require("neo-tree.events")
     local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
       state = state,
@@ -316,7 +317,7 @@ M.open_file = function(state, path, open_cmd)
       return
     end
     if state.current_position == "current" then
-      vim.cmd(open_cmd .. " " .. path)
+      vim.cmd(open_cmd .. " " .. escaped_path)
     else
       -- use last window if possible
       local suitable_window_found = false
@@ -348,10 +349,10 @@ M.open_file = function(state, path, open_cmd)
         -- Neo-tree must be the only window, restore it's status as a sidebar
         local winid = vim.api.nvim_get_current_win()
         local width = M.get_value(state, "window.width", 40)
-        vim.cmd("vsplit " .. path)
+        vim.cmd("vsplit " .. escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
-        vim.cmd(open_cmd .. " " .. path)
+        vim.cmd(open_cmd .. " " .. escaped_path)
       end
     end
     events.fire_event(events.FILE_OPENED, path)
