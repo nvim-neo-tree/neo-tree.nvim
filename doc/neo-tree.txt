@@ -146,6 +146,9 @@ are defined by default.
 
 Note: The "selected" item is the line the cursor is currently on.
 
+<space>       = toggle_node  Expand or collapse a node with children, which
+                             may be a directory or a nested file.
+
 <2-LeftMouse> = open:        Expand or collapse a folder. If a file is selected,
                              open it in the window closest to the tree.
 
@@ -633,13 +636,13 @@ component:
 
 FILE NESTING                                             *neo-tree-file-nesting*
 
-By default, file nesting is disabled since `nesting_rules` table is empty,
-there is not files to apply the nesting, this can be enabled filling the
-`nesting_rules` table with the following structure:
+By default, file nesting is disabled since the `nesting_rules` table is empty.
+To enable this feature, fill in the `nesting_rules` table with the following
+structure:
 >
     require("neo-tree").setup({
         nesting_rules = {
-            ["js"] = { "js.map" }
+            ["js"] = { "js.map" },
         }
     })
 <
@@ -647,7 +650,10 @@ This will render:
 >
     FILENAME.js
         FILENAME.js.map
+
 <
+The default mapping to expand/collapse nested files is <space>.
+
 
 HIGHLIGHTS                                                 *neo-tree-highlights*
 

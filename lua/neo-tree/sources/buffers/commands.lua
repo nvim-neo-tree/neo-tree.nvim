@@ -72,4 +72,6 @@ M.set_root = function(state)
   end
 end
 
+M.toggle_node = cc.toggle_node
+
 return M

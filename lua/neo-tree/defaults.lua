@@ -107,6 +107,7 @@ local config = {
     -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
     -- You can also create your own commands by providing a function instead of a string.
     mappings = {
+      ["<space>"] = "toggle_node",
       ["<2-LeftMouse>"] = "open",
       ["<cr>"] = "open",
       ["S"] = "open_split",

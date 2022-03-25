@@ -181,19 +181,10 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     return
   end
 
-  local function open()
-    local path = node:get_id()
-    utils.open_file(state, path, open_cmd)
-  end
-
-  if utils.is_expandable(node) then
-    if toggle_directory and node.type == "directory" then
+  if node.type == "directory" then
+    if toggle_directory then
       toggle_directory(node)
     elseif node:has_children() then
-      if node:is_expanded() and node.type == "file" then
-        return open()
-      end
-
       local updated = false
       if node:is_expanded() then
         updated = node:collapse()
@@ -205,7 +196,8 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
       end
     end
   else
-    open()
+    local path = node:get_id()
+    utils.open_file(state, path, open_cmd)
   end
 end
 
@@ -240,10 +232,10 @@ M.rename = function(state, callback)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state)
+M.toggle_node = function(state)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type ~= "directory" then
+  if not utils.is_expandable(node) then
     return
   end
   if node.loaded == false then
@@ -261,6 +253,16 @@ M.toggle_directory = function(state)
       tree:render()
     end
   end
+end
+
+---Expands or collapses the current node.
+M.toggle_directory = function(state)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type ~= "directory" then
+    return
+  end
+  M.toggle_node(state)
 end
 
 return M

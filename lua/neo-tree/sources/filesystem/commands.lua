@@ -123,4 +123,6 @@ M.toggle_gitignore = function(state)
   M.toggle_hidden(state)
 end
 
+M.toggle_node = cc.toggle_node
+
 return M

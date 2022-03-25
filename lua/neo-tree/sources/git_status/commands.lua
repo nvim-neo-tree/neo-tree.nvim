@@ -129,4 +129,6 @@ M.rename = function(state)
   cc.rename(state, refresh)
 end
 
+M.toggle_node = cc.toggle_node
+
 return M

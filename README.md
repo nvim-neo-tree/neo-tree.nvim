@@ -119,6 +119,7 @@ use {
           position = "left",
           width = 40,
           mappings = {
+            ["<space>"] = "toggle_node",
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["S"] = "open_split",
