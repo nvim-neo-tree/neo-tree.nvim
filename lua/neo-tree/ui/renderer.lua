@@ -80,7 +80,7 @@ local remove_filtered = function(source_items, filtered_items)
   for _, child in ipairs(source_items) do
     local fby = child.filtered_by
     if type(fby) == "table" then
-      if filtered_items.visible and not fby.never_show then
+      if (filtered_items.visible or child.is_nested) and not fby.never_show then
         table.insert(filtered, child)
       end
     else
@@ -113,6 +113,7 @@ create_nodes = function(source_items, state, level)
       loaded = item.loaded,
       filtered_by = item.filtered_by,
       extra = item.extra,
+      is_nested = item.is_nested,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,

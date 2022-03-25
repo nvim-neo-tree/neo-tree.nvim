@@ -131,7 +131,12 @@ function set_parents(context, item)
     context.folders[parent.id] = parent
     set_parents(context, parent)
   end
-  table.insert((nesting_parent and nesting_parent.children) or parent.children, item)
+  if nesting_parent then
+    table.insert(nesting_parent.children, item)
+    item.is_nested = true
+  else
+    table.insert(parent.children, item)
+  end
   context.existing_items[item.id] = true
 
   if item.filtered_by == nil and type(parent.filtered_by) == "table" then
