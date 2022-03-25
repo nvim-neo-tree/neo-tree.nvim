@@ -118,6 +118,7 @@ local config = {
       ["."] = "set_root",
       ["R"] = "refresh",
       ["a"] = "add",
+      ["A"] = "add_directory",
       ["d"] = "delete",
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",

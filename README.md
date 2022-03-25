@@ -133,6 +133,7 @@ use {
             ["f"] = "filter_on_submit",
             ["<c-x>"] = "clear_filter",
             ["a"] = "add",
+            ["A"] = "add_directory",
             ["d"] = "delete",
             ["r"] = "rename",
             ["y"] = "copy_to_clipboard",

@@ -165,7 +165,11 @@ s             = open_vsplit: Same as open, but opens in a vertical split
 
 
 FILE ACTIONS                                            *neo-tree-file-actions*
-a    = add:                  Create a new file or directory.
+a    = add:                  Create a new file OR directory. Add a `/` to the
+                             end of the name to make a directory.
+
+A    = add_directory:        Create a new directory, in this mode it does not
+                             need to end with a `/`.
 
 d    = delete:               Delete the selected file or directory.
 

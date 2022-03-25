@@ -15,6 +15,10 @@ M.add = function(state)
   cc.add(state, refresh)
 end
 
+M.add_directory = function(state)
+  cc.add_directory(state, refresh)
+end
+
 M.buffer_delete = function(state)
   local node = state.tree:get_node()
   if node then

@@ -94,6 +94,10 @@ M.add = function(state)
   cc.add(state, refresh)
 end
 
+M.add_directory = function(state)
+  cc.add_directory(state, refresh)
+end
+
 M.close_node = cc.close_node
 M.close_all_nodes = cc.close_all_nodes
 M.close_window = cc.close_window

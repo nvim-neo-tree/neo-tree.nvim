@@ -117,7 +117,34 @@ M.copy_node = function(source, _destination, callback)
   end, 'Copy "' .. name .. '" to:')
 end
 
--- Create Node
+--- Create a new directory
+M.create_directory = function(in_directory, callback)
+  inputs.input('Enter name for new directory:', "", function(name)
+    if not name or name == "" then
+      return
+    end
+    local destination = in_directory .. utils.path_separator .. name
+    if loop.fs_stat(destination) then
+      log.warn("File already exists")
+      return
+    end
+
+    create_all_parents(destination)
+    loop.fs_mkdir(destination, 493)
+
+    if callback then
+      vim.schedule(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
+    end
+  end)
+
+end
+
+--- Create Node
 M.create_node = function(in_directory, callback)
   inputs.input('Enter name for new file or directory (dirs end with a "/"):', "", function(name)
     if not name or name == "" then

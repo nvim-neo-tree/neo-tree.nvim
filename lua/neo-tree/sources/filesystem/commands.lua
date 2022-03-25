@@ -15,6 +15,10 @@ M.add = function(state)
   cc.add(state, utils.wrap(fs.show_new_children, state))
 end
 
+M.add_directory = function(state)
+  cc.add_directory(state, utils.wrap(fs.show_new_children, state))
+end
+
 M.clear_filter = function(state)
   fs.reset_search(state, true)
 end

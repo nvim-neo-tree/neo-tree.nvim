@@ -29,6 +29,16 @@ M.add = function(state, callback)
   fs_actions.create_node(node:get_id(), callback)
 end
 
+---Add a new file or dir at the current node
+---@param state table The state of the source
+---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+M.add_directory = function(state, callback)
+  local tree = state.tree
+  local node = get_folder_node(tree, tree:get_node())
+
+  fs_actions.create_directory(node:get_id(), callback)
+end
+
 M.close_all_nodes = function(state)
   renderer.collapse_all_nodes(state.tree)
   state.tree:render()
