@@ -333,6 +333,9 @@ M.merge_config = function(config, is_auto_config)
 
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, config)
+  if not M.config.enable_git_status then
+    M.config.git_status_async = false
+  end
 
   file_nesting.setup(M.config.nesting_rules)
 
