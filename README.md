@@ -295,10 +295,10 @@ don't need the full dir=/path. You may use any value that can be passed to the
 current file. For example:
 
 ```
-:NeoTree ./relative/path
-:NeoTree /home/user/relative/path
-:NeoTree dir=/home/user/relative/path
-:NeoTree position=current dir=relative/path
+:Neotree ./relative/path
+:Neotree /home/user/relative/path
+:Neotree dir=/home/user/relative/path
+:Neotree position=current dir=relative/path
 ```
 
 #### `reveal`
@@ -313,9 +313,9 @@ be assumed to be this option. Like "dir", you can pass any value that can be
 passed to the 'expand' function. For example:
 
 ```
-:NeoTree reveal_file=/home/user/my/file.text
-:NeoTree position=current dir=%:p:h:h reveal_file=%:p
-:NeoTree current %:p:h:h %:p
+:Neotree reveal_file=/home/user/my/file.text
+:Neotree position=current dir=%:p:h:h reveal_file=%:p
+:Neotree current %:p:h:h %:p
 ```
 
 One neat trick you can do with this is to open a Neotree window which is
