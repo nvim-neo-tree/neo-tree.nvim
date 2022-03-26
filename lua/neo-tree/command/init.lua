@@ -97,12 +97,13 @@ M.execute = function(args)
 
   -- Handle setting directory if requested
   local path_changed = false
-  if args.dir then
+  if utils.truthy(args.dir) then
     if #args.dir > 1 and args.dir:sub(-1) == utils.path_separator then
       args.dir = args.dir:sub(1, -2)
     end
     path_changed = state.path ~= args.dir
-    state.path = args.dir
+  else
+    args.dir = state.path
   end
 
   -- Handle reveal logic
@@ -151,7 +152,7 @@ do_show_or_focus = function(args, state, force_navigate)
     end
     close_other_sources()
     local current_win = vim.api.nvim_get_current_win()
-    manager.navigate(state, state.path, args.reveal_file, function()
+    manager.navigate(state, args.dir, args.reveal_file, function()
       -- navigate changes the window to neo-tree, so just quickly hop back to the original window
       vim.api.nvim_set_current_win(current_win)
     end)
@@ -162,7 +163,7 @@ do_show_or_focus = function(args, state, force_navigate)
     end
     if force_navigate or not window_exists then
       close_other_sources()
-      manager.navigate(state, state.path, args.reveal_file)
+      manager.navigate(state, args.dir, args.reveal_file)
     end
   end
 end
