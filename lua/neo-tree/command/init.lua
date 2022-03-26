@@ -176,7 +176,7 @@ handle_reveal = function(args, state)
   end
   if args.reveal_force_cwd then
     if not utils.is_subpath(cwd, path) then
-      state.path, _ = utils.split_path(path)
+      args.dir, _ = utils.split_path(path)
       do_show_or_focus(args, state, true)
       return
     end
@@ -185,7 +185,7 @@ handle_reveal = function(args, state)
     cwd, _ = utils.split_path(path)
     inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
       if response == true then
-        state.path = cwd
+        args.dir = cwd
       else
         args.reveal_file = nil
       end
