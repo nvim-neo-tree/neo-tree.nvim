@@ -175,12 +175,11 @@ d    = delete:               Delete the selected file or directory.
 
 r    = rename:               Rename the selected file or directory.
 
-c    = copy_to_clipboard:    Mark file to be copied.
+y    = copy_to_clipboard:    Mark file to be copied.
 
 x    = cut_to_clipboard:     Mark file to be cut (moved).
 
-p    = paste_from_clipboard: Copy/move each marked file in the to the
-                             selected folder.
+p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
