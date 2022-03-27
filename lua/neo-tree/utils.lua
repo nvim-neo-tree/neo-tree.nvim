@@ -317,7 +317,7 @@ M.open_file = function(state, path, open_cmd)
       return
     end
     if state.current_position == "current" then
-      vim.cmd(open_cmd .. " " .. escaped_path)
+      pcall(vim.cmd, open_cmd .. " " .. escaped_path)
     else
       -- use last window if possible
       local suitable_window_found = false
@@ -352,7 +352,7 @@ M.open_file = function(state, path, open_cmd)
         vim.cmd("vsplit " .. escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
-        vim.cmd(open_cmd .. " " .. escaped_path)
+        pcall(vim.cmd, open_cmd .. " " .. escaped_path)
       end
     end
     events.fire_event(events.FILE_OPENED, path)
