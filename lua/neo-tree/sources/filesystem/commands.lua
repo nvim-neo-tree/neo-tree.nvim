@@ -127,6 +127,8 @@ M.toggle_gitignore = function(state)
   M.toggle_hidden(state)
 end
 
-M.toggle_node = cc.toggle_node
+M.toggle_node = function (state)
+  cc.toggle_node(state, utils.wrap(fs.toggle_directory, state))
+end
 
 return M

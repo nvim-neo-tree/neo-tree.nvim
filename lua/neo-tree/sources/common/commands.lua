@@ -7,9 +7,9 @@ local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 
 ---Gets the node parent folder recursively
----@param tree tree to look for nodes
----@param node node to look for folder parent
----@return node
+---@param tree table to look for nodes
+---@param node table to look for folder parent
+---@return table table
 local function get_folder_node(tree, node)
   if node.type == "directory" then
     return node
@@ -242,16 +242,14 @@ M.rename = function(state, callback)
 end
 
 ---Expands or collapses the current node.
-M.toggle_node = function(state)
+M.toggle_node = function(state, toggle_directory)
   local tree = state.tree
   local node = tree:get_node()
   if not utils.is_expandable(node) then
     return
   end
-  if node.loaded == false then
-    -- lazy load this node and pass the children to the renderer
-    local children = {}
-    renderer.show_nodes(state, children, node:get_id())
+  if node.type == "directory" and toggle_directory then
+    toggle_directory(node)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
@@ -266,13 +264,13 @@ M.toggle_node = function(state)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state)
+M.toggle_directory = function(state, toggle_directory)
   local tree = state.tree
   local node = tree:get_node()
   if node.type ~= "directory" then
     return
   end
-  M.toggle_node(state)
+  M.toggle_node(state, toggle_directory)
 end
 
 return M
