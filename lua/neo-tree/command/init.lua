@@ -175,12 +175,10 @@ handle_reveal = function(args, state)
   if cwd == nil then
     cwd = manager.get_cwd(state)
   end
-  if args.reveal_force_cwd then
-    if not utils.is_subpath(cwd, path) then
-      args.dir, _ = utils.split_path(path)
-      do_show_or_focus(args, state, true)
-      return
-    end
+  if args.reveal_force_cwd and not utils.is_subpath(cwd, path) then
+    args.dir, _ = utils.split_path(path)
+    do_show_or_focus(args, state, true)
+    return
   elseif not utils.is_subpath(cwd, path) then
     -- force was not specified, so we need to ask the user
     cwd, _ = utils.split_path(path)
