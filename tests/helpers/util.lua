@@ -1,7 +1,12 @@
 local utils = {}
 
 local Path = require("plenary.path")
-local testdir = Path:new(vim.env.TMPDIR or "/tmp", "neo-tree-testing"):absolute()
+-- Resolve for two reasons.
+-- 1. Follow any symlinks which make comparing paths fail. (on macOS, TMPDIR can be under /var which is symlinked to
+--    /private/var)
+-- 2. Remove any double separators (on macOS TMPDIR can end in a trailing / which absolute doesn't remove, this should
+--    be coverted by https://github.com/nvim-lua/plenary.nvim/issues/330).
+local testdir = vim.fn.resolve(Path:new(vim.env.TMPDIR or "/tmp", "neo-tree-testing"):absolute())
 
 local function rm_test_dir()
   if vim.fn.isdirectory(testdir) == 1 then
