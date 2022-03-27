@@ -361,10 +361,11 @@ wish to remove a default mapping without overriding it with your own function,
 assign it the the string "none". This will cause it to be skipped and allow any
 existing global mappings to work.
 
-Run |NeoTreePasteConfig| to dump the fully commented default config in your
-current file. Even if you don't want to use that config as your starting point,
-you still may want to dump it to a blank .lua file just to read it as
-documentation. SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!
+NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!~
+Run `:lua require("neo-tree").paste_default_config()` to dump the fully
+commented default config in your current file. Even if you don't want to use
+that config as your starting point, you still may want to dump it to a blank
+lua file just to read it as documentation. 
 
 
 FILTERED ITEMS                                         *neo-tree-filtered-items*

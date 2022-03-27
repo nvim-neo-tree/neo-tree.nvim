@@ -12,11 +12,27 @@ local function sort_items(a, b)
   end
 end
 
-local function deep_sort(tbl)
-  table.sort(tbl, sort_items)
+local function sort_items_case_insensitive(a, b)
+  if a.type == b.type then
+    return a.path:lower() < b.path:lower()
+  else
+    return a.type < b.type
+  end
+end
+
+local function deep_sort(tbl, sort_func)
+  if sort_func == nil then
+    local config = require("neo-tree").config
+    if config.sort_case_insensitive then
+      sort_func = sort_items_case_insensitive
+    else
+      sort_func = sort_items
+    end
+  end
+  table.sort(tbl, sort_func)
   for _, item in pairs(tbl) do
     if item.type == "directory" then
-      deep_sort(item.children)
+      deep_sort(item.children, sort_func)
     end
   end
 end

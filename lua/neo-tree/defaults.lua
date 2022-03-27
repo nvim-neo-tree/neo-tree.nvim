@@ -11,6 +11,7 @@ local config = {
   enable_git_status = true,
   git_status_async = true,
   open_files_in_last_window = true, -- false = open files in top left window
+  sort_case_insensitive = false, -- used when sorting files and directories in the tree
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   --
