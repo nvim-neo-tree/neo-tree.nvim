@@ -551,7 +551,7 @@ create_window = function(state)
     ["nop"] = true,
     ["noop"] = true,
   }
-  local map_options = { noremap = true, nowait = true }
+  local map_options = { noremap = true }
   local mappings = utils.get_value(state, "window.mappings", {}, true)
   for cmd, func in pairs(mappings) do
     if utils.truthy(func) then
