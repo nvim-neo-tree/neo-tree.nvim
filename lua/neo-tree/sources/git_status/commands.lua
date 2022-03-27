@@ -112,6 +112,14 @@ M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, redraw)
 end
 
+M.copy = function(state)
+  cc.copy(state, redraw)
+end
+
+M.move = function(state)
+  cc.move(state, redraw)
+end
+
 M.show_debug_info = cc.show_debug_info
 
 ---Pastes all items from the clipboard to the current directory.

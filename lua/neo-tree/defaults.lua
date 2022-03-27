@@ -114,8 +114,6 @@ local config = {
       ["s"] = "open_vsplit",
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
-      ["<bs>"] = "navigate_up",
-      ["."] = "set_root",
       ["R"] = "refresh",
       ["a"] = "add",
       ["A"] = "add_directory",
@@ -169,6 +167,8 @@ local config = {
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
+        ["<bs>"] = "navigate_up",
+        ["."] = "set_root",
       }
     },
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
@@ -240,6 +240,8 @@ local config = {
     bind_to_cwd = true,
     window = {
       mappings = {
+        ["<bs>"] = "navigate_up",
+        ["."] = "set_root",
         ["bd"] = "buffer_delete",
       },
     },
