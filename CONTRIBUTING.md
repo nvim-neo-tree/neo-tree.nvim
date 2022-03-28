@@ -13,7 +13,7 @@ This is open for debate, but here is the current style choices being observed:
 - BUT we don't currently have any OOP parts and I don't think we want any
 
 I prefer `local name = function()` over `local function name()`, just to be
-consistant with the `M.name = function()` exports.
+consistent with the `M.name = function()` exports.
 
 ### StyLua
 
@@ -51,7 +51,7 @@ current strategy is to maintain:
   in comments
 - The README contains "back of the box" high level overview of features. It is
   meant for people trying to decide if they want to install this plugin or not.
-  It should include refrences to the help file for more information: 
+  It should include references to the help file for more information: 
   `:h neo-tree-setup`
 - The vim help file [doc/neo-tree.txt](doc/neo-tree.txt) is the definitive
   reference and should contain all information needed to configure and use the
