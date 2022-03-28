@@ -324,6 +324,7 @@ M.indent = function(config, node, state)
           highlight = expander_highlight
         elseif node.is_last_child then
           char = last_indent_marker
+          spaces_count = spaces_count - (vim.api.nvim_strwidth(last_indent_marker) - 1)
         end
       end
     end
