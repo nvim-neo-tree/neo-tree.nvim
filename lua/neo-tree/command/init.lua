@@ -1,14 +1,14 @@
 local parser = require("neo-tree.command.parser")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
-local utils   = require("neo-tree.utils")
+local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
 local completion = require("neo-tree.command.completion")
 local do_show_or_focus, handle_reveal
 
 local M = {
-  complete_args = completion.complete_args
+  complete_args = completion.complete_args,
 }
 
 ---Executes a Neo-tree action from outside of a Neo-tree window,
@@ -36,6 +36,7 @@ local M = {
 ---  reveal = boolean  Whether to reveal the current file in the Neo-tree window.
 ---  reveal_file = string The specific file to reveal.
 ---  dir = string      The root directory to set.
+---  git_base = string The git base used for diff
 M.execute = function(args)
   local nt = require("neo-tree")
   nt.ensure_config()
@@ -106,6 +107,12 @@ M.execute = function(args)
     args.dir = state.path
   end
 
+  -- Handle setting git ref
+  local git_base_changed = state.git_base ~= args.git_base
+  if utils.truthy(args.git_base) then
+    state.git_base = args.git_base
+  end
+
   -- Handle reveal logic
   args.reveal = args.reveal or args.reveal_force_cwd
   local do_reveal = utils.truthy(args.reveal_file)
@@ -115,7 +122,7 @@ M.execute = function(args)
   end
 
   -- All set, now show or focus the window
-  local force_navigate = path_changed or do_reveal or state.dirty
+  local force_navigate = path_changed or do_reveal or git_base_changed or state.dirty
   if position_changed and args.position ~= "current" and current_position ~= "current" then
     manager.close(args.source)
   end
@@ -128,11 +135,10 @@ end
 
 ---Parses and executes the command line. Use execute(args) instead.
 ---@param ... string Argument as strings.
-M._command = function (...)
-  local args = parser.parse({...}, true)
+M._command = function(...)
+  local args = parser.parse({ ... }, true)
   M.execute(args)
 end
-
 
 do_show_or_focus = function(args, state, force_navigate)
   local window_exists = renderer.window_exists(state)

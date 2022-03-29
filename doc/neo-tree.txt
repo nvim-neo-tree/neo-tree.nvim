@@ -95,6 +95,15 @@ don't need the full dir=/path. You may use any value that can be passed to the
 'expand' function, such as `%:p:h:h` to specify two directories up from the
 current file.
 
+git_base~
+The base that is used to calculate the git status for each dir/file.
+By default it uses `HEAD`, so it shows all changes that are not yet committed.
+You can for example work on a feature branch, and set it to `main`. It will
+show all changes that happened on the feature branch and main since you 
+branched off.
+
+Any git ref, commit, tag, or sha will work.
+
 reveal~
 This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.

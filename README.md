@@ -283,7 +283,7 @@ What to show. Can be one of:
 |--------|-------------|
 | filesystem | Show a file browser. DEFAULT |
 | buffers    | Show a list of currently open buffers. |
-| git_status | Show the ouput of `git status` in a tree layout. |
+| git_status | Show the output of `git status` in a tree layout. |
 
 #### `position`
 Where to show it, can be one of:
@@ -311,6 +311,22 @@ current file. For example:
 :Neotree /home/user/relative/path
 :Neotree dir=/home/user/relative/path
 :Neotree position=current dir=relative/path
+```
+
+#### `git_base`
+The base that is used to calculate the git status for each dir/file.
+By default it uses `HEAD`, so it shows all changes that are not yet committed.
+You can for example work on a feature branch, and set it to `main`. It will
+show all changes that happened on the feature branch and main since you 
+branched off.
+
+Any git ref, commit, tag, or sha will work.
+
+```
+:Neotree main
+:Neotree v1.0
+:Neotree git_base=8fe34be
+:Neotree git_base=HEAD
 ```
 
 #### `reveal`
@@ -367,7 +383,7 @@ that would open a directory will open neo-tree in the specified window.
 
 Neo-tree is built on the idea of supporting various sources. Sources are
 basically interface implementations whose job it is to provide a list of
-hierachical items to be rendered, along with commands that are appropriate to
+hierarchical items to be rendered, along with commands that are appropriate to
 those items.
 
 ### filesystem
@@ -401,10 +417,17 @@ filesystem is open in a sidebar:
 
 ![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
 
+You can specify a different git base here as well. But be aware that it is not
+possible to unstage / revert a file that is already committed.
+
+```
+:Neotree float git_status git_base=main
+```
+
 
 ## Configuration and Customization
 
-This is designed to be flexible. The way that is acheived is by making
+This is designed to be flexible. The way that is achieved is by making
 everything a function, or a string that identifies a built-in function. All of the
 built-in functions can be replaced with your own implementation, or you can 
 add new ones.

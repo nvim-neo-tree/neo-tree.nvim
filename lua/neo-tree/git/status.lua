@@ -1,4 +1,3 @@
-local Path = require("plenary.path")
 local utils = require("neo-tree.utils")
 local events = require("neo-tree.events")
 local Job = require("plenary.job")
@@ -61,12 +60,15 @@ local parse_git_status_line = function(context, line)
   local git_status = context.git_status
   local exclude_directories = context.exclude_directories
 
-  local status = line:sub(1, 2)
-  local relative_path = line:sub(4)
-  local arrow_pos = relative_path:find(" -> ")
-  if arrow_pos ~= nil then
-    relative_path = line:sub(arrow_pos + 5)
+  local line_parts = vim.split(line, "	")
+  local status = line_parts[1]
+  local relative_path = line_parts[2]
+
+  -- rename output is `R000 from/filename to/filename`
+  if status:match("^R") then
+    relative_path = line_parts[3]
   end
+
   -- remove any " due to whitespace in the path
   relative_path = relative_path:gsub('^"', ""):gsub('$"', "")
   if utils.is_windows == true then
@@ -92,41 +94,60 @@ local parse_git_status_line = function(context, line)
   end
 end
 
-local parse_git_status = function(git_root, result, exclude_directories)
+---Parse "git status" output for the current working directory.
+---@base git ref base
+---@exclude_directories boolean Whether to skip bubling up status to directories
+---@path string Path to run the git status command in, defaults to cwd.
+---@return table table Table with the path as key and the status as value.
+---@return string string The git root for the specified path.
+M.status = function(base, exclude_directories, path)
+  local git_root = git_utils.get_repository_root(path)
+  if not utils.truthy(git_root) then
+    return {}
+  end
+
+  local staged_cmd = 'git -C "' .. git_root .. '" diff --staged --name-status ' .. base .. " --"
+  local staged_ok, staged_result = utils.execute_command(staged_cmd)
+  if not staged_ok then
+    return {}
+  end
+  local unstaged_cmd = 'git -C "' .. git_root .. '" diff --name-status'
+  local unstaged_ok, unstaged_result = utils.execute_command(unstaged_cmd)
+  if not unstaged_ok then
+    return {}
+  end
+  local untracked_cmd = 'git -C "' .. git_root .. '" ls-files --exclude-standard --others'
+  local untracked_ok, untracked_result = utils.execute_command(untracked_cmd)
+  if not untracked_ok then
+    return {}
+  end
+
   local context = {
     git_root = git_root,
     git_status = {},
     exclude_directories = exclude_directories,
   }
-  for _, line in ipairs(result) do
+
+  for _, line in ipairs(staged_result) do
     parse_git_status_line(context, line)
   end
-  return context.git_status
-end
-
----Parse "git status" output for the current working directory.
----@exclude_directories boolean Whether to skip bubling up status to directories
----@path string Path to run the git status command in, defaults to cwd.
----@return table table Table with the path as key and the status as value.
----@return string string The git root for the specified path.
-M.status = function(exclude_directories, path)
-  local cmd
-  local git_root = git_utils.get_repository_root(path)
-  if utils.truthy(git_root) then
-    cmd = 'git -C "' .. git_root .. '" status . --porcelain=v1'
-  else
-    return {}
+  for _, line in ipairs(unstaged_result) do
+    if line then
+      line = " " .. line
+    end
+    parse_git_status_line(context, line)
+  end
+  for _, line in ipairs(untracked_result) do
+    if line then
+      line = "?	" .. line
+    end
+    parse_git_status_line(context, line)
   end
 
-  local ok, result = utils.execute_command(cmd)
-  if not ok then
-    return {}
-  end
-  local git_status = parse_git_status(git_root, result, exclude_directories)
-  return git_status, git_root
+  return context.git_status, git_root
 end
 
-M.status_async = function(path)
+M.status_async = function(path, base)
   local git_root = git_utils.get_repository_root(path)
   if utils.truthy(git_root) then
     log.trace("git.status.status_async called")
@@ -140,31 +161,115 @@ M.status_async = function(path)
     git_status = {},
     exclude_directories = false,
   }
-  local wrapped_process_line = vim.schedule_wrap(function(err, line)
+  local wrapped_process_line_staged = vim.schedule_wrap(function(err, line)
     if err and err > 0 then
-      log.error("status_async error: ", err, line)
+      log.error("status_async staged error: ", err, line)
     else
       parse_git_status_line(context, line)
     end
   end)
+  local wrapped_process_line_unstaged = vim.schedule_wrap(function(err, line)
+    if err and err > 0 then
+      log.error("status_async unstaged error: ", err, line)
+    else
+      if line then
+        line = " " .. line
+      end
+      parse_git_status_line(context, line)
+    end
+  end)
+  local wrapped_process_line_untracked = vim.schedule_wrap(function(err, line)
+    if err and err > 0 then
+      log.error("status_async untracked error: ", err, line)
+    else
+      if line then
+        line = "?	" .. line
+      end
+      parse_git_status_line(context, line)
+    end
+  end)
 
-  local event_id = "git_status_" .. git_root
-  utils.debounce(event_id, function()
+  local event_id_staged = "git_status_staged_" .. git_root
+  utils.debounce(event_id_staged, function()
     Job
       :new({
         command = "git",
-        args = { "-C", git_root, "status", "--porcelain=v1" },
+        args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
         enable_recording = false,
-        on_stdout = wrapped_process_line,
+        on_stdout = wrapped_process_line_staged,
         on_stderr = function(err, line)
           if err and err > 0 then
-            log.error("status_async error: ", err, line)
+            log.error("status_async staged error: ", err, line)
           end
         end,
         on_exit = function(job, return_val)
-          utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
+          utils.debounce(event_id_staged, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
           if return_val == 0 then
-            log.trace("status_async completed")
+            log.trace("status_async staged completed")
+            vim.schedule(function()
+              events.fire_event(events.GIT_STATUS_CHANGED, {
+                git_root = context.git_root,
+                git_status = context.git_status,
+              })
+            end)
+          end
+        end,
+      })
+      :start()
+  end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
+
+  local event_id_unstaged = "git_status_unstaged_" .. git_root
+  utils.debounce(event_id_unstaged, function()
+    Job
+      :new({
+        command = "git",
+        args = { "-C", git_root, "diff", "--name-status" },
+        enable_recording = false,
+        on_stdout = wrapped_process_line_unstaged,
+        on_stderr = function(err, line)
+          if err and err > 0 then
+            log.error("status_async unstaged error: ", err, line)
+          end
+        end,
+        on_exit = function(job, return_val)
+          utils.debounce(event_id_unstaged, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
+          if return_val == 0 then
+            log.trace("status_async unstaged completed")
+            vim.schedule(function()
+              events.fire_event(events.GIT_STATUS_CHANGED, {
+                git_root = context.git_root,
+                git_status = context.git_status,
+              })
+            end)
+          end
+        end,
+      })
+      :start()
+  end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
+
+  local event_id_untracked = "git_status_untracked_" .. git_root
+  utils.debounce(event_id_untracked, function()
+    Job
+      :new({
+        command = "git",
+        args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
+        enable_recording = false,
+        on_stdout = wrapped_process_line_untracked,
+        on_stderr = function(err, line)
+          if err and err > 0 then
+            log.error("status_async untracked error: ", err, line)
+          end
+        end,
+        on_exit = function(job, return_val)
+          utils.debounce(
+            event_id_untracked,
+            nil,
+            nil,
+            nil,
+            utils.debounce_action.COMPLETE_ASYNC_JOB
+          )
+          if return_val == 0 then
+            log.trace("status_async untracked completed")
             vim.schedule(function()
               events.fire_event(events.GIT_STATUS_CHANGED, {
                 git_root = context.git_root,

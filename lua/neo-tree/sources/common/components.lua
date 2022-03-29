@@ -13,7 +13,7 @@
 local highlights = require("neo-tree.ui.highlights")
 local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
-local container    = require("neo-tree.sources.common.container")
+local container = require("neo-tree.sources.common.container")
 local log = require("neo-tree.log")
 
 local M = {}
@@ -123,12 +123,12 @@ M.git_status = function(config, node, state)
   local symbols = config.symbols or {}
   local change_symbol
   local change_highlt = highlights.FILE_NAME
-  local status_symbol = symbols.unstaged
-  local status_highlt = highlights.GIT_CONFLICT
+  local status_symbol = symbols.staged
+  local status_highlt = highlights.GIT_ADDED
 
-  if git_status:sub(2, 2) == " " then
-    status_symbol = symbols.staged
-    status_highlt = highlights.GIT_ADDED
+  if git_status:sub(1, 1) == " " then
+    status_symbol = symbols.unstaged
+    status_highlt = highlights.GIT_CONFLICT
   end
 
   if git_status:match("?$") then

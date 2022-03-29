@@ -160,7 +160,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
   end
   local config = require("neo-tree").config
   if config.enable_git_status and not is_search and config.git_status_async then
-    git.status_async(state.path)
+    git.status_async(state.path, state.git_base)
   end
 end
 
@@ -187,24 +187,29 @@ M.reset_search = function(state, refresh, open_current_node)
   end
   state.search_pattern = nil
   state.open_folders_before_search = nil
-    if open_current_node then
-      local success, node = pcall(state.tree.get_node, state.tree)
-      if success and node then
-        local path = node:get_id()
-        renderer.position.set(state, path)
-        if node.type == "directory" then
-          log.trace("opening directory from search: ", path)
-          M.navigate(state, nil, path, function()
-            pcall(renderer.focus_node, state, path, false)
-          end)
-        else
-          utils.open_file(state, path)
-          if refresh and state.current_position ~= "current" and state.current_position ~= "float" then
-            M.navigate(state, nil, path)
-          end
+  if open_current_node then
+    local success, node = pcall(state.tree.get_node, state.tree)
+    if success and node then
+      local path = node:get_id()
+      renderer.position.set(state, path)
+      if node.type == "directory" then
+        log.trace("opening directory from search: ", path)
+        M.navigate(state, nil, path, function()
+          pcall(renderer.focus_node, state, path, false)
+        end)
+      else
+        utils.open_file(state, path)
+        if
+          refresh
+          and state.current_position ~= "current"
+          and state.current_position ~= "float"
+        then
+          M.navigate(state, nil, path)
         end
       end
-    else if refresh then
+    end
+  else
+    if refresh then
       M.navigate(state)
     end
   end
@@ -279,7 +284,7 @@ M.setup = function(config, global_config)
       handler = function(state)
         local this_state = get_state()
         if state == this_state then
-          state.git_status_lookup = git.status()
+          state.git_status_lookup = git.status(state.git_base)
         end
       end,
     })
