@@ -98,10 +98,11 @@ local config = {
         -- Status type
         untracked = "",
         ignored   = "",
-        unstaged  = "",
-        staged    = "",
+        unstaged  = "", -- "",
+        staged    = "", -- "",
         conflict  = "",
-      }
+      },
+      align = "right",
     },
   },
   window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
@@ -145,30 +146,46 @@ local config = {
       { "indent" },
       { "icon" },
       { "current_filter" },
-      { "name" },
-      -- {
-      --   "symlink_target",
-      --   highlight = "NeoTreeSymbolicLinkTarget",
-      -- },
-      { "clipboard" },
-      { "diagnostics", errors_only = true },
-      --{ "git_status" },
+      {
+        "container",
+        width = "100%",
+        right_padding = 1,
+        content = {
+          { "name", zindex = 10 },
+          -- {
+          --   "symlink_target",
+          --   zindex = 10,
+          --   highlight = "NeoTreeSymbolicLinkTarget",
+          -- },
+          { "clipboard", zindex = 10 },
+          { "diagnostics", errors_only = true, zindex = 20, align = "right" },
+        },
+      },
     },
     file = {
       { "indent" },
       { "icon" },
       {
-        "name",
-        use_git_status_colors = true,
+        "container",
+        width = "100%",
+        right_padding = 1,
+        content = {
+          {
+            "name",
+            use_git_status_colors = true,
+            zindex = 10
+          },
+          -- {
+          --   "symlink_target",
+          --   zindex = 10,
+          --   highlight = "NeoTreeSymbolicLinkTarget",
+          -- },
+          { "clipboard", zindex = 10 },
+          --{ "bufnr", zindex = 10 },
+          { "diagnostics",  zindex = 20, align = "right" },
+          { "git_status", zindex = 20, align = "right" },
+        },
       },
-      -- {
-      --   "symlink_target",
-      --   highlight = "NeoTreeSymbolicLinkTarget",
-      -- },
-      { "bufnr" },
-      { "clipboard" },
-      { "diagnostics" },
-      { "git_status" },
     },
   },
   nesting_rules = {},

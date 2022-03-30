@@ -13,6 +13,8 @@
 local highlights = require("neo-tree.ui.highlights")
 local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
+local container    = require("neo-tree.sources.common.container")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -27,6 +29,8 @@ M.clipboard = function(config, node, state)
     highlight = config.highlight or highlights.DIM_TEXT,
   }
 end
+
+M.container = container.render
 
 M.current_filter = function(config, node, state)
   local filter = node.search_pattern or ""
@@ -72,6 +76,10 @@ M.diagnostics = function(config, node, state)
   end
   defined = defined and defined[1]
   if defined and defined.text and defined.texthl then
+    -- for some reason it always comes padded with a space
+    if type(defined.text) == "string" and defined.text:sub(#defined.text) == " " then
+      defined.text = defined.text:sub(1, -2)
+    end
     return {
       text = " " .. defined.text,
       highlight = defined.texthl,

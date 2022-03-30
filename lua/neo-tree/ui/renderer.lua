@@ -15,6 +15,34 @@ local M = {}
 local floating_windows = {}
 local draw, create_window, create_tree
 
+local resize_monitor_started = false
+local start_resize_monitor = function ()
+  if resize_monitor_started then
+    return
+  end
+  local manager = require("neo-tree.sources.manager")
+  local check_window_size
+  check_window_size = function()
+    local success, err = pcall(manager._for_each_state, "filesystem", function(state)
+      if state.has_right_content and state.win_width_at_last_render and M.window_exists(state) then
+        local current_size = vim.api.nvim_win_get_width(state.winid)
+        if current_size ~= state.win_width_at_last_render then
+          log.trace("Window size changed, redrawing tree")
+          state.tree:render()
+        end
+      end
+    end)
+    if not success then
+      log.error("Error checking window size: ", err)
+    end
+  end
+
+  local timer = vim.loop.new_timer()
+  timer:start(1000, 200, vim.schedule_wrap(check_window_size))
+  resize_monitor_started = true
+end
+
+
 M.close = function(state)
   local window_existed = false
   if state and state.winid then
@@ -147,6 +175,37 @@ local one_line = function(text)
   end
 end
 
+M.render_component = function(component, item, state, remaining_width)
+  local component_func = state.components[component[1]]
+  if component_func then
+    local success, component_data = pcall(component_func, component, item, state, remaining_width)
+    if success then
+      if component_data == nil then
+        return { {} }
+      end
+      if component_data.text then
+        -- everything else is easier if we make sure this is always the same shape
+        -- which is an array of { text, highlight } tables
+        component_data = { component_data }
+      end
+      for _, data in ipairs(component_data) do
+        data.text = one_line(data.text)
+      end
+      return component_data
+    else
+      local name = component[1] or "[missing_name]"
+      local msg = string.format("Error rendering component %s: %s", name, component_data)
+      log.warn(msg)
+      return { { text = msg, highlight = highlights.NORMAL } }
+    end
+  else
+    local name = component[1] or "[missing_name]"
+    local msg = "Neo-tree: Component " .. name .. " not found."
+    log.warn(msg)
+    return { { text = msg, highlight = highlights.NORMAL } }
+  end
+end
+
 local prepare_node = function(item, state)
   local line = NuiLine()
 
@@ -155,30 +214,27 @@ local prepare_node = function(item, state)
     line:append(item.type .. ": ", "Comment")
     line:append(item.name)
   else
+    local remaining_cols = vim.api.nvim_win_get_width(state.winid)
     for _, component in ipairs(renderer) do
-      local component_func = state.components[component[1]]
-      if component_func then
-        local success, component_data = pcall(component_func, component, item, state)
-        if success then
-          if component_data[1] then
-            -- a list of text objects
-            for _, data in ipairs(component_data) do
-              line:append(one_line(data.text), data.highlight)
-            end
-          else
-            line:append(one_line(component_data.text), component_data.highlight)
+      local component_data = M.render_component(component, item, state, remaining_cols)
+      if component_data then
+        for _, data in ipairs(component_data) do
+          if data.text then
+            line:append(data.text, data.highlight)
+            remaining_cols = remaining_cols - vim.fn.strchars(data.text)
           end
-        else
-          local name = component[1] or "[missing_name]"
-          local msg = string.format("Error rendering component %s: %s", name, component_data)
-          line:append(msg, highlights.NORMAL)
         end
-      else
-        local name = component[1] or "[missing_name]"
-        log.error("Neo-tree: Component " .. name .. " not found.")
       end
     end
   end
+
+  if state.has_right_content then
+    state.win_width_at_last_render = vim.api.nvim_win_get_width(state.winid)
+    start_resize_monitor()
+  else
+    state.win_width_at_last_render = nil
+  end
+
   return line
 end
 
@@ -686,7 +742,9 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   utils.debounce(id, function()
     events.fire_event(events.BEFORE_RENDER, state)
     local level = 0
-    if parentId ~= nil then
+    if parentId == nil then
+      state.has_right_content = false -- used to know if we need to redraw on window resize
+    else
       local success, parent = pcall(state.tree.get_node, state.tree, parentId)
       if success then
         level = parent:get_depth()

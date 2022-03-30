@@ -207,6 +207,21 @@ M.getStringValue = function(functionOrString, node, state)
   end
 end
 
+---Return the keys of a given table.
+---@param tbl table The table to get the keys of.
+---@param sorted boolean Whether to sort the keys.
+---@return table table The keys of the table.
+M.get_keys = function(tbl, sorted)
+  local keys = {}
+  for k, _ in pairs(tbl) do
+    table.insert(keys, k)
+  end
+  if sorted then
+    table.sort(keys)
+  end
+  return keys
+end
+
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
@@ -254,6 +269,24 @@ M.set_value = function(sourceObject, valuePath, value)
       currentTable = currentTable[part]
     end
   end
+end
+
+---Groups an array of items by a key.
+---@param array table The array to group.
+---@param key string The key to group by.
+---@return table table The grouped array where the keys are the unique values of the specified key.
+M.group_by = function(array, key)
+  local result = {}
+  for _, item in ipairs(array) do
+    local keyValue = item[key]
+    local group = result[keyValue]
+    if group == nil then
+      group = {}
+      result[keyValue] = group
+    end
+    table.insert(group, item)
+  end
+  return result
 end
 
 M.is_floating = function(win_id)

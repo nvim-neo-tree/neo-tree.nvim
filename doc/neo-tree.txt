@@ -847,6 +847,11 @@ configs for each source, look at the default config by pasting it with
 or view it online at:
 https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
 
+A default `renderers` config is specified at the root level and will be used
+by each source unless another renderer is defined. If you just want to
+reaarange or remove components, you can do so by changing these `renderers`
+configs.
+
                                                            *neo-tree-components*
 A component is a function that returns a single text object:
 >
@@ -882,6 +887,91 @@ These components and renderers are defined per source by passing them in the
 setup. If you define a component with the same name of a built-in component, it
 will replace that built-in component. Otherwise it will be added to the existing
 set of components.
+
+CONTAINER
+
+One unique component that deserves some explanation is the `container`
+component. This component allows you to create more complex layouts where
+components can overlap, have a specific size, or be right aligned. A container
+has the following properties:
+
+width~
+Width can be specified as a number, meaning actual number of characters, a
+string containing a percentage such as `"100%"`, or the special string
+`"fit_content"`. The percentage value means percentage of remaining space in
+the window. If a window is 40 columns wide, and the rendered content for the
+node so far equals 15 characters, then 100% would evaluate to 25 characters.
+
+The `"fit_content"` value means that it will be the width of the largest
+layer. See `zindex` for details about layers.
+
+content~
+This is a list of components that will be arranged by this container.
+
+Each component in the content list can use these additional properties:
+
+zindex~
+All components with the same zindex will be renderered together in the same
+layer, one after the other. Higher zindex value are rendered on top of other
+layers, hiding whatever is beneath them. For example, if a component with a
+zindex of 10 produces this:
+
+>
+    "abcdefg"
+<
+and another component width a zindex of 20 produces this:
+>
+    "1234"
+<
+then the result will be:
+>
+    "1234efg"
+<
+
+align~
+If align is right, then it will be pushed to the rigth edge of the avilable
+space. This makes the most sense when the container width is set to a number
+or `"100%"`. Components that are right aligned will automatically overlap left
+aligned components with the same zindex if there is not enough space.
+
+Continuing with the example from above, if there was a `"right"` aligned
+component with a zindex of 20 that outputs:
+>
+    "**""
+>
+Then the result when a container has a width of 12 would be:
+>
+    "1234efg   **"
+>
+but if the width was 8 then the result would be:
+>
+    "1234ef**"
+<
+Example~
+
+This example container has the name on the left hand side, and the
+diagnostics and git status aligned to the right hand side of the window. The
+diagnostics and git_status will always be shown, and the name will be clipped if
+there is not enough space:
+>
+
+      {
+        "container",
+        width = "100%",
+        right_padding = 1,
+        content = {
+          {
+            "name",
+            use_git_status_colors = true,
+            zindex = 10
+          },
+          { "diagnostics",  zindex = 20, align = "right" },
+          { "git_status", zindex = 20, align = "right" },
+        },
+<
+
+
+CUSTOM COMPONENTS
 
 Each component function is called with the following args:
   `config` The config object defined in the renderer. This is how a component

@@ -1,3 +1,5 @@
+local log = require("neo-tree.log")
+local utils = require("neo-tree.utils")
 local vim = vim
 local M = {}
 
@@ -7,6 +9,8 @@ M.DIM_TEXT = "NeoTreeDimText"
 M.DIRECTORY_ICON = "NeoTreeDirectoryIcon"
 M.DIRECTORY_NAME = "NeoTreeDirectoryName"
 M.DOTFILE = "NeoTreeDotfile"
+M.FADE_TEXT_1 = "NeoTreeFadeText1"
+M.FADE_TEXT_2 = "NeoTreeFadeText2"
 M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
@@ -30,9 +34,10 @@ M.TITLE_BAR = "NeoTreeTitleBar"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.EXPANDER = "NeoTreeExpander"
 
-local function dec_to_hex(n)
-  local hex = string.format("%06x", n)
-  if n < 16 then
+local function dec_to_hex(n, chars)
+  chars = chars or 6
+  local hex = string.format("%0" .. chars .. "x", n)
+  while #hex < chars do
     hex = "0" .. hex
   end
   return hex
@@ -93,6 +98,73 @@ local function create_highlight_group(hl_group_name, link_to_if_exists, backgrou
   return hl_group
 end
 
+local faded_highlight_group_cache = {}
+M.get_faded_highlight_group = function (hl_group_name, fade_percentage)
+  if type(hl_group_name) ~= "string" then
+    error("hl_group_name must be a string")
+  end
+  if type(fade_percentage) ~= "number" then
+    error("hl_group_name must be a number")
+  end
+  if fade_percentage < 0 or fade_percentage > 1 then
+    error("fade_percentage must be between 0 and 1")
+  end
+
+  local key = hl_group_name .. "_" .. tostring(math.floor(fade_percentage * 100))
+  if faded_highlight_group_cache[key] then
+    return faded_highlight_group_cache[key]
+  end
+
+  local normal = vim.api.nvim_get_hl_by_name("Normal", true)
+  local foreground = dec_to_hex(normal.foreground)
+  local background = dec_to_hex(normal.background)
+
+  local hl_group = vim.api.nvim_get_hl_by_name(hl_group_name, true)
+  if utils.truthy(hl_group.foreground) then
+    foreground = dec_to_hex(hl_group.foreground)
+  end
+  if utils.truthy(hl_group.background) then
+    background = dec_to_hex(hl_group.background)
+  end
+
+  local gui = {}
+  if hl_group.bold then
+    table.insert(gui, "bold")
+  end
+  if hl_group.italic then
+    table.insert(gui, "italic")
+  end
+  if hl_group.underline then
+    table.insert(gui, "underline")
+  end
+  if hl_group.undercurl then
+    table.insert(gui, "undercurl")
+  end
+  if #gui > 0 then
+    gui = table.concat(gui, ",")
+  else
+    gui = nil
+  end
+
+  local f_red = tonumber(foreground:sub(1, 2), 16)
+  local f_green = tonumber(foreground:sub(3, 4), 16)
+  local f_blue = tonumber(foreground:sub(5, 6), 16)
+
+  local b_red = tonumber(background:sub(1, 2), 16)
+  local b_green = tonumber(background:sub(3, 4), 16)
+  local b_blue = tonumber(background:sub(5, 6), 16)
+
+  local red = (f_red * fade_percentage) + (b_red * (1 - fade_percentage))
+  local green = (f_green * fade_percentage) + (b_green * (1 - fade_percentage))
+  local blue = (f_blue * fade_percentage) + (b_blue * (1 - fade_percentage))
+
+  local new_foreground = string.format("%s%s%s", dec_to_hex(red, 2), dec_to_hex(green, 2), dec_to_hex(blue, 2))
+
+  create_highlight_group(key, {}, hl_group.background, new_foreground, gui)
+  faded_highlight_group_cache[key] = key
+  return key
+end
+
 M.setup = function()
   local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
   local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
@@ -109,6 +181,8 @@ M.setup = function()
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  create_highlight_group(M.FADE_TEXT_1, {}, nil, "626262")
+  create_highlight_group(M.FADE_TEXT_2, {}, nil, "444444")
   create_highlight_group(M.DOTFILE, {}, nil, "626262")
   create_highlight_group(M.HIDDEN_BY_NAME, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.CURSOR_LINE, { "CursorLine" }, nil, nil, "bold")
@@ -136,5 +210,6 @@ M.setup = function()
   create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
   create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 end
+
 
 return M

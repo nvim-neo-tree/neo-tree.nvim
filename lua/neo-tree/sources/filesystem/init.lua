@@ -158,7 +158,8 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
   if path_changed and state.bind_to_cwd then
     manager.set_cwd(state)
   end
-  if not is_search and require("neo-tree").config.git_status_async then
+  local config = require("neo-tree").config
+  if config.enable_git_status and not is_search and config.git_status_async then
     git.status_async(state.path)
   end
 end
@@ -267,7 +268,7 @@ M.setup = function(config, global_config)
         end
       end,
     })
-  elseif global_config.git_status_async then
+  elseif global_config.enable_git_status and global_config.git_status_async then
     manager.subscribe(M.name, {
       event = events.GIT_STATUS_CHANGED,
       handler = wrap(manager.git_status_changed),
