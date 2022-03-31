@@ -11,7 +11,7 @@ local load_ignored_per_directory_internal = function(path, pattern)
     return {}
   end
   local esc_path = vim.fn.shellescape(path)
-  local cmd = string.format("git -C %s check-ignore %s%s*", esc_path, esc_path, pattern)
+  local cmd = string.format("git -C %s check-ignore %s%s%s", esc_path, esc_path, sep, pattern)
   local result = vim.fn.systemlist(cmd)
   if vim.v.shell_error == 128 then
     if type(result) == "table" then
@@ -38,9 +38,9 @@ local load_ignored_per_directory_internal = function(path, pattern)
 end
 
 M.load_ignored_per_directory = function(path)
-  local ignored = load_ignored_per_directory_internal(path, sep)
+  local ignored = load_ignored_per_directory_internal(path, "*")
   -- we need to load hidden separately because I can't find a way to get both in one call
-  local hidden = load_ignored_per_directory_internal(path, sep .. ".")
+  local hidden = load_ignored_per_directory_internal(path, ".*")
   vim.list_extend(ignored, hidden)
   return ignored
 end
