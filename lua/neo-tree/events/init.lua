@@ -31,12 +31,16 @@ local M = {
   VIM_COLORSCHEME = "vim_colorscheme",
 }
 
-M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn)
+M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   local opts = {
     setup = function()
       local tpl =
         ":lua require('neo-tree.events').fire_event('%s', { afile = vim.fn.expand('<afile>') })"
       local callback = string.format(tpl, event_name)
+      if nested then
+        callback = "++nested " .. callback
+      end
+
       local cmds = {
         "augroup NeoTreeEvent_" .. event_name,
         "autocmd " .. table.concat(autocmds, ",") .. " * " .. callback,
