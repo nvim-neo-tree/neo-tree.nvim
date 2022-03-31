@@ -90,13 +90,16 @@ function create_item(context, path, _type)
     if f.never_show[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.never_show = true
-    elseif f.hide_by_name[name] then
+    end
+    if f.hide_by_name[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.name = true
-    elseif f.hide_dotfiles and string.sub(name, 1, 1) == "." then
+    end
+    if f.hide_dotfiles and string.sub(name, 1, 1) == "." then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.dotfiles = true
-    elseif f.hide_gitignored and utils.truthy(state.git_ignored) then
+    end
+    if f.hide_gitignored and utils.truthy(state.git_ignored) then
       if git.is_ignored(state.git_ignored, path, _type) then
         item.filtered_by = item.filtered_by or {}
         item.filtered_by.gitignored = true

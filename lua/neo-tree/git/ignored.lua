@@ -5,13 +5,13 @@ local git_utils = require("neo-tree.git.utils")
 local M = {}
 local sep = utils.path_separator
 
-M.load_ignored_per_directory = function(path)
+local load_ignored_per_directory_internal = function(path, pattern)
   if type(path) ~= "string" then
     log.error("load_ignored_per_directory: path must be a string")
     return {}
   end
   local esc_path = vim.fn.shellescape(path)
-  local cmd = string.format("git -C %s check-ignore %s%s*", esc_path, esc_path, sep)
+  local cmd = string.format("git -C %s check-ignore %s%s*", esc_path, esc_path, pattern)
   local result = vim.fn.systemlist(cmd)
   if vim.v.shell_error == 128 then
     if type(result) == "table" then
@@ -35,6 +35,14 @@ M.load_ignored_per_directory = function(path)
     end
   end
   return result
+end
+
+M.load_ignored_per_directory = function(path)
+  local ignored = load_ignored_per_directory_internal(path, sep)
+  -- we need to load hidden separately because I can't find a way to get both in one call
+  local hidden = load_ignored_per_directory_internal(path, sep .. ".")
+  vim.list_extend(ignored, hidden)
+  return ignored
 end
 
 M.load_ignored = function(path)
