@@ -14,8 +14,13 @@ M.load_ignored_per_directory = function(path)
   local cmd = string.format("git -C %s check-ignore %s%s*", esc_path, esc_path, sep)
   local result = vim.fn.systemlist(cmd)
   if vim.v.shell_error == 128 then
-    if utils.truthy(result) and vim.startswith(result[1], "fatal: not a git repository") then
-      return {}
+    if type(result) == "table" then
+      if result[1] == "fatal: this operation must be run in a work tree" then
+        return {}
+      end
+      if vim.startswith(result[1], "fatal: not a git repository") then
+        return {}
+      end
     end
     log.error("Failed to load ignored files for ", path, ": ", result)
     return {}
