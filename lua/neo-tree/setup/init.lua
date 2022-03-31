@@ -215,11 +215,19 @@ end
 local function merge_global_components_config(components, config)
   local indent_exists = false
   local merged_components = {}
-  for _, component in ipairs(components) do
+  local do_merge
+
+  do_merge = function(component)
     local name = component[1]
     if type(name) == "string" then
       if name == "indent" then
         indent_exists = true
+      end
+      if name == "container" then
+        for i, child in ipairs(component.content) do
+          component.content[i] = do_merge(child)
+        end
+        return component
       end
       local merged = { name }
       local global_config = config.default_component_configs[name]
@@ -231,10 +239,15 @@ local function merge_global_components_config(components, config)
       for k, v in pairs(component) do
         merged[k] = v
       end
-      table.insert(merged_components, merged)
+      return merged
     else
       log.error("component name is the wrong type", component)
     end
+  end
+
+  for _, component in ipairs(components) do
+    local merged = do_merge(component)
+    table.insert(merged_components, merged)
   end
 
   -- If the indent component is not specified, then add it.
@@ -372,6 +385,8 @@ M.merge_config = function(config, is_auto_config)
     handler = M.win_enter_event,
     id = "neo-tree-win-enter",
   })
+
+  
 
   if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")

@@ -44,7 +44,7 @@ local function create_state(tabnr, sd, winid)
   return state
 end
 
-local for_each_state = function(source_name, action)
+M._for_each_state = function(source_name, action)
   local sd = get_source_data(source_name)
   for _, tbl in ipairs({ sd.state_by_tab, sd.state_by_win }) do
     for _, state in pairs(tbl) do
@@ -186,7 +186,7 @@ end
 M.close_all = function(at_position)
   local tabnr = vim.api.nvim_get_current_tabpage()
   for source_name, _ in pairs(source_data) do
-    for_each_state(source_name, function(state)
+    M._for_each_state(source_name, function(state)
       if state.tabnr == tabnr then
         if at_position then
           if state.current_position == at_position then
@@ -205,7 +205,7 @@ end
 M.close_all_except = function(except_source_name)
   local tabnr = vim.api.nvim_get_current_tabpage()
   for source_name, _ in pairs(source_data) do
-    for_each_state(source_name, function(state)
+    M._for_each_state(source_name, function(state)
       if state.tabnr == tabnr and source_name ~= except_source_name then
         log.trace("Closing " .. source_name)
         pcall(renderer.close, state)
@@ -219,7 +219,7 @@ M.diagnostics_changed = function(source_name, args)
   if not type(args) == "table" then
     error("diagnostics_changed: args must be a table")
   end
-  for_each_state(source_name, function(state)
+  M._for_each_state(source_name, function(state)
     state.diagnostics_lookup = args.diagnostics_lookup
     if state.path and renderer.window_exists(state) then
       state.tree:render()
@@ -229,7 +229,7 @@ end
 
 ---Called by autocmds when the cwd dir is changed. This will change the root.
 M.dir_changed = function(source_name)
-  for_each_state(source_name, function(state)
+  M._for_each_state(source_name, function(state)
     local cwd = M.get_cwd(state)
     if state.path and cwd == state.path then
       return
@@ -248,7 +248,7 @@ M.git_status_changed = function(source_name, args)
   if not type(args) == "table" then
     error("git_status_changed: args must be a table")
   end
-  for_each_state(source_name, function(state)
+  M._for_each_state(source_name, function(state)
     if utils.is_subpath(args.git_root, state.path) then
       state.git_status_lookup = args.git_status
       if renderer.window_exists(state) then
@@ -306,7 +306,7 @@ M.dispose = function(source_name, tabnr)
     end
   end
   for _, sname in ipairs(sources) do
-    for_each_state(sname, function(state)
+    M._for_each_state(sname, function(state)
       if not tabnr or tabnr == state.tabnr then
         log.trace(state.name, " disposing of tab: ", tabnr)
         pcall(fs_scan.stop_watchers, state)
@@ -366,7 +366,7 @@ end
 -- making changes to the nodes that would affect how their components are
 -- rendered.
 M.redraw = function(source_name)
-  for_each_state(source_name, function(state)
+  M._for_each_state(source_name, function(state)
     if state.tree and renderer.window_exists(state) then
       state.tree:render()
     end
@@ -376,7 +376,7 @@ end
 ---Refreshes the tree by scanning the filesystem again.
 M.refresh = function(source_name, callback)
   local current_tabnr = vim.api.nvim_get_current_tabpage()
-  for_each_state(source_name, function(state)
+  M._for_each_state(source_name, function(state)
     if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
       log.trace(source_name, " refresh")
       if type(callback) ~= "function" then
