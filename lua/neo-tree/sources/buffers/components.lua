@@ -38,16 +38,4 @@ M.name = function(config, node, state)
   }
 end
 
-M.bufnr = function(config, node, state)
-  local highlight = config.highlight or highlights.BUFFER_NUMBER
-  local bufnr = node.extra.bufnr
-  if not bufnr then
-    return {}
-  end
-  return {
-    text = string.format(" #%s", bufnr),
-    highlight = highlight,
-  }
-end
-
 return vim.tbl_deep_extend("force", common, M)

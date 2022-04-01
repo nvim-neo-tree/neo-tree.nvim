@@ -26,6 +26,7 @@ M.GIT_RENAMED = "NeoTreeGitRenamed"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
+M.MODIFIED = "NeoTreeModified"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
 M.ROOT_NAME = "NeoTreeRootName"
@@ -196,6 +197,7 @@ M.setup = function()
   create_highlight_group(M.ROOT_NAME, {}, nil, nil, "bold,italic")
   create_highlight_group(M.INDENT_MARKER, { M.DIM_TEXT })
   create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
+  create_highlight_group(M.MODIFIED, {}, nil, "d7d787")
 
   local added = create_highlight_group(
     M.GIT_ADDED,

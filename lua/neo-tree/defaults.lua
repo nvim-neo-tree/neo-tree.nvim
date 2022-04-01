@@ -1,19 +1,19 @@
 local config = {
-  default_source = "filesystem",
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
-  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
-  use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   close_floats_on_escape_key = true,
+  default_source = "filesystem",
   enable_diagnostics = true,
   enable_git_status = true,
   git_status_async = true,
-  open_files_in_last_window = true, -- false = open files in top left window
-  sort_case_insensitive = false, -- used when sorting files and directories in the tree
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
+  open_files_in_last_window = true, -- false = open files in top left window
+  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  sort_case_insensitive = false, -- used when sorting files and directories in the tree
+  use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   --
   --event_handlers = {
   --  {
@@ -84,6 +84,10 @@ local config = {
       folder_empty = "ﰊ",
       default = "*",
     },
+    modified = {
+      symbol = "[+]",
+      highlight = "NeoTreeModified",
+    },
     name = {
       trailing_slash = false,
       use_git_status_colors = true,
@@ -91,54 +95,18 @@ local config = {
     git_status = {
       symbols = {
         -- Change type
-        added     = "✚",
+        added     = "✚", -- NOTE: you can set any of these to an empty string to not show them
         deleted   = "✖",
         modified  = "",
         renamed   = "",
         -- Status type
         untracked = "",
         ignored   = "",
-        unstaged  = "", -- "",
-        staged    = "", -- "",
+        unstaged  = "",
+        staged    = "",
         conflict  = "",
       },
       align = "right",
-    },
-  },
-  window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
-             -- possible options. These can also be functions that return these options.
-    position = "left", -- left, right, float, current
-    width = 40, -- applies to left and right positions
-    popup = { -- settings that apply to float position only
-      size = {
-        height = "80%",
-        width = "50%",
-      },
-      position = "50%", -- 50% means center it
-      -- you can also specify border here, if you want a different setting from
-      -- the global popup_border_style.
-    },
-    -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
-    -- You can also create your own commands by providing a function instead of a string.
-    mappings = {
-      ["<space>"] = "toggle_node",
-      ["<2-LeftMouse>"] = "open",
-      ["<cr>"] = "open",
-      ["S"] = "open_split",
-      ["s"] = "open_vsplit",
-      ["C"] = "close_node",
-      ["z"] = "close_all_nodes",
-      ["R"] = "refresh",
-      ["a"] = "add",
-      ["A"] = "add_directory",
-      ["d"] = "delete",
-      ["r"] = "rename",
-      ["y"] = "copy_to_clipboard",
-      ["x"] = "cut_to_clipboard",
-      ["p"] = "paste_from_clipboard",
-      ["c"] = "copy", -- takes text input for destination
-      ["m"] = "move", -- takes text input for destination
-      ["q"] = "close_window",
     },
   },
   renderers = {
@@ -181,7 +149,9 @@ local config = {
           --   highlight = "NeoTreeSymbolicLinkTarget",
           -- },
           { "clipboard", zindex = 10 },
-          --{ "bufnr", zindex = 10 },
+          { "bufnr", zindex = 10 },
+          { "modified", zindex = 20, align = "right" },
+          { "diagnostics", errors_only = true, zindex = 20, align = "right" },
           { "diagnostics",  zindex = 20, align = "right" },
           { "git_status", zindex = 20, align = "right" },
         },
@@ -189,6 +159,42 @@ local config = {
     },
   },
   nesting_rules = {},
+  window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
+             -- possible options. These can also be functions that return these options.
+    position = "left", -- left, right, float, current
+    width = 40, -- applies to left and right positions
+    popup = { -- settings that apply to float position only
+      size = {
+        height = "80%",
+        width = "50%",
+      },
+      position = "50%", -- 50% means center it
+      -- you can also specify border here, if you want a different setting from
+      -- the global popup_border_style.
+    },
+    -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
+    -- You can also create your own commands by providing a function instead of a string.
+    mappings = {
+      ["<space>"] = "toggle_node",
+      ["<2-LeftMouse>"] = "open",
+      ["<cr>"] = "open",
+      ["S"] = "open_split",
+      ["s"] = "open_vsplit",
+      ["C"] = "close_node",
+      ["z"] = "close_all_nodes",
+      ["R"] = "refresh",
+      ["a"] = "add",
+      ["A"] = "add_directory",
+      ["d"] = "delete",
+      ["r"] = "rename",
+      ["y"] = "copy_to_clipboard",
+      ["x"] = "cut_to_clipboard",
+      ["p"] = "paste_from_clipboard",
+      ["c"] = "copy", -- takes text input for destination
+      ["m"] = "move", -- takes text input for destination
+      ["q"] = "close_window",
+    },
+  },
   filesystem = {
     window = {
       mappings = {
@@ -224,7 +230,7 @@ local config = {
     },
     find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
                                       -- `true` will change the filter into a full path
-                                      -- search with space as an implicit ".*", so 
+                                      -- search with space as an implicit ".*", so
                                       -- `fi init`
                                       -- will match: `./sources/filesystem/init.lua
     --find_command = "fd", -- this is determined automatically, you probably don't need to set it

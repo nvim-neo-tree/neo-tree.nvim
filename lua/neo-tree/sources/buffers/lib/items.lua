@@ -29,14 +29,12 @@ M.get_open_buffers = function(state)
     if rootsub == state.path then
       local is_loaded = vim.api.nvim_buf_is_loaded(b)
       if is_loaded or state.show_unloaded then
-        local bufnr = vim.api.nvim_buf_get_number(b)
-        local is_listed = vim.fn.buflisted(bufnr)
+        local is_listed = vim.fn.buflisted(b)
         if is_listed == 1 then
           local success, item = pcall(file_items.create_item, context, path, "file")
           if success then
             item.extra = {
-              bufnr = bufnr,
-              bufhandle = b,
+              bufnr = b,
               is_listed = is_listed,
             }
           else

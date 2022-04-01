@@ -18,6 +18,20 @@ local log = require("neo-tree.log")
 
 local M = {}
 
+-- only works in the buffers component, but it's here so we don't have to defined
+-- multple renderers.
+M.bufnr = function(config, node, state)
+  local highlight = config.highlight or highlights.BUFFER_NUMBER
+  local bufnr = node.extra and node.extra.bufnr
+  if not bufnr then
+    return {}
+  end
+  return {
+    text = string.format(" #%s", bufnr),
+    highlight = highlight,
+  }
+end
+
 M.clipboard = function(config, node, state)
   local clipboard = state.clipboard or {}
   local clipboard_state = clipboard[node:get_id()]
@@ -239,6 +253,22 @@ M.icon = function(config, node, state)
     text = icon .. " ",
     highlight = filtered_by.highlight or highlight,
   }
+end
+
+M.modified = function(config, node, state)
+  local success, bufnr = pcall(vim.fn.bufnr, node.path)
+  if not success or bufnr < 0 then
+    return {}
+  end
+  local success2, modified = pcall(vim.api.nvim_buf_get_option, bufnr, "modified")
+  if success2 and modified then
+    return {
+      text = " " .. (config.symbol or "[+]"),
+      highlight = config.highlight or highlights.MODIFIED,
+    }
+  else
+    return {}
+  end
 end
 
 M.name = function(config, node, state)
