@@ -69,6 +69,7 @@ end
 M.open = cc.open
 M.open_split = cc.open_split
 M.open_vsplit = cc.open_vsplit
+M.open_tabnew = cc.open_tabnew
 
 M.refresh = refresh
 

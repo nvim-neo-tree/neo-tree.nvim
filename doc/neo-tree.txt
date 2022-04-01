@@ -156,7 +156,9 @@ Note: The "selected" item is the line the cursor is currently on.
 
 S             = open_split:  Same as open, but opens in a new horizontal split.
 
-s             = open_vsplit: Same as open, but opens in a vertical split
+s             = open_vsplit: Same as open, but opens in a vertical split.
+
+t             = open_tabnew: Same as open, but opens in a new tab.
 
 <bs>          = navigate_up: Moves the root directory up one level.
 
@@ -743,7 +745,7 @@ Fired after a file (or folder) has been moved. The arg is a table containing
 Fired just before a file is opened. The arg is a table containing the `state`
 of the source being used, the `path` of the file to be opened, and `open_cmd`,
 which is the open command that was requested. `open_cmd` will be either |edit|,
-|split|, or |vsplit|. This function should return a table with a property called
+|split|, |vsplit|, |tabnew|. This function should return a table with a property called
 `handled` which is true if the file open operation was handled, or false if it
 was not. If `{ handled = true }` is not returned, the file will be opened using
 the built-in logic.
