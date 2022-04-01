@@ -180,6 +180,7 @@ local config = {
       ["<cr>"] = "open",
       ["S"] = "open_split",
       ["s"] = "open_vsplit",
+      ["t"] = "open_tabnew",
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
       ["R"] = "refresh",
