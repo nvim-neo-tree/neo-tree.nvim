@@ -15,10 +15,8 @@ local load_ignored_per_directory_internal = function(path, pattern)
   local result = vim.fn.systemlist(cmd)
   if vim.v.shell_error == 128 then
     if type(result) == "table" then
-      if result[1] == "fatal: this operation must be run in a work tree" then
-        return {}
-      end
-      if vim.startswith(result[1], "fatal: not a git repository") then
+      if vim.startswith(result[1], "fatal:") then
+        -- These errors are all about not being in a repository
         return {}
       end
     end
