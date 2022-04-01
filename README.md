@@ -128,6 +128,7 @@ use {
             ["<cr>"] = "open",
             ["S"] = "open_split",
             ["s"] = "open_vsplit",
+            ["t"] = "open_tabnew",
             ["C"] = "close_node",
             ["<bs>"] = "navigate_up",
             ["."] = "set_root",

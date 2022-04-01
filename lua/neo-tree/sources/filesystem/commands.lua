@@ -94,6 +94,9 @@ end
 M.open_vsplit = function(state)
   cc.open_vsplit(state, utils.wrap(fs.toggle_directory, state))
 end
+M.open_tabnew = function (state)
+  cc.open_tabnew(state, utils.wrap(fs.toggle_directory, state))
+end
 
 M.refresh = refresh
 
