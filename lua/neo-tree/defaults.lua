@@ -119,6 +119,7 @@ local config = {
         "container",
         width = "100%",
         right_padding = 1,
+        --max_width = 60,
         content = {
           { "name", zindex = 10 },
           -- {
@@ -138,6 +139,7 @@ local config = {
         "container",
         width = "100%",
         right_padding = 1,
+        --max_width = 60,
         content = {
           {
             "name",
