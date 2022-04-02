@@ -25,13 +25,13 @@ local start_resize_monitor = function ()
   check_window_size = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
-      if state.win_width_at_last_render and M.window_exists(state) then
+      if state.win_width and M.window_exists(state) then
         windows_exist = true
         local current_size = vim.api.nvim_win_get_width(state.winid)
-        if current_size ~= state.win_width_at_last_render then
+        if current_size ~= state.win_width then
           log.trace("Window size changed, redrawing tree")
+          state.win_width = current_size
           state.tree:render()
-          state.win_width_at_last_render = current_size
         end
       end
     end)
@@ -164,6 +164,9 @@ create_nodes = function(source_items, state, level)
       level = level,
       is_last_child = is_last_child,
     }
+    local indent = (state.renderers[item.type] or {}).indent_size or 4
+    local estimated_node_length = (#item.name or 0) + level * indent + 8
+    state.longest_node = math.max(state.longest_node, estimated_node_length )
 
     local node_children = nil
     if item.children ~= nil then
@@ -226,7 +229,10 @@ local prepare_node = function(item, state)
     line:append(item.type .. ": ", "Comment")
     line:append(item.name)
   else
-    local remaining_cols = vim.api.nvim_win_get_width(state.winid)
+    local remaining_cols = state.win_width
+    if state.current_position == "current" then
+      remaining_cols = math.min(remaining_cols, state.longest_node)
+    end
     for _, component in ipairs(renderer) do
       local component_data = M.render_component(component, item, state, remaining_cols)
       if component_data then
@@ -444,6 +450,30 @@ M.position = {
   end,
   is = { restorable = true },
 }
+
+---Visit all nodes ina tree recursively and reduce to a single value.
+---@param tree table NuiTree
+---@param memo any Value that is passed to the accumulator function
+---@param func function Accumulator function that is called for each node
+---@return any any The final memo value.
+M.reduce_nodes = function(tree, memo, func)
+  if type(func) ~= "function" then
+    error("func must be a function")
+  end
+  local visit
+  visit = function(node)
+    func(node, memo)
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(node:get_id())) do
+        visit(child)
+      end
+    end
+  end
+  for _, node in ipairs(tree:get_nodes()) do
+    visit(node)
+  end
+  return memo
+end
 
 ---Visits all nodes in the tree and returns a list of all nodes that match the
 ---given predicate.
@@ -730,15 +760,17 @@ draw = function(nodes, state, parent_id)
   else
     M.set_expanded_nodes(state.tree, expanded_nodes)
   end
+
+  -- This is to ensure that containers are always the right size
+  state.win_width = vim.api.nvim_win_get_width(state.winid)
+  start_resize_monitor()
+
   state.tree:render()
 
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
   M.position.restore(state)
 
-  -- This is to ensure that containers are always the right size
-  state.win_width_at_last_render = vim.api.nvim_win_get_width(state.winid)
-  start_resize_monitor()
 end
 
 ---Shows the given items as a tree.
@@ -756,6 +788,9 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       if success then
         level = parent:get_depth()
       end
+      state.longest_node = state.longest_node or 0
+    else
+      state.longest_node = 0
     end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)

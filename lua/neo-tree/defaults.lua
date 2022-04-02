@@ -154,7 +154,6 @@ local config = {
           { "clipboard", zindex = 10 },
           { "bufnr", zindex = 10 },
           { "modified", zindex = 20, align = "right" },
-          { "diagnostics", errors_only = true, zindex = 20, align = "right" },
           { "diagnostics",  zindex = 20, align = "right" },
           { "git_status", zindex = 20, align = "right" },
         },

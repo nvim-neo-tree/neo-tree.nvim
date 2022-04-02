@@ -44,7 +44,6 @@ local calc_container_width = function(config, node, state, context)
   if config.max_width then
     container_width = math.min(container_width, config.max_width)
   end
-  print("container_width: ", container_width, "max_width: ", config.max_width)
   context.container_width = container_width
   return container_width
 end

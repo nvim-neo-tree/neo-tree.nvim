@@ -890,7 +890,7 @@ setup. If you define a component with the same name of a built-in component, it
 will replace that built-in component. Otherwise it will be added to the existing
 set of components.
 
-CONTAINER
+CONTAINER                                                   *neo-tree-container*
 
 One unique component that deserves some explanation is the `container`
 component. This component allows you to create more complex layouts where
@@ -907,48 +907,57 @@ node so far equals 15 characters, then 100% would evaluate to 25 characters.
 The `"fit_content"` value means that it will be the width of the largest
 layer. See `zindex` for details about layers.
 
+If the current position is "current", meaning it is being displayed in a split
+instead of as a sidebar, the avilable width will be calculated as the longest
+node name + indent + 8 characters. This is to prevent right aligned components
+from being too far away from the node name.
+
+min_width / max_width~
+This constrains the value of width, useful when the `width` is set to a
+percentage or `"fit_content"`.
+
 content~
 This is a list of components that will be arranged by this container.
 
 Each component in the content list can use these additional properties:
 
-zindex~
-All components with the same zindex will be renderered together in the same
-layer, one after the other. Higher zindex value are rendered on top of other
-layers, hiding whatever is beneath them. For example, if a component with a
-zindex of 10 produces this:
+  zindex~
+  All components with the same zindex will be renderered together in the same
+  layer, one after the other. Higher zindex value are rendered on top of other
+  layers, hiding whatever is beneath them. For example, if a component with a
+  zindex of 10 produces this:
+>
+  "abcdefg"
+<
+  and another component width a zindex of 20 produces this:
+>
+  "1234"
+<
+  then the result will be:
+>
+  "1234efg"
+<
+  
+  align~
+  If align is right, then it will be pushed to the rigth edge of the avilable
+  space. This makes the most sense when the container width is set to a number
+  or `"100%"`. Components that are right aligned will automatically overlap left
+  aligned components with the same zindex if there is not enough space.
+  
+  Continuing with the example from above, if there was a `"right"` aligned
+  component with a zindex of 20 that outputs:
+>
+  "**""
+<
+  Then the result when a container has a width of 12 would be:
+>
+  "1234efg   **"
+<
+  but if the width was 8 then the result would be:
+>
+  "1234ef**"
+<
 
->
-    "abcdefg"
-<
-and another component width a zindex of 20 produces this:
->
-    "1234"
-<
-then the result will be:
->
-    "1234efg"
-<
-
-align~
-If align is right, then it will be pushed to the rigth edge of the avilable
-space. This makes the most sense when the container width is set to a number
-or `"100%"`. Components that are right aligned will automatically overlap left
-aligned components with the same zindex if there is not enough space.
-
-Continuing with the example from above, if there was a `"right"` aligned
-component with a zindex of 20 that outputs:
->
-    "**""
->
-Then the result when a container has a width of 12 would be:
->
-    "1234efg   **"
->
-but if the width was 8 then the result would be:
->
-    "1234ef**"
-<
 Example~
 
 This example container has the name on the left hand side, and the
