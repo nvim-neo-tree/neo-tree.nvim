@@ -331,6 +331,12 @@ M.setup = function(config, global_config)
       handler = M.follow,
     })
   end
+
+  -- Update the "modified" component
+  manager.subscribe(M.name, {
+    event = events.VIM_BUFFER_MODIFIED_SET,
+    handler = wrap(manager.redraw)
+  })
 end
 
 ---Expands or collapses the current node.
