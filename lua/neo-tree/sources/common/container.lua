@@ -1,6 +1,7 @@
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local highlights = require("neo-tree.ui.highlights")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -167,6 +168,12 @@ local fade_content = function(layer, fade_char_count)
   end
 end
 
+local try_fade_content = function(layer, fade_char_count)
+  local success, err = pcall(fade_content, layer, fade_char_count)
+  if not success then
+    log.debug("Error while trying to fade content: ", err)
+  end
+end
 
 local merge_content = function(context)
   -- Heres the idea:
@@ -223,14 +230,14 @@ local merge_content = function(context)
       local width = calc_rendered_width(layer.left)
       if width > remaining_width then
         local truncated = truncate_layer_keep_left(layer.left, left_width, remaining_width)
-        fade_content(truncated, 3)
+        try_fade_content(truncated, 3)
         vim.list_extend(left, truncated)
         remaining_width = 0
       else
         remaining_width = remaining_width - width
         local fade_chars = 3 - remaining_width
         if fade_chars > 0 then
-          fade_content(layer.left, fade_chars)
+          try_fade_content(layer.left, fade_chars)
         end
         vim.list_extend(left, layer.left)
         left_width = left_width + width
