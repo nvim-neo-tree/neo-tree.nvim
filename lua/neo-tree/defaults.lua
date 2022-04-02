@@ -12,6 +12,7 @@ local config = {
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  resize_timer_interval = 50, -- in ms, needed for containers to redraw right aligned and faded content
   sort_case_insensitive = false, -- used when sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   --

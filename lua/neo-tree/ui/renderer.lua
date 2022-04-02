@@ -11,35 +11,47 @@ local keymap = require("nui.utils.keymap")
 local autocmd = require("nui.utils.autocmd")
 local log = require("neo-tree.log")
 
-local M = {}
+local M = { resize_timer_interval = 50 }
 local floating_windows = {}
 local draw, create_window, create_tree
 
-local resize_monitor_started = false
+local resize_monitor_timer = nil
 local start_resize_monitor = function ()
-  if resize_monitor_started then
+  if resize_monitor_timer then
     return
   end
   local manager = require("neo-tree.sources.manager")
   local check_window_size
   check_window_size = function()
-    local success, err = pcall(manager._for_each_state, "filesystem", function(state)
-      if state.has_right_content and state.win_width_at_last_render and M.window_exists(state) then
+    local windows_exist = false
+    local success, err = pcall(manager._for_each_state, nil, function(state)
+      if state.win_width_at_last_render and M.window_exists(state) then
+        windows_exist = true
         local current_size = vim.api.nvim_win_get_width(state.winid)
         if current_size ~= state.win_width_at_last_render then
           log.trace("Window size changed, redrawing tree")
           state.tree:render()
+          state.win_width_at_last_render = current_size
         end
       end
     end)
-    if not success then
-      log.error("Error checking window size: ", err)
+    if success then
+      if not windows_exist and resize_monitor_timer then
+        success, err = pcall(resize_monitor_timer.stop, resize_monitor_timer)
+        if success then
+          resize_monitor_timer = nil
+          log.trace("No windows exist, stopping resize monitor")
+        else
+          log.debug("Error stopping resize monitor: ", err)
+        end
+      end
+    else
+      log.debug("Error checking window size: ", err)
     end
   end
 
-  local timer = vim.loop.new_timer()
-  timer:start(1000, 200, vim.schedule_wrap(check_window_size))
-  resize_monitor_started = true
+  resize_monitor_timer = vim.loop.new_timer()
+  resize_monitor_timer:start(1000, M.resize_timer_interval, vim.schedule_wrap(check_window_size))
 end
 
 
@@ -226,13 +238,6 @@ local prepare_node = function(item, state)
         end
       end
     end
-  end
-
-  if state.has_right_content then
-    state.win_width_at_last_render = vim.api.nvim_win_get_width(state.winid)
-    start_resize_monitor()
-  else
-    state.win_width_at_last_render = nil
   end
 
   return line
@@ -730,6 +735,10 @@ draw = function(nodes, state, parent_id)
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
   M.position.restore(state)
+
+  -- This is to ensure that containers are always the right size
+  state.win_width_at_last_render = vim.api.nvim_win_get_width(state.winid)
+  start_resize_monitor()
 end
 
 ---Shows the given items as a tree.
@@ -742,9 +751,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   utils.debounce(id, function()
     events.fire_event(events.BEFORE_RENDER, state)
     local level = 0
-    if parentId == nil then
-      state.has_right_content = false -- used to know if we need to redraw on window resize
-    else
+    if parentId ~= nil then
       local success, parent = pcall(state.tree.get_node, state.tree, parentId)
       if success then
         level = parent:get_depth()

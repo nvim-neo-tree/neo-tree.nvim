@@ -45,10 +45,14 @@ local function create_state(tabnr, sd, winid)
 end
 
 M._for_each_state = function(source_name, action)
-  local sd = get_source_data(source_name)
-  for _, tbl in ipairs({ sd.state_by_tab, sd.state_by_win }) do
-    for _, state in pairs(tbl) do
-      action(state)
+  local sources = source_name and { source_name } or utils.get_keys(source_data)
+
+  for _, source in ipairs(sources) do
+    local sd = get_source_data(source)
+    for _, tbl in ipairs({ sd.state_by_tab, sd.state_by_win }) do
+      for _, state in pairs(tbl) do
+        action(state)
+      end
     end
   end
 end

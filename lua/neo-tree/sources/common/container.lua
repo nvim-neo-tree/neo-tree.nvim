@@ -1,6 +1,5 @@
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
-local log = require("neo-tree.log")
 local highlights = require("neo-tree.ui.highlights")
 
 local M = {}
@@ -238,7 +237,6 @@ local merge_content = function(context)
   end
 
   if remaining_width > 0 and #right > 0 then
-    log.debug("right aligning", left,  context.container_width, remaining_width)
     table.insert(left, { text = string.rep(" ", remaining_width) })
   end
 
