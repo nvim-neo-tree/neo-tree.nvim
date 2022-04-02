@@ -6,7 +6,7 @@ local log = require("neo-tree.log")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local highlights = require("neo-tree.ui.highlights")
 local manager = require("neo-tree.sources.manager")
-local netrw   = require("neo-tree.setup.netrw")
+local netrw = require("neo-tree.setup.netrw")
 
 -- If you add a new source, you need to add it to the sources table.
 -- Each source should have a defaults module that contains the default values
@@ -68,7 +68,7 @@ M.buffer_enter_event = function()
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
-    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder
+    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit
     setlocal nolist nospell nonumber norelativenumber
     ]])
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
@@ -92,7 +92,6 @@ M.buffer_enter_event = function()
     events.fire_event(events.NEO_TREE_POPUP_BUFFER_LEAVE)
   end
   last_buffer_enter_filetype = vim.bo.filetype
-
 
   -- there is nothing more we want to do with floating windows
   if utils.is_floating() then
