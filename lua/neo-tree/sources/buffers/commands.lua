@@ -63,7 +63,7 @@ end
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
-  buffers.navigate(parent_path)
+  buffers.navigate(state, parent_path)
 end
 
 M.open = cc.open
@@ -81,7 +81,7 @@ M.set_root = function(state)
   local tree = state.tree
   local node = tree:get_node()
   if node.type == "directory" then
-    buffers.navigate(node.id)
+    buffers.navigate(state, node.id)
   end
 end
 

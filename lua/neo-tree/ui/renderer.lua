@@ -650,14 +650,7 @@ create_window = function(state)
         log.trace("Skipping mapping for %s", cmd)
       else
         if type(func) == "string" then
-          local func_ref = state.commands[func]
-          if func_ref then
-            func = func_ref
-          else
-            log.error(
-              string.format("Could not find command %s for mapping %s in %s", func, cmd, state.name)
-            )
-          end
+          func = state.commands[func]
         end
         if type(func) == "function" then
           keymap.set(state.bufnr, "n", cmd, function()

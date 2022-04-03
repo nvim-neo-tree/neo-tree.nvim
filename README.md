@@ -130,13 +130,6 @@ use {
             ["s"] = "open_vsplit",
             ["t"] = "open_tabnew",
             ["C"] = "close_node",
-            ["<bs>"] = "navigate_up",
-            ["."] = "set_root",
-            ["H"] = "toggle_hidden",
-            ["R"] = "refresh",
-            ["/"] = "fuzzy_finder",
-            ["f"] = "filter_on_submit",
-            ["<c-x>"] = "clear_filter",
             ["a"] = "add",
             ["A"] = "add_directory",
             ["d"] = "delete",
@@ -147,6 +140,7 @@ use {
             ["c"] = "copy", -- takes text input for destination
             ["m"] = "move", -- takes text input for destination
             ["q"] = "close_window",
+            ["R"] = "refresh",
           }
         },
         nesting_rules = {},
@@ -174,12 +168,24 @@ use {
                                 -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
           use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect changes
                                           -- instead of relying on nvim autocmd events.
+          window = {
+            mappings = {
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
+              ["H"] = "toggle_hidden",
+              ["/"] = "fuzzy_finder",
+              ["f"] = "filter_on_submit",
+              ["<c-x>"] = "clear_filter",
+            }
+          }
         },
         buffers = {
           show_unloaded = true,
           window = {
             mappings = {
               ["bd"] = "buffer_delete",
+              ["<bs>"] = "navigate_up",
+              ["."] = "set_root",
             }
           },
         },
@@ -198,6 +204,7 @@ use {
           }
         }
       })
+
       vim.cmd([[nnoremap \ :Neotree reveal<cr>]])
     end
 }
