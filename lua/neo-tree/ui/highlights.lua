@@ -29,6 +29,9 @@ M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.MODIFIED = "NeoTreeModified"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
+M.STATUS_LINE = "NeoTreeStatusLine"
+M.STATUS_LINE_NC = "NeoTreeStatusLineNC"
+M.VERTSPLIT = "NeoTreeVertSplit"
 M.ROOT_NAME = "NeoTreeRootName"
 M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.TITLE_BAR = "NeoTreeTitleBar"
@@ -183,6 +186,11 @@ end
 M.setup = function()
   local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
   local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
+
+  create_highlight_group(M.STATUS_LINE, { "StatusLine" })
+  create_highlight_group(M.STATUS_LINE_NC, { "StatusLineNC" })
+
+  create_highlight_group(M.VERTSPLIT, { "VertSplit" })
 
   local float_border_hl = create_highlight_group(
     M.FLOAT_BORDER,
