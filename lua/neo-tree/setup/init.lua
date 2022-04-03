@@ -386,7 +386,8 @@ M.merge_config = function(config, is_auto_config)
     id = "neo-tree-win-enter",
   })
 
-  
+  local rt = utils.get_value(M.config, "resize_timer_interval", 50, true)
+  require("neo-tree.ui.renderer").resize_timer_interval = rt
 
   if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
