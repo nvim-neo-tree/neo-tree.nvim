@@ -238,10 +238,10 @@ M.dir_changed = function(source_name)
     if state.path and cwd == state.path then
       return
     end
-    if state.path and renderer.window_exists(state) then
+    if renderer.window_exists(state) then
       M.navigate(state, cwd)
     else
-      state.path = cwd
+      state.path = nil
       state.dirty = true
     end
   end)
