@@ -31,12 +31,12 @@ local get_root_for_item = function(item)
   if type(git_root_cache.dir_lookup[dir]) ~= "nil" then
     return git_root_cache.dir_lookup[dir]
   end
-  for _, root in ipairs(git_root_cache.known_roots) do
-    if vim.startswith(dir, root) then
-      git_root_cache.dir_lookup[dir] = root
-      return root
-    end
-  end
+  --for _, root in ipairs(git_root_cache.known_roots) do
+  --  if vim.startswith(dir, root) then
+  --    git_root_cache.dir_lookup[dir] = root
+  --    return root
+  --  end
+  --end
   local root = git_utils.get_repository_root(dir)
   if root then
     git_root_cache.dir_lookup[dir] = root

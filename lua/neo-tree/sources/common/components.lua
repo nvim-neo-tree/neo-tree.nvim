@@ -284,6 +284,8 @@ M.name = function(config, node, state)
   if node:get_depth() == 1 then
     highlight = highlights.ROOT_NAME
   else
+    local filtered_by = M.filtered_by(config, node, state)
+    highlight = filtered_by.highlight or highlight
     if config.use_git_status_colors == nil or config.use_git_status_colors then
       local git_status = state.components.git_status({}, node, state)
       if git_status and git_status.highlight then
@@ -292,11 +294,9 @@ M.name = function(config, node, state)
     end
   end
 
-  local filtered_by = M.filtered_by(config, node, state)
-
   return {
     text = text,
-    highlight = filtered_by.highlight or highlight,
+    highlight = highlight,
   }
 end
 
