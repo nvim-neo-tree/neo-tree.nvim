@@ -41,6 +41,7 @@ local function create_state(tabnr, sd, winid)
   state.position = {
     is = { restorable = false },
   }
+  state.git_base = "HEAD"
   return state
 end
 

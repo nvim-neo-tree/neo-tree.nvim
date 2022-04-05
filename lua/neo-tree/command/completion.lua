@@ -29,7 +29,24 @@ local get_path_completions = function(key_prefix, base_path)
   return table.concat(completions, "\n")
 end
 
-M.complete_args = function (argLead, cmdLine)
+local get_ref_completions = function(key_prefix)
+  key_prefix = key_prefix or ""
+  local completions = { key_prefix .. "HEAD" }
+  local ok, refs = utils.execute_command("git show-ref")
+  if not ok then
+    return ""
+  end
+  for _, ref in ipairs(refs) do
+    local _, i = ref:find("refs%/%a+%/")
+    if i then
+      table.insert(completions, key_prefix .. ref:sub(i + 1))
+    end
+  end
+
+  return table.concat(completions, "\n")
+end
+
+M.complete_args = function(argLead, cmdLine)
   local candidates = {}
   local existing = utils.split(cmdLine, " ")
   local parsed = parser.parse(existing, false)
@@ -51,6 +68,13 @@ M.complete_args = function (argLead, cmdLine)
           table.insert(candidates, key .. "=./")
         end
       end
+
+      for _, key in ipairs(parser.ref_args) do
+        key = tostring(key)
+        if key:find(argLead) and not parsed[key] then
+          table.insert(candidates, key .. "=")
+        end
+      end
     end
   else
     -- continuation of a key=value pair
@@ -59,6 +83,8 @@ M.complete_args = function (argLead, cmdLine)
     local arg_type = parser.arg_type_lookup[key]
     if arg_type == parser.PATH then
       return get_path_completions(key .. "=", value)
+    elseif arg_type == parser.REF then
+      return get_ref_completions(key .. "=")
     elseif arg_type == parser.LIST then
       local valid_values = parser.arguments[key].values
       if valid_values and not parsed[key] then
@@ -72,7 +98,7 @@ M.complete_args = function (argLead, cmdLine)
   end
 
   -- may be a value without a key
-  for value, key  in pairs(parser.reverse_lookup) do
+  for value, key in pairs(parser.reverse_lookup) do
     value = tostring(value)
     local key_already_used = false
     if parser.arg_type_lookup[key] == parser.LIST then
@@ -88,7 +114,7 @@ M.complete_args = function (argLead, cmdLine)
 
   if #candidates == 0 then
     -- default to path completion
-    return get_path_completions(nil, argLead)
+    return get_path_completions(nil, argLead) .. "\n" .. get_ref_completions(nil)
   end
   return table.concat(candidates, "\n")
 end

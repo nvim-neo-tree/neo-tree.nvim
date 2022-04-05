@@ -80,7 +80,7 @@ M.setup = function(config, global_config)
       handler = function(state)
         local this_state = get_state()
         if state == this_state then
-          state.git_status_lookup = git.status()
+          state.git_status_lookup = git.status(state.git_base)
         end
       end,
     })
