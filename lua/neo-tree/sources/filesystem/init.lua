@@ -91,7 +91,7 @@ local follow_internal = function(callback, force_show)
   end
 
   state.position.is.restorable = false -- we will handle setting cursor position here
-  fs_scan.get_items_async(state, nil, path_to_reveal, function()
+  fs_scan.get_items(state, nil, path_to_reveal, function()
     show_only_explicitly_opened()
     renderer.focus_node(state, path_to_reveal, true)
     if type(callback) == "function" then
@@ -133,7 +133,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
       ", restorable = ",
       state.position.is.restorable
     )
-    fs_scan.get_items_async(state, nil, path_to_reveal, callback)
+    fs_scan.get_items(state, nil, path_to_reveal, callback)
   else
     local is_split = state.current_position == "current"
     local follow_file = state.follow_current_file
@@ -151,7 +151,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
       else
         log.trace("navigate_internal: FAILED to save position: ", msg)
       end
-      fs_scan.get_items_async(state, nil, nil, callback)
+      fs_scan.get_items(state, nil, nil, callback)
     end
   end
 
@@ -235,7 +235,7 @@ M.show_new_children = function(state, node_or_path)
   if node:is_expanded() then
     M.navigate(state)
   else
-    fs_scan.get_items_async(state, nil, false, function()
+    fs_scan.get_items(state, nil, false, function()
       local new_node = state.tree:get_node(node:get_id())
       M.toggle_directory(state, new_node)
     end)
@@ -353,7 +353,7 @@ M.toggle_directory = function(state, node)
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil)
-    fs_scan.get_items_async(state, id, true)
+    fs_scan.get_items(state, id, true)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then

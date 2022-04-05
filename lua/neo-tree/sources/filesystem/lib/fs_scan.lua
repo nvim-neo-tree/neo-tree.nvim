@@ -11,13 +11,52 @@ local git = require("neo-tree.git")
 
 local M = {}
 
--- this is the actual work of collecting items
--- at least if we are not searching...
-local function do_scan(context, path_to_scan)
+local dir_complete = function(context, dir_path)
   local state = context.state
   local paths_to_load = context.paths_to_load
   local folders = context.folders
-  local filters = state.filtered_items or {}
+
+  if state.use_libuv_file_watcher then
+    local root = context.folders[dir_path]
+    if root then
+      if root.is_link then
+        log.trace("Adding fs watcher for ", root.link_to)
+        fs_watch.watch_folder(root.link_to)
+      else
+        log.trace("Adding fs watcher for ", root.path)
+        fs_watch.watch_folder(root.path)
+      end
+    end
+  end
+  local scanned_folder = folders[dir_path]
+  if scanned_folder then
+    scanned_folder.loaded = true
+  end
+  -- check to see if there are more folders to load
+  local next_path = nil
+  while #paths_to_load > 0 and not next_path do
+    next_path = table.remove(paths_to_load)
+    -- ensure that the path is still valid
+    local success, result = pcall(vim.loop.fs_stat, next_path)
+    -- ensure that the result is a directory
+    if success and result and result.type == "directory" then
+      -- ensure that it is not already loaded
+      local existing = folders[next_path]
+      if existing and existing.loaded then
+        next_path = nil
+      end
+    else
+      -- if the path doesn't exist, skip it
+      next_path = nil
+    end
+  end
+  return next_path
+end
+
+-- this is the actual work of collecting items
+-- at least if we are not searching...
+local function async_scan(context, path_to_scan)
+  local state = context.state
 
   scan.scan_dir_async(path_to_scan, {
     search_pattern = state.search_pattern or nil,
@@ -32,43 +71,9 @@ local function do_scan(context, path_to_scan)
       end
     end,
     on_exit = vim.schedule_wrap(function()
-      if state.use_libuv_file_watcher then
-        local root = context.folders[path_to_scan]
-        if root then
-          if root.is_link then
-            log.trace("Adding fs watcher for ", root.link_to)
-            fs_watch.watch_folder(root.link_to)
-          else
-            log.trace("Adding fs watcher for ", root.path)
-            fs_watch.watch_folder(root.path)
-          end
-        end
-      end
-      local scanned_folder = folders[path_to_scan]
-      if scanned_folder then
-        scanned_folder.loaded = true
-      end
-      -- check to see if there are more folders to load
-      local next_path = nil
-      while #paths_to_load > 0 and not next_path do
-        next_path = table.remove(paths_to_load)
-        -- ensure that the path is still valid
-        local success, result = pcall(vim.loop.fs_stat, next_path)
-        -- ensure that the result is a directory
-        if success and result and result.type == "directory" then
-          -- ensure that it is not already loaded
-          local existing = folders[next_path]
-          if existing and existing.loaded then
-            next_path = nil
-          end
-        else
-          -- if the path doesn't exist, skip it
-          next_path = nil
-        end
-      end
-
+      local next_path = dir_complete(context, path_to_scan)
       if next_path then
-        do_scan(context, next_path)
+        async_scan(context, next_path)
       else
         context.job_complete()
       end
@@ -76,7 +81,41 @@ local function do_scan(context, path_to_scan)
   })
 end
 
+local function sync_scan(context, path_to_scan)
+  local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
+  if not success then
+    log.error("Error opening dir:", dir)
+  end
+  local stats = vim.loop.fs_readdir(dir)
+  for _, stat in ipairs(stats) do
+    local path = path_to_scan .. utils.path_separator .. stat.name
+    success, _ = pcall(file_items.create_item, context, path, stat.type)
+    if not success then
+      log.error("error creating item for ", path)
+    end
+  end
+
+  local next_path = dir_complete(context, path_to_scan)
+  if next_path then
+    sync_scan(context, next_path)
+  else
+    context.job_complete()
+  end
+end
+
+M.get_items_sync = function(state, parent_id, path_to_reveal, callback)
+  return M.get_items_async_with_context(state, parent_id, path_to_reveal, callback, false)
+end
+
 M.get_items_async = function(state, parent_id, path_to_reveal, callback)
+  M.get_items_async_with_context(state, parent_id, path_to_reveal, callback, true)
+end
+
+M.get_items = function(state, parent_id, path_to_reveal, callback, async)
+  if type(async) == "nil" then
+    async = state.async_directory_scan
+  end
+
   if not parent_id then
     M.stop_watchers(state)
   end
@@ -166,7 +205,11 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
         vim.list_extend(state.git_ignored, git.load_ignored_per_directory(parent_id))
       end
     end
-    do_scan(context, parent_id or state.path)
+    if async then
+      async_scan(context, path)
+    else
+      sync_scan(context, path)
+    end
   end
 end
 
