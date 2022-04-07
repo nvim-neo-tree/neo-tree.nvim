@@ -267,7 +267,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
     log.debug("focus_node called with no tree")
     return false
   end
-  local node = tree:get_node(id)
+  local node, linenr = tree:get_node(id)
   if not node then
     log.debug("focus_node cannot find node with id ", id)
     return false
@@ -283,70 +283,56 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
     log.debug("focus_node: bufnr is not valid")
     return false
   end
-  local lines = vim.api.nvim_buf_line_count(state.bufnr)
-  local linenr = 0
-  while linenr < lines do
-    linenr = linenr + 1
-    node = tree:get_node(linenr)
-    if node then
-      if node:get_id() == id then
-        if relative_movement ~= 0 then
-          local success, relative_node = pcall(tree.get_node, tree, linenr)
-          -- this may fail if the node is at the first or last line
-          if success and relative_node then
-            node = relative_node
-            linenr = linenr + relative_movement
-          end
-        end
-        local col = 0
-        if node.indent then
-          col = string.len(node.indent)
-        end
-        local focus_window = not do_not_focus_window
-        if M.window_exists(state) then
-          if focus_window then
-            vim.api.nvim_set_current_win(state.winid)
-          end
-          local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-          if success then
-            local execute_win_command = function(cmd)
-              if vim.api.nvim_get_current_win() == state.winid then
-                vim.cmd(cmd)
-              else
-                vim.cmd("call win_execute(" .. state.winid .. [[, "]] .. cmd .. [[")]])
-              end
-            end
 
-            -- make sure we are not scrolled down if it can all fit on the screen
-            local win_height = vim.api.nvim_win_get_height(state.winid)
-            local expected_bottom_line = math.min(lines, linenr + 5) + bottom_scroll_padding
-            if expected_bottom_line > win_height then
-              execute_win_command("normal! zb")
-              local top = vim.fn.line("w0", state.winid)
-              local bottom = vim.fn.line("w$", state.winid)
-              local offset_top = top + (expected_bottom_line - bottom)
-              execute_win_command("normal! " .. offset_top .. "zt")
-              pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
-            elseif win_height > linenr then
-              execute_win_command("normal! zb")
-            elseif linenr < (win_height / 2) then
-              execute_win_command("normal! zz")
-            end
-          else
-            log.debug("Failed to set cursor: " .. err)
-          end
-          return success
+  if M.window_exists(state) then
+    local focus_window = not do_not_focus_window
+    if focus_window then
+      vim.api.nvim_set_current_win(state.winid)
+    end
+
+    -- focus the correct line
+    linenr = linenr + relative_movement
+    local col = 0
+    if node.indent then
+      col = string.len(node.indent)
+    end
+    local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+
+    -- now ensure that the window is scrolled correctly
+    if success then
+      local execute_win_command = function(cmd)
+        if vim.api.nvim_get_current_win() == state.winid then
+          vim.cmd(cmd)
         else
-          log.debug("focus_node: window does not exist")
-          return false
+          vim.cmd("call win_execute(" .. state.winid .. [[, "]] .. cmd .. [[")]])
         end
       end
+
+      -- make sure we are not scrolled down if it can all fit on the screen
+      local lines = vim.api.nvim_buf_line_count(state.bufnr)
+      local win_height = vim.api.nvim_win_get_height(state.winid)
+      local expected_bottom_line = math.min(lines, linenr + 5) + bottom_scroll_padding
+      if expected_bottom_line > win_height then
+        execute_win_command("normal! zb")
+        local top = vim.fn.line("w0", state.winid)
+        local bottom = vim.fn.line("w$", state.winid)
+        local offset_top = top + (expected_bottom_line - bottom)
+        execute_win_command("normal! " .. offset_top .. "zt")
+        pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
+      elseif win_height > linenr then
+        execute_win_command("normal! zb")
+      elseif linenr < (win_height / 2) then
+        execute_win_command("normal! zz")
+      end
     else
-      --must be out of nodes
-      log.debug("focus_node: node not found")
-      return false
+      log.debug("Failed to set cursor: " .. err)
     end
+    return success
+  else
+    log.debug("focus_node: window does not exist")
+    return false
   end
+
   return false
 end
 
@@ -772,8 +758,8 @@ end
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
 M.show_nodes = function(sourceItems, state, parentId, callback)
-  local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
-  utils.debounce(id, function()
+  --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
+  --utils.debounce(id, function()
     events.fire_event(events.BEFORE_RENDER, state)
     local level = 0
     if parentId ~= nil then
@@ -794,7 +780,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     if type(callback) == "function" then
       vim.schedule(callback)
     end
-  end, 100)
+  --end, 100)
 end
 
 return M
