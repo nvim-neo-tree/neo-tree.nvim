@@ -32,6 +32,7 @@ M.NORMALNC = "NeoTreeNormalNC"
 M.STATUS_LINE = "NeoTreeStatusLine"
 M.STATUS_LINE_NC = "NeoTreeStatusLineNC"
 M.VERTSPLIT = "NeoTreeVertSplit"
+M.END_OF_BUFFER = "NeoTreeEndOfBuffer"
 M.ROOT_NAME = "NeoTreeRootName"
 M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.TITLE_BAR = "NeoTreeTitleBar"
@@ -191,6 +192,8 @@ M.setup = function()
   create_highlight_group(M.STATUS_LINE_NC, { "StatusLineNC" })
 
   create_highlight_group(M.VERTSPLIT, { "VertSplit" })
+
+  create_highlight_group(M.END_OF_BUFFER, { "EndOfBuffer" })
 
   local float_border_hl = create_highlight_group(
     M.FLOAT_BORDER,
