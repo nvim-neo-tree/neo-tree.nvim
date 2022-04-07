@@ -174,7 +174,7 @@ local config = {
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
-    -- Mappings for tree window. See `:h nep-tree-mappings` for a list of built-in commands.
+    -- Mappings for tree window. See `:h neo-tree-mappings` for a list of built-in commands.
     -- You can also create your own commands by providing a function instead of a string.
     mappings = {
       ["<space>"] = "toggle_node",
