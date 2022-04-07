@@ -101,15 +101,16 @@ function create_item(context, path, _type)
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.dotfiles = true
     end
-    if f.hide_gitignored and utils.truthy(state.git_ignored) then
-      if git.is_ignored(state.git_ignored, path, _type) then
-        item.filtered_by = item.filtered_by or {}
-        item.filtered_by.gitignored = true
-      end
-    end
+    -- NOTE: git_ignored logic moved to job_complete
   end
 
   set_parents(context, item)
+  if context.all_items == nil then
+    context.all_items = {}
+  end
+  if is_not_root then
+    table.insert(context.all_items, item)
+  end
   return item
 end
 
@@ -117,7 +118,7 @@ end
 function set_parents(context, item)
   -- we can get duplicate items if we navigate up with open folders
   -- this is probably hacky, but it works
-  if context.existing_items[item.id] then
+  if context.item_exists[item.id] then
     return
   end
   if not item.parent_path then
@@ -158,7 +159,7 @@ function set_parents(context, item)
   else
     table.insert(parent.children, item)
   end
-  context.existing_items[item.id] = true
+  context.item_exists[item.id] = true
 
   if item.filtered_by == nil and type(parent.filtered_by) == "table" then
     item.filtered_by = vim.deepcopy(parent.filtered_by)
@@ -170,7 +171,8 @@ local create_context = function(state)
     state = state,
     folders = {},
     nesting = {},
-    existing_items = {},
+    item_exists = {},
+    all_items = {},
   }
   return context
 end

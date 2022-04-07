@@ -153,6 +153,16 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
   state.default_expanded_nodes = state.force_open_folders or { state.path }
 
   context.job_complete = function()
+    local f = state.filtered_items or {}
+    if f.hide_gitignored then
+      local git_ignored = git.mark_ignored(state, context.all_items)
+      if parent_id then
+        vim.list_extend(state.git_ignored, git_ignored)
+      else
+        state.git_ignored = git_ignored
+      end
+    end
+
     file_items.deep_sort(root.children)
     if parent_id then
       -- lazy loading a child folder
@@ -209,23 +219,6 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
           return current_path
         end)
         context.paths_to_load = utils.unique(context.paths_to_load)
-      end
-
-      local f = state.filtered_items or {}
-      local ignored = {}
-      if f.hide_gitignored then
-        ignored = git.load_ignored_per_directory(state.path)
-        for _, p in ipairs(context.paths_to_load) do
-          vim.list_extend(ignored, git.load_ignored_per_directory(p))
-        end
-      end
-      state.git_ignored = ignored
-    else
-      -- just update the ignored list for this dir if we are using the per dir 'check-ignore' option
-      local f = state.filtered_items or {}
-      if f.hide_gitignored then
-        state.git_ignored = state.git_ignored or {}
-        vim.list_extend(state.git_ignored, git.load_ignored_per_directory(parent_id))
       end
     end
     if async then
