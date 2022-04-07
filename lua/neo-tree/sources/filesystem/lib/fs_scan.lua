@@ -1,21 +1,25 @@
 -- This files holds code for scanning the filesystem to build the tree.
-local vim = vim
+local uv = vim.loop
+
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
-local scan = require("plenary.scandir")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 
+local Path = require "plenary.path"
+local os_sep = Path.path.sep
+
 local M = {}
 
-local dir_complete = function(context, dir_path)
+local on_directory_loaded = function(context, dir_path)
   local state = context.state
-  local paths_to_load = context.paths_to_load
-  local folders = context.folders
-
+  local scanned_folder = context.folders[dir_path]
+  if scanned_folder then
+    scanned_folder.loaded = true
+  end
   if state.use_libuv_file_watcher then
     local root = context.folders[dir_path]
     if root then
@@ -28,10 +32,14 @@ local dir_complete = function(context, dir_path)
       end
     end
   end
-  local scanned_folder = folders[dir_path]
-  if scanned_folder then
-    scanned_folder.loaded = true
-  end
+end
+
+local dir_complete = function(context, dir_path)
+  local paths_to_load = context.paths_to_load
+  local folders = context.folders
+
+  on_directory_loaded(context, dir_path)
+
   -- check to see if there are more folders to load
   local next_path = nil
   while #paths_to_load > 0 and not next_path do
@@ -53,32 +61,47 @@ local dir_complete = function(context, dir_path)
   return next_path
 end
 
--- this is the actual work of collecting items
--- at least if we are not searching...
-local function async_scan(context, path_to_scan)
-  local state = context.state
+-- async_scan scans all the directories in context.paths_to_load
+-- and adds them as items to render in the UI.
+local function async_scan(context, path)
+  -- prepend the root path
+  table.insert(context.paths_to_load, 1, path)
 
-  scan.scan_dir_async(path_to_scan, {
-    search_pattern = state.search_pattern or nil,
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-    on_insert = function(path, _type)
-      local success, _ = pcall(file_items.create_item, context, path, _type)
-      if not success then
-        log.error("error creating item for ", path)
+  local directories_scanned = 0
+
+  local on_exit = vim.schedule_wrap(function()
+    context.job_complete()
+  end)
+
+  -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
+  local read_dir = function(current_dir)
+    local on_fs_scandir = function(err, fd)
+      if not err then
+        while true do
+          local name, typ = uv.fs_scandir_next(fd)
+          if name == nil then
+            break
+          end
+          local entry = current_dir .. os_sep .. name
+          local success, _ = pcall(file_items.create_item, context, entry, typ)
+          if not success then
+            log.error("error creating item for ", path)
+          end
+        end
+        on_directory_loaded(context, current_dir)
+        directories_scanned = directories_scanned+1
+        if directories_scanned == #context.paths_to_load then
+          on_exit()
+        end
       end
-    end,
-    on_exit = vim.schedule_wrap(function()
-      local next_path = dir_complete(context, path_to_scan)
-      if next_path then
-        async_scan(context, next_path)
-      else
-        context.job_complete()
-      end
-    end),
-  })
+    end
+
+    uv.fs_scandir(current_dir, on_fs_scandir)
+  end
+
+  for i = 1, #context.paths_to_load do
+    read_dir(context.paths_to_load[i])
+  end
 end
 
 local function sync_scan(context, path_to_scan)
