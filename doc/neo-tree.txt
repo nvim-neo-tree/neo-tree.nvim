@@ -707,6 +707,7 @@ NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
 NeoTreeStatusLine         |hl-StatusLine| override in Neo-tree window.
 NeoTreeStatusLineNC       |hl-StatusLineNC| override in Neo-tree window.
 NeoTreeVertSplit          |hl-VertSplit| override in Neo-tree window.
+NeoTreeEndOfBuffer        |hl-EndOfBuffer| override in Neo-tree window.
 NeoTreeRootName           The name of the root node.
 NeoTreeSymbolicLinkTarget Symbolic link target.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
