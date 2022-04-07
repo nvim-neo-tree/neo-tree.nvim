@@ -17,6 +17,10 @@ local draw, create_window, create_tree
 
 local resize_monitor_timer = nil
 local start_resize_monitor = function ()
+  local interval = M.resize_timer_interval or -1
+  if interval < 0 then
+    return
+  end
   if resize_monitor_timer then
     return
   end
@@ -51,7 +55,7 @@ local start_resize_monitor = function ()
   end
 
   resize_monitor_timer = vim.loop.new_timer()
-  resize_monitor_timer:start(1000, M.resize_timer_interval, vim.schedule_wrap(check_window_size))
+  resize_monitor_timer:start(1000, interval, vim.schedule_wrap(check_window_size))
 end
 
 

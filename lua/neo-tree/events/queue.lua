@@ -153,6 +153,7 @@ end
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
+  log.trace("Firing event: ", event, " with args: ", args)
   if freq > 0 then
     utils.debounce("EVENT_FIRED: " .. event, function()
       fire_event_internal(event, args or {})

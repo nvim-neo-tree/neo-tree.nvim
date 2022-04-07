@@ -13,6 +13,7 @@ local config = {
   open_files_in_last_window = true, -- false = open files in top left window
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   resize_timer_interval = 50, -- in ms, needed for containers to redraw right aligned and faded content
+                              -- set to -1 to disable the resize timer entirely
   sort_case_insensitive = false, -- used when sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   --
