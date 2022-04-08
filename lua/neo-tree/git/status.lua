@@ -157,10 +157,28 @@ M.status_async = function(path, base)
   end
 
   local context = {
+    remaining_jobs = 0,
+    success_count = 0,
     git_root = git_root,
     git_status = {},
     exclude_directories = false,
   }
+
+  local job_complete = function (return_val)
+    context.remaining_jobs = context.remaining_jobs -1
+    if return_val == 0 then
+      context.success_count = context.success_count + 1
+    end
+    if context.remaining_jobs < 1 and context.success_count > 0 then
+      vim.schedule(function()
+        events.fire_event(events.GIT_STATUS_CHANGED, {
+          git_root = context.git_root,
+          git_status = context.git_status,
+        })
+      end)
+    end
+  end
+
   local wrapped_process_line_staged = vim.schedule_wrap(function(err, line)
     if err and err > 0 then
       log.error("status_async staged error: ", err, line)
@@ -168,6 +186,7 @@ M.status_async = function(path, base)
       parse_git_status_line(context, line)
     end
   end)
+
   local wrapped_process_line_unstaged = vim.schedule_wrap(function(err, line)
     if err and err > 0 then
       log.error("status_async unstaged error: ", err, line)
@@ -178,6 +197,7 @@ M.status_async = function(path, base)
       parse_git_status_line(context, line)
     end
   end)
+
   local wrapped_process_line_untracked = vim.schedule_wrap(function(err, line)
     if err and err > 0 then
       log.error("status_async untracked error: ", err, line)
@@ -202,20 +222,14 @@ M.status_async = function(path, base)
             log.error("status_async staged error: ", err, line)
           end
         end,
-        on_exit = function(job, return_val)
+        on_exit = function(_, return_val)
           utils.debounce(event_id_staged, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
-          if return_val == 0 then
-            log.trace("status_async staged completed")
-            vim.schedule(function()
-              events.fire_event(events.GIT_STATUS_CHANGED, {
-                git_root = context.git_root,
-                git_status = context.git_status,
-              })
-            end)
-          end
+          log.trace("status_async staged completed with return_val: ", return_val)
+          job_complete(return_val)
         end,
       })
       :start()
+      context.remaining_jobs = context.remaining_jobs + 1
   end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
   local event_id_unstaged = "git_status_unstaged_" .. git_root
@@ -231,20 +245,14 @@ M.status_async = function(path, base)
             log.error("status_async unstaged error: ", err, line)
           end
         end,
-        on_exit = function(job, return_val)
+        on_exit = function(_, return_val)
           utils.debounce(event_id_unstaged, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
-          if return_val == 0 then
-            log.trace("status_async unstaged completed")
-            vim.schedule(function()
-              events.fire_event(events.GIT_STATUS_CHANGED, {
-                git_root = context.git_root,
-                git_status = context.git_status,
-              })
-            end)
-          end
+          log.trace("status_async unstaged completed with return_val: ", return_val)
+          job_complete(return_val)
         end,
       })
       :start()
+      context.remaining_jobs = context.remaining_jobs + 1
   end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
   local event_id_untracked = "git_status_untracked_" .. git_root
@@ -260,7 +268,7 @@ M.status_async = function(path, base)
             log.error("status_async untracked error: ", err, line)
           end
         end,
-        on_exit = function(job, return_val)
+        on_exit = function(_, return_val)
           utils.debounce(
             event_id_untracked,
             nil,
@@ -268,18 +276,12 @@ M.status_async = function(path, base)
             nil,
             utils.debounce_action.COMPLETE_ASYNC_JOB
           )
-          if return_val == 0 then
-            log.trace("status_async untracked completed")
-            vim.schedule(function()
-              events.fire_event(events.GIT_STATUS_CHANGED, {
-                git_root = context.git_root,
-                git_status = context.git_status,
-              })
-            end)
-          end
+          log.trace("status_async untracked completed with return_val: ", return_val)
+          job_complete(return_val)
         end,
       })
       :start()
+      context.remaining_jobs = context.remaining_jobs + 1
   end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
   return true
