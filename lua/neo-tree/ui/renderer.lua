@@ -545,6 +545,7 @@ create_window = function(state)
       modifiable = false,
       swapfile = false,
       filetype = "neo-tree",
+      undolevels = -1,
     },
   }
 
@@ -600,6 +601,7 @@ create_window = function(state)
     vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
     vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
     vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
+    vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
     vim.api.nvim_win_set_buf(winid, bufnr)
   else
     win = NuiSplit(win_options)
