@@ -441,6 +441,15 @@ M.position = {
   is = { restorable = true },
 }
 
+---Redraw the tree without relaoding from the source.
+---@param state table State of the tree.
+M.redraw = function(state)
+  if state.tree and M.window_exists(state) then
+    log.trace("Redrawing tree", state.name, state.id)
+    state.tree:render()
+    log.trace("  Redrawing tree done", state.name, state.id)
+  end
+end
 ---Visit all nodes ina tree recursively and reduce to a single value.
 ---@param tree table NuiTree
 ---@param memo any Value that is passed to the accumulator function

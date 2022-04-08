@@ -41,7 +41,7 @@ end
 
 M.close_all_nodes = function(state)
   renderer.collapse_all_nodes(state.tree)
-  state.tree:render()
+  renderer.redraw(state)
 end
 
 M.close_node = function(state, callback)
@@ -58,7 +58,7 @@ M.close_node = function(state, callback)
 
   if target_node and target_node:has_children() then
     target_node:collapse()
-    tree:render()
+    renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
   end
 end
@@ -202,7 +202,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
         updated = node:expand()
       end
       if updated then
-        tree:render()
+        renderer.redraw(state)
       end
     end
   else
@@ -240,7 +240,7 @@ end
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_tabnew = function (state, toggle_directory)
-  open_with_cmd(state, "tabnew", toggle_directory) 
+  open_with_cmd(state, "tabnew", toggle_directory)
 end
 
 M.rename = function(state, callback)
@@ -266,7 +266,7 @@ M.toggle_node = function(state, toggle_directory)
       updated = node:expand()
     end
     if updated then
-      tree:render()
+      renderer.redraw(state)
     end
   end
 end

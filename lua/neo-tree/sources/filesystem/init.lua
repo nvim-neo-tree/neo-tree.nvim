@@ -85,7 +85,7 @@ local follow_internal = function(callback, force_show)
         end
       end
       if state_changed then
-        state.tree:render()
+        renderer.redraw(state)
       end
     end
   end
@@ -369,7 +369,7 @@ M.toggle_directory = function(state, node)
       state.explicitly_opened_directories[node:get_id()] = true
     end
     if updated then
-      tree:render()
+      renderer.redraw(state)
     end
   end
 end

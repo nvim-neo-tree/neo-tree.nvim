@@ -226,9 +226,7 @@ M.diagnostics_changed = function(source_name, args)
   end
   M._for_each_state(source_name, function(state)
     state.diagnostics_lookup = args.diagnostics_lookup
-    if state.path and renderer.window_exists(state) then
-      state.tree:render()
-    end
+    renderer.redraw(state)
   end)
 end
 
@@ -256,9 +254,7 @@ M.git_status_changed = function(source_name, args)
   M._for_each_state(source_name, function(state)
     if utils.is_subpath(args.git_root, state.path) then
       state.git_status_lookup = args.git_status
-      if renderer.window_exists(state) then
-        state.tree:render()
-      end
+      renderer.redraw(state)
     end
   end)
 end
@@ -372,9 +368,7 @@ end
 -- rendered.
 M.redraw = function(source_name)
   M._for_each_state(source_name, function(state)
-    if state.tree and renderer.window_exists(state) then
-      state.tree:render()
-    end
+    renderer.redraw(state)
   end)
 end
 
