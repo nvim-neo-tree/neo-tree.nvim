@@ -211,7 +211,7 @@ local config = {
         ["."] = "set_root",
       }
     },
-    async_directory_scan = true,
+    async_directory_scan = true, -- only applies to refreshes, it's alwsays sync when called from the Neotree commands.
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
     -- The renderer section provides the renderers that will be used to render the tree.
     --   The first level is the node type.

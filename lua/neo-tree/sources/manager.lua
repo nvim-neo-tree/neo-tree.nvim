@@ -348,7 +348,8 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
-M.navigate = function(state_or_source_name, path, path_to_reveal, callback)
+---@param async boolean Whether to load the items asynchronously, may not be respected by all sources.
+M.navigate = function(state_or_source_name, path, path_to_reveal, callback, async)
   local state, source_name
   if type(state_or_source_name) == "string" then
     state = M.get_state(state_or_source_name)
@@ -360,7 +361,7 @@ M.navigate = function(state_or_source_name, path, path_to_reveal, callback)
     log.error("navigate: state_or_source_name must be a string or a table")
   end
   log.trace("navigate", source_name, path, path_to_reveal)
-  require("neo-tree.sources." .. source_name).navigate(state, path, path_to_reveal, callback)
+  require("neo-tree.sources." .. source_name).navigate(state, path, path_to_reveal, callback, async)
 end
 
 ---Redraws the tree without scanning the filesystem again. Use this after

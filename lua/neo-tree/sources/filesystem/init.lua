@@ -27,7 +27,7 @@ M.reveal_current_file = function()
   return manager.reveal_current_file(M.name)
 end
 
-local follow_internal = function(callback, force_show)
+local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return
@@ -97,7 +97,7 @@ local follow_internal = function(callback, force_show)
     if type(callback) == "function" then
       callback()
     end
-  end)
+  end, async)
   return true
 end
 
@@ -110,7 +110,7 @@ M.follow = function(callback, force_show)
   end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
 end
 
-M._navigate_internal = function(state, path, path_to_reveal, callback)
+M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
   local is_search = utils.truthy(state.search_pattern)
@@ -135,14 +135,14 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
     )
     fs_scan.get_items(state, nil, path_to_reveal, callback)
   else
-    local is_split = state.current_position == "current"
+    local is_current = state.current_position == "current"
     local follow_file = state.follow_current_file
       and not is_search
-      and not is_split
+      and not is_current
       and manager.get_path_to_reveal()
     local handled = false
     if utils.truthy(follow_file) then
-      handled = follow_internal(callback, true)
+      handled = follow_internal(callback, true, async)
     end
     if not handled then
       local success, msg = pcall(renderer.position.save, state)
@@ -151,7 +151,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback)
       else
         log.trace("navigate_internal: FAILED to save position: ", msg)
       end
-      fs_scan.get_items(state, nil, nil, callback)
+      fs_scan.get_items(state, nil, nil, callback, async)
     end
   end
 
@@ -168,10 +168,10 @@ end
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
-M.navigate = function(state, path, path_to_reveal, callback)
-  log.trace("navigate", path, path_to_reveal)
+M.navigate = function(state, path, path_to_reveal, callback, async)
+  log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
-    M._navigate_internal(state, path, path_to_reveal, callback)
+    M._navigate_internal(state, path, path_to_reveal, callback, async)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
 end
 
@@ -340,7 +340,16 @@ M.setup = function(config, global_config)
   -- Update the "modified" component
   manager.subscribe(M.name, {
     event = events.VIM_BUFFER_MODIFIED_SET,
-    handler = wrap(manager.redraw)
+    handler = function (arg)
+      local afile = arg.afile or ""
+      local source = afile:match("^neo%-tree ([%l%-]+) %[%d+%]")
+      if source then
+        log.trace("Ignoring vim_modified_set event from " .. source)
+        return
+      end
+      log.trace("refreshing due to vim_modified_set event: ", afile)
+      manager.redraw(M.name)
+    end
   })
 end
 
