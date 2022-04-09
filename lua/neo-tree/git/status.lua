@@ -75,6 +75,20 @@ local parse_git_status_line = function(context, line)
     relative_path = utils.windowize_path(relative_path)
   end
   local absolute_path = utils.path_join(git_root, relative_path)
+  -- merge status result if there are results from multiple passes
+  local existing_status = git_status[absolute_path]
+  if existing_status then
+    local merged = ""
+    local i = 0
+    while i < 2 do
+      i = i + 1
+      local existing_char = #existing_status >= i and existing_status:sub(i, i) or ""
+      local new_char = #status >= i and status:sub(i, i) or ""
+      local merged_char = get_priority_git_status_code(existing_char, new_char)
+      merged = merged .. merged_char
+    end
+    status = merged
+  end
   git_status[absolute_path] = status
 
   if not exclude_directories then
