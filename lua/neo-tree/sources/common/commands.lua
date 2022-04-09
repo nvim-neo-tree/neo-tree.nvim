@@ -281,4 +281,20 @@ M.toggle_directory = function(state, toggle_directory)
   M.toggle_node(state, toggle_directory)
 end
 
+---Marks potential windows with letters and will open the give node in the picked window.
+M.open_with_window_picker = function(state)
+  local node = state.tree:get_node()
+  local path = node:get_id()
+  local success, picker = pcall(require, "window-picker")
+  if not success then
+    print("You'll need to install window-picker to use this command: https://github.com/s1n7ax/nvim-window-picker")
+    return
+  end
+  local picked_window_id = picker.pick_window()
+  if picked_window_id then
+    vim.api.nvim_set_current_win(picked_window_id)
+    vim.cmd("edit " .. vim.fn.fnameescape(node.path))
+  end
+end
+
 return M

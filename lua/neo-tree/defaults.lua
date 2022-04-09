@@ -184,6 +184,7 @@ local config = {
       ["S"] = "open_split",
       ["s"] = "open_vsplit",
       ["t"] = "open_tabnew",
+      ["w"] = "open_with_window_picker",
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
       ["R"] = "refresh",
