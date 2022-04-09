@@ -643,13 +643,21 @@ create_window = function(state)
     ["nop"] = true,
     ["noop"] = true,
   }
-  local map_options = { noremap = true }
   local mappings = utils.get_value(state, "window.mappings", {}, true)
   for cmd, func in pairs(mappings) do
     if utils.truthy(func) then
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
       else
+        local map_options = { noremap = true }
+        if type(func) == "table" then
+          for key, value in pairs(func) do
+            if key ~= "command" and key ~= 1 then
+              map_options[key] = value
+            end
+          end
+          func = func.command or func[1]
+        end
         if type(func) == "string" then
           func = state.commands[func]
         end

@@ -311,6 +311,49 @@ You probably want #2:
      }
    })
 <
+CUSTOM MAPPINGS WITH ARGUMENTS
+
+If you want to include options for your mappings, such as `nowait`, you can
+map a key to a table that consists of the command and any options you want to
+use.
+
+The command can be either the string name of a built-in command, or a
+function, and is specified either as the first element in the table or by
+assigning it to the `command` key:
+>
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mappings = {
+           ["?"] = {
+             function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             nowait = true
+           },
+           ["i"] = {
+             command = function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             nowait = true
+           },
+           ["o"] = {
+             command = "open",
+             nowait = true
+           },
+           ["O"] = {
+             "open",
+             nowait = true
+           },
+         }
+       }
+     }
+   })
+<
+See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
+are enabled by default.
 
 
 ================================================================================
