@@ -135,8 +135,12 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
 end
 
 M.get_items = function(state, parent_id, path_to_reveal, callback, async)
-  if type(async) == "nil" then
-    async = state.async_directory_scan
+  if state.async_directory_scan == "always" then
+    async = true
+  elseif state.async_directory_scan == "never" then
+    async = false
+  elseif type(async) == "nil" then
+    async = (state.async_directory_scan == "auto") or state.async_directory_scan
   end
 
   if not parent_id then
