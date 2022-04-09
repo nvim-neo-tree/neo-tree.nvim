@@ -98,10 +98,6 @@ M.add_directory = function(state)
   cc.add_directory(state, refresh)
 end
 
-M.close_node = cc.close_node
-M.close_all_nodes = cc.close_all_nodes
-M.close_window = cc.close_window
-
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, redraw)
@@ -120,8 +116,6 @@ M.move = function(state)
   cc.move(state, redraw)
 end
 
-M.show_debug_info = cc.show_debug_info
-
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
   cc.paste_from_clipboard(state, refresh)
@@ -131,17 +125,12 @@ M.delete = function(state)
   cc.delete(state, refresh)
 end
 
-M.open = cc.open
-M.open_split = cc.open_split
-M.open_vsplit = cc.open_vsplit
-M.open_tabnew = cc.open_tabnew
-
 M.refresh = refresh
 
 M.rename = function(state)
   cc.rename(state, refresh)
 end
 
-M.toggle_node = cc.toggle_node
+cc._add_common_commands(M)
 
 return M

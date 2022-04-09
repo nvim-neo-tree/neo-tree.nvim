@@ -23,10 +23,6 @@ M.clear_filter = function(state)
   fs.reset_search(state, true)
 end
 
-M.close_all_nodes = cc.close_all_nodes
-M.close_node = cc.close_node
-M.close_window = cc.close_window
-
 M.copy = function(state)
   cc.copy(state, refresh)
 end
@@ -44,8 +40,6 @@ end
 M.move = function(state)
   cc.move(state, refresh)
 end
-
-M.show_debug_info = cc.show_debug_info
 
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
@@ -115,8 +109,6 @@ M.set_root = function(state)
   end
 end
 
-M.show_debug_info = cc.show_debug_info
-
 ---Toggles whether hidden files are shown or not.
 M.toggle_hidden = function(state)
   state.filtered_items.visible = not state.filtered_items.visible
@@ -133,5 +125,7 @@ end
 M.toggle_node = function (state)
   cc.toggle_node(state, utils.wrap(fs.toggle_directory, state))
 end
+
+cc._add_common_commands(M)
 
 return M

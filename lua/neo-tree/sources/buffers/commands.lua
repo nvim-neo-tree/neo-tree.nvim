@@ -8,8 +8,8 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
-local refresh = utils.wrap(manager.refresh, "git_status")
-local redraw = utils.wrap(manager.redraw, "git_status")
+local refresh = utils.wrap(manager.refresh, "buffers")
+local redraw = utils.wrap(manager.redraw, "buffers")
 
 M.add = function(state)
   cc.add(state, refresh)
@@ -26,10 +26,6 @@ M.buffer_delete = function(state)
     refresh()
   end
 end
-
-M.close_node = cc.close_node
-M.close_all_nodes = cc.close_all_nodes
-M.close_window = cc.close_window
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
@@ -66,11 +62,6 @@ M.navigate_up = function(state)
   buffers.navigate(state, parent_path)
 end
 
-M.open = cc.open
-M.open_split = cc.open_split
-M.open_vsplit = cc.open_vsplit
-M.open_tabnew = cc.open_tabnew
-
 M.refresh = refresh
 
 M.rename = function(state)
@@ -85,6 +76,6 @@ M.set_root = function(state)
   end
 end
 
-M.toggle_node = cc.toggle_node
+cc._add_common_commands(M)
 
 return M

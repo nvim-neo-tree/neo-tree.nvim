@@ -19,6 +19,18 @@ end
 
 local M = {}
 
+---Adds all missing common commands to the given module
+---@param to_source_command_module table The commands modeul for a source
+M._add_common_commands = function(to_source_command_module)
+ for name, func in pairs(M) do
+   if type(name) == "string" and not name:match("^_") then
+      if not to_source_command_module[name] then
+        to_source_command_module[name] = func
+      end
+   end
+ end
+end
+
 ---Add a new file or dir at the current node
 ---@param state table The state of the source
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
