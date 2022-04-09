@@ -644,12 +644,13 @@ create_window = function(state)
     ["noop"] = true,
   }
   local mappings = utils.get_value(state, "window.mappings", {}, true)
+  local mapping_options = utils.get_value(state, "window.mapping_options", { noremap = true }, true)
   for cmd, func in pairs(mappings) do
     if utils.truthy(func) then
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
       else
-        local map_options = { noremap = true }
+        local map_options = vim.deepcopy(mapping_options)
         if type(func) == "table" then
           for key, value in pairs(func) do
             if key ~= "command" and key ~= 1 then

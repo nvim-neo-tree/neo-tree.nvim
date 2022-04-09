@@ -319,8 +319,10 @@ You probably want #2:
 CUSTOM MAPPINGS WITH ARGUMENTS
 
 If you want to include options for your mappings, such as `nowait`, you can
-map a key to a table that consists of the command and any options you want to
-use.
+set this for all mappings using the `mapping_options` key, or on individual
+mappings by specifiying them as a table that consists of the command and any
+options you want to use. If both are specified, the mapping merges with and
+overrides the global `mapping_options`
 
 The command can be either the string name of a built-in command, or a
 function, and is specified either as the first element in the table or by
@@ -329,6 +331,10 @@ assigning it to the `command` key:
    require("neo-tree").setup({
      filesystem = {
        window = {
+         mapping_options = {
+            noremap = true,
+            nowait = false,
+         },
          mappings = {
            ["?"] = {
              function(state)

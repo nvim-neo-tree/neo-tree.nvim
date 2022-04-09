@@ -144,8 +144,15 @@ use {
         window = {
           position = "left",
           width = 40,
+          mapping_options = {
+            noremap = true,
+            nowait = true,
+          },
           mappings = {
-            ["<space>"] = "toggle_node",
+            ["<space>"] = { 
+                "toggle_node", 
+                nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use 
+            },
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["S"] = "open_split",
