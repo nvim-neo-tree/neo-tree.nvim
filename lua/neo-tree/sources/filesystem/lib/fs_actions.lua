@@ -244,9 +244,33 @@ M.delete_node = function(path, callback)
     end
 
     if _type == "directory" then
-      local success = delete_dir(path)
+      -- first try using native system commands, which are recursive
+      local success = false
+      if utils.is_windows then
+        local result = vim.fn.system({"rmdir", "/s", "/q", path})
+        local error = vim.v.shell_error
+        if error ~= 0 then
+          log.debug("Could not delete directory '", path, "' with rmdir: ", result)
+        else
+          log.info("Deleted directory ", path)
+          success = true
+        end
+      else
+        local result = vim.fn.system({"rm", "-Rf", path})
+        local error = vim.v.shell_error
+        if error ~= 0 then
+          log.debug("Could not delete directory '", path, "' with rm: ", result)
+        else
+          log.info("Deleted directory ", path)
+          success = true
+        end
+      end
+      -- Fallback to using libuv if native commands fail
       if not success then
-        return api.nvim_err_writeln("Could not remove directory: " .. path)
+        success = delete_dir(path)
+        if not success then
+          return api.nvim_err_writeln("Could not remove directory: " .. path)
+        end
       end
     else
       local success = loop.fs_unlink(path)
