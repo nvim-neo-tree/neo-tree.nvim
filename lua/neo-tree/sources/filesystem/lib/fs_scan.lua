@@ -110,11 +110,13 @@ local function sync_scan(context, path_to_scan)
     log.error("Error opening dir:", dir)
   end
   local stats = vim.loop.fs_readdir(dir)
-  for _, stat in ipairs(stats) do
-    local path = path_to_scan .. utils.path_separator .. stat.name
-    success, _ = pcall(file_items.create_item, context, path, stat.type)
-    if not success then
-      log.error("error creating item for ", path)
+  if stats then
+    for _, stat in ipairs(stats) do
+      local path = path_to_scan .. utils.path_separator .. stat.name
+      success, _ = pcall(file_items.create_item, context, path, stat.type)
+      if not success then
+        log.error("error creating item for ", path)
+      end
     end
   end
 
