@@ -451,12 +451,15 @@ highlight group which will be applied when they are visible, see
           hide_gitignored = true,
           hide_by_name = {
             ".DS_Store",
-            "thumbs.db"
-            --"node_modules"
+            "thumbs.db",
+            --"node_modules",
+          },
+          hide_by_pattern = {
+            --"*.meta",
           },
           never_show = { -- remains hidden even if visible is toggled to true
             --".DS_Store",
-            --"thumbs.db"
+            --"thumbs.db",
           },
         },
       }
@@ -468,6 +471,9 @@ the "toggle_hidden" command, which is mapped to H by default.
 The `never_show` option is the same as `hide_by_name`, except that those items
 will remain hidden even if you toggle `visible` to true. This section takes
 precedence over the others.
+
+The `hide_by_pattern` option uses glob syntax, which is converted to lua
+patterns. No gaurantees on how it handles advanced patterns.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*

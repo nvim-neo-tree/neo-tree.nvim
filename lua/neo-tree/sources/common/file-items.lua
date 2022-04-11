@@ -97,6 +97,14 @@ function create_item(context, path, _type)
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.name = true
     end
+    if f.hide_by_pattern then
+      for _, p in ipairs(f.hide_by_pattern) do
+        if string.find(name, p) then
+          item.filtered_by = item.filtered_by or {}
+          item.filtered_by.pattern = true
+        end
+      end
+    end
     if f.hide_dotfiles and string.sub(name, 1, 1) == "." then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.dotfiles = true

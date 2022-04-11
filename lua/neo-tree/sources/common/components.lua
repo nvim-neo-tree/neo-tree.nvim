@@ -211,6 +211,11 @@ M.filtered_by = function(config, node, state)
         text = " (hide by name)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
+    elseif fby.pattern then
+      return {
+        text = " (hide by pattern)",
+        highlight = highlights.HIDDEN_BY_NAME,
+      }
     elseif fby.gitignored then
       return {
         text = " (gitignored)",

@@ -230,7 +230,10 @@ local config = {
       hide_by_name = {
         ".DS_Store",
         "thumbs.db"
-        --"node_modules"
+        --"node_modules",
+      },
+      hide_by_pattern = { -- uses glob style patterns
+        --"*.meta"
       },
       never_show = { -- remains hidden even if visible is toggled to true
         --".DS_Store",

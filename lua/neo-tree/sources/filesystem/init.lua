@@ -251,12 +251,23 @@ end
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
-  config.filters = config.filters or {}
-  local hide_by_name = utils.get_value(config, "filtered_items.hide_by_name")
+  config.filtered_items = config.filtered_items or {}
+
+  local hide_by_name = config.filtered_items.hide_by_name
   if hide_by_name then
     config.filtered_items.hide_by_name = utils.list_to_dict(hide_by_name)
   end
-  local never_show = utils.get_value(config, "filtered_items.never_show")
+
+  local hide_by_pattern = config.filtered_items.hide_by_pattern
+  if hide_by_pattern then
+    local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
+    for i, pattern in ipairs(hide_by_pattern) do
+      hide_by_pattern[i] = glob.globtopattern(pattern)
+      log.trace("hide_by_pattern: ", pattern, " -> ", hide_by_pattern[i])
+    end
+  end
+
+  local never_show = config.filtered_items.never_show
   if never_show then
     config.filtered_items.never_show = utils.list_to_dict(never_show)
   end
