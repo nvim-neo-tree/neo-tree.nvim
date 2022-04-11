@@ -21,11 +21,16 @@ local start_resize_monitor = function ()
   if interval < 0 then
     return
   end
+  if type(interval) ~= "number" then
+    log.warn("Invalid resize_timer_interval:", interval)
+    return
+  end
   if resize_monitor_timer then
     return
   end
   local manager = require("neo-tree.sources.manager")
   local check_window_size
+  local speed_up_loops = 0
   check_window_size = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
@@ -36,26 +41,31 @@ local start_resize_monitor = function ()
           log.trace("Window size changed, redrawing tree")
           state.win_width = current_size
           state.tree:render()
+          speed_up_loops = 21 -- move to fast timer for the next 1000 ms
         end
       end
     end)
+
+    speed_up_loops = speed_up_loops - 1
     if success then
-      if not windows_exist and resize_monitor_timer then
-        success, err = pcall(resize_monitor_timer.stop, resize_monitor_timer)
-        if success then
-          resize_monitor_timer = nil
-          log.trace("No windows exist, stopping resize monitor")
+      if windows_exist then
+        local this_interval = interval
+        if speed_up_loops > 0 then
+          this_interval = 50
         else
-          log.debug("Error stopping resize monitor: ", err)
+          speed_up_loops = 0
         end
+        vim.defer_fn(check_window_size, this_interval)
+      else
+        log.trace("No windows exist, stopping resize monitor")
       end
     else
       log.debug("Error checking window size: ", err)
+      vim.defer_fn(check_window_size, math.max(interval * 5, 1000))
     end
   end
 
-  resize_monitor_timer = vim.loop.new_timer()
-  resize_monitor_timer:start(1000, interval, vim.schedule_wrap(check_window_size))
+  vim.defer_fn(check_window_size, interval)
 end
 
 

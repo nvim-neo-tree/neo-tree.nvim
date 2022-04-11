@@ -12,6 +12,7 @@ local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 
 local M = {}
 local source_data = {}
+local all_states = {}
 local default_configs = {}
 
 local get_source_data = function(source_name)
@@ -42,18 +43,18 @@ local function create_state(tabnr, sd, winid)
     is = { restorable = false },
   }
   state.git_base = "HEAD"
+  table.insert(all_states, state)
   return state
 end
 
-M._for_each_state = function(source_name, action)
-  local sources = source_name and { source_name } or utils.get_keys(source_data)
+M._get_all_states = function()
+  return all_states
+end
 
-  for _, source in ipairs(sources) do
-    local sd = get_source_data(source)
-    for _, tbl in ipairs({ sd.state_by_tab, sd.state_by_win }) do
-      for _, state in pairs(tbl) do
-        action(state)
-      end
+M._for_each_state = function(source_name, action)
+  for _, state in ipairs(all_states) do
+    if source_name == nil or state.name == source_name then
+      action(state)
     end
   end
 end
@@ -296,26 +297,17 @@ M.set_cwd = function(state)
 end
 
 M.dispose = function(source_name, tabnr)
-  local sources
-  if type(source_name) == "string" then
-    sources = { source_name }
-  else
-    -- Just do all available sources if none is specified
-    sources = {}
-    for n, _ in pairs(source_data) do
-      table.insert(sources, n)
-    end
-  end
-  for _, sname in ipairs(sources) do
-    M._for_each_state(sname, function(state)
+  for i, state in ipairs(all_states) do
+    if source_name == nil or state.name == source_name then
       if not tabnr or tabnr == state.tabnr then
         log.trace(state.name, " disposing of tab: ", tabnr)
         pcall(fs_scan.stop_watchers, state)
         pcall(renderer.close, state)
-        source_data[sname].state_by_tab[state.id] = nil
-        source_data[sname].state_by_win[state.id] = nil
+        source_data[state.name].state_by_tab[state.id] = nil
+        source_data[state.name].state_by_win[state.id] = nil
+        table.remove(all_states, i)
       end
-    end)
+    end
   end
 end
 
