@@ -27,8 +27,8 @@ expect a sidebar to work without all of the glitchy behavior that is normally
 accepted in (neo)vim sidebars. I can't stand glitchy behavior, and neither
 should you!
 
-- Neo-tree won't let other buffers take over it's window.
-- Neo-tree won't leave it's window scrolled to the last line when there is
+- Neo-tree won't let other buffers take over its window.
+- Neo-tree won't leave its window scrolled to the last line when there is
   plenty of room to display the whole tree.
 - Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher=true`)
 - Neo-tree can intelligently follow the current file (set `follow_current_file=true`)
