@@ -19,7 +19,7 @@ M.get_repository_root = function(path)
     git_root = utils.windowize_path(git_root)
   end
 
-  log.trace("GIT ROOT is ", git_root)
+  log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
   return git_root
 end
 

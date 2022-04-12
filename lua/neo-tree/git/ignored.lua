@@ -49,6 +49,8 @@ end
 
 M.mark_ignored = function(state, items)
   local git_roots = {}
+  log.trace("================================================================================")
+  log.trace("IGNORED: mark_ignore BEGIN...")
   for _, item in ipairs(items) do
     local root = get_root_for_item(item)
     if root then
@@ -65,6 +67,7 @@ M.mark_ignored = function(state, items)
     for _, item in ipairs(repo_items) do
       table.insert(cmd, item)
     end
+    log.trace("IGNORED: Running cmd: ", cmd)
     local result = vim.fn.systemlist(cmd)
     if vim.v.shell_error == 128 then
       if type(result) == "table" then
@@ -80,6 +83,7 @@ M.mark_ignored = function(state, items)
 
     --check-ignore does not indicate directories the same as 'status' so we need to
     --add the trailing slash to the path manually.
+    log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
     for i, item in ipairs(result) do
       local stat = vim.loop.fs_stat(item)
       if stat and stat.type == "directory" then
@@ -89,14 +93,19 @@ M.mark_ignored = function(state, items)
     vim.list_extend(all_results, result)
   end
 
-
+  log.trace("IGNORED: Comparing results to mark items as ignored")
+  local ignored, not_ignored = 0, 0
   for _, item in ipairs(items) do
     if M.is_ignored(all_results, item.path, item.type) then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.gitignored = true
+      ignored = ignored + 1
+    else
+      not_ignored = not_ignored + 1
     end
   end
-
+  log.trace("IGNORED: mark_ignored is complete, ignored:", ignored, ", not ignored:", not_ignored)
+  log.trace("================================================================================")
   return all_results
 end
 
