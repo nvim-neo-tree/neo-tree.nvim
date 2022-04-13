@@ -49,7 +49,11 @@ local define_events = function()
     return args
   end)
 
-  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost", "BufModifiedSet" }, 200)
+  events.define_autocmd_event(
+    events.VIM_BUFFER_CHANGED,
+    { "BufWritePost", "BufFilePost", "BufModifiedSet" },
+    200
+  )
   events.define_autocmd_event(events.VIM_BUFFER_MODIFIED_SET, { "BufModifiedSet" }, 0)
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
@@ -69,7 +73,7 @@ M.buffer_enter_event = function()
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
-    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer
+    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer
     setlocal nolist nospell nonumber norelativenumber
     ]])
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
