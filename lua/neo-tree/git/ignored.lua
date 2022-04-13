@@ -6,20 +6,11 @@ local M = {}
 local sep = utils.path_separator
 
 M.is_ignored = function(ignored, path, _type)
-  path = _type == "directory" and (path .. sep) or path
-  for _, v in ipairs(ignored) do
-    if v:sub(-1) == utils.path_separator or (utils.is_windows and _type == "directory") then
-      -- directory ignore
-      if vim.startswith(path, v) then
-        return true
-      end
-    else
-      -- file ignore
-      if path == v then
-        return true
-      end
-    end
+  if _type == "directory" and not utils.is_windows then
+    path = path .. sep
   end
+
+  return vim.tbl_contains(ignored, path)
 end
 
 local git_root_cache = {
@@ -63,7 +54,7 @@ M.mark_ignored = function(state, items)
 
   local all_results = {}
   for folder, folder_items in pairs(folders) do
-    local cmd = {"git", "-C", folder, "check-ignore"}
+    local cmd = { "git", "-C", folder, "check-ignore" }
     for _, item in ipairs(folder_items) do
       table.insert(cmd, item)
     end
@@ -74,13 +65,22 @@ M.mark_ignored = function(state, items)
       result = {}
     end
 
+    -- on Windows, git seems to return quotes and double backslash "path\\directory"
+    result = vim.tbl_map(function(item)
+      item = item:gsub('"', "")
+      item = item:gsub("\\\\", "\\")
+      return item
+    end, result)
+
     --check-ignore does not indicate directories the same as 'status' so we need to
-    --add the trailing slash to the path manually.
-    log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
-    for i, item in ipairs(result) do
-      local stat = vim.loop.fs_stat(item)
-      if stat and stat.type == "directory" then
-        result[i] = item .. sep
+    --add the trailing slash to the path manually if not on Windows.
+    if not utils.is_windows then
+      log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
+      for i, item in ipairs(result) do
+        local stat = vim.loop.fs_stat(item)
+        if stat and stat.type == "directory" then
+          result[i] = item .. sep
+        end
       end
     end
     vim.list_extend(all_results, result)
