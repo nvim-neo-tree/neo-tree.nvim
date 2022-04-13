@@ -48,36 +48,29 @@ local get_root_for_item = function(item)
 end
 
 M.mark_ignored = function(state, items)
-  local git_roots = {}
+  local folders = {}
   log.trace("================================================================================")
   log.trace("IGNORED: mark_ignore BEGIN...")
   for _, item in ipairs(items) do
-    local root = get_root_for_item(item)
-    if root then
-      if not git_roots[root] then
-        git_roots[root] = {}
+    local folder = utils.split_path(item.path)
+    if folder then
+      if not folders[folder] then
+        folders[folder] = {}
       end
-      table.insert(git_roots[root], item.path)
+      table.insert(folders[folder], item.path)
     end
   end
 
   local all_results = {}
-  for repo_root, repo_items in pairs(git_roots) do
-    local cmd = {"git", "-C", repo_root, "check-ignore"}
-    for _, item in ipairs(repo_items) do
+  for folder, folder_items in pairs(folders) do
+    local cmd = {"git", "-C", folder, "check-ignore"}
+    for _, item in ipairs(folder_items) do
       table.insert(cmd, item)
     end
     log.trace("IGNORED: Running cmd: ", cmd)
     local result = vim.fn.systemlist(cmd)
     if vim.v.shell_error == 128 then
-      if type(result) == "table" then
-        if vim.startswith(result[1], "fatal:") then
-          -- These errors are all about not being in a repository
-          log.error("Error in git.mark_ignored: ", result[1])
-          result = {}
-        end
-      end
-      log.error("Failed to load ignored files for", state.path, ":", result)
+      log.debug("Failed to load ignored files for", state.path, ":", result)
       result = {}
     end
 
