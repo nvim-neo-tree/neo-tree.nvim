@@ -29,6 +29,7 @@ M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.MODIFIED = "NeoTreeModified"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
+M.SIGNCOLUMN = "NeoTreeSignColumn"
 M.STATUS_LINE = "NeoTreeStatusLine"
 M.STATUS_LINE_NC = "NeoTreeStatusLineNC"
 M.VERTSPLIT = "NeoTreeVertSplit"
@@ -104,7 +105,7 @@ local function create_highlight_group(hl_group_name, link_to_if_exists, backgrou
 end
 
 local faded_highlight_group_cache = {}
-M.get_faded_highlight_group = function (hl_group_name, fade_percentage)
+M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
   if type(hl_group_name) ~= "string" then
     error("hl_group_name must be a string")
   end
@@ -177,7 +178,12 @@ M.get_faded_highlight_group = function (hl_group_name, fade_percentage)
   local green = (f_green * fade_percentage) + (b_green * (1 - fade_percentage))
   local blue = (f_blue * fade_percentage) + (b_blue * (1 - fade_percentage))
 
-  local new_foreground = string.format("%s%s%s", dec_to_hex(red, 2), dec_to_hex(green, 2), dec_to_hex(blue, 2))
+  local new_foreground = string.format(
+    "%s%s%s",
+    dec_to_hex(red, 2),
+    dec_to_hex(green, 2),
+    dec_to_hex(blue, 2)
+  )
 
   create_highlight_group(key, {}, hl_group.background, new_foreground, gui)
   faded_highlight_group_cache[key] = key
@@ -187,6 +193,8 @@ end
 M.setup = function()
   local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
   local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
+
+  create_highlight_group(M.SIGNCOLUMN, { "SignColumn", M.NORMAL })
 
   create_highlight_group(M.STATUS_LINE, { "StatusLine" })
   create_highlight_group(M.STATUS_LINE_NC, { "StatusLineNC" })
@@ -237,6 +245,5 @@ M.setup = function()
   create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
   create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 end
-
 
 return M

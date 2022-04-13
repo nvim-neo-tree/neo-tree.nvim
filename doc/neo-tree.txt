@@ -737,7 +737,7 @@ these yourself before the plugin loads, it will not be touched. If they do not
 exist, they will be created.
 
 NeoTreeBufferNumber       The buffer number shown in the buffers source.
-NeoTreeCursorLine         |hi-CursorLine| override in Neo-tree window.
+NeoTreeCursorLine         |hl-CursorLine| override in Neo-tree window.
 NeoTreeDimText            Greyed out text used in various places.
 NeoTreeDirectoryIcon      Directory icon.
 NeoTreeDirectoryName      Directory name.
@@ -763,7 +763,8 @@ NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
 NeoTreeExpander           Used for collapsed/expanded icons.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
-NeoTreeNormalNC           |hi-NormalNC| override in Neo-tree window.
+NeoTreeNormalNC           |hl-NormalNC| override in Neo-tree window.
+NeoTreeSignColumn         |hl-SignColumn| override in Neo-tree window.
 NeoTreeStatusLine         |hl-StatusLine| override in Neo-tree window.
 NeoTreeStatusLineNC       |hl-StatusLineNC| override in Neo-tree window.
 NeoTreeVertSplit          |hl-VertSplit| override in Neo-tree window.
