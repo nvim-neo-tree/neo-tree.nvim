@@ -65,16 +65,16 @@ M.mark_ignored = function(state, items)
       result = {}
     end
 
-    -- on Windows, git seems to return quotes and double backslash "path\\directory"
-    result = vim.tbl_map(function(item)
-      item = item:gsub('"', "")
-      item = item:gsub("\\\\", "\\")
-      return item
-    end, result)
-
-    --check-ignore does not indicate directories the same as 'status' so we need to
-    --add the trailing slash to the path manually if not on Windows.
-    if not utils.is_windows then
+    if utils.is_windows then
+      --on Windows, git seems to return quotes and double backslash "path\\directory"
+      result = vim.tbl_map(function(item)
+        item = item:gsub('"', "")
+        item = item:gsub("\\\\", "\\")
+        return item
+      end, result)
+    else
+      --check-ignore does not indicate directories the same as 'status' so we need to
+      --add the trailing slash to the path manually if not on Windows.
       log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
       for i, item in ipairs(result) do
         local stat = vim.loop.fs_stat(item)
@@ -83,6 +83,7 @@ M.mark_ignored = function(state, items)
         end
       end
     end
+
     vim.list_extend(all_results, result)
   end
 
