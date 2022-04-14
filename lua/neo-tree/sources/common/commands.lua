@@ -11,6 +11,9 @@ local log = require("neo-tree.log")
 ---@param node table to look for folder parent
 ---@return table table
 local function get_folder_node(tree, node)
+  if not node then
+    node = tree:get_node()
+  end
   if node.type == "directory" then
     return node
   end
@@ -22,13 +25,13 @@ local M = {}
 ---Adds all missing common commands to the given module
 ---@param to_source_command_module table The commands modeul for a source
 M._add_common_commands = function(to_source_command_module)
- for name, func in pairs(M) do
-   if type(name) == "string" and not name:match("^_") then
+  for name, func in pairs(M) do
+    if type(name) == "string" and not name:match("^_") then
       if not to_source_command_module[name] then
         to_source_command_module[name] = func
       end
-   end
- end
+    end
+  end
 end
 
 ---Add a new file or dir at the current node
@@ -36,7 +39,7 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add = function(state, callback)
   local tree = state.tree
-  local node = get_folder_node(tree, tree:get_node())
+  local node = get_folder_node(tree)
 
   fs_actions.create_node(node:get_id(), callback)
 end
@@ -46,7 +49,7 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add_directory = function(state, callback)
   local tree = state.tree
-  local node = get_folder_node(tree, tree:get_node())
+  local node = get_folder_node(tree)
 
   fs_actions.create_directory(node:get_id(), callback)
 end
@@ -120,7 +123,7 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
   if state.clipboard then
-    local folder = get_folder_node(state.tree, state.tree:get_node()):get_id()
+    local folder = get_folder_node(state.tree):get_id()
     -- Convert to list so to make it easier to pop items from the stack.
     local clipboard_list = {}
     for _, item in pairs(state.clipboard) do
@@ -203,10 +206,19 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
     return
   end
 
-  if node.type == "directory" then
-    if toggle_directory then
+  local function open()
+    local path = node:get_id()
+    utils.open_file(state, path, open_cmd)
+  end
+
+  if utils.is_expandable(node) then
+    if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
+      if node:is_expanded() and node.type == "file" then
+        return open()
+      end
+
       local updated = false
       if node:is_expanded() then
         updated = node:collapse()
@@ -218,8 +230,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory)
       end
     end
   else
-    local path = node:get_id()
-    utils.open_file(state, path, open_cmd)
+    open()
   end
 end
 
@@ -251,7 +262,7 @@ end
 ---@param state table The state of the source
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
-M.open_tabnew = function (state, toggle_directory)
+M.open_tabnew = function(state, toggle_directory)
   open_with_cmd(state, "tabnew", toggle_directory)
 end
 
@@ -299,7 +310,9 @@ M.open_with_window_picker = function(state)
   local path = node:get_id()
   local success, picker = pcall(require, "window-picker")
   if not success then
-    print("You'll need to install window-picker to use this command: https://github.com/s1n7ax/nvim-window-picker")
+    print(
+      "You'll need to install window-picker to use this command: https://github.com/s1n7ax/nvim-window-picker"
+    )
     return
   end
   local picked_window_id = picker.pick_window()
