@@ -182,7 +182,7 @@ M.get_diagnostic_counts = function()
     local parts = M.split(file_name, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
     M.reduce(parts, "", function(acc, part)
-      local path = acc .. M.path_separator .. part
+      local path = (M.is_windows and acc == "") and part or M.path_join(acc, part)
       local path_entry = lookup[path] or { severity_number = 4 }
       path_entry.severity_number = math.min(path_entry.severity_number, entry.severity_number)
       path_entry.severity_string = diag_severity_to_string(path_entry.severity_number)
