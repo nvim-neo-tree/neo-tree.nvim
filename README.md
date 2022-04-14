@@ -41,9 +41,33 @@ If you find anything janky, wanky, broken, or unintuitive, please open an issue
 so we can fix it.
 
 
+## Super Quickstart
+
+#### Minimal Example for Packer:
+```lua
+-- Unless you are still migrating, remove the deprecated commands from v1.x
+vim.cmd([[ let g:neo_tree_remove_legacy_commands = 1 ]])
+
+use {
+  "nvim-neo-tree/neo-tree.nvim",
+    branch = "v2.x",
+    requires = { 
+      "nvim-lua/plenary.nvim",
+      "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+      "MunifTanjim/nui.nvim",
+    }
+  }
+```
+
+After installing, run:
+```
+:Neotree
+```
+
 ## Quickstart
 
-Example for packer:
+#### Longer Example for Packer:
+  
 ```lua
 use {
   "nvim-neo-tree/neo-tree.nvim",
@@ -305,9 +329,9 @@ What to do. Can be one of:
 
 | Option | Description |
 |--------|-------------|
-| `focus` | Show and/or switch focus to the specified Neotree window. DEFAULT |
-| `show`  | Show the window, but keep focus on your current window. |
-| `close` | Close the window(s) specified. Can be combined with "position" and/or "source" to specify which window(s) to close. |
+| focus | Show and/or switch focus to the specified Neotree window. DEFAULT |
+| show  | Show the window, but keep focus on your current window. |
+| close | Close the window(s) specified. Can be combined with "position" and/or "source" to specify which window(s) to close. |
 
 #### `source`
 What to show. Can be one of:
