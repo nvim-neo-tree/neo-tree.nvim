@@ -163,14 +163,32 @@ M.copy_node = function(source, _destination, callback)
 end
 
 --- Create a new directory
-M.create_directory = function(in_directory, callback)
-  inputs.input('Enter name for new directory:', "", function(name)
-    if not name or name == "" then
+M.create_directory = function(in_directory, callback, using_root_directory)
+  local base
+  if type(using_root_directory) == "string" and #using_root_directory > 0 then
+    if in_directory ~= using_root_directory then
+      base = in_directory:sub(#using_root_directory + 2) .. utils.path_separator
+    else
+      base = ""
+    end
+  else
+    base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
+    using_root_directory = false
+  end
+
+  inputs.input('Enter name for new directory:', base, function(destination)
+    if not destination or destination == base then
       return
     end
-    local destination = in_directory .. utils.path_separator .. name
+
+    if using_root_directory then
+      destination = utils.path_join(using_root_directory, destination)
+    else
+      destination = vim.fn.fnamemodify(destination, ":p")
+    end
+
     if loop.fs_stat(destination) then
-      log.warn("File already exists")
+      log.warn("Directory already exists")
       return
     end
 
@@ -188,12 +206,30 @@ M.create_directory = function(in_directory, callback)
 end
 
 --- Create Node
-M.create_node = function(in_directory, callback)
-  inputs.input('Enter name for new file or directory (dirs end with a "/"):', "", function(name)
-    if not name or name == "" then
+M.create_node = function(in_directory, callback, using_root_directory)
+  local base
+  if type(using_root_directory) == "string" and #using_root_directory > 0 then
+    if in_directory ~= using_root_directory then
+      base = in_directory:sub(#using_root_directory + 2) .. utils.path_separator
+    else
+      base = ""
+    end
+  else
+    base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
+    using_root_directory = false
+  end
+
+  inputs.input('Enter name for new file or directory (dirs end with a "/"):', base, function(destination)
+    if not destination or destination == base then
       return
     end
-    local destination = in_directory .. utils.path_separator .. name
+
+    if using_root_directory then
+      destination = utils.path_join(using_root_directory, destination)
+    else
+      destination = vim.fn.fnamemodify(destination, ":p")
+    end
+
     if loop.fs_stat(destination) then
       log.warn("File already exists")
       return
@@ -206,7 +242,7 @@ M.create_node = function(in_directory, callback)
       local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
       local fd = loop.fs_open(destination, "w", open_mode)
       if not fd then
-        api.nvim_err_writeln("Could not create file " .. name)
+        api.nvim_err_writeln("Could not create file " .. destination)
         return
       end
       loop.fs_chmod(destination, 420)

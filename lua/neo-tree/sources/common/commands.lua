@@ -41,7 +41,7 @@ M.add = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
 
-  fs_actions.create_node(node:get_id(), callback)
+  fs_actions.create_node(node:get_id(), callback, state.path)
 end
 
 ---Add a new file or dir at the current node
@@ -51,7 +51,7 @@ M.add_directory = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
 
-  fs_actions.create_directory(node:get_id(), callback)
+  fs_actions.create_directory(node:get_id(), callback, state.path)
 end
 
 M.close_all_nodes = function(state)
