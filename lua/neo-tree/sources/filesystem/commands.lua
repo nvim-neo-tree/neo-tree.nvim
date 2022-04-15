@@ -29,21 +29,21 @@ M.clear_filter = function(state)
 end
 
 M.copy = function(state)
-  cc.copy(state, refresh)
+  cc.copy(state, utils.wrap(refresh, state))
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
-  cc.copy_to_clipboard(state, redraw)
+  cc.copy_to_clipboard(state, utils.wrap(redraw, state))
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
-  cc.cut_to_clipboard(state, redraw)
+  cc.cut_to_clipboard(state, utils.wrap(redraw, state))
 end
 
 M.move = function(state)
-  cc.move(state, refresh)
+  cc.move(state, utils.wrap(refresh, state))
 end
 
 ---Pastes all items from the clipboard to the current directory.
@@ -52,7 +52,7 @@ M.paste_from_clipboard = function(state)
 end
 
 M.delete = function(state)
-  cc.delete(state, refresh)
+  cc.delete(state, utils.wrap(refresh, state))
 end
 
 ---Shows the filter input, which will filter the tree.
@@ -101,7 +101,7 @@ end
 M.refresh = refresh
 
 M.rename = function(state)
-  cc.rename(state, refresh)
+  cc.rename(state, utils.wrap(refresh, state))
 end
 
 M.set_root = function(state)
@@ -119,7 +119,7 @@ end
 M.toggle_hidden = function(state)
   state.filtered_items.visible = not state.filtered_items.visible
   log.info("Toggling hidden files: " .. tostring(state.filtered_items.visible))
-  refresh()
+  refresh(state)
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.

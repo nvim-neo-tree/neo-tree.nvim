@@ -298,7 +298,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
     return false
   end
 
-  if M.window_exists(state) then
+  if linenr and M.window_exists(state) then
     local focus_window = not do_not_focus_window
     if focus_window then
       vim.api.nvim_set_current_win(state.winid)
