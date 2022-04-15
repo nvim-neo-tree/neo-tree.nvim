@@ -4,12 +4,17 @@ local cc = require("neo-tree.sources.common.commands")
 local fs = require("neo-tree.sources.filesystem")
 local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
-local manager = require("neo-tree.sources.manager")
+local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 
 local M = {}
-local refresh = utils.wrap(manager.refresh, "filesystem")
-local redraw = utils.wrap(manager.redraw, "filesystem")
+local refresh = function(state)
+  fs._navigate_internal(state, nil, nil, nil, false)
+end
+
+local redraw = function(state)
+  renderer.redraw(state)
+end
 
 M.add = function(state)
   cc.add(state, utils.wrap(fs.show_new_children, state))
@@ -76,7 +81,8 @@ M.navigate_up = function(state)
   if state.search_pattern then
     fs.reset_search(state, false)
   end
-  fs.navigate(state, parent_path, path_to_reveal)
+  log.debug("Changing directory to:", parent_path)
+  fs._navigate_internal(state, parent_path, path_to_reveal, nil, false)
 end
 
 M.open = function(state)
@@ -105,7 +111,7 @@ M.set_root = function(state)
     if state.search_pattern then
       fs.reset_search(state, false)
     end
-    fs.navigate(state, node.id)
+    fs._navigate_internal(state, node.id, nil, nil, false)
   end
 end
 
