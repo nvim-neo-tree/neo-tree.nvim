@@ -43,6 +43,11 @@ so we can fix it.
 
 ## Quickstart
 
+**Note**: The config below is a suggested example, but does not fully reflect the actual default values used by neo-tree.
+
+In particular you might want to set `window = { mapping_options = { nowait = true }}}`.
+Otherwise common keybindings like `d` for delete will have a delay.
+
 Example for packer:
 ```lua
 use {
