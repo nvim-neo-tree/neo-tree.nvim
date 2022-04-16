@@ -502,8 +502,12 @@ M.path_join = function(...)
   end
 
   for _, arg in ipairs(args) do
-    local arg_parts = M.split(arg, M.path_separator)
-    vim.list_extend(all_parts, arg_parts)
+    if arg == "" and #all_parts == 0 and not M.is_windows then
+      all_parts = { "" }
+    else
+      local arg_parts = M.split(arg, M.path_separator)
+      vim.list_extend(all_parts, arg_parts)
+    end
   end
   return table.concat(all_parts, M.path_separator)
 end
