@@ -481,8 +481,12 @@ M.split_path = function(path)
   local parts = M.split(path, M.path_separator)
   local name = table.remove(parts)
   local parentPath = table.concat(parts, M.path_separator)
-  if M.path_separator == "/" then
-    parentPath = "/" .. parentPath
+  if M.is_windows then
+    if #parts == 1 then
+      parentPath =  parentPath .. M.path_separator
+    end
+  else
+    parentPath = M.path_separator .. parentPath
   end
   return parentPath, name
 end
