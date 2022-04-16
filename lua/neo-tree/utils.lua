@@ -485,7 +485,7 @@ M.split_path = function(path)
     if #parts == 1 then
       parentPath =  parentPath .. M.path_separator
     elseif parentPath == "" then
-      parentPath = path
+      parentPath = nil
     end
   else
     parentPath = M.path_separator .. parentPath
