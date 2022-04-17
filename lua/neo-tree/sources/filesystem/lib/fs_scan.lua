@@ -230,6 +230,11 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
       elseif state.tree then
         context.paths_to_load = renderer.get_expanded_nodes(state.tree, state.path)
       end
+      -- Ensure that there are no nested files in the list of folders to load
+      context.paths_to_load = vim.tbl_filter(function(p)
+        local stats = vim.loop.fs_stat(p)
+        return stats and stats.type == "directory"
+      end, context.paths_to_load)
       if path_to_reveal then
         -- be sure to load all of the folders leading up to the path to reveal
         local path_to_reveal_parts = utils.split(path_to_reveal, utils.path_separator)
