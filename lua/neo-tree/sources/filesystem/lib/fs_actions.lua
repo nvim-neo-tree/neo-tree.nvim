@@ -183,29 +183,42 @@ end
 
 -- Delete Node
 M.delete_node = function(path, callback)
-  local parent_path, name = utils.split_path(path)
+  local _, name = utils.split_path(path)
   local msg = string.format("Are you sure you want to delete '%s'?", name)
 
+  log.trace("Deleting node: ", path)
+  local _type = "unknown"
   local stat = loop.fs_stat(path)
-  local _type = stat.type
-  if _type == "link" then
-    local link_to = loop.fs_readlink(path)
-    if not link_to then
-      log.error("Could not read link")
-      return
+  if stat then
+    _type = stat.type
+    if _type == "link" then
+      local link_to = loop.fs_readlink(path)
+      if not link_to then
+        log.error("Could not read link")
+        return
+      end
+      _type = loop.fs_stat(link_to)
     end
-    _type = loop.fs_stat(link_to)
-  end
-  if _type == "directory" then
-    local children = scan.scan_dir(path, {
-      hidden = true,
-      respect_gitignore = false,
-      add_dirs = true,
-      depth = 1,
-    })
-    if #children > 0 then
-      msg = "WARNING: Dir not empty! " .. msg
+    if _type == "directory" then
+      local children = scan.scan_dir(path, {
+        hidden = true,
+        respect_gitignore = false,
+        add_dirs = true,
+        depth = 1,
+      })
+      if #children > 0 then
+        msg = "WARNING: Dir not empty! " .. msg
+      end
     end
+  else
+    log.warn("Could not read file/dir:", path, stat, ", attempting to delete anyway...")
+    -- Guess the type by whether it appears to have an extension
+    if path:match("%.(.+)$") then
+      _type = "file"
+    else
+      _type = "directory"
+    end
+    return
   end
 
   inputs.confirm(msg, function(confirmed)
