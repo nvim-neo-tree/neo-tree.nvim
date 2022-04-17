@@ -17,6 +17,7 @@ local config = {
   --                           -- NOTE: this will speed up to 50 ms for 1 second following a resize
   sort_case_insensitive = false, -- used when sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
+  use_default_mappings = true,
   --
   --event_handlers = {
   --  {

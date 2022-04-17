@@ -317,13 +317,21 @@ M.merge_config = function(config, is_auto_config)
     normalize_mappings(source_default_config)
     normalize_mappings(config[source_name])
 
-    -- merge the global config with the source specific config
-    source_default_config.window = vim.tbl_deep_extend(
-      "force",
-      default_config.window or {},
-      source_default_config.window or {},
-      config.window or {}
-    )
+    local use_default_mappings = default_config.use_default_mappings
+    if type(config.use_default_mappings) ~= "nil" then
+      use_default_mappings = config.use_default_mappings
+    end
+    if use_default_mappings then
+      -- merge the global config with the source specific config
+      source_default_config.window = vim.tbl_deep_extend(
+        "force",
+        default_config.window or {},
+        source_default_config.window or {},
+        config.window or {}
+      )
+    else
+      source_default_config.window = config.window
+    end
     source_default_config.renderers = source_default_config.renderers or {}
     -- if source does not specify a renderer, use the global default
     for name, renderer in pairs(default_config.renderers or {}) do
