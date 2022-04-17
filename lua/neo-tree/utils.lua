@@ -481,8 +481,14 @@ M.split_path = function(path)
   local parts = M.split(path, M.path_separator)
   local name = table.remove(parts)
   local parentPath = table.concat(parts, M.path_separator)
-  if M.path_separator == "/" then
-    parentPath = "/" .. parentPath
+  if M.is_windows then
+    if #parts == 1 then
+      parentPath =  parentPath .. M.path_separator
+    elseif parentPath == "" then
+      parentPath = nil
+    end
+  else
+    parentPath = M.path_separator .. parentPath
   end
   return parentPath, name
 end
@@ -502,8 +508,12 @@ M.path_join = function(...)
   end
 
   for _, arg in ipairs(args) do
-    local arg_parts = M.split(arg, M.path_separator)
-    vim.list_extend(all_parts, arg_parts)
+    if arg == "" and #all_parts == 0 and not M.is_windows then
+      all_parts = { "" }
+    else
+      local arg_parts = M.split(arg, M.path_separator)
+      vim.list_extend(all_parts, arg_parts)
+    end
   end
   return table.concat(all_parts, M.path_separator)
 end

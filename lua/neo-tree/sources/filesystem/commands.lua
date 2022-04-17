@@ -73,6 +73,9 @@ end
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
+  if not utils.truthy(parent_path) then
+    return
+  end
   local path_to_reveal = nil
   local node = state.tree:get_node()
   if node then

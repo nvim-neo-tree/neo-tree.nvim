@@ -64,6 +64,7 @@ end
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
 local function async_scan(context, path)
+  log.trace("async_scan: ", path)
   -- prepend the root path
   table.insert(context.paths_to_load, 1, path)
 
@@ -74,9 +75,11 @@ local function async_scan(context, path)
   end)
 
   -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
-  local read_dir = function(current_dir)
+  local function read_dir(current_dir)
     local on_fs_scandir = function(err, fd)
-      if not err then
+      if err then
+        log.error(current_dir, ": ", err)
+      else
         while true do
           local name, typ = uv.fs_scandir_next(fd)
           if name == nil then
@@ -93,24 +96,40 @@ local function async_scan(context, path)
         if directories_scanned == #context.paths_to_load then
           on_exit()
         end
+
+        --local next_path = dir_complete(context, current_dir)
+        --if next_path then
+        --  local success, error = pcall(read_dir, next_path)
+        --  if not success then
+        --    log.error(next_path, ": ", error)
+        --  end
+        --else
+        --  on_exit()
+        --end
       end
     end
 
     uv.fs_scandir(current_dir, on_fs_scandir)
   end
 
+  --local first = table.remove(context.paths_to_load)
+  --local success, err = pcall(read_dir, first)
+  --if not success then
+  --  log.error(first, ": ", err)
+  --end
   for i = 1, #context.paths_to_load do
     read_dir(context.paths_to_load[i])
   end
 end
 
 local function sync_scan(context, path_to_scan)
+  log.trace("sync_scan: ", path_to_scan)
   local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
   if not success then
     log.error("Error opening dir:", dir)
   end
-  local success, stats = pcall(vim.loop.fs_readdir, dir)
-  if success and stats then
+  local success2, stats = pcall(vim.loop.fs_readdir, dir)
+  if success2 and stats then
     for _, stat in ipairs(stats) do
       local path = path_to_scan .. utils.path_separator .. stat.name
       success, _ = pcall(file_items.create_item, context, path, stat.type)
@@ -217,7 +236,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
         table.remove(path_to_reveal_parts) -- remove the file name
         -- add all parent folders to the list of paths to load
         utils.reduce(path_to_reveal_parts, "", function(acc, part)
-          local current_path = acc .. utils.path_separator .. part
+          local current_path = utils.path_join(acc, part)
           if #current_path > #path then -- within current root
             table.insert(context.paths_to_load, current_path)
             table.insert(state.default_expanded_nodes, current_path)

@@ -361,6 +361,7 @@ M.merge_config = function(config, is_auto_config)
       config[source_name].window.position = "left"
     end
   end
+  --print(vim.inspect(default_config.filesystem))
 
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, config)
