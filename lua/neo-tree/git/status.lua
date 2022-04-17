@@ -61,6 +61,9 @@ local parse_git_status_line = function(context, line)
   local exclude_directories = context.exclude_directories
 
   local line_parts = vim.split(line, "	")
+  if #line_parts < 2 then
+    return
+  end
   local status = line_parts[1]
   local relative_path = line_parts[2]
 
