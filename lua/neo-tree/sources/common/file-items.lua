@@ -109,6 +109,10 @@ function create_item(context, path, _type)
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.dotfiles = true
     end
+    if f.hide_hidden and utils.is_hidden(path) then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.hidden = true
+    end
     -- NOTE: git_ignored logic moved to job_complete
   end
 

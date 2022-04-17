@@ -226,6 +226,11 @@ M.filtered_by = function(config, node, state)
         text = " (dotfile)",
         highlight = highlights.DOTFILE,
       }
+    elseif fby.hidden then
+      return {
+        text = " (hidden)",
+        highlight = highlights.WINDOWS_HIDDEN,
+      }
     end
   end
   return {}
