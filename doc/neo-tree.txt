@@ -449,6 +449,7 @@ highlight group which will be applied when they are visible, see
           visible = false, -- when true, they will just be displayed differently than normal items
           hide_dotfiles = true,
           hide_gitignored = true,
+          hide_hidden = true, -- only works on Windows for hidden files/directories
           hide_by_name = {
             ".DS_Store",
             "thumbs.db",
@@ -474,6 +475,9 @@ precedence over the others.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
 patterns. No gaurantees on how it handles advanced patterns.
+
+The `hide_hidden` option only will work on Windows using the Windows logic
+that determines if a file or directory is hidden.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*
@@ -773,6 +777,7 @@ NeoTreeRootName           The name of the root node.
 NeoTreeSymbolicLinkTarget Symbolic link target.
 NeoTreeTitleBar           Used for the title bar of pop-ups, when the border-style
                           is set to "NC". This is derived from NeoTreeFloatBorder.
+NeoTreeWindowsHidden      Used for icons and names that are hidden on Windows.
 
 
 EVENTS                                                        *neo-tree-events*

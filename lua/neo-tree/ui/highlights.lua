@@ -39,6 +39,7 @@ M.SYMBOLIC_LINK_TARGET = "NeoTreeSymbolicLinkTarget"
 M.TITLE_BAR = "NeoTreeTitleBar"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.EXPANDER = "NeoTreeExpander"
+M.WINDOWS_HIDDEN = "NeoTreeWindowsHidden"
 
 local function dec_to_hex(n, chars)
   chars = chars or 6
@@ -231,6 +232,7 @@ M.setup = function()
   create_highlight_group(M.INDENT_MARKER, { M.DIM_TEXT })
   create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
   create_highlight_group(M.MODIFIED, {}, nil, "d7d787")
+  create_highlight_group(M.WINDOWS_HIDDEN, { M.DOTFILE }, nil, nil)
 
   local added = create_highlight_group(
     M.GIT_ADDED,

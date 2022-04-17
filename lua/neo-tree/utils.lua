@@ -1,5 +1,14 @@
 local vim = vim
 local log = require("neo-tree.log")
+local bit = require("bit")
+local ffi = require("ffi")
+
+local FILE_ATTRIBUTE_HIDDEN = 0x2
+
+ffi.cdef([[
+int GetFileAttributesA(const char *path);
+]])
+
 -- Backwards compatibility
 table.pack = table.pack or function(...)
   return { n = select("#", ...), ... }
@@ -390,7 +399,7 @@ M.open_file = function(state, path, open_cmd)
         result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
       end
     end
-    if (result or err == "Vim(edit):E325: ATTENTION") then
+    if result or err == "Vim(edit):E325: ATTENTION" then
       events.fire_event(events.FILE_OPENED, path)
     else
       log.error("Error opening file:", err)
@@ -483,7 +492,7 @@ M.split_path = function(path)
   local parentPath = table.concat(parts, M.path_separator)
   if M.is_windows then
     if #parts == 1 then
-      parentPath =  parentPath .. M.path_separator
+      parentPath = parentPath .. M.path_separator
     elseif parentPath == "" then
       parentPath = nil
     end
@@ -588,6 +597,16 @@ M.wrap = function(func, ...)
     local all_args = table.pack(table.unpack(wrapped_args), ...)
     func(table.unpack(all_args))
   end
+end
+
+---Checks if the given path is hidden using the Windows hidden file/directory logic
+---@param path string
+---@return boolean
+function M.is_hidden(path)
+  if not M.is_windows then
+    return false
+  end
+  return bit.band(ffi.C.GetFileAttributesA(path), FILE_ATTRIBUTE_HIDDEN) ~= 0
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.
