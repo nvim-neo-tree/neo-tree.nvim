@@ -307,41 +307,49 @@ M.merge_config = function(config, is_auto_config)
   -- setup the default values for all sources
   normalize_mappings(default_config)
   for _, source_name in ipairs(sources) do
-    local source_config = default_config[source_name]
+    local source_default_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
-    source_config.components = require(mod_root .. ".components")
-    source_config.commands = require(mod_root .. ".commands")
-    source_config.name = source_name
+    source_default_config.components = require(mod_root .. ".components")
+    source_default_config.commands = require(mod_root .. ".commands")
+    source_default_config.name = source_name
 
     -- Make sure all the mappings are normalized so they will merge properly.
-    normalize_mappings(source_config)
+    normalize_mappings(source_default_config)
     normalize_mappings(config[source_name])
 
-    -- merge the global config with the source specific config
-    source_config.window = vim.tbl_deep_extend(
-      "force",
-      default_config.window or {},
-      source_config.window or {},
-      config.window or {}
-    )
-    source_config.renderers = source_config.renderers or {}
+    local use_default_mappings = default_config.use_default_mappings
+    if type(config.use_default_mappings) ~= "nil" then
+      use_default_mappings = config.use_default_mappings
+    end
+    if use_default_mappings then
+      -- merge the global config with the source specific config
+      source_default_config.window = vim.tbl_deep_extend(
+        "force",
+        default_config.window or {},
+        source_default_config.window or {},
+        config.window or {}
+      )
+    else
+      source_default_config.window = config.window
+    end
+    source_default_config.renderers = source_default_config.renderers or {}
     -- if source does not specify a renderer, use the global default
     for name, renderer in pairs(default_config.renderers or {}) do
-      if source_config.renderers[name] == nil then
+      if source_default_config.renderers[name] == nil then
         local r = {}
         for _, value in ipairs(renderer) do
-          if value[1] and source_config.components[value[1]] ~= nil then
+          if value[1] and source_default_config.components[value[1]] ~= nil then
             table.insert(r, value)
           end
         end
-        source_config.renderers[name] = r
+        source_default_config.renderers[name] = r
       end
     end
     -- if user sets renderers, completely wipe the default ones
-    for name, _ in pairs(source_config.renderers) do
+    for name, _ in pairs(source_default_config.renderers) do
       local user = utils.get_value(config, source_name .. ".renderers." .. name)
       if user then
-        source_config.renderers[name] = nil
+        source_default_config.renderers[name] = nil
       end
     end
 

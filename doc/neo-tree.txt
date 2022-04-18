@@ -255,6 +255,9 @@ For example:
 The above config will map `A` to command_a for all sources except for
 filesystem, which will use command_b instead.
 
+If you don't want to use any default mappings, you can set
+`use_default_mappings = false` in your config.
+
 NOTE: Not all commands work for all sources. If it is defined in the source
 section in the default config instead of at the root level, that means it is
 specific to that source and will not work for others.
