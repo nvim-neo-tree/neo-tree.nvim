@@ -192,6 +192,9 @@ M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
 end
 
 M.setup = function()
+  -- Reset this here in case of color scheme change
+  faded_highlight_group_cache = {}
+
   local normal_hl = create_highlight_group(M.NORMAL, { "Normal" })
   local normalnc_hl = create_highlight_group(M.NORMALNC, { "NormalNC", M.NORMAL })
 

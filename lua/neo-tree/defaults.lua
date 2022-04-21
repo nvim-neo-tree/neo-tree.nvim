@@ -68,6 +68,9 @@ local config = {
   --  }
   --},
   default_component_configs = {
+    container = {
+      enable_character_fade = true
+    },
     indent = {
       indent_size = 2,
       padding = 1,
