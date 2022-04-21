@@ -227,12 +227,6 @@ local function merge_global_components_config(components, config)
       if name == "indent" then
         indent_exists = true
       end
-      if name == "container" then
-        for i, child in ipairs(component.content) do
-          component.content[i] = do_merge(child)
-        end
-        return component
-      end
       local merged = { name }
       local global_config = config.default_component_configs[name]
       if global_config then
@@ -242,6 +236,11 @@ local function merge_global_components_config(components, config)
       end
       for k, v in pairs(component) do
         merged[k] = v
+      end
+      if name == "container" then
+        for i, child in ipairs(component.content) do
+          merged.content[i] = do_merge(child)
+        end
       end
       return merged
     else
@@ -267,11 +266,51 @@ local function merge_global_components_config(components, config)
   return merged_components
 end
 
-M.merge_config = function(config, is_auto_config)
-  local default_config = vim.deepcopy(defaults)
-  config = vim.deepcopy(config or {})
+local merge_renderers = function (default_config, source_default_config, user_config)
+  -- This can't be a deep copy/merge. If a renderer is specified in the target it completely
+  -- replaces the base renderer.
 
-  local migrations = require("neo-tree.setup.deprecations").migrate(config)
+  if source_default_config == nil then
+    -- first override the default config global renderer with the user's global renderers
+    for name, renderer in pairs(user_config.renderers or {}) do
+      log.debug("overriding global renderer for " .. name)
+      default_config.renderers[name] = renderer
+    end
+  else
+    -- then override the global renderers with the source specific renderers
+    source_default_config.renderers = source_default_config.renderers or {}
+    for name, renderer in pairs(default_config.renderers or {}) do
+      if source_default_config.renderers[name] == nil then
+        log.debug("overriding source renderer for " .. name)
+        local r = {}
+        -- Only copy components that exist in the target source.
+        -- This alllows us to specify global renderers that include components from all sources,
+        -- even if some of those components are not universal
+        for _, value in ipairs(renderer) do
+          if value[1] and source_default_config.components[value[1]] ~= nil then
+            table.insert(r, value)
+          end
+        end
+        source_default_config.renderers[name] = r
+      end
+    end
+
+    -- if user sets renderers, completely wipe the default ones
+    local source_name = source_default_config.name
+    for name, _ in pairs(source_default_config.renderers) do
+      local user = utils.get_value(user_config, source_name .. ".renderers." .. name)
+      if user then
+        source_default_config.renderers[name] = nil
+      end
+    end
+  end
+end
+
+M.merge_config = function(user_config, is_auto_config)
+  local default_config = vim.deepcopy(defaults)
+  user_config = vim.deepcopy(user_config or {})
+
+  local migrations = require("neo-tree.setup.deprecations").migrate(user_config)
   if #migrations > 0 then
     -- defer to make sure it is the last message printed
     vim.defer_fn(function()
@@ -281,10 +320,10 @@ M.merge_config = function(config, is_auto_config)
     end, 50)
   end
 
-  if config.log_level ~= nil then
-    M.set_log_level(config.log_level)
+  if user_config.log_level ~= nil then
+    M.set_log_level(user_config.log_level)
   end
-  log.use_file(config.log_to_file, true)
+  log.use_file(user_config.log_to_file, true)
   log.debug("setup")
 
   events.clear_all_events()
@@ -296,8 +335,8 @@ M.merge_config = function(config, is_auto_config)
     handler = M.buffer_enter_event,
   })
 
-  if config.event_handlers ~= nil then
-    for _, handler in ipairs(config.event_handlers) do
+  if user_config.event_handlers ~= nil then
+    for _, handler in ipairs(user_config.event_handlers) do
       events.subscribe(handler)
     end
   end
@@ -306,6 +345,7 @@ M.merge_config = function(config, is_auto_config)
 
   -- setup the default values for all sources
   normalize_mappings(default_config)
+  merge_renderers(default_config, nil, user_config)
   for _, source_name in ipairs(sources) do
     local source_default_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
@@ -315,11 +355,11 @@ M.merge_config = function(config, is_auto_config)
 
     -- Make sure all the mappings are normalized so they will merge properly.
     normalize_mappings(source_default_config)
-    normalize_mappings(config[source_name])
+    normalize_mappings(user_config[source_name])
 
     local use_default_mappings = default_config.use_default_mappings
-    if type(config.use_default_mappings) ~= "nil" then
-      use_default_mappings = config.use_default_mappings
+    if type(user_config.use_default_mappings) ~= "nil" then
+      use_default_mappings = user_config.use_default_mappings
     end
     if use_default_mappings then
       -- merge the global config with the source specific config
@@ -327,35 +367,17 @@ M.merge_config = function(config, is_auto_config)
         "force",
         default_config.window or {},
         source_default_config.window or {},
-        config.window or {}
+        user_config.window or {}
       )
     else
-      source_default_config.window = config.window
+      source_default_config.window = user_config.window
     end
-    source_default_config.renderers = source_default_config.renderers or {}
-    -- if source does not specify a renderer, use the global default
-    for name, renderer in pairs(default_config.renderers or {}) do
-      if source_default_config.renderers[name] == nil then
-        local r = {}
-        for _, value in ipairs(renderer) do
-          if value[1] and source_default_config.components[value[1]] ~= nil then
-            table.insert(r, value)
-          end
-        end
-        source_default_config.renderers[name] = r
-      end
-    end
-    -- if user sets renderers, completely wipe the default ones
-    for name, _ in pairs(source_default_config.renderers) do
-      local user = utils.get_value(config, source_name .. ".renderers." .. name)
-      if user then
-        source_default_config.renderers[name] = nil
-      end
-    end
+
+    merge_renderers(default_config, source_default_config, user_config)
 
     --validate the window.position
     local pos_key = source_name .. ".window.position"
-    local position = utils.get_value(config, pos_key, "left", true)
+    local position = utils.get_value(user_config, pos_key, "left", true)
     local valid_positions = {
       left = true,
       right = true,
@@ -366,13 +388,13 @@ M.merge_config = function(config, is_auto_config)
     }
     if not valid_positions[position] then
       log.error("Invalid value for ", pos_key, ": ", position)
-      config[source_name].window.position = "left"
+      user_config[source_name].window.position = "left"
     end
   end
   --print(vim.inspect(default_config.filesystem))
 
   -- apply the users config
-  M.config = vim.tbl_deep_extend("force", default_config, config)
+  M.config = vim.tbl_deep_extend("force", default_config, user_config)
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end

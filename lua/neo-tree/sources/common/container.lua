@@ -5,7 +5,7 @@ local log = require("neo-tree.log")
 
 local M = {}
 
-local calc_rendered_width = function (rendered_item)
+local calc_rendered_width = function(rendered_item)
   local width = 0
 
   for _, item in ipairs(rendered_item) do
@@ -48,7 +48,7 @@ local calc_container_width = function(config, node, state, context)
   return container_width
 end
 
-local render_content = function (config, node, state, context)
+local render_content = function(config, node, state, context)
   local max_width = 0
 
   local grouped_by_zindex = utils.group_by(config.content, "zindex")
@@ -75,7 +75,7 @@ end
 ---@param layer table The list of rendered components.
 ---@param skip_count number The number of characters to skip from the begining/left.
 ---@param max_length number The maximum number of characters to return.
-local truncate_layer_keep_left = function (layer, skip_count, max_length)
+local truncate_layer_keep_left = function(layer, skip_count, max_length)
   local result = {}
   local taken = 0
   local skipped = 0
@@ -109,7 +109,7 @@ end
 ---@param layer table The list of rendered components.
 ---@param skip_count number The number of characters to skip from the end/right.
 ---@param max_length number The maximum number of characters to return.
-local truncate_layer_keep_right = function (layer, skip_count, max_length)
+local truncate_layer_keep_right = function(layer, skip_count, max_length)
   local result = {}
   local taken = 0
   local skipped = 0
@@ -229,14 +229,18 @@ local merge_content = function(context)
       local width = calc_rendered_width(layer.left)
       if width > remaining_width then
         local truncated = truncate_layer_keep_left(layer.left, left_width, remaining_width)
-        try_fade_content(truncated, 3)
+        if context.enable_character_fade then
+          try_fade_content(truncated, 3)
+        end
         vim.list_extend(left, truncated)
         remaining_width = 0
       else
         remaining_width = remaining_width - width
-        local fade_chars = 3 - remaining_width
-        if fade_chars > 0 then
-          try_fade_content(layer.left, fade_chars)
+        if context.enable_character_fade then
+          local fade_chars = 3 - remaining_width
+          if fade_chars > 0 then
+            try_fade_content(layer.left, fade_chars)
+          end
         end
         vim.list_extend(left, layer.left)
         left_width = left_width + width
@@ -259,13 +263,14 @@ local merge_content = function(context)
   context.merged_content = result
 end
 
-M.render = function (config, node, state, available_width)
+M.render = function(config, node, state, available_width)
   local context = {
     max_width = 0,
     grouped_by_zindex = {},
     available_width = available_width,
     left_padding = config.left_padding,
     right_padding = config.right_padding,
+    enable_character_fade = config.enable_character_fade,
   }
 
   render_content(config, node, state, context)

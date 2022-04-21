@@ -121,6 +121,9 @@ use {
         enable_git_status = true,
         enable_diagnostics = true,
         default_component_configs = {
+          container = {
+            enable_character_fade = true
+          },
           indent = {
             indent_size = 2,
             padding = 1, -- extra padding on left hand side
