@@ -174,6 +174,12 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
                              https://github.com/s1n7ax/nvim-window-picker
                              be installed.
 
+   split_with_window_picker: Same as `open_with_window_picker` but opens split
+                             in selected node instead.
+
+  vsplit_with_window_picker: Same as `open_with_window_picker` but opens
+                             vertical split in selected node instead.
+
 <bs>          = navigate_up: Moves the root directory up one level.
 
 .             = set_root:    Changes the root directory to the currently 
