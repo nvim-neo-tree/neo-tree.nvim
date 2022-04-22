@@ -305,9 +305,9 @@ M.toggle_directory = function(state, toggle_directory)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
-M.open_with_window_picker = function(state)
+---@param cmd string Command that is used to perform action on picked window
+local use_window_picker = function(cmd, state)
   local node = state.tree:get_node()
-  local path = node:get_id()
   local success, picker = pcall(require, "window-picker")
   if not success then
     print(
@@ -318,8 +318,23 @@ M.open_with_window_picker = function(state)
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
-    vim.cmd("edit " .. vim.fn.fnameescape(node.path))
+    vim.cmd(cmd .. ' ' .. vim.fn.fnameescape(node.path))
   end
+end
+
+---Marks potential windows with letters and will open the give node in the picked window.
+M.open_with_window_picker = function(state)
+    use_window_picker('edit', state)
+end
+
+---Marks potential windows with letters and will open the give node in a split next to the picked window.
+M.split_with_window_picker = function(state)
+    use_window_picker('split', state)
+end
+
+---Marks potential windows with letters and will open the give node in a vertical split next to the picked window.
+M.vsplit_with_window_picker = function(state)
+    use_window_picker('vsplit', state)
 end
 
 return M
