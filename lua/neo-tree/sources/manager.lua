@@ -103,6 +103,10 @@ M.get_state = function(source_name, tabnr, winid)
     return win_state
   else
     local tab_state = sd.state_by_tab[tabnr]
+    if tab_state and tab_state.winid then
+      -- just in case tab and window get tangled up, tab state replaces window
+      sd.state_by_win[tab_state.winid] = nil
+    end
     if not tab_state then
       tab_state = create_state(tabnr, sd)
       sd.state_by_tab[tabnr] = tab_state
@@ -296,17 +300,48 @@ M.set_cwd = function(state)
   end
 end
 
+local dispose_state = function(state)
+  pcall(fs_scan.stop_watchers, state)
+  pcall(renderer.close, state)
+  source_data[state.name].state_by_tab[state.id] = nil
+  source_data[state.name].state_by_win[state.id] = nil
+  state.disposed = true
+end
+
 M.dispose = function(source_name, tabnr)
   for i, state in ipairs(all_states) do
     if source_name == nil or state.name == source_name then
       if not tabnr or tabnr == state.tabnr then
         log.trace(state.name, " disposing of tab: ", tabnr)
-        pcall(fs_scan.stop_watchers, state)
-        pcall(renderer.close, state)
-        source_data[state.name].state_by_tab[state.id] = nil
-        source_data[state.name].state_by_win[state.id] = nil
+        dispose_state(state)
         table.remove(all_states, i)
       end
+    end
+  end
+end
+
+M.dispose_tab = function(tabnr)
+  if not tabnr then
+    error("dispose_tab: tabnr cannot be nil")
+  end
+  for i, state in ipairs(all_states) do
+    if tabnr == state.tabnr then
+      log.trace(state.name, " disposing of tab: ", tabnr, state.name)
+      dispose_state(state)
+      table.remove(all_states, i)
+    end
+  end
+end
+
+M.dispose_window = function(winid)
+  if not winid then
+    error("dispose_window: winid cannot be nil")
+  end
+  for i, state in ipairs(all_states) do
+    if state.id == winid then
+      log.trace(state.name, " disposing of window: ", winid, state.name)
+      dispose_state(state)
+      table.remove(all_states, i)
     end
   end
 end
@@ -497,15 +532,6 @@ M.setup = function(source_name, config, global_config)
     success, err = pcall(module.setup, config, global_config)
     if success then
       get_source_data(source_name).module = module
-      --Dispose ourselves if the tab closes
-      M.subscribe(source_name, {
-        event = events.VIM_TAB_CLOSED,
-        handler = function(args)
-          local tabnr = tonumber(args.afile)
-          log.debug("VIM_TAB_CLOSED: disposing state for tab", tabnr)
-          M.dispose(source_name, tabnr)
-        end,
-      })
     else
       log.error("Source " .. source_name .. " setup failed: " .. err)
     end

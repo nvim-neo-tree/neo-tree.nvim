@@ -29,6 +29,7 @@ local M = {
   VIM_DIR_CHANGED = "vim_dir_changed",
   VIM_TAB_CLOSED = "vim_tab_closed",
   VIM_WIN_ENTER = "vim_win_enter",
+  VIM_WIN_CLOSED = "vim_win_closed",
   VIM_COLORSCHEME = "vim_colorscheme",
 }
 

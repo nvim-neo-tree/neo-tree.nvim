@@ -61,6 +61,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
@@ -187,6 +188,26 @@ M.win_enter_event = function()
   end
 
   if vim.o.filetype == "neo-tree" then
+    local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
+    if position == "current" then
+      -- make sure the buffer wasn't moved to a new window
+      local neo_tree_winid = vim.api.nvim_buf_get_var(0, "neo_tree_winid")
+      local current_winid = vim.api.nvim_get_current_win()
+      if neo_tree_winid ~= current_winid then
+        -- create a new tree for this window
+        local old_state = manager.get_state("filesystem", nil, neo_tree_winid)
+        local state = manager.get_state("filesystem", nil, current_winid)
+        state.path = old_state.path
+        state.current_position = "current"
+        local renderer = require("neo-tree.ui.renderer")
+        state.force_open_folders = renderer.get_expanded_nodes(old_state.tree)
+        -- I'm just scheduling this to make sure the buffer enter event fires and not skipped due to "nested" rules
+        vim.schedule(function()
+          require("neo-tree.sources.filesystem")._navigate_internal(state, nil, nil, nil, false)
+        end)
+        return
+      end
+    end
     -- it's a neo-tree window, ignore
     return
   end
@@ -419,6 +440,26 @@ M.merge_config = function(user_config, is_auto_config)
     event = events.VIM_WIN_ENTER,
     handler = M.win_enter_event,
     id = "neo-tree-win-enter",
+  })
+
+  --Dispose ourselves if the tab closes
+  events.subscribe({
+    event = events.VIM_TAB_CLOSED,
+    handler = function(args)
+      local tabnr = tonumber(args.afile)
+      log.debug("VIM_TAB_CLOSED: disposing state for tab", tabnr)
+      manager.dispose_tab(tabnr)
+    end,
+  })
+
+  --Dispose ourselves if the tab closes
+  events.subscribe({
+    event = events.VIM_WIN_CLOSED,
+    handler = function(args)
+      local winid = tonumber(args.afile)
+      log.debug("VIM_WIN_CLOSED: disposing state for window", winid)
+      manager.dispose_window(winid)
+    end,
   })
 
   local rt = utils.get_value(M.config, "resize_timer_interval", 50, true)
