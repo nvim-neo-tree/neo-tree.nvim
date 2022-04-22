@@ -77,7 +77,7 @@ use {
       "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
       {
-        -- only needed if you want to use the "open_window_picker" command
+        -- only needed if you want to use the commands with "_with_window_picker" suffix
         's1n7ax/nvim-window-picker',
         tag = "1.*",
         config = function()
@@ -187,7 +187,9 @@ use {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["S"] = "open_split",
+            -- ["S"] = "split_with_window_picker",
             ["s"] = "open_vsplit",
+            -- ["s"] = "vsplit_with_window_picker",
             ["t"] = "open_tabnew",
             ["w"] = "open_with_window_picker",
             ["C"] = "close_node",
