@@ -148,14 +148,12 @@ M.create_directory = function(in_directory, callback)
     create_all_parents(destination)
     loop.fs_mkdir(destination, 493)
 
-    if callback then
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
-        end
-      end)
-    end
+    vim.schedule(function()
+      events.fire_event(events.FILE_ADDED, destination)
+      if callback then
+        callback(destination)
+      end
+    end)
   end)
 
 end
@@ -186,14 +184,12 @@ M.create_node = function(in_directory, callback)
       loop.fs_close(fd)
     end
 
-    if callback then
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
-        end
-      end)
-    end
+    vim.schedule(function()
+      events.fire_event(events.FILE_ADDED, destination)
+      if callback then
+        callback(destination)
+      end
+    end)
   end)
 end
 

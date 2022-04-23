@@ -237,14 +237,7 @@ M.show_new_children = function(state, node_or_path)
     return
   end
 
-  if node:is_expanded() then
-    M.navigate(state)
-  else
-    fs_scan.get_items(state, nil, false, function()
-      local new_node = state.tree:get_node(node:get_id())
-      M.toggle_directory(state, new_node)
-    end)
-  end
+  M.navigate(state, nil, node_or_path)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
@@ -365,7 +358,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state, node)
+M.toggle_directory = function(state, node, path_to_reveal)
   local tree = state.tree
   if not node then
     node = tree:get_node()
@@ -378,7 +371,7 @@ M.toggle_directory = function(state, node)
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil)
-    fs_scan.get_items(state, id, true)
+    fs_scan.get_items(state, id, path_to_reveal)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
@@ -390,6 +383,9 @@ M.toggle_directory = function(state, node)
     end
     if updated then
       renderer.redraw(state)
+    end
+    if path_to_reveal then
+      renderer.focus_node(state, path_to_reveal)
     end
   end
 end
