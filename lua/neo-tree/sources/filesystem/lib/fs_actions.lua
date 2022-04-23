@@ -40,15 +40,43 @@ local function clear_buffer(path)
 end
 
 local function rename_buffer(old_path, new_path)
-  local old_buf = utils.find_buffer_by_name(old_path)
-  if old_buf < 1 then
-    return
+  local force_save = function()
+    vim.cmd("silent! write!")
   end
-  local new_buf = utils.find_buffer_by_name(new_path)
-  if new_buf > 0 then
-    clear_buffer(new_path)
+
+  for _, buf in pairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) then
+      local buf_name = vim.api.nvim_buf_get_name(buf)
+      local new_buf_name = nil
+      if old_path == buf_name then
+        new_buf_name = new_path
+      elseif utils.is_subpath(old_path, buf_name) then
+        new_buf_name = new_path .. buf_name:sub(#old_path + 1)
+      end
+      if utils.truthy(new_buf_name) then
+        vim.api.nvim_buf_set_name(buf, new_buf_name)
+        -- Force write to avoid E13 error
+        if vim.api.nvim_buf_get_option(buf, "buftype") == "" then
+          local modified = vim.api.nvim_buf_get_option(buf, "modified")
+          if modified then
+            local msg = buf_name .. " has been modified. Save under new name? (y/n) "
+            inputs.confirm(msg, function(confirmed)
+              if confirmed then
+                vim.api.nvim_buf_call(buf, force_save)
+                log.trace("Force saving renamed buffer with changes")
+              else
+                vim.cmd("echohl WarningMsg")
+                vim.cmd([[echo "Skipping force save. You'll need to save it with `:w!` when you are ready to force writing with the new name."]])
+                vim.cmd("echohl NONE")
+              end
+            end)
+          else
+            vim.api.nvim_buf_call(buf, force_save)
+          end
+        end
+      end
+    end
   end
-  vim.api.nvim_buf_set_name(old_buf, new_path)
 end
 
 local function create_all_parents(path)
