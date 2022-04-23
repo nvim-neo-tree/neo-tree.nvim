@@ -39,6 +39,18 @@ local function clear_buffer(path)
   end
 end
 
+local function rename_buffer(old_path, new_path)
+  local old_buf = utils.find_buffer_by_name(old_path)
+  if old_buf < 1 then
+    return
+  end
+  local new_buf = utils.find_buffer_by_name(new_path)
+  if new_buf > 0 then
+    clear_buffer(new_path)
+  end
+  vim.api.nvim_buf_set_name(old_buf, new_path)
+end
+
 local function create_all_parents(path)
   local create_all_as_folders
   function create_all_as_folders(in_path)
@@ -70,9 +82,10 @@ function get_unused_name(destination, name_chosen_callback, first_message)
     name_chosen_callback(destination)
   end
 end
+
 -- Move Node
 M.move_node = function(source, destination, callback)
-  local parent_path, name = utils.split_path(source)
+  local _, name = utils.split_path(source)
   get_unused_name(destination or source, function(dest)
     create_all_parents(dest)
     loop.fs_rename(source, dest, function(err)
@@ -80,6 +93,9 @@ M.move_node = function(source, destination, callback)
         log.error("Could not move the files from", source, "to", dest, ":", err)
         return
       end
+      vim.schedule(function()
+        rename_buffer(source, dest)
+      end)
       vim.schedule(function()
         events.fire_event(events.FILE_MOVED, {
           source = source,
@@ -322,6 +338,7 @@ M.rename_node = function(path, callback)
     end
 
     local complete = vim.schedule_wrap(function()
+      rename_buffer(path, destination)
       events.fire_event(events.FILE_RENAMED, {
         source = path,
         destination = destination,
