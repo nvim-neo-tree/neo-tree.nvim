@@ -113,6 +113,7 @@ end
 
 -- Move Node
 M.move_node = function(source, destination, callback)
+  log.trace("Moving node: ", source, " to ", destination)
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, function(dest)
     create_all_parents(dest)

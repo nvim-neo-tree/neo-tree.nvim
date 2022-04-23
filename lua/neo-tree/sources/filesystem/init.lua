@@ -219,6 +219,7 @@ M.show_new_children = function(state, node_or_path)
   local node = node_or_path
   if node_or_path == nil then
     node = state.tree:get_node()
+    node_or_path = node:get_id()
   elseif type(node_or_path) == "string" then
     node = state.tree:get_node(node_or_path)
     if node == nil then
@@ -231,6 +232,7 @@ M.show_new_children = function(state, node_or_path)
     end
   else
     node = node_or_path
+    node_or_path = node:get_id()
   end
 
   if node.type ~= "directory" then
