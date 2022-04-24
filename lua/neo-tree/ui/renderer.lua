@@ -563,6 +563,60 @@ local get_selected_nodes = function (state)
   return selected_nodes
 end
 
+local set_window_mappings = function(state)
+  local skip_this_mapping = {
+    ["none"] = true,
+    ["nop"] = true,
+    ["noop"] = true,
+  }
+  local mappings = utils.get_value(state, "window.mappings", {}, true)
+  local mapping_options = utils.get_value(state, "window.mapping_options", { noremap = true }, true)
+  for cmd, func in pairs(mappings) do
+    local vfunc
+    local config = {}
+    if utils.truthy(func) then
+      if skip_this_mapping[func] then
+        log.trace("Skipping mapping for %s", cmd)
+      else
+        local map_options = vim.deepcopy(mapping_options)
+        if type(func) == "table" then
+          for key, value in pairs(func) do
+            if key ~= "command" and key ~= 1 and key ~= "config" then
+              map_options[key] = value
+            end
+          end
+          config = func.config or {}
+          func = func.command or func[1]
+        end
+        if type(func) == "string" then
+          vfunc = state.commands[func .. "_visual"]
+          func = state.commands[func]
+        end
+        if type(func) == "function" then
+          keymap.set(state.bufnr, "n", cmd, function()
+            state.config = config
+            func(state)
+          end, map_options)
+          if type(vfunc) == "function" then
+            keymap.set(state.bufnr, "v", cmd, function()
+              vim.api.nvim_feedkeys(ESC_KEY, "i", true)
+              vim.schedule(function ()
+                local selected_nodes = get_selected_nodes(state)
+                if utils.truthy(selected_nodes) then
+                  state.config = config
+                  vfunc(state, selected_nodes)
+                end
+              end)
+            end, map_options)
+          end
+        else
+          log.warn("Invalid mapping for ", cmd, ": ", func)
+        end
+      end
+    end
+  end
+end
+
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
@@ -670,53 +724,7 @@ create_window = function(state)
     end, { once = true })
   end
 
-  local skip_this_mapping = {
-    ["none"] = true,
-    ["nop"] = true,
-    ["noop"] = true,
-  }
-  local mappings = utils.get_value(state, "window.mappings", {}, true)
-  local mapping_options = utils.get_value(state, "window.mapping_options", { noremap = true }, true)
-  for cmd, func in pairs(mappings) do
-    local vfunc
-    if utils.truthy(func) then
-      if skip_this_mapping[func] then
-        log.trace("Skipping mapping for %s", cmd)
-      else
-        local map_options = vim.deepcopy(mapping_options)
-        if type(func) == "table" then
-          for key, value in pairs(func) do
-            if key ~= "command" and key ~= 1 then
-              map_options[key] = value
-            end
-          end
-          func = func.command or func[1]
-        end
-        if type(func) == "string" then
-          vfunc = state.commands[func .. "_visual"]
-          func = state.commands[func]
-        end
-        if type(func) == "function" then
-          keymap.set(state.bufnr, "n", cmd, function()
-            func(state)
-          end, map_options)
-          if type(vfunc) == "function" then
-            keymap.set(state.bufnr, "v", cmd, function()
-              vim.api.nvim_feedkeys(ESC_KEY, "i", true)
-              vim.schedule(function ()
-                local selected_nodes = get_selected_nodes(state)
-                if utils.truthy(selected_nodes) then
-                  vfunc(state, selected_nodes)
-                end
-              end)
-            end, map_options)
-          end
-        else
-          log.warn("Invalid mapping for ", cmd, ": ", func)
-        end
-      end
-    end
-  end
+  set_window_mappings(state)
   return win
 end
 

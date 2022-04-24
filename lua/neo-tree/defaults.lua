@@ -206,8 +206,14 @@ local config = {
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
       ["R"] = "refresh",
-      ["a"] = "add",
-      ["A"] = "add_directory",
+      ["a"] = {
+        "add",
+        -- some commands may take optional config options, see `:h neo-tree-mappings` for details
+        config = {
+          show_path = "none" -- "none", "relative", "absolute"
+        }
+      },
+      ["A"] = "add_directory", -- also accepts the config.show_path option.
       ["d"] = "delete",
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",

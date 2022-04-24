@@ -188,10 +188,20 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
 
 FILE ACTIONS                                            *neo-tree-file-actions*
 a    = add:                  Create a new file OR directory. Add a `/` to the
-                             end of the name to make a directory.
+                             end of the name to make a directory. This command
+                             supports an optional `config.show_path` option
+                             which controls what portion of the path is shown
+                             in the prompt. The choices for this option are:
+
+                             `"none"`:     which is the default.
+                             `"relative"`: shows the portion which is relative
+                                         to the current root of the tree.
+                             `"absolute"`: is the full path to the current
+                                         directory.
 
 A    = add_directory:        Create a new directory, in this mode it does not
-                             need to end with a `/`.
+                             need to end with a `/`. Also accepts
+                             `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
@@ -407,6 +417,35 @@ assigning it to the `command` key:
 See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
 are enabled by default.
 
+CUSTOM MAPPINGS WITH CONFIG
+
+Some mappings may accept an optional `config` table to control it's behavior.
+When that is the case, the command is specified using the table syntax, and
+the config options are in a table bound to the `config` key:
+>
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mappings = {
+           ["a"] = {
+             "add",
+             nowait = true
+             config = {
+               show_path = "none" -- "none", "relative", "absolute"
+             }
+           },
+         }
+       }
+     }
+   })
+<
+When the `config` key is used, it is added to the `state` argument that is
+passed to the command function:
+>
+    M.add = function(state, callback)
+      local show_path = state.config.show_path
+      ...
+<
 
 ================================================================================
 CONFIGURATION                                                                  ~

@@ -165,11 +165,13 @@ end
 --- Create a new directory
 M.create_directory = function(in_directory, callback, using_root_directory)
   local base
-  if type(using_root_directory) == "string" and #using_root_directory > 0 then
-    if in_directory ~= using_root_directory then
+  if type(using_root_directory) == "string" then
+    if in_directory == using_root_directory then
+      base = ""
+    elseif #using_root_directory > 0 then
       base = in_directory:sub(#using_root_directory + 2) .. utils.path_separator
     else
-      base = ""
+      base = in_directory .. utils.path_separator
     end
   else
     base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
@@ -208,11 +210,13 @@ end
 --- Create Node
 M.create_node = function(in_directory, callback, using_root_directory)
   local base
-  if type(using_root_directory) == "string" and #using_root_directory > 0 then
-    if in_directory ~= using_root_directory then
+  if type(using_root_directory) == "string" then
+    if in_directory == using_root_directory then
+      base = ""
+    elseif #using_root_directory > 0 then
       base = in_directory:sub(#using_root_directory + 2) .. utils.path_separator
     else
-      base = ""
+      base = in_directory .. utils.path_separator
     end
   else
     base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")

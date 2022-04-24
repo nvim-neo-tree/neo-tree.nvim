@@ -41,7 +41,14 @@ M.add = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
 
-  fs_actions.create_node(node:get_id(), callback, state.path)
+  local in_directory = node:get_id()
+  local using_root_directory = in_directory
+  if state.config.show_path == "absolute" then
+    using_root_directory = ""
+  elseif state.config.show_path == "relative" then
+    using_root_directory = state.path
+  end
+  fs_actions.create_node(in_directory, callback, using_root_directory)
 end
 
 ---Add a new file or dir at the current node
@@ -51,7 +58,14 @@ M.add_directory = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
 
-  fs_actions.create_directory(node:get_id(), callback, state.path)
+  local in_directory = node:get_id()
+  local using_root_directory = in_directory
+  if state.config.show_path == "absolute" then
+    using_root_directory = ""
+  elseif state.config.show_path == "relative" then
+    using_root_directory = state.path
+  end
+  fs_actions.create_directory(in_directory, callback, using_root_directory)
 end
 
 M.close_all_nodes = function(state)

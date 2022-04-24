@@ -187,13 +187,20 @@ use {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["S"] = "open_split",
-            -- ["S"] = "split_with_window_picker",
             ["s"] = "open_vsplit",
+            -- ["S"] = "split_with_window_picker",
             -- ["s"] = "vsplit_with_window_picker",
             ["t"] = "open_tabnew",
             ["w"] = "open_with_window_picker",
             ["C"] = "close_node",
-            ["a"] = "add",
+            ["a"] = { 
+              "add",
+              -- some commands may take optional config options, see `:h neo-tree-mappings` for details
+              config = {
+                show_path = "none" -- "none", "relative", "absolute"
+              }
+            },
+            ["A"] = "add_directory", -- also accepts the config.show_path option.
             ["A"] = "add_directory",
             ["d"] = "delete",
             ["r"] = "rename",
