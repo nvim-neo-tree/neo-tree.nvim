@@ -82,9 +82,7 @@ M.close_window = function(state)
   renderer.close(state)
 end
 
----Marks node as copied, so that it can be pasted somewhere else.
-M.copy_to_clipboard = function(state, callback)
-  local node = state.tree:get_node()
+local copy_node_to_clipboard = function (state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
   if existing and existing.action == "copy" then
@@ -93,14 +91,27 @@ M.copy_to_clipboard = function(state, callback)
     state.clipboard[node.id] = { action = "copy", node = node }
     log.info("Copied " .. node.name .. " to clipboard")
   end
+end
+
+---Marks node as copied, so that it can be pasted somewhere else.
+M.copy_to_clipboard = function(state, callback)
+  local node = state.tree:get_node()
+  copy_node_to_clipboard(state, node)
   if callback then
     callback()
   end
 end
 
----Marks node as cut, so that it can be pasted (moved) somewhere else.
-M.cut_to_clipboard = function(state, callback)
-  local node = state.tree:get_node()
+M.copy_to_clipboard_visual = function (state, selected_nodes, callback)
+  for _, node in ipairs(selected_nodes) do
+    copy_node_to_clipboard(state, node)
+  end
+  if callback then
+    callback()
+  end
+end
+
+local cut_node_to_clipboard = function(state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
   if existing and existing.action == "cut" then
@@ -108,6 +119,21 @@ M.cut_to_clipboard = function(state, callback)
   else
     state.clipboard[node.id] = { action = "cut", node = node }
     log.info("Cut " .. node.name .. " to clipboard")
+  end
+end
+
+---Marks node as cut, so that it can be pasted (moved) somewhere else.
+M.cut_to_clipboard = function(state, callback)
+  local node = state.tree:get_node()
+  cut_node_to_clipboard(state, node)
+  if callback then
+    callback()
+  end
+end
+
+M.cut_to_clipboard_visual = function (state, selected_nodes, callback)
+  for _, node in ipairs(selected_nodes) do
+    cut_node_to_clipboard(state, node)
   end
   if callback then
     callback()
@@ -189,8 +215,15 @@ end
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-
   fs_actions.delete_node(node.path, callback)
+end
+
+M.delete_visual = function(state, selected_nodes, callback)
+  local paths_to_delete = {}
+  for _, node_to_delete in pairs(selected_nodes) do
+    table.insert(paths_to_delete, node_to_delete.path)
+  end
+  fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
 ---Open file or directory

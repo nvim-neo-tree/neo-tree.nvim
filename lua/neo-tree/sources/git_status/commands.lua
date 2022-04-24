@@ -103,9 +103,17 @@ M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, redraw)
 end
 
+M.copy_to_clipboard_visual = function(state, selected_nodes)
+  cc.copy_to_clipboard_visual(state, selected_nodes, redraw)
+end
+
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, redraw)
+end
+
+M.cut_to_clipboard_visual = function(state, selected_nodes)
+  cc.cut_to_clipboard_visual(state, selected_nodes, redraw)
 end
 
 M.copy = function(state)
@@ -123,6 +131,10 @@ end
 
 M.delete = function(state)
   cc.delete(state, refresh)
+end
+
+M.delete_visual = function(state, selected_nodes)
+  cc.delete_visual(state, selected_nodes, refresh)
 end
 
 M.refresh = refresh

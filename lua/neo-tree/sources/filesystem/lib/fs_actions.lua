@@ -223,7 +223,7 @@ M.create_node = function(in_directory, callback)
 end
 
 -- Delete Node
-M.delete_node = function(path, callback)
+M.delete_node = function(path, callback, noconfirm)
   local _, name = utils.split_path(path)
   local msg = string.format("Are you sure you want to delete '%s'?", name)
 
@@ -262,7 +262,7 @@ M.delete_node = function(path, callback)
     return
   end
 
-  inputs.confirm(msg, function(confirmed)
+  local do_delete = function(confirmed)
     if not confirmed then
       return
     end
@@ -340,6 +340,31 @@ M.delete_node = function(path, callback)
         callback(path)
       end
     end)
+  end
+
+  if noconfirm then
+    do_delete(true)
+  else
+    inputs.confirm(msg, do_delete)
+  end
+end
+
+M.delete_nodes = function(paths_to_delete, callback)
+  local msg = "Are you sure you want to delete " .. #paths_to_delete .. " items?"
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    for _, path in ipairs(paths_to_delete) do
+      M.delete_node(path, nil, true)
+    end
+
+    if callback then
+      vim.schedule(function()
+        callback(paths_to_delete[#paths_to_delete])
+      end)
+    end
   end)
 end
 

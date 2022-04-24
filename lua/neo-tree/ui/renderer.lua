@@ -12,6 +12,7 @@ local autocmd = require("nui.utils.autocmd")
 local log = require("neo-tree.log")
 
 local M = { resize_timer_interval = 50 }
+local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local floating_windows = {}
 local draw, create_window, create_tree
 
@@ -541,6 +542,27 @@ create_tree = function(state)
   })
 end
 
+local get_selected_nodes = function (state)
+  if state.winid ~= vim.api.nvim_get_current_win() then
+    return nil
+  end
+  local start_pos = vim.fn.getpos("'<")[2]
+  local end_pos = vim.fn.getpos("'>")[2]
+  if end_pos < start_pos then
+    -- I'm not sure if this could actually happen, but just in case
+    start_pos, end_pos = end_pos, start_pos
+  end
+  local selected_nodes = {}
+  while start_pos <= end_pos do
+    local node = state.tree:get_node(start_pos)
+    if node then
+      table.insert(selected_nodes, node)
+    end
+    start_pos = start_pos + 1
+  end
+  return selected_nodes
+end
+
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
@@ -656,6 +678,7 @@ create_window = function(state)
   local mappings = utils.get_value(state, "window.mappings", {}, true)
   local mapping_options = utils.get_value(state, "window.mapping_options", { noremap = true }, true)
   for cmd, func in pairs(mappings) do
+    local vfunc
     if utils.truthy(func) then
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
@@ -670,12 +693,24 @@ create_window = function(state)
           func = func.command or func[1]
         end
         if type(func) == "string" then
+          vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
         end
         if type(func) == "function" then
           keymap.set(state.bufnr, "n", cmd, function()
             func(state)
           end, map_options)
+          if type(vfunc) == "function" then
+            keymap.set(state.bufnr, "v", cmd, function()
+              vim.api.nvim_feedkeys(ESC_KEY, "i", true)
+              vim.schedule(function ()
+                local selected_nodes = get_selected_nodes(state)
+                if utils.truthy(selected_nodes) then
+                  vfunc(state, selected_nodes)
+                end
+              end)
+            end, map_options)
+          end
         else
           log.warn("Invalid mapping for ", cmd, ": ", func)
         end

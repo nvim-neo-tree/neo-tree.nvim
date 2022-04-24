@@ -37,9 +37,17 @@ M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, utils.wrap(redraw, state))
 end
 
+M.copy_to_clipboard_visual = function(state, selected_nodes)
+  cc.copy_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
+end
+
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, utils.wrap(redraw, state))
+end
+
+M.cut_to_clipboard_visual = function(state, selected_nodes)
+  cc.cut_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
 end
 
 M.move = function(state)
@@ -53,6 +61,10 @@ end
 
 M.delete = function(state)
   cc.delete(state, utils.wrap(refresh, state))
+end
+
+M.delete_visual = function(state, selected_nodes)
+  cc.delete_visual(state, selected_nodes, utils.wrap(refresh, state))
 end
 
 ---Shows the filter input, which will filter the tree.

@@ -194,12 +194,15 @@ A    = add_directory:        Create a new directory, in this mode it does not
                              need to end with a `/`.
 
 d    = delete:               Delete the selected file or directory.
+                             Supports visual selection.~
 
 r    = rename:               Rename the selected file or directory.
 
 y    = copy_to_clipboard:    Mark file to be copied.
+                             Supports visual selection.~
 
 x    = cut_to_clipboard:     Mark file to be cut (moved).
+                             Supports visual selection.~
 
 p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
 
@@ -325,6 +328,35 @@ You probably want #2:
      }
    })
 <
+
+CUSTOM MAPPINGS WITH VISUAL MODE
+
+If you want to create a mapping that supports visual mode, the way to do that
+is to add a second command where the name is the same as the normal mode
+command, but with `_visual` added to the end. Any mapping for this commnd will
+then work in either normal or visual mode.
+
+The `_visual` version of the command will be called with a second arguement
+which is a list of the nodes that were selected when the command was called.
+
+For example, this is how the built-in `delete` command is defined:
+
+>
+    M.delete = function(state, callback)
+      local tree = state.tree
+      local node = tree:get_node()
+      fs_actions.delete_node(node.path, callback)
+    end
+    
+    M.delete_visual = function(state, selected_nodes, callback)
+      local paths_to_delete = {}
+      for _, node_to_delete in pairs(selected_nodes) do
+        table.insert(paths_to_delete, node_to_delete.path)
+      end
+      fs_actions.delete_nodes(paths_to_delete, callback)
+    end
+<
+
 CUSTOM MAPPINGS WITH ARGUMENTS
 
 If you want to include options for your mappings, such as `nowait`, you can
