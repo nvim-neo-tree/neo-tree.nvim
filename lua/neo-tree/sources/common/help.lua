@@ -67,7 +67,12 @@ M.show = function(state)
 
   popup:map("n", "<esc>", function()
     popup:unmount()
-  end)
+  end, { noremap = true })
+
+  local event = require("nui.utils.autocmd").event
+  popup:on({ event.BufLeave, event.BufDelete }, function()
+    popup:unmount()
+  end, { once = true })
 
   for _, key in ipairs(keys) do
     -- map everything except for <escape>
