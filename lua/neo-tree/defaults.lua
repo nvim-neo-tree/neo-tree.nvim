@@ -222,6 +222,7 @@ local config = {
       ["c"] = "copy", -- takes text input for destination
       ["m"] = "move", -- takes text input for destination
       ["q"] = "close_window",
+      ["?"] = "show_help",
     },
   },
   filesystem = {

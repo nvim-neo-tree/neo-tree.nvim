@@ -5,6 +5,7 @@ local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
+local help= require("neo-tree.sources.common.help")
 
 ---Gets the node parent folder recursively
 ---@param tree table to look for nodes
@@ -382,6 +383,10 @@ end
 ---Marks potential windows with letters and will open the give node in a vertical split next to the picked window.
 M.vsplit_with_window_picker = function(state)
     use_window_picker('vsplit', state)
+end
+
+M.show_help = function(state)
+  help.show(state)
 end
 
 return M

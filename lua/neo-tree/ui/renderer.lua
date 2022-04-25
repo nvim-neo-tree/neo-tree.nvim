@@ -564,6 +564,7 @@ local get_selected_nodes = function (state)
 end
 
 local set_window_mappings = function(state)
+  local resolved_mappings = {}
   local skip_this_mapping = {
     ["none"] = true,
     ["nop"] = true,
@@ -589,14 +590,18 @@ local set_window_mappings = function(state)
           func = func.command or func[1]
         end
         if type(func) == "string" then
+          resolved_mappings[cmd] = { text = func }
           vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
+        elseif type(func) == "function" then
+          resolved_mappings[cmd] = { text = "<function>" }
         end
         if type(func) == "function" then
-          keymap.set(state.bufnr, "n", cmd, function()
+          resolved_mappings[cmd].handler = function()
             state.config = config
             func(state)
-          end, map_options)
+          end
+          keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
           if type(vfunc) == "function" then
             keymap.set(state.bufnr, "v", cmd, function()
               vim.api.nvim_feedkeys(ESC_KEY, "i", true)
@@ -611,10 +616,12 @@ local set_window_mappings = function(state)
           end
         else
           log.warn("Invalid mapping for ", cmd, ": ", func)
+          resolved_mappings[cmd] = "<invalid>"
         end
       end
     end
   end
+  state.resolved_mappings = resolved_mappings
 end
 
 create_window = function(state)

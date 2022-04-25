@@ -4,6 +4,7 @@ CONTENTS                                                            *neo-tree*
 Introduction ................ |neo-tree-introduction|
 Commands .................... |neo-tree-commands|
 Mappings .................... |neo-tree-mappings|
+  Help ...................... |neo-tree-help|
   Navigation ................ |neo-tree-navigation|
   View Changes .............. |neo-tree-view-changes|
   File Actions .............. |neo-tree-file-actions|
@@ -147,6 +148,16 @@ commands by adding this option before the Neotree config is run:
 MAPPINGS                                                                      ~
 ===============================================================================
                                                             *neo-tree-mappings*
+
+HELP                                                            *neo-tree-help*
+
+? = show_help: Shows a popup window with all of the mappings for the current
+               Neotree window. Pressing one of those keys will close the help
+               screen and execute the chosen command in the original Neotree
+               window. NOTE that selecting a line in the help window and
+               pressing enter will not execute that command, it will just
+               execute whatever the enter key is mapped to.
+
 
 NAVIGATION                                                *neo-tree-navigation*
 

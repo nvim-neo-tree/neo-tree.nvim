@@ -41,7 +41,7 @@ If you find anything janky, wanky, broken, or unintuitive, please open an issue
 so we can fix it.
 
 
-## Super Quickstart
+## Minimal Quickstart
 
 #### Minimal Example for Packer:
 ```lua
@@ -63,6 +63,9 @@ After installing, run:
 ```
 :Neotree
 ```
+
+Press `?` in the Neo-tree window to view the list of mappings.
+
 
 ## Quickstart
 
@@ -201,7 +204,6 @@ use {
               }
             },
             ["A"] = "add_directory", -- also accepts the config.show_path option.
-            ["A"] = "add_directory",
             ["d"] = "delete",
             ["r"] = "rename",
             ["y"] = "copy_to_clipboard",
@@ -211,6 +213,7 @@ use {
             ["m"] = "move", -- takes text input for destination
             ["q"] = "close_window",
             ["R"] = "refresh",
+            ["?"] = "show_help",
           }
         },
         nesting_rules = {},
