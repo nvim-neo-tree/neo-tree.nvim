@@ -227,6 +227,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
     if not destination or destination == base then
       return
     end
+    local is_dir = vim.endswith(destination, "/")
 
     if using_root_directory then
       destination = utils.path_join(using_root_directory, destination)
@@ -240,7 +241,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
     end
 
     create_all_parents(destination)
-    if vim.endswith(destination, "/") then
+    if is_dir then
       loop.fs_mkdir(destination, 493)
     else
       local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
