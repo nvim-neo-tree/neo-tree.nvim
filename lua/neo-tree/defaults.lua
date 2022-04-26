@@ -169,6 +169,10 @@ local config = {
         },
       },
     },
+    message = {
+      { "indent", with_markers = false },
+      { "name", highlight = "NeoTreeMessage" },
+    }
   },
   nesting_rules = {},
   window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
@@ -249,6 +253,8 @@ local config = {
     --         The rest of the fields are passed to the function as the "config" argument.
     filtered_items = {
       visible = false, -- when true, they will just be displayed differently than normal items
+      force_visible_in_empty_folder = false, -- when true, hidden files will be shown if the root folder is otherwise empty
+      show_hidden_count = false, -- when true, the number of hidden items in each folder will be shown as the last entry
       hide_dotfiles = true,
       hide_gitignored = true,
       hide_hidden = true, -- only works on Windows for hidden files/directories

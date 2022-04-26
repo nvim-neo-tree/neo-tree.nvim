@@ -111,6 +111,9 @@ end
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state, callback)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   copy_node_to_clipboard(state, node)
   if callback then
     callback()
@@ -119,7 +122,9 @@ end
 
 M.copy_to_clipboard_visual = function (state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
-    copy_node_to_clipboard(state, node)
+    if node.type ~= "message" then
+      copy_node_to_clipboard(state, node)
+    end
   end
   if callback then
     callback()
@@ -148,7 +153,9 @@ end
 
 M.cut_to_clipboard_visual = function (state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
-    cut_node_to_clipboard(state, node)
+    if node.type ~= "message" then
+      cut_node_to_clipboard(state, node)
+    end
   end
   if callback then
     callback()
@@ -216,6 +223,9 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.copy = function(state, callback)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   fs_actions.copy_node(node.path, nil, callback)
 end
 
@@ -224,19 +234,27 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.move = function(state, callback)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   fs_actions.move_node(node.path, nil, callback)
 end
 
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
+  if node.type == "message" then
+    return
+  end
   fs_actions.delete_node(node.path, callback)
 end
 
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
-    table.insert(paths_to_delete, node_to_delete.path)
+    if node_to_delete.type ~= "message" then
+      table.insert(paths_to_delete, node_to_delete.path)
+    end
   end
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
@@ -249,6 +267,9 @@ end
 local open_with_cmd = function(state, open_cmd, toggle_directory)
   local tree = state.tree
   local success, node = pcall(tree.get_node, tree)
+  if node.type == "message" then
+    return
+  end
   if not (success and node) then
     log.debug("Could not get node.")
     return
@@ -317,6 +338,9 @@ end
 M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
+  if node.type == "message" then
+    return
+  end
   fs_actions.rename_node(node.path, callback)
 end
 
@@ -356,6 +380,9 @@ end
 ---@param cmd string Command that is used to perform action on picked window
 local use_window_picker = function(cmd, state)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   local success, picker = pcall(require, "window-picker")
   if not success then
     print(
@@ -372,17 +399,17 @@ end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
 M.open_with_window_picker = function(state)
-    use_window_picker('edit', state)
+  use_window_picker('edit', state)
 end
 
 ---Marks potential windows with letters and will open the give node in a split next to the picked window.
 M.split_with_window_picker = function(state)
-    use_window_picker('split', state)
+  use_window_picker('split', state)
 end
 
 ---Marks potential windows with letters and will open the give node in a vertical split next to the picked window.
 M.vsplit_with_window_picker = function(state)
-    use_window_picker('vsplit', state)
+  use_window_picker('vsplit', state)
 end
 
 M.show_help = function(state)

@@ -14,6 +14,9 @@ local redraw = utils.wrap(manager.redraw, "git_status")
 
 M.git_add_file = function(state)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   local path = node:get_id()
   local cmd = "git add " .. path
   vim.fn.system(cmd)
@@ -68,6 +71,9 @@ end
 
 M.git_unstage_file = function(state)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   local path = node:get_id()
   local cmd = "git reset -- " .. path
   vim.fn.system(cmd)
@@ -76,6 +82,9 @@ end
 
 M.git_revert_file = function(state)
   local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
   local path = node:get_id()
   local cmd = "git checkout HEAD -- " .. path
   local msg = string.format("Are you sure you want to revert %s?", node.name)

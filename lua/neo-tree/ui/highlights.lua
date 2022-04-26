@@ -26,6 +26,7 @@ M.GIT_RENAMED = "NeoTreeGitRenamed"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
+M.MESSAGE = "NeoTreeMessage"
 M.MODIFIED = "NeoTreeModified"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
@@ -219,6 +220,7 @@ M.setup = function()
 
   create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  create_highlight_group(M.MESSAGE, {}, nil, "505050", "italic")
   create_highlight_group(M.FADE_TEXT_1, {}, nil, "626262")
   create_highlight_group(M.FADE_TEXT_2, {}, nil, "444444")
   create_highlight_group(M.DOTFILE, {}, nil, "626262")
@@ -237,7 +239,7 @@ M.setup = function()
   create_highlight_group(M.MODIFIED, {}, nil, "d7d787")
   create_highlight_group(M.WINDOWS_HIDDEN, { M.DOTFILE }, nil, nil)
 
-  local added = create_highlight_group(
+  create_highlight_group(
     M.GIT_ADDED,
     { "GitGutterAdd", "GitSignsAdd" },
     nil,

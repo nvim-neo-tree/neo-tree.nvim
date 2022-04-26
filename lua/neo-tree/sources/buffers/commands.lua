@@ -22,6 +22,9 @@ end
 M.buffer_delete = function(state)
   local node = state.tree:get_node()
   if node then
+    if node.type == "message" then
+      return
+    end
     vim.api.nvim_buf_delete(node.extra.bufnr, { force = false, unload = false })
     refresh()
   end

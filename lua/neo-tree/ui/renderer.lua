@@ -131,18 +131,23 @@ M.close_all_floating_windows = function()
 end
 
 local remove_filtered = function(source_items, filtered_items)
-  local filtered = {}
+  local visible = {}
+  local hidden = {}
   for _, child in ipairs(source_items) do
     local fby = child.filtered_by
     if type(fby) == "table" then
-      if (filtered_items.visible or child.is_nested) and not fby.never_show then
-        table.insert(filtered, child)
+      if not fby.never_show then
+        if filtered_items.visible or child.is_nested then
+          table.insert(visible, child)
+        else
+          table.insert(hidden, child)
+        end
       end
     else
-      table.insert(filtered, child)
+      table.insert(visible, child)
     end
   end
-  return filtered
+  return visible, hidden
 end
 
 local create_nodes
@@ -156,7 +161,14 @@ local create_nodes
 create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
-  source_items = remove_filtered(source_items, state.filtered_items)
+  local filtered_items = state.filtered_items or {}
+  local visible, hidden = remove_filtered(source_items, filtered_items)
+
+  if #visible == 0 and level <= 1 and filtered_items.force_visible_in_empty_folder then
+    source_items = hidden
+  else
+    source_items = visible
+  end
 
   for i, item in ipairs(source_items) do
     local is_last_child = i == #source_items
@@ -193,6 +205,30 @@ create_nodes = function(source_items, state, level)
       node:expand()
     end
     table.insert(nodes, node)
+  end
+
+  if #hidden > 0 then
+    if source_items == hidden then
+      local nodeData = {
+        id = hidden[#hidden].id .. "_hidden_message",
+        name = "(forced to show " .. #hidden .. " hidden items)",
+        type = "message",
+        level = level,
+        is_last_child = false,
+      }
+      local node = NuiTree.Node(nodeData)
+      table.insert(nodes, node)
+    elseif filtered_items.show_hidden_count or (#visible == 0 and level <= 1) then
+      local nodeData = {
+        id = hidden[#hidden].id .. "_hidden_message",
+        name = "(" .. #hidden .. " hidden items)",
+        type = "message",
+        level = level,
+        is_last_child = false,
+      }
+      local node = NuiTree.Node(nodeData)
+      table.insert(nodes, node)
+    end
   end
   return nodes
 end
