@@ -43,9 +43,13 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
         callback = "++nested " .. callback
       end
 
+      local autocmd = table.concat(autocmds, ",")
+      if not vim.startswith(autocmd, "User") then
+        autocmd = autocmd .. " *"
+      end
       local cmds = {
         "augroup NeoTreeEvent_" .. event_name,
-        "autocmd " .. table.concat(autocmds, ",") .. " * " .. callback,
+        "autocmd " .. autocmd .. " " .. callback,
         "augroup END",
       }
       log.trace("Registering autocmds: %s", table.concat(cmds, "\n"))

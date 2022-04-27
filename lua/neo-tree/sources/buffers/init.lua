@@ -90,6 +90,7 @@ M.setup = function(config, global_config)
     events.VIM_BUFFER_CHANGED,
     events.VIM_BUFFER_ADDED,
     events.VIM_BUFFER_DELETED,
+    events.GIT_EVENT
   }
   for _, e in ipairs(refresh_events) do
     manager.subscribe(M.name, {

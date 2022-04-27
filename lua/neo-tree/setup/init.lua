@@ -63,6 +63,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
+  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100 )
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
 end

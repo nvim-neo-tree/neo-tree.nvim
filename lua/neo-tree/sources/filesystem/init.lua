@@ -296,6 +296,16 @@ M.setup = function(config, global_config)
     })
   end
 
+  -- Respond to git events from git_status source or Fugitive
+  if global_config.enable_git_status then
+    manager.subscribe(M.name, {
+      event = events.GIT_EVENT,
+      handler = function()
+        manager.refresh(M.name)
+      end,
+    })
+  end
+
   --Configure event handlers for file changes
   if config.use_libuv_file_watcher then
     manager.subscribe(M.name, {
