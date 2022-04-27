@@ -113,6 +113,16 @@ M.open_tabnew = function (state)
   cc.open_tabnew(state, utils.wrap(fs.toggle_directory, state))
 end
 
+M.open_with_window_picker = function(state)
+  cc.open_with_window_picker(state, utils.wrap(fs.toggle_directory, state))
+end
+M.split_with_window_picker = function(state)
+  cc.split_with_window_picker(state, utils.wrap(fs.toggle_directory, state))
+end
+M.vsplit_with_window_picker = function(state)
+  cc.vsplit_with_window_picker(state, utils.wrap(fs.toggle_directory, state))
+end
+
 M.refresh = refresh
 
 M.rename = function(state)
