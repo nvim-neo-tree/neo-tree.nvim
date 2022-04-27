@@ -75,7 +75,7 @@ M.buffer_enter_event = function()
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
-    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer
+    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,WinSeparator:NeoTreeWinSeparator,EndOfBuffer:NeoTreeEndOfBuffer
     setlocal nolist nospell nonumber norelativenumber
     ]])
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
@@ -298,7 +298,7 @@ local function merge_global_components_config(components, config)
   return merged_components
 end
 
-local merge_renderers = function (default_config, source_default_config, user_config)
+local merge_renderers = function(default_config, source_default_config, user_config)
   -- This can't be a deep copy/merge. If a renderer is specified in the target it completely
   -- replaces the base renderer.
 
