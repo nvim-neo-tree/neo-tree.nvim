@@ -26,6 +26,13 @@ M.name = function(config, node, state)
     else
       highlight = highlights.DIRECTORY_NAME
     end
+  elseif node.type == "terminal" then
+    if node:get_depth() == 1 then
+      highlight = highlights.ROOT_NAME
+      name = "TERMINALS"
+    else
+      highlight = highlights.FILE_NAME
+    end
   else
     local git_status = state.components.git_status({}, node, state)
     if git_status and git_status.highlight then

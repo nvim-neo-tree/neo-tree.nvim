@@ -172,6 +172,12 @@ local config = {
     message = {
       { "indent", with_markers = false },
       { "name", highlight = "NeoTreeMessage" },
+    },
+    terminal = {
+      { "indent" },
+      { "icon" },
+      { "name" },
+      { "bufnr" }
     }
   },
   nesting_rules = {},
@@ -317,6 +323,8 @@ local config = {
   },
   buffers = {
     bind_to_cwd = true,
+    follow_current_file = true, -- This will find and focus the file in the active buffer every time
+                                 -- the current file is changed while the tree is open.
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",

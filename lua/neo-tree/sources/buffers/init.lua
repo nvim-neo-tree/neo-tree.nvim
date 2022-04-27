@@ -19,11 +19,52 @@ local get_state = function()
   return manager.get_state(M.name)
 end
 
+local follow_internal = function ()
+  if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
+    return
+  end
+  local path_to_reveal = manager.get_path_to_reveal(true)
+  if not utils.truthy(path_to_reveal) then
+    return false
+  end
+
+  local state = get_state()
+  if state.current_position == "float" then
+    return false
+  end
+  if not state.path then
+    return false
+  end
+  local window_exists = renderer.window_exists(state)
+  if window_exists then
+    local node = state.tree and state.tree:get_node()
+    if node then
+      if node:get_id() == path_to_reveal then
+        -- already focused
+        return false
+      end
+    end
+    renderer.focus_node(state, path_to_reveal, true)
+  end
+end
+
+M.follow = function()
+  if vim.fn.bufname(0) == "COMMIT_EDITMSG" then
+    return false
+  end
+  utils.debounce("neo-tree-buffer-follow", function()
+    return follow_internal()
+  end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
+end
+
 local buffers_changed_internal = function()
   for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
     local state = manager.get_state(M.name, tabnr)
     if state.path and renderer.window_exists(state) then
       items.get_open_buffers(state)
+      if state.follow_current_file then
+        follow_internal()
+      end
     end
   end
 end
@@ -33,7 +74,7 @@ M.buffers_changed = function()
   utils.debounce(
     "buffers_changed",
     buffers_changed_internal,
-    500,
+    100,
     utils.debounce_strategy.CALL_LAST_ONLY
   )
 end
@@ -110,6 +151,18 @@ M.setup = function(config, global_config)
     manager.subscribe(M.name, {
       event = events.VIM_DIAGNOSTIC_CHANGED,
       handler = wrap(manager.diagnostics_changed),
+    })
+  end
+    --
+  -- Configure event handler for follow_current_file option
+  if config.follow_current_file then
+    manager.subscribe(M.name, {
+      event = events.VIM_BUFFER_ENTER,
+      handler = M.follow,
+    })
+    manager.subscribe(M.name, {
+      event = events.VIM_TERMINAL_ENTER,
+      handler = M.follow,
     })
   end
 end

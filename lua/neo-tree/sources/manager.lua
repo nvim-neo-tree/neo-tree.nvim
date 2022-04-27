@@ -115,7 +115,7 @@ M.get_state = function(source_name, tabnr, winid)
   end
 end
 
-M.get_path_to_reveal = function()
+M.get_path_to_reveal = function(include_terminals)
   local win_id = vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
   if cfg.relative > "" or cfg.external then
@@ -126,7 +126,10 @@ M.get_path_to_reveal = function()
     return nil
   end
   local path = vim.fn.expand("%:p")
-  if not utils.truthy(path) or path:match("term://") then
+  if not utils.truthy(path) then
+    return nil
+  end
+  if not include_terminals and path:match("term://") then
     return nil
   end
   return path

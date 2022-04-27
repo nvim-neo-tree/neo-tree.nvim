@@ -20,37 +20,73 @@ M.get_open_buffers = function(state)
   root.loaded = true
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
+  local terminals = {}
 
   local bufs = vim.api.nvim_list_bufs()
   for _, b in ipairs(bufs) do
     local path = vim.api.nvim_buf_get_name(b)
-    local rootsub = path:sub(1, #state.path)
-    -- make sure this is within the root path
-    if rootsub == state.path then
-      local is_loaded = vim.api.nvim_buf_is_loaded(b)
-      if is_loaded or state.show_unloaded then
-        local is_listed = vim.fn.buflisted(b)
-        if is_listed == 1 then
-          local success, item = pcall(file_items.create_item, context, path, "file")
-          if success then
-            item.extra = {
-              bufnr = b,
-              is_listed = is_listed,
-            }
-          else
-            log.error("Error creating item for " .. path .. ": " .. item)
+    if vim.startswith(path, "term://") then
+      local name = path:match("term://(.*)//.*")
+      local abs_path = vim.fn.fnamemodify(name, ":p")
+      local item = {
+        name = name,
+        ext = "terminal",
+        path = abs_path,
+        id = path,
+        type = "terminal",
+        loaded = true,
+        extra = {
+          bufnr = b,
+          is_listed = true,
+        }
+      }
+      if utils.is_subpath(state.path, abs_path) then
+        table.insert(terminals, item)
+      end
+    else
+      local rootsub = path:sub(1, #state.path)
+      -- make sure this is within the root path
+      if rootsub == state.path then
+        local is_loaded = vim.api.nvim_buf_is_loaded(b)
+        if is_loaded or state.show_unloaded then
+          local is_listed = vim.fn.buflisted(b)
+          if is_listed == 1 then
+            local success, item = pcall(file_items.create_item, context, path, "file")
+            if success then
+              item.extra = {
+                bufnr = b,
+                is_listed = is_listed,
+              }
+            else
+              log.error("Error creating item for " .. path .. ": " .. item)
+            end
           end
         end
       end
     end
   end
 
+  local root_folders = { root }
+
+  if #terminals > 0 then
+    local terminal_root = {
+      name = "Terminals",
+      id = "Terminals",
+      ext = "terminal",
+      type = "terminal",
+      children = terminals,
+      loaded = true,
+      search_pattern = state.search_pattern,
+    }
+    context.folders["Terminals"] = terminal_root
+    root_folders[2] = terminal_root
+  end
   state.default_expanded_nodes = {}
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
   end
   file_items.deep_sort(root.children)
-  renderer.show_nodes({ root }, state)
+  renderer.show_nodes(root_folders, state)
   state.loading = false
 end
 

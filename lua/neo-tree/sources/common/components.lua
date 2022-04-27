@@ -248,7 +248,7 @@ M.icon = function(config, node, state)
     else
       icon = config.folder_closed or "+"
     end
-  elseif node.type == "file" then
+  elseif node.type == "file" or node.type == "terminal" then
     local success, web_devicons = pcall(require, "nvim-web-devicons")
     if success then
       local devicon, hl = web_devicons.get_icon(node.name, node.ext)

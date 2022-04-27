@@ -24,6 +24,7 @@ local M = {
   VIM_BUFFER_CHANGED = "vim_buffer_changed",
   VIM_BUFFER_DELETED = "vim_buffer_deleted",
   VIM_BUFFER_ENTER = "vim_buffer_enter",
+  VIM_TERMINAL_ENTER = "vim_terminal_enter",
   VIM_BUFFER_MODIFIED_SET = "vim_buffer_modified_set",
   VIM_DIAGNOSTIC_CHANGED = "vim_diagnostic_changed",
   VIM_DIR_CHANGED = "vim_dir_changed",
