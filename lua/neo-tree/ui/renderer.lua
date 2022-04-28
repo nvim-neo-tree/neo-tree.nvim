@@ -872,6 +872,36 @@ draw = function(nodes, state, parent_id)
 
 end
 
+local group_empty_dirs = function(nodes)
+  local function collapse_empty(node)
+    if node.children == nil then
+      return node
+    end
+
+    local first_child = node.children[1]
+    if #node.children == 1 and first_child.type == "directory" then
+      -- this is the only path that changes the tree
+      -- at each step where we discover an empty directory, merge it's name with the parent
+      -- then skip over it
+      first_child.name = node.name .. utils.path_separator .. first_child.name
+      return collapse_empty(first_child)
+    else
+      for i, child in ipairs(node.children) do
+        node.children[i] = collapse_empty(child)
+      end
+      return node
+    end
+  end
+
+  for _, node in ipairs(nodes) do
+    if node.children ~= nil then
+      for i, child in ipairs(node.children) do
+        node.children[i] = collapse_empty(child)
+      end
+    end
+  end
+end
+
 ---Shows the given items as a tree.
 --@param sourceItems table The list of items to transform.
 --@param state table The current state of the plugin.
@@ -890,6 +920,9 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       state.longest_node = state.longest_node or 0
     else
       state.longest_node = 0
+    end
+    if state.group_empty_dirs then
+      group_empty_dirs(sourceItems)
     end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)

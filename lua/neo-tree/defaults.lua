@@ -310,6 +310,7 @@ local config = {
     --  end
     --  return args
     --end,
+    group_empty_dirs = false, -- when true, empty folders will be grouped together
     search_limit = 50, -- max number of search results when using filters
     follow_current_file = false, -- This will find and focus the file in the active buffer every time
                                  -- the current file is changed while the tree is open.
@@ -324,7 +325,8 @@ local config = {
   buffers = {
     bind_to_cwd = true,
     follow_current_file = true, -- This will find and focus the file in the active buffer every time
-                                 -- the current file is changed while the tree is open.
+                                -- the current file is changed while the tree is open.
+    group_empty_dirs = true, -- when true, empty directories will be grouped together
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",
