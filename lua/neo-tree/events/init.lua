@@ -32,6 +32,7 @@ local M = {
   VIM_WIN_ENTER = "vim_win_enter",
   VIM_WIN_CLOSED = "vim_win_closed",
   VIM_COLORSCHEME = "vim_colorscheme",
+  VIM_LEAVE = "vim_leave",
 }
 
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)

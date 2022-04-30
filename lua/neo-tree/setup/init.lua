@@ -74,11 +74,19 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
   events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100 )
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
+
+  events.subscribe({
+    event = events.VIM_LEAVE,
+    handler = function()
+      events.clear_all_events()
+    end
+  })
 end
 
 local last_buffer_enter_filetype = nil

@@ -127,6 +127,10 @@ log.new = function(config, standalone)
     if level < levels[config.level] then
       return
     end
+    -- Ignnore this if vim is exiting
+    if vim.v.dying > 0 or vim.v.exiting ~= nil then
+      return
+    end
     local nameupper = level_config.name:upper()
 
     local msg = message_maker(...)
