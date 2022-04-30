@@ -7,6 +7,7 @@ local config = {
   default_source = "filesystem",
   enable_diagnostics = true,
   enable_git_status = true,
+  enable_modified_markers = true, -- Show markers for files with unsaved changes.
   git_status_async = true,
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file

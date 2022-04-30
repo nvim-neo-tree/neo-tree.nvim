@@ -153,7 +153,15 @@ M.setup = function(config, global_config)
       handler = wrap(manager.diagnostics_changed),
     })
   end
-    --
+
+  --Configure event handlers for modified files
+  if global_config.enable_modified_markers then
+    manager.subscribe(M.name, {
+      event = events.VIM_BUFFER_MODIFIED_SET,
+      handler = wrap(manager.modified_buffers_changed),
+    })
+  end
+
   -- Configure event handler for follow_current_file option
   if config.follow_current_file then
     manager.subscribe(M.name, {

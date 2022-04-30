@@ -266,12 +266,8 @@ M.icon = function(config, node, state)
 end
 
 M.modified = function(config, node, state)
-  local success, bufnr = pcall(vim.fn.bufnr, node.path)
-  if not success or bufnr < 0 then
-    return {}
-  end
-  local success2, modified = pcall(vim.api.nvim_buf_get_option, bufnr, "modified")
-  if success2 and modified then
+  local modified_buffers = state.modified_buffers or {}
+  if modified_buffers[node.path] then
     return {
       text = " " .. (config.symbol or "[+]"),
       highlight = config.highlight or highlights.MODIFIED,

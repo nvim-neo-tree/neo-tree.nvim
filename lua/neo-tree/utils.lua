@@ -202,6 +202,17 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
+---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
+---@return table
+M.get_modified_buffers = function()
+  local modified_buffers = {}
+  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+    local buffer_name = vim.api.nvim_buf_get_name(buffer)
+    modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
+  end
+  return modified_buffers
+end
+
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
 ---@param functionOrString any The object to resolve.

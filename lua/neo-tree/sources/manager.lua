@@ -373,6 +373,17 @@ M.focus = function(source_name, path_to_reveal, callback)
   end
 end
 
+---Redraws the tree with updated modified markers without scanning the filesystem again.
+M.modified_buffers_changed = function(source_name, args)
+  if not type(args) == "table" then
+    error("modified_buffers_changed: args must be a table")
+  end
+  M._for_each_state(source_name, function(state)
+    state.modified_buffers = args.modified_buffers
+    renderer.redraw(state)
+  end)
+end
+
 ---Navigate to the given path.
 ---@param state_or_source_name string|table The state or source name to navigate.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
