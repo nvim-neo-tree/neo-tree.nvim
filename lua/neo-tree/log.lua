@@ -128,7 +128,7 @@ log.new = function(config, standalone)
       return
     end
     -- Ignnore this if vim is exiting
-    if vim.v.dying > 0 or vim.v.exiting ~= nil then
+    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
       return
     end
     local nameupper = level_config.name:upper()
