@@ -196,7 +196,11 @@ M.status_async = function(path, base)
     end
   end
 
-  local wrapped_process_line_staged = vim.schedule_wrap(function(err, line)
+  local wrapped_process_line_staged = vim.schedule_wrap(function(err, line, job)
+    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+      job:shutdown()
+      return
+    end
     if err and err > 0 then
       log.error("status_async staged error: ", err, line)
     else
@@ -204,7 +208,11 @@ M.status_async = function(path, base)
     end
   end)
 
-  local wrapped_process_line_unstaged = vim.schedule_wrap(function(err, line)
+  local wrapped_process_line_unstaged = vim.schedule_wrap(function(err, line, job)
+    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+      job:shutdown()
+      return
+    end
     if err and err > 0 then
       log.error("status_async unstaged error: ", err, line)
     else
@@ -215,7 +223,11 @@ M.status_async = function(path, base)
     end
   end)
 
-  local wrapped_process_line_untracked = vim.schedule_wrap(function(err, line)
+  local wrapped_process_line_untracked = vim.schedule_wrap(function(err, line, job)
+    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+      job:shutdown()
+      return
+    end
     if err and err > 0 then
       log.error("status_async untracked error: ", err, line)
     else
