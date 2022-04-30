@@ -118,6 +118,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   state.dirty = false
   local is_search = utils.truthy(state.search_pattern)
   local path_changed = false
+  if not path and not state.bind_to_cwd then
+    path = state.path
+  end
   if path == nil then
     log.debug("navigate_internal: path is nil, using cwd")
     path = manager.get_cwd(state)
