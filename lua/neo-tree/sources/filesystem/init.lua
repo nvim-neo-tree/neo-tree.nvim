@@ -105,6 +105,9 @@ M.follow = function(callback, force_show)
   if vim.fn.bufname(0) == "COMMIT_EDITMSG" then
     return false
   end
+  if utils.is_floating() then
+    return false
+  end
   utils.debounce("neo-tree-follow", function()
     return follow_internal(callback, force_show)
   end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
@@ -318,13 +321,12 @@ M.setup = function(config, global_config)
       event = events.VIM_BUFFER_CHANGED,
       handler = function(arg)
         local afile = arg.afile or ""
-        local source = afile:match("^neo%-tree ([%l%-]+) %[%d+%]")
-        if source then
-          log.trace("Ignoring vim_buffer_changed event from " .. source)
-          return
+        if utils.is_real_file(afile) then
+          log.trace("refreshing due to vim_buffer_changed event: ", afile)
+          manager.refresh(M.name)
+        else
+          log.trace("Ignoring vim_buffer_changed event for non-file: ", afile)
         end
-        log.trace("refreshing due to vim_buffer_changed event: ", afile)
-        manager.refresh(M.name)
       end,
     })
   end
@@ -357,24 +359,14 @@ M.setup = function(config, global_config)
   if config.follow_current_file then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_ENTER,
-      handler = M.follow,
+      handler = function(args)
+        if utils.is_real_file(args.afile) then
+          M.follow()
+        end
+      end,
     })
   end
 
-  -- Update the "modified" component
-  manager.subscribe(M.name, {
-    event = events.VIM_BUFFER_MODIFIED_SET,
-    handler = function (arg)
-      local afile = arg.afile or ""
-      local source = afile:match("^neo%-tree ([%l%-]+) %[%d+%]")
-      if source then
-        log.trace("Ignoring vim_modified_set event from " .. source)
-        return
-      end
-      log.trace("refreshing due to vim_modified_set event: ", afile)
-      manager.redraw(M.name)
-    end
-  })
 end
 
 ---Expands or collapses the current node.

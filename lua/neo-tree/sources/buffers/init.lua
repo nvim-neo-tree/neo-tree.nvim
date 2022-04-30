@@ -125,18 +125,25 @@ M.setup = function(config, global_config)
         end
       end,
     })
+    manager.subscribe(M.name, {
+      event = events.GIT_EVENT,
+      handler = M.buffers_changed,
+    })
   end
 
   local refresh_events = {
     events.VIM_BUFFER_CHANGED,
     events.VIM_BUFFER_ADDED,
     events.VIM_BUFFER_DELETED,
-    events.GIT_EVENT
   }
   for _, e in ipairs(refresh_events) do
     manager.subscribe(M.name, {
       event = e,
-      handler = M.buffers_changed,
+      handler = function(args)
+        if utils.is_real_file(args.afile) then
+          M.buffers_changed()
+        end
+      end
     })
   end
 

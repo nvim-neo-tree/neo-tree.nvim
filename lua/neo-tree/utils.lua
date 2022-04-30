@@ -318,6 +318,33 @@ M.is_floating = function(win_id)
   return false
 end
 
+---Evaluates the value of <afile>, which comes from an autocmd event, and determines if it
+---is a valid file or some sort of utility buffer like quickfix or neo-tree itself.
+---@param afile string The path or relative path to the file.
+---@param true_for_terminals boolean Whether to return true for terminals, normally it would be false.
+---@return boolean boolean Whether the buffer is a real file.
+M.is_real_file = function(afile, true_for_terminals)
+  if afile == nil or afile == "" or afile == "quickfix" then
+    return false
+  end
+
+  local source = afile:match("^neo%-tree ([%l%-]+) %[%d+%]")
+  if source then
+    return false
+  end
+
+  local bufnr = vim.fn.bufnr(afile)
+  local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
+  if true_for_terminals and buftype == "terminal" then
+    return true
+  end
+  -- all other buftypes are not real files
+  if M.truthy(buftype) then
+    return false
+  end
+  return true
+end
+
 ---Creates a new table from an array with the array items as keys. If a dict like
 ---table is passed in, those keys will be copied to a new table.
 ---@param tbl table The table to copy items from.

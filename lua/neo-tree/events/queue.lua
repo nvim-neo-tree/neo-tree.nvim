@@ -112,8 +112,10 @@ local fire_event_internal = function(event, args)
   local seed = utils.get_value(event_definitions, event .. ".seed")
   if seed ~= nil then
     local success, result = pcall(seed, args)
-    if success then
+    if success and result then
       log.trace("Seed for " .. event .. " returned: " .. tostring(result))
+    elseif success then
+      log.trace("Seed for " .. event .. " returned falsy, cancelling event")
     else
       log.error("Error in seed function for " .. event .. ": " .. result)
     end

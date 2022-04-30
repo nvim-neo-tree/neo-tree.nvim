@@ -56,15 +56,20 @@ local define_events = function()
   )
 
   events.define_autocmd_event(events.VIM_BUFFER_MODIFIED_SET, { "BufModifiedSet" }, 0, function(args)
-    -- we could use args.afile to update the sigle file that changed, but it seems like we miss 
-    -- buffers when `:wa` is used.
-    args.modified_buffers = utils.get_modified_buffers()
-    return args
+    if utils.is_real_file(args.afile) then
+      -- we could use args.afile to update the sigle file that changed, but it seems like we miss
+      -- buffers when `:wa` is used.
+      args.modified_buffers = utils.get_modified_buffers()
+      return args
+    else
+      return false
+    end
   end)
 
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
+
   events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0)
   events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)

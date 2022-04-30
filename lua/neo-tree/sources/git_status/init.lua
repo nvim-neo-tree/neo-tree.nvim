@@ -44,7 +44,11 @@ M.setup = function(config, global_config)
 
   manager.subscribe(M.name, {
     event = events.VIM_BUFFER_CHANGED,
-    handler = wrap(manager.refresh),
+    handler = function(args)
+      if utils.is_real_file(args.afile) then
+        manager.refresh(M.name)
+      end
+    end
   })
 
   if config.bind_to_cwd then
