@@ -51,7 +51,7 @@ local define_events = function()
 
   events.define_autocmd_event(
     events.VIM_BUFFER_CHANGED,
-    { "BufWritePost", "BufFilePost", "BufModifiedSet" },
+    { "BufWritePost", "BufFilePost" },
     200
   )
 
