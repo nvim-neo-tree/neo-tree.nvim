@@ -443,6 +443,8 @@ M.open_file = function(state, path, open_cmd)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
+      -- fixes #321
+      vim.api.nvim_buf_set_option(0, "buflisted", true)
       events.fire_event(events.FILE_OPENED, path)
     else
       log.error("Error opening file:", err)
