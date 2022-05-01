@@ -132,10 +132,12 @@ M.setup = function(config, global_config)
   end
 
   local refresh_events = {
-    events.VIM_BUFFER_CHANGED,
     events.VIM_BUFFER_ADDED,
     events.VIM_BUFFER_DELETED,
   }
+  if global_config.enable_refresh_on_write then
+    table.insert(refresh_events, events.VIM_BUFFER_CHANGED)
+  end
   for _, e in ipairs(refresh_events) do
     manager.subscribe(M.name, {
       event = e,

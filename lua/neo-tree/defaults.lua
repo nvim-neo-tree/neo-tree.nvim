@@ -8,6 +8,7 @@ local config = {
   enable_diagnostics = true,
   enable_git_status = true,
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
+  enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   git_status_async = true,
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file

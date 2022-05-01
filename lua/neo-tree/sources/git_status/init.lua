@@ -42,14 +42,16 @@ M.setup = function(config, global_config)
     })
   end
 
-  manager.subscribe(M.name, {
-    event = events.VIM_BUFFER_CHANGED,
-    handler = function(args)
-      if utils.is_real_file(args.afile) then
-        manager.refresh(M.name)
+  if global_config.enable_refresh_on_write then
+    manager.subscribe(M.name, {
+      event = events.VIM_BUFFER_CHANGED,
+      handler = function(args)
+        if utils.is_real_file(args.afile) then
+          manager.refresh(M.name)
+        end
       end
-    end
-  })
+    })
+  end
 
   if config.bind_to_cwd then
     manager.subscribe(M.name, {

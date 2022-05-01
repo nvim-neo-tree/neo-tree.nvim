@@ -320,18 +320,20 @@ M.setup = function(config, global_config)
     })
   else
     require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()
-    manager.subscribe(M.name, {
-      event = events.VIM_BUFFER_CHANGED,
-      handler = function(arg)
-        local afile = arg.afile or ""
-        if utils.is_real_file(afile) then
-          log.trace("refreshing due to vim_buffer_changed event: ", afile)
-          manager.refresh(M.name)
-        else
-          log.trace("Ignoring vim_buffer_changed event for non-file: ", afile)
-        end
-      end,
-    })
+    if global_config.enable_refresh_on_write then
+      manager.subscribe(M.name, {
+        event = events.VIM_BUFFER_CHANGED,
+        handler = function(arg)
+          local afile = arg.afile or ""
+          if utils.is_real_file(afile) then
+            log.trace("refreshing due to vim_buffer_changed event: ", afile)
+            manager.refresh(M.name)
+          else
+            log.trace("Ignoring vim_buffer_changed event for non-file: ", afile)
+          end
+        end,
+      })
+    end
   end
 
   --Configure event handlers for cwd changes
