@@ -193,6 +193,9 @@ create_nodes = function(source_items, state, level)
     }
     local indent = (state.renderers[item.type] or {}).indent_size or 4
     local estimated_node_length = (#item.name or 0) + level * indent + 8
+    if level == 0 then
+      estimated_node_length = estimated_node_length + 16
+    end
     state.longest_node = math.max(state.longest_node, estimated_node_length )
 
     local node_children = nil

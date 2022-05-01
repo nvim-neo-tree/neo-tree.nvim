@@ -324,7 +324,7 @@ end
 ---@param true_for_terminals boolean Whether to return true for terminals, normally it would be false.
 ---@return boolean boolean Whether the buffer is a real file.
 M.is_real_file = function(afile, true_for_terminals)
-  if afile == nil or afile == "" or afile == "quickfix" then
+  if type(afile) ~= "string" or afile == "" or afile == "quickfix" then
     return false
   end
 
@@ -333,16 +333,21 @@ M.is_real_file = function(afile, true_for_terminals)
     return false
   end
 
-  local bufnr = vim.fn.bufnr(afile)
-  local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
-  if true_for_terminals and buftype == "terminal" then
+  local success, bufnr = pcall(vim.fn.bufnr, afile)
+  if success and bufnr > 0 then
+    local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
+
+    if true_for_terminals and buftype == "terminal" then
+      return true
+    end
+    -- all other buftypes are not real files
+    if M.truthy(buftype) then
+      return false
+    end
     return true
-  end
-  -- all other buftypes are not real files
-  if M.truthy(buftype) then
+  else
     return false
   end
-  return true
 end
 
 ---Creates a new table from an array with the array items as keys. If a dict like
