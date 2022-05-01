@@ -10,6 +10,13 @@ local config = {
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   git_status_async = true,
+  -- These options are for people with VERY large git repos
+  git_status_async_options = {
+    batch_size = 1000, -- how many lines of git status results to process at a time
+    batch_delay = 10,  -- delay in ms between batches. Spreads out the workload to let other processes run.
+    max_lines = 100000, -- How many lines of git status results to process. Anything after this will be dropped.
+                        -- Anything before this will be used. The last items to be processed are the untracked files.
+  },
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window

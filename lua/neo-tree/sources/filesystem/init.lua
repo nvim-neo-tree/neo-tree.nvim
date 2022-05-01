@@ -166,7 +166,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   end
   local config = require("neo-tree").config
   if config.enable_git_status and not is_search and config.git_status_async then
-    git.status_async(state.path, state.git_base)
+    git.status_async(state.path, state.git_base, config.git_status_async_options)
   end
 end
 

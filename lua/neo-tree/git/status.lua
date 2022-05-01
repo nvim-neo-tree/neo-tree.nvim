@@ -166,7 +166,40 @@ M.status = function(base, exclude_directories, path)
   return context.git_status, git_root
 end
 
-M.status_async = function(path, base)
+local function parse_lines_batch(context, job_complete_callback)
+  if context.lines_total == nil then
+    context.lines_total = math.min(context.max_lines, #context.lines)
+    context.lines_parsed = 0
+    if context.lines_total == 0 then
+      if type(job_complete_callback) == "function" then
+        job_complete_callback()
+      end
+      return
+    end
+    -- don't do anything on the first batch, we just finished what might have been
+    -- a lot of work in gathering these lines...
+  else
+    local batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
+    local i = 0
+    while i < batch_size do
+      i = i + 1
+      parse_git_status_line(context, context.lines[context.lines_parsed + 1])
+    end
+  end
+
+  if context.lines_parsed >= context.lines_total then
+    if type(job_complete_callback) == "function" then
+      job_complete_callback()
+    end
+  else
+    -- add small delay so other work can happen
+    vim.defer_fn(function()
+      parse_lines_batch(context, job_complete_callback)
+    end, context.batch_delay)
+  end
+end
+
+M.status_async = function(path, base, opts)
   local git_root = git_utils.get_repository_root(path)
   if utils.truthy(git_root) then
     log.trace("git.status.status_async called")
@@ -175,12 +208,27 @@ M.status_async = function(path, base)
     return false
   end
 
+  local event_id = "git_status_" .. git_root
   local context = {
     git_root = git_root,
     git_status = {},
     exclude_directories = false,
-    lines_parsed = 0
+    lines = {},
+    lines_parsed = 0,
+    batch_size = opts.batch_size or 1000,
+    batch_delay = opts.batch_delay or 10,
+    max_lines = opts.max_lines or 100000,
   }
+
+  local job_complete_callback = function ()
+    utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
+    vim.schedule(function()
+      events.fire_event(events.GIT_STATUS_CHANGED, {
+        git_root = context.git_root,
+        git_status = context.git_status,
+      })
+    end)
+  end
 
   local should_process = function(err, line, job, err_msg)
     if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
@@ -194,16 +242,16 @@ M.status_async = function(path, base)
     return true
   end
 
-  local event_id = "git_status_" .. git_root
   utils.debounce(event_id, function()
     local staged_job = Job
       :new({
         command = "git",
         args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
         enable_recording = false,
+        maximium_results = context.max_lines,
         on_stdout = vim.schedule_wrap(function(err, line, job)
           if should_process(err, line, job, "status_async staged error:") then
-            parse_git_status_line(context, line)
+            table.insert(context.lines, line)
           end
         end),
         on_stderr = function(err, line)
@@ -221,12 +269,13 @@ M.status_async = function(path, base)
         command = "git",
         args = { "-C", git_root, "diff", "--name-status" },
         enable_recording = false,
+        maximium_results = context.max_lines,
         on_stdout = vim.schedule_wrap(function(err, line, job)
           if should_process(err, line, job, "status_async unstaged error:") then
             if line then
               line = " " .. line
             end
-            parse_git_status_line(context, line)
+            table.insert(context.lines, line)
           end
         end),
         on_stderr = function(err, line)
@@ -244,12 +293,13 @@ M.status_async = function(path, base)
         command = "git",
         args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
         enable_recording = false,
+        maximium_results = context.max_lines,
         on_stdout = vim.schedule_wrap(function(err, line, job)
           if should_process(err, line, job, "status_async untracked error:") then
             if line then
               line = "?	" .. line
             end
-            parse_git_status_line(context, line)
+            table.insert(context.lines, line)
           end
         end),
         on_stderr = function(err, line)
@@ -258,14 +308,8 @@ M.status_async = function(path, base)
           end
         end,
         on_exit = function(_, return_val)
-          utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
           log.trace("status_async untracked completed with return_val:", return_val, ";", context.lines_parsed, "lines parsed")
-          vim.schedule(function()
-            events.fire_event(events.GIT_STATUS_CHANGED, {
-              git_root = context.git_root,
-              git_status = context.git_status,
-            })
-          end)
+          parse_lines_batch(context, job_complete_callback)
         end,
       })
 
