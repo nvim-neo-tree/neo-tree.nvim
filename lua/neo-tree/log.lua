@@ -26,12 +26,12 @@ local default_config = {
 
   -- Level configuration
   modes = {
-    { name = "trace", hl = "None" },
-    { name = "debug", hl = "None" },
-    { name = "info", hl = "None" },
-    { name = "warn", hl = "WarningMsg" },
-    { name = "error", hl = "ErrorMsg" },
-    { name = "fatal", hl = "ErrorMsg" },
+    { name = "trace", hl = "None", level = vim.log.levels.TRACE },
+    { name = "debug", hl = "None" , level = vim.log.levels.DEBGUG},
+    { name = "info", hl = "None" , level = vim.log.levels.INFO},
+    { name = "warn", hl = "WarningMsg", level = vim.log.levels.WARN },
+    { name = "error", hl = "ErrorMsg", level = vim.log.levels.ERROR },
+    { name = "fatal", hl = "ErrorMsg", level = vim.log.levels.ERROR },
   },
 
   -- Can limit the number of decimals displayed for floats
@@ -42,6 +42,17 @@ local default_config = {
 local log = {}
 
 local unpack = unpack or table.unpack
+
+local notify = function (message, level_config)
+  if type(vim.notify) == "table" then
+    -- probably using nvim-notify
+    vim.notify(message, level_config.level, { title = "Neo-tree" })
+  else
+    local nameupper = level_config.name:upper()
+    local console_string = string.format( "[Neo-tree %s] %s", nameupper, message)
+    vim.notify(console_string, level_config.level)
+  end
+end
 
 log.new = function(config, standalone)
   config = vim.tbl_deep_extend("force", default_config, config)
@@ -84,14 +95,15 @@ log.new = function(config, standalone)
     levels[v.name] = i
   end
 
+
   obj.set_level = function(level)
     if levels[level] then
       if config.level ~= level then
         config.level = level
-        print("[neo-tree] Log level set to " .. level)
+        notify("Log level set to " .. level, config.modes[2])
       end
     else
-      print("[neo-tree] Invalid log level: " .. level)
+      notify("Invalid log level: " .. level, config.modes[5])
     end
   end
 
@@ -152,26 +164,7 @@ log.new = function(config, standalone)
     -- Output to console
     if config.use_console and level > 2 then
       vim.schedule(function()
-        local console_string = string.format(
-          "[%-6s%s] %s: %s",
-          nameupper,
-          os.date("%H:%M:%S"),
-          lineinfo,
-          msg
-        )
-
-        if config.highlights and level_config.hl then
-          vim.cmd(string.format("echohl %s", level_config.hl))
-        end
-
-        local split_console = vim.split(console_string, "\n")
-        for _, v in ipairs(split_console) do
-          vim.cmd(string.format([[echom "[%s] %s"]], config.plugin, vim.fn.escape(v, '"')))
-        end
-
-        if config.highlights and level_config.hl then
-          vim.cmd("echohl NONE")
-        end
+        notify(msg, level_config)
       end)
     end
   end
