@@ -61,6 +61,15 @@ M.execute = function(args)
   -- The rest of the actions require a source
   args.source = args.source or nt.config.default_source
 
+  -- If position=current was requested, but we are currently in a neo-tree window,
+  -- then we need to override that.
+  if args.position == "current" and vim.bo.filetype == "neo-tree" then
+    local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
+    if position then
+      args.position = position
+    end
+  end
+
   -- Now get the correct state
   local state
   if args.position == "current" then
@@ -75,15 +84,6 @@ M.execute = function(args)
     if renderer.close(state) then
       -- It was open, and now it's not.
       return
-    end
-  end
-
-  -- If position=current was requested, but we are currently in a neo-tree window,
-  -- then we need to override that.
-  if args.position == "current" and vim.bo.filetype == "neo-tree" then
-    local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
-    if position then
-      args.position = position
     end
   end
 
