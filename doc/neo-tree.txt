@@ -196,11 +196,11 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
 .             = set_root:    Changes the root directory to the currently 
                              selected folder.
 
-[g      = next_git_modified: Jump to the next file reported by `git status`
+[g      = prev_git_modified: Jump to the previous file reported by `git status`
                              that is within the current working directory.
                              This will loop around if you are on the last one.
 
-]g      = prev_git_modified: Jump to the previous file reported by `git status`
+]g      = next_git_modified: Jump to the next file reported by `git status`
                              that is within the current working directory.
                              This will loop around if you are on the last one.
 
