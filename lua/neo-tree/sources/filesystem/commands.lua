@@ -100,6 +100,55 @@ M.navigate_up = function(state)
   fs._navigate_internal(state, parent_path, path_to_reveal, nil, false)
 end
 
+local focus_next_git_modified = function(state, reverse)
+  local node = state.tree:get_node()
+  local current_path = node:get_id()
+  local g = state.git_status_lookup
+  if not utils.truthy(g) then
+    return
+  end
+  local paths = { current_path }
+  for path, status in pairs(g) do
+    if path ~= current_path and status and #status == 2 and status ~= "!!" then
+      --don't include files not in the current working directory
+      if utils.is_subpath(state.path, path) then
+        table.insert(paths, path)
+      end
+    end
+  end
+  local sorted_paths = utils.sort_by_tree_display(paths)
+  if reverse then
+    sorted_paths = utils.reverse_list(sorted_paths)
+  end
+  print(vim.inspect(sorted_paths))
+
+  local passed = false
+  local target = sorted_paths[1]
+  for _, path in ipairs(sorted_paths) do
+    if passed then
+      target = path
+      break
+    elseif path == current_path then
+      passed = true
+    end
+  end
+
+  local existing = state.tree:get_node(target)
+  if existing then
+    renderer.focus_node(state, target)
+  else
+    fs.navigate(state, state.path, target, nil, false)
+  end
+end
+
+M.next_git_modified = function(state)
+  focus_next_git_modified(state, false)
+end
+
+M.prev_git_modified = function(state)
+  focus_next_git_modified(state, true)
+end
+
 M.open = function(state)
   cc.open(state, utils.wrap(fs.toggle_directory, state))
 end

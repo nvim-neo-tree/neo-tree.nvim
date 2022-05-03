@@ -252,6 +252,8 @@ use {
               ["/"] = "fuzzy_finder",
               ["f"] = "filter_on_submit",
               ["<c-x>"] = "clear_filter",
+              ["[g"] = "prev_git_modified",
+              ["]g"] = "next_git_modified",
             }
           }
         },

@@ -459,6 +459,14 @@ M.reduce = function(list, memo, func)
   return memo
 end
 
+M.reverse_list = function(list)
+  local result = {}
+  for i = #list, 1, -1 do
+    table.insert(result, list[i])
+  end
+  return result
+end
+
 M.resolve_config_option = function(state, config_option, default_value)
   local opt = M.get_value(state, config_option, default_value, false)
   if type(opt) == "function" then
@@ -505,6 +513,75 @@ M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 if M.is_windows == true then
   M.path_separator = "\\"
+end
+
+---Sorts a list of paths in the order they would appear in a tree.
+---@param paths table The list of paths to sort.
+---@return table table The sorted list of paths.
+M.sort_by_tree_display = function(paths)
+  -- first turn the paths into a true tree
+  local nodes = {}
+  local index = {}
+  local function create_nodes(path)
+    local node = index[path]
+    if node then
+      return node
+    end
+    local parent, name = M.split_path(path)
+    node = {
+      name = name,
+      path = path,
+      children = {},
+    }
+    index[path] = node
+    if parent == nil then
+      table.insert(nodes, node)
+    else
+      local parent_node = index[parent]
+      if parent_node == nil then
+        parent_node = create_nodes(parent)
+      end
+      table.insert(parent_node.children, node)
+    end
+    return node
+  end
+
+  for _, path in ipairs(paths) do
+    create_nodes(path)
+  end
+
+  -- create a lookup of the original paths so that we don't return anything
+  -- that isn't in the original list
+  local original_paths = M.list_to_dict(paths)
+
+  -- sort folders before files
+  local sort_by_name = function (a, b)
+    local a_isdir = #a.children > 0
+    local b_isdir = #b.children > 0
+    if a_isdir and not b_isdir then
+      return true
+    elseif not a_isdir and b_isdir then
+      return false
+    else
+      return a.name < b.name
+    end
+  end
+
+  -- now we can walk the tree in the order that it would be displayed on the screen
+  local result = {}
+  local function walk_tree(node)
+    if original_paths[node.path] then
+      table.insert(result, node.path)
+      original_paths[node.path] = nil -- just to be sure we don't return it twice
+    end
+    table.sort(node.children, sort_by_name)
+    for _, child in ipairs(node.children) do
+      walk_tree(child)
+    end
+  end
+
+  walk_tree({ children = nodes })
+  return result
 end
 
 ---Split string into a table of strings using a separator.

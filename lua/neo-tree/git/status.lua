@@ -167,7 +167,10 @@ M.status = function(base, exclude_directories, path)
 end
 
 local function parse_lines_batch(context, job_complete_callback)
+  local i, batch_size = 0, context.batch_size
+
   if context.lines_total == nil then
+    -- first time through, get the total number of lines
     context.lines_total = math.min(context.max_lines, #context.lines)
     context.lines_parsed = 0
     if context.lines_total == 0 then
@@ -176,15 +179,22 @@ local function parse_lines_batch(context, job_complete_callback)
       end
       return
     end
-    -- don't do anything on the first batch, we just finished what might have been
-    -- a lot of work in gathering these lines...
-  else
-    local batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
-    local i = 0
-    while i < batch_size do
-      i = i + 1
-      parse_git_status_line(context, context.lines[context.lines_parsed + 1])
+
+    if context.lines_total < batch_size then
+      -- the total number of lines is less than the batch size, so just parse them all
+      batch_size = context.lines_total
+    else
+      -- don't do anything on the first batch, we just finished what might have been
+      -- a lot of work in gathering these lines...
+      batch_size = 0
     end
+  else
+    batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
+  end
+
+  while i < batch_size do
+    i = i + 1
+    parse_git_status_line(context, context.lines[context.lines_parsed + 1])
   end
 
   if context.lines_parsed >= context.lines_total then
