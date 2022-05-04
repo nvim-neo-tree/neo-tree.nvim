@@ -14,8 +14,8 @@ local config = {
   git_status_async_options = {
     batch_size = 1000, -- how many lines of git status results to process at a time
     batch_delay = 10,  -- delay in ms between batches. Spreads out the workload to let other processes run.
-    max_lines = 100000, -- How many lines of git status results to process. Anything after this will be dropped.
-                        -- Anything before this will be used. The last items to be processed are the untracked files.
+    max_lines = 10000, -- How many lines of git status results to process. Anything after this will be dropped.
+                       -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file

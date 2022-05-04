@@ -179,18 +179,8 @@ local function parse_lines_batch(context, job_complete_callback)
       end
       return
     end
-
-    if context.lines_total < batch_size then
-      -- the total number of lines is less than the batch size, so just parse them all
-      batch_size = context.lines_total
-    else
-      -- don't do anything on the first batch, we just finished what might have been
-      -- a lot of work in gathering these lines...
-      batch_size = 0
-    end
-  else
-    batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
   end
+  batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
 
   while i < batch_size do
     i = i + 1
@@ -230,16 +220,6 @@ M.status_async = function(path, base, opts)
     max_lines = opts.max_lines or 100000,
   }
 
-  local job_complete_callback = function ()
-    utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
-    vim.schedule(function()
-      events.fire_event(events.GIT_STATUS_CHANGED, {
-        git_root = context.git_root,
-        git_status = context.git_status,
-      })
-    end)
-  end
-
   local should_process = function(err, line, job, err_msg)
     if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
       job:shutdown()
@@ -251,6 +231,20 @@ M.status_async = function(path, base, opts)
     end
     return true
   end
+
+  local job_complete_callback = function ()
+    utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
+    vim.schedule(function()
+      events.fire_event(events.GIT_STATUS_CHANGED, {
+        git_root = context.git_root,
+        git_status = context.git_status,
+      })
+    end)
+  end
+
+  local parse_lines = vim.schedule_wrap(function()
+    parse_lines_batch(context, job_complete_callback)
+  end)
 
   utils.debounce(event_id, function()
     local staged_job = Job
@@ -268,9 +262,6 @@ M.status_async = function(path, base, opts)
           if err and err > 0 then
             log.error("status_async staged error: ", err, line)
           end
-        end,
-        on_exit = function(_, return_val)
-          log.trace("status_async staged completed with return_val: ", return_val)
         end,
       })
 
@@ -293,9 +284,6 @@ M.status_async = function(path, base, opts)
             log.error("status_async unstaged error: ", err, line)
           end
         end,
-        on_exit = function(_, return_val)
-          log.trace("status_async unstaged completed with return_val: ", return_val)
-        end,
       })
 
     local untracked_job = Job
@@ -317,13 +305,17 @@ M.status_async = function(path, base, opts)
             log.error("status_async untracked error: ", err, line)
           end
         end,
-        on_exit = function(_, return_val)
-          log.trace("status_async untracked completed with return_val:", return_val, ";", context.lines_parsed, "lines parsed")
-          parse_lines_batch(context, job_complete_callback)
-        end,
       })
 
-    Job.chain(staged_job, unstaged_job, untracked_job)
+    local showUntracked = vim.fn.systemlist({"git", "config", "--get", "status.showUntrackedFiles"})
+    log.debug("git status.showUntrackedFiles =", showUntracked[1])
+    if showUntracked[1] == "no" then
+      unstaged_job:after(parse_lines)
+      Job.chain(staged_job, unstaged_job)
+    else
+      untracked_job:after(parse_lines)
+      Job.chain(staged_job, unstaged_job, untracked_job)
+    end
   end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
   return true
