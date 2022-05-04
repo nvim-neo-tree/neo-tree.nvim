@@ -307,7 +307,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
-    local showUntracked = vim.fn.systemlist({"git", "config", "--get", "status.showUntrackedFiles"})
+    local showUntracked = vim.fn.systemlist({"git", "-C", git_root, "config", "--get", "status.showUntrackedFiles"})
     log.debug("git status.showUntrackedFiles =", showUntracked[1])
     if showUntracked[1] == "no" then
       unstaged_job:after(parse_lines)
