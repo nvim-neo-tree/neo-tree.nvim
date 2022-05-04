@@ -120,7 +120,6 @@ local focus_next_git_modified = function(state, reverse)
   if reverse then
     sorted_paths = utils.reverse_list(sorted_paths)
   end
-  print(vim.inspect(sorted_paths))
 
   local passed = false
   local target = sorted_paths[1]

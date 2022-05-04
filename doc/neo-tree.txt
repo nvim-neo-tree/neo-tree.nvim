@@ -860,7 +860,9 @@ NeoTreeGitConflict        File name when the git status is conflict.
 NeoTreeGitDeleted         File name when the git status is deleted.
 NeoTreeGitIgnored         File name when the git status is ignored.
 NeoTreeGitModified        File name when the git status is modified.
+NeoTreeGitUnstaged        Used for git unstaged symbol.
 NeoTreeGitUntracked       File name when the git status is untracked.
+NeoTreeGitStaged          Used for git staged symbol.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.

@@ -23,7 +23,9 @@ M.GIT_DELETED = "NeoTreeGitDeleted"
 M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
 M.GIT_RENAMED = "NeoTreeGitRenamed"
+M.GIT_STAGED = "NeoTreeGitStaged"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
+M.GIT_UNSTAGED = "NeoTreeGitUnstaged"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.MESSAGE = "NeoTreeMessage"
@@ -252,6 +254,8 @@ M.setup = function()
   local conflict = create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
   create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
+  create_highlight_group(M.GIT_STAGED, { M.GIT_ADDED }, nil, nil)
+  create_highlight_group(M.GIT_UNSTAGED, { M.GIT_CONFLICT }, nil, nil)
   create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 end
 
