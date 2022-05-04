@@ -114,6 +114,8 @@ local focus_next_git_modified = function(state, reverse)
       if utils.is_subpath(state.path, path) then
         table.insert(paths, path)
       end
+    else
+      log.debug("Skipping path:", path, "with status:", "'" .. status .. "'")
     end
   end
   local sorted_paths = utils.sort_by_tree_display(paths)

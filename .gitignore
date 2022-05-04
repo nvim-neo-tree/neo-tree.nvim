@@ -41,7 +41,3 @@ luac.out
 
 # Vim tag files
 tags
-
-#example
-ignored
-.file_to_ignore

@@ -135,7 +135,7 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   for _, child in ipairs(source_items) do
     local fby = child.filtered_by
-    if type(fby) == "table" then
+    if type(fby) == "table" and not child.is_reveal_target then
       if not fby.never_show then
         if filtered_items.visible or child.is_nested then
           table.insert(visible, child)

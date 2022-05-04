@@ -148,11 +148,11 @@ local function sync_scan(context, path_to_scan)
 end
 
 M.get_items_sync = function(state, parent_id, path_to_reveal, callback)
-  return M.get_items_async_with_context(state, parent_id, path_to_reveal, callback, false)
+  return M.get_items(state, parent_id, path_to_reveal, callback, false)
 end
 
 M.get_items_async = function(state, parent_id, path_to_reveal, callback)
-  M.get_items_async_with_context(state, parent_id, path_to_reveal, callback, true)
+  M.get_items(state, parent_id, path_to_reveal, callback, true)
 end
 
 M.get_items = function(state, parent_id, path_to_reveal, callback, async)
@@ -168,6 +168,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
     M.stop_watchers(state)
   end
   local context = file_items.create_context(state)
+  context.path_to_reveal = path_to_reveal
 
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory")

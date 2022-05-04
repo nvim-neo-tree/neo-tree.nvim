@@ -85,6 +85,7 @@ function create_item(context, path, _type)
     end
   end
 
+  item.is_reveal_target = (path == context.path_to_reveal)
   local state = context.state
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)
