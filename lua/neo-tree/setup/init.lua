@@ -406,25 +406,20 @@ M.merge_config = function(user_config, is_auto_config)
     source_default_config.commands = require(mod_root .. ".commands")
     source_default_config.name = source_name
 
+    if user_config.use_default_mappings == false then
+      default_config.window.mappings = {}
+      source_default_config.window.mappings = {}
+    end
     -- Make sure all the mappings are normalized so they will merge properly.
     normalize_mappings(source_default_config)
     normalize_mappings(user_config[source_name])
-
-    local use_default_mappings = default_config.use_default_mappings
-    if type(user_config.use_default_mappings) ~= "nil" then
-      use_default_mappings = user_config.use_default_mappings
-    end
-    if use_default_mappings then
-      -- merge the global config with the source specific config
-      source_default_config.window = vim.tbl_deep_extend(
-        "force",
-        default_config.window or {},
-        source_default_config.window or {},
-        user_config.window or {}
-      )
-    else
-      source_default_config.window = user_config.window
-    end
+    -- merge the global config with the source specific config
+    source_default_config.window = vim.tbl_deep_extend(
+      "force",
+      default_config.window or {},
+      source_default_config.window or {},
+      user_config.window or {}
+    )
 
     merge_renderers(default_config, source_default_config, user_config)
 
