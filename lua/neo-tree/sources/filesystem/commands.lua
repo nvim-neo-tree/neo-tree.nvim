@@ -109,13 +109,11 @@ local focus_next_git_modified = function(state, reverse)
   end
   local paths = { current_path }
   for path, status in pairs(g) do
-    if path ~= current_path and status and #status == 2 and status ~= "!!" then
+    if path ~= current_path and status and status ~= "!!" then
       --don't include files not in the current working directory
       if utils.is_subpath(state.path, path) then
         table.insert(paths, path)
       end
-    else
-      log.debug("Skipping path:", path, "with status:", "'" .. status .. "'")
     end
   end
   local sorted_paths = utils.sort_by_tree_display(paths)
@@ -123,12 +121,22 @@ local focus_next_git_modified = function(state, reverse)
     sorted_paths = utils.reverse_list(sorted_paths)
   end
 
+  local is_file = function (path)
+    local success, stats = pcall(vim.loop.fs_stat, path)
+    return (success and stats and stats.type ~= "directory")
+  end
+
   local passed = false
-  local target = sorted_paths[1]
+  local target = nil
   for _, path in ipairs(sorted_paths) do
-    if passed then
+    if target == nil and is_file(path) then
       target = path
-      break
+    end
+    if passed then
+      if is_file(path) then
+        target = path
+        break
+      end
     elseif path == current_path then
       passed = true
     end
