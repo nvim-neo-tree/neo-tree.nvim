@@ -445,7 +445,6 @@ M.rename_node = function(path, callback)
         log.warn("Could not rename the files")
         return
       else
-        log.info("Renamed " .. name .. " successfully")
         complete()
       end
     end)
