@@ -338,7 +338,15 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
     return false
   end
 
-  if linenr and M.window_exists(state) then
+  if M.window_exists(state) then
+    if not linenr then
+      M.expand_to_node(state.tree, node)
+      node, linenr = tree:get_node(id)
+      if not linenr then
+        log.debug("focus_node cannot get linenr for node with id ", id)
+        return false
+      end
+    end
     local focus_window = not do_not_focus_window
     if focus_window then
       vim.api.nvim_set_current_win(state.winid)
@@ -452,6 +460,19 @@ M.collapse_all_nodes = function(tree)
   if root then
     root:expand()
   end
+end
+
+M.expand_to_node = function(tree, node)
+  if type(node) == "string" then
+    node = tree:get_node(node)
+  end
+  local parentId = node:get_parent_id()
+  while parentId do
+    local parent = tree:get_node(parentId)
+    parent:expand()
+    parentId = parent:get_parent_id()
+  end
+  tree:render()
 end
 
 ---Functions to save and restore the focused node.
