@@ -1,10 +1,58 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 
+Node = {}
+function Node:new(value)
+  local props = {prev = nil, next = nil, value = value}
+  setmetatable(props, self)
+  self.__index = self
+  return props
+end
+
+LinkedList = {}
+function LinkedList:new()
+  local props = { head = nil, tail = nil, size = 0 }
+  setmetatable(props, self)
+  self.__index = self
+  return props
+end
+
+function LinkedList:add_node(node)
+  if self.head == nil then
+    self.head = node
+    self.tail = node
+  else
+    self.tail.next = node
+    node.prev = self.tail
+    self.tail = node
+  end
+  self.size = self.size + 1
+  return node
+end
+
+function LinkedList:remove_node(node)
+  if node.prev ~= nil then
+    node.prev.next = node.next
+  end
+  if node.next ~= nil then
+    node.next.prev = node.prev
+  end
+  if self.head == node then
+    self.head = node.next
+  end
+  if self.tail == node then
+    self.tail = node.prev
+  end
+  self.size = self.size - 1
+  node.prev = nil
+  node.next = nil
+  node.value = nil
+end
+
 -- First in Last Out
 Queue = {}
 function Queue:new()
-  local props = { first = 0, last = -1 }
+  local props = { _list = LinkedList:new() }
   setmetatable(props, self)
   self.__index = self
   return props
@@ -13,42 +61,49 @@ end
 ---Add an element to the end of the queue.
 ---@param value any The value to add.
 function Queue:add(value)
-  local last = self.last + 1
-  self.last = last
-  self[last] = value
+  self._list:add_node(Node:new(value))
+end
+
+---Iterates over the entire list, running func(value) on each element.
+---If func returns true, the element is removed from the list.
+---@param func function The function to run on each element.
+function Queue:for_each(func)
+  local node = self._list.head
+  while node ~= nil do
+    local remove_node = func(node.value)
+    if remove_node then
+      local node_to_remove = node
+      node = node.next
+      self._list:remove_node(node_to_remove)
+    else
+      node = node.next
+    end
+  end
 end
 
 function Queue:is_empty()
-  return self.first > self.last
+  return self._list.size == 0
 end
 
----Remove the first element from the queue.
----@return any any The first element of the queue.
-function Queue:remove()
-  local first = self.first
-  if self:is_empty() then
-    error("list is empty")
-  end
-  local value = self[first]
-  self[first] = nil -- to allow garbage collection
-  self.first = first + 1
-  return value
-end
-
-function Queue:without(id)
-  local first = self.first
-  local last = self.last
-  local new_queue = Queue:new()
-  for i = first, last do
-    local item = self[i]
+function Queue:remove_by_id(id)
+  local current = self._list.head
+  while current ~= nil do
+    local is_match = false
+    local item = current.value
     if item ~= nil then
       local item_id = item.id or item
-      if item_id ~= id and not item.cancelled then
-        new_queue:add(item)
+      if item_id == id then
+        is_match = true
       end
     end
+    if is_match then
+      local next = current.next
+      self._list:remove_node(current)
+      current = next
+    else
+      current = current.next
+    end
   end
-  return new_queue
 end
 
 local event_queues = {}
@@ -121,11 +176,9 @@ local fire_event_internal = function(event, args)
     end
   end
 
-  local first = queue.first
-  local last = queue.last
-  for i = first, last do
-    local event_handler = queue[i]
-    if not event_handler.cancelled then
+  queue:for_each(function(event_handler)
+    local remove_node = event_handler == nil or event_handler.cancelled
+    if not remove_node then
       local success, result = pcall(event_handler.handler, args)
       local id = event_handler.id or event_handler
       if success then
@@ -147,9 +200,11 @@ local fire_event_internal = function(event, args)
       end
       if event_handler.once then
         event_handler.cancelled = true
+        remove_node = true
       end
     end
-  end
+    return remove_node
+  end)
 end
 
 M.fire_event = function(event, args)
@@ -193,7 +248,7 @@ M.unsubscribe = function(event_handler)
   if queue == nil then
     return nil
   end
-  queue = queue:without(event_handler.id or event_handler)
+  queue:remove_by_id(event_handler.id or event_handler)
   if queue:is_empty() then
     M.destroy_event(event_handler.event)
     event_queues[event_handler.event] = nil
