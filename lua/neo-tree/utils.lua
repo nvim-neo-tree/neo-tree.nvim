@@ -707,7 +707,10 @@ M.is_expandable = function(node)
 end
 
 M.windowize_path = function(path)
-  return path:gsub("/", "\\")
+  if not vim.o.shellslash then
+    return path:gsub("/", "\\")
+  end
+  return path
 end
 
 M.wrap = function(func, ...)
