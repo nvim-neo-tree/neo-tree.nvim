@@ -511,7 +511,13 @@ end
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-M.use_shellslash = vim.o.shellslash
+
+local shellslash_exists, _ = pcall(function() local _ = vim.o.shellslash end)
+M.use_shellslash = false
+if shellslash_exists then
+    M.use_shellslash = vim.o.shellslash
+end
+
 if M.is_windows == true and not M.use_shellslash then
   M.path_separator = "\\"
 end
