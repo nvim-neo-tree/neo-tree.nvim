@@ -512,7 +512,7 @@ end
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 
-local shellslash_exists, _ = pcall(function() local _ = vim.o.shellslash end)
+local shellslash_exists = vim.fn.exists("+shellslash") ~= 0
 M.use_shellslash = false
 if shellslash_exists then
     M.use_shellslash = vim.o.shellslash
