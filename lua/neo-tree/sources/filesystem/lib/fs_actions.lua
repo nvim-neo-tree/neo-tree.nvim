@@ -12,7 +12,6 @@ local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local Path = require("plenary.path")
 
 local M = {}
 
@@ -152,23 +151,19 @@ end
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(_destination or source, using_root_directory, function(destination)
-    local path = Path:new(source)
-    local success, result = pcall(path.copy, path, {
-      destination = destination,
-      recursive = true,
-      parents = true,
-    })
-
-    if not success then
-      log.error("Could not copy the files from", source, "to", destination, ":", result)
-      return
-    end
+    create_all_parents(destination)
+    loop.fs_copyfile(source, destination, function(err)
+      if err then
+        log.error("Could not copy the files from", source, "to", destination, ":", err)
+        return
+      end
       vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)
         if callback then
           callback(source, destination)
         end
       end)
+    end)
   end, 'Copy "' .. name .. '" to:')
 end
 
