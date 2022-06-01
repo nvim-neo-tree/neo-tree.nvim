@@ -95,15 +95,25 @@ local function create_all_parents(path)
   create_all_as_folders(parent_path)
 end
 
-local get_unused_name
-function get_unused_name(destination, name_chosen_callback, first_message)
+-- Gets a non-existing filename from the user and executes the callback with it.
+local function get_unused_name(destination, using_root_directory, name_chosen_callback, first_message)
   if loop.fs_stat(destination) then
-    local parent_path, name = utils.split_path(destination)
+    local parent_path, name
+    if not using_root_directory then
+        parent_path, name = utils.split_path(destination)
+    elseif #using_root_directory > 0 then
+        parent_path = destination:sub(1, #using_root_directory)
+        name = destination:sub(#using_root_directory + 2)
+    else
+        parent_path = nil
+        name = destination
+    end
+
     local message = first_message or name .. " already exists. Please enter a new name: "
     inputs.input(message, name, function(new_name)
       if new_name and string.len(new_name) > 0 then
-        local new_path = parent_path .. utils.path_separator .. new_name
-        get_unused_name(new_path, name_chosen_callback)
+        local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
+        get_unused_name(new_path, using_root_directory, name_chosen_callback)
       end
     end)
   else
@@ -112,10 +122,10 @@ function get_unused_name(destination, name_chosen_callback, first_message)
 end
 
 -- Move Node
-M.move_node = function(source, destination, callback)
-  log.trace("Moving node: ", source, " to ", destination)
+M.move_node = function(source, destination, callback, using_root_directory)
+  log.trace("Moving node: ", source, " to ", destination, ", using root directory: ", using_root_directory)
   local _, name = utils.split_path(source)
-  get_unused_name(destination or source, function(dest)
+  get_unused_name(destination or source, using_root_directory, function(dest)
     create_all_parents(dest)
     loop.fs_rename(source, dest, function(err)
       if err then
@@ -139,9 +149,9 @@ M.move_node = function(source, destination, callback)
 end
 
 -- Copy Node
-M.copy_node = function(source, _destination, callback)
+M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
-  get_unused_name(_destination or source, function(destination)
+  get_unused_name(_destination or source, using_root_directory, function(destination)
     local path = Path:new(source)
     local success, result = pcall(path.copy, path, {
       destination = destination,
