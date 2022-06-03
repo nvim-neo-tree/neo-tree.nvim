@@ -95,17 +95,22 @@ local function create_all_parents(path)
 end
 
 -- Gets a non-existing filename from the user and executes the callback with it.
-local function get_unused_name(destination, using_root_directory, name_chosen_callback, first_message)
+local function get_unused_name(
+  destination,
+  using_root_directory,
+  name_chosen_callback,
+  first_message
+)
   if loop.fs_stat(destination) then
     local parent_path, name
     if not using_root_directory then
-        parent_path, name = utils.split_path(destination)
+      parent_path, name = utils.split_path(destination)
     elseif #using_root_directory > 0 then
-        parent_path = destination:sub(1, #using_root_directory)
-        name = destination:sub(#using_root_directory + 2)
+      parent_path = destination:sub(1, #using_root_directory)
+      name = destination:sub(#using_root_directory + 2)
     else
-        parent_path = nil
-        name = destination
+      parent_path = nil
+      name = destination
     end
 
     local message = first_message or name .. " already exists. Please enter a new name: "
@@ -122,7 +127,14 @@ end
 
 -- Move Node
 M.move_node = function(source, destination, callback, using_root_directory)
-  log.trace("Moving node: ", source, " to ", destination, ", using root directory: ", using_root_directory)
+  log.trace(
+    "Moving node: ",
+    source,
+    " to ",
+    destination,
+    ", using root directory: ",
+    using_root_directory
+  )
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
     create_all_parents(dest)

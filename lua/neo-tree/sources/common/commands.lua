@@ -225,9 +225,9 @@ local function get_using_root_directory(state, node)
   -- default to showing only the basename of the path
   local using_root_directory = in_directory
   if state.config.show_path == "absolute" then
-      using_root_directory = ""
+    using_root_directory = ""
   elseif state.config.show_path == "relative" then
-      using_root_directory = state.path
+    using_root_directory = state.path
   end
   return using_root_directory
 end
