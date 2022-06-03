@@ -21,6 +21,24 @@ local function get_folder_node(tree, node)
   return get_folder_node(tree, tree:get_node(node:get_parent_id()))
 end
 
+---The using_root_directory is used to decide what part of the filename to show
+-- the user when asking for a new filename to e.g. create, copy to or move to.
+---@param state table The state of the source
+---@return string The root path from which the relative source path should be taken
+local function get_using_root_directory(state)
+  -- default to showing only the basename of the path
+  local using_root_directory = get_folder_node(state.tree):get_id()
+  local show_path = state.config.show_path
+  if show_path == "absolute" then
+    using_root_directory = ""
+  elseif show_path == "relative" then
+    using_root_directory = state.path
+  elseif show_path ~= nil or show_path ~= "none" then
+    log.warn("A neo-tree mapping was setup with a config.show_path option with invalid value: \""..show_path.."\", falling back to its default: nil/\"none\"")
+  end
+  return using_root_directory
+end
+
 local M = {}
 
 ---Adds all missing common commands to the given module
@@ -41,14 +59,8 @@ end
 M.add = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
-
   local in_directory = node:get_id()
-  local using_root_directory = in_directory
-  if state.config.show_path == "absolute" then
-    using_root_directory = ""
-  elseif state.config.show_path == "relative" then
-    using_root_directory = state.path
-  end
+  local using_root_directory = get_using_root_directory(state)
   fs_actions.create_node(in_directory, callback, using_root_directory)
 end
 
@@ -58,14 +70,8 @@ end
 M.add_directory = function(state, callback)
   local tree = state.tree
   local node = get_folder_node(tree)
-
   local in_directory = node:get_id()
-  local using_root_directory = in_directory
-  if state.config.show_path == "absolute" then
-    using_root_directory = ""
-  elseif state.config.show_path == "relative" then
-    using_root_directory = state.path
-  end
+  local using_root_directory = get_using_root_directory(state)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
 end
 
@@ -226,7 +232,8 @@ M.copy = function(state, callback)
   if node.type == "message" then
     return
   end
-  fs_actions.copy_node(node.path, nil, callback)
+  local using_root_directory = get_using_root_directory(state)
+  fs_actions.copy_node(node.path, nil, callback, using_root_directory)
 end
 
 ---Moves a node to a new location, using typed input.
@@ -237,7 +244,8 @@ M.move = function(state, callback)
   if node.type == "message" then
     return
   end
-  fs_actions.move_node(node.path, nil, callback)
+  local using_root_directory = get_using_root_directory(state)
+  fs_actions.move_node(node.path, nil, callback, using_root_directory)
 end
 
 M.delete = function(state, callback)

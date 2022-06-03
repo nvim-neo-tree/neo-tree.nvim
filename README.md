@@ -209,8 +209,8 @@ use {
             ["y"] = "copy_to_clipboard",
             ["x"] = "cut_to_clipboard",
             ["p"] = "paste_from_clipboard",
-            ["c"] = "copy", -- takes text input for destination
-            ["m"] = "move", -- takes text input for destination
+            ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path option
+            ["m"] = "move", -- takes text input for destination, also accepts the config.show_path option
             ["q"] = "close_window",
             ["R"] = "refresh",
             ["?"] = "show_help",
