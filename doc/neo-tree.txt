@@ -235,6 +235,14 @@ x    = cut_to_clipboard:     Mark file to be cut (moved).
 
 p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
 
+c    = copy:                 Copy the selected file or directory.
+                             Also accepts the optional `config.show_path` option
+                             like the add file action.
+
+m    = move:                 Move the selected file or directory.
+                             Also accepts the optional `config.show_path` option
+                             like the add file action.
+
 
 VIEW CHANGES                                            *neo-tree-view-changes*
 H = toggle_hidden: Toggle whether hidden (filtered items) are shown or not.

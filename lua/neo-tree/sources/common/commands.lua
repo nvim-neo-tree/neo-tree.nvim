@@ -33,7 +33,7 @@ local function get_using_root_directory(state)
     using_root_directory = ""
   elseif show_path == "relative" then
     using_root_directory = state.path
-  elseif show_path ~= nil or show_path ~= "none" then
+  elseif show_path ~= nil and show_path ~= "none" then
     log.warn("A neo-tree mapping was setup with a config.show_path option with invalid value: \""..show_path.."\", falling back to its default: nil/\"none\"")
   end
   return using_root_directory
