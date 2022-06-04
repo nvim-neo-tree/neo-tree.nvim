@@ -12,6 +12,7 @@ local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
+local Path = require("plenary").path
 
 local M = {}
 
@@ -159,22 +160,68 @@ M.move_node = function(source, destination, callback, using_root_directory)
   end, 'Move "' .. name .. '" to:')
 end
 
+---Plenary path.copy() when used to copy a recursive structure, can return a nested
+-- table with for each file a Path instance and the success result.
+---@param copy_result table The output of Path.copy()
+---@param flat_result table Return value containing the flattened results
+local function flatten_path_copy_result(flat_result, copy_result)
+  if not copy_result then return end
+  for k, v in pairs(copy_result) do
+    if type(v) == "table" then
+      flatten_path_copy_result(flat_result, v)
+    else
+      table.insert(flat_result, {destination = k.filename, success = v})
+    end
+  end
+end
+
+-- Check if all files were copied successfully, using the flattened copy result
+local function check_path_copy_result(flat_result)
+  if not flat_result then return end
+  for _, file_result in ipairs(flat_result) do
+    if not file_result.success then
+      return false
+    end
+  end
+  return true
+end
+
 -- Copy Node
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(_destination or source, using_root_directory, function(destination)
-    create_all_parents(destination)
-    loop.fs_copyfile(source, destination, function(err)
-      if err then
-        log.error("Could not copy the files from", source, "to", destination, ":", err)
-        return
+    local source_path = Path:new(source)
+    if (source_path:is_file()) then
+      -- When the source is a file, then Path.copy() currently doesn't create
+      -- the potential non-existing parent directories of the destination.
+      create_all_parents(destination)
+    end
+    local success, result = pcall(source_path.copy, source_path, {
+      destination = destination,
+      recursive = true,
+      parents = true,
+    })
+    if not success then
+      log.error("Could not copy the file(s) from", source, "to", destination, ":", result)
+      return
+    end
+
+    -- It can happen that the Path.copy() function returns successfully but
+    -- the copy action still failed. In this case the copy() result contains
+    -- a nested table of Path instances for each file copied, and the success
+    -- result.
+    local flat_result = {}
+    flatten_path_copy_result(flat_result, result)
+    if not check_path_copy_result(flat_result) then
+      log.error("Could not copy the file(s) from", source, "to", destination, ":", flat_result)
+      return
+    end
+
+    vim.schedule(function()
+      events.fire_event(events.FILE_ADDED, destination)
+      if callback then
+        callback(source, destination)
       end
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(source, destination)
-        end
-      end)
     end)
   end, 'Copy "' .. name .. '" to:')
 end
