@@ -88,7 +88,10 @@ M.close = function(state)
           end
           vim.api.nvim_win_set_buf(state.winid, new_buf)
         else
-          vim.api.nvim_win_close(state.winid, true)
+          local win_list = vim.api.nvim_tabpage_list_wins(0)
+          if #win_list > 1 then
+            vim.api.nvim_win_close(state.winid, true)
+          end
         end
       end
     end
