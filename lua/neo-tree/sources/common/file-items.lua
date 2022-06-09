@@ -27,6 +27,8 @@ local function deep_sort(tbl, sort_func)
     local config = require("neo-tree").config
     if config.sort_case_insensitive then
       sort_func = sort_items_case_insensitive
+    elseif config.sort_function ~= nil then
+      sort_func = config.sort_function
     else
       sort_func = sort_items
     end
