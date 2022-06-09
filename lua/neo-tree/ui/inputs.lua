@@ -18,6 +18,8 @@ M.show_input = function(input, callback)
     input:unmount()
   end, { noremap = true })
 
+  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+
   local event = require("nui.utils.autocmd").event
   input:on({ event.BufLeave, event.BufDelete }, function()
     input:unmount()
