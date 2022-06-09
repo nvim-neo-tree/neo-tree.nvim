@@ -155,6 +155,8 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     restore_height()
   end, { noremap = true })
 
+  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+
   input:on({ event.BufLeave, event.BufDelete }, function()
     vim.cmd("stopinsert")
     input:unmount()
