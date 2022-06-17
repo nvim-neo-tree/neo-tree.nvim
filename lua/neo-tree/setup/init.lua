@@ -405,6 +405,7 @@ M.merge_config = function(user_config, is_auto_config)
 
   -- setup the default values for all sources
   normalize_mappings(default_config)
+  normalize_mappings(user_config)
   merge_renderers(default_config, nil, user_config)
   for _, source_name in ipairs(sources) do
     local source_default_config = default_config[source_name]
