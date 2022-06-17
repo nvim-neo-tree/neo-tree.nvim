@@ -96,9 +96,16 @@ M.buffer_enter_event = function()
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
-    setlocal winhighlight=Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,WinSeparator:NeoTreeWinSeparator,EndOfBuffer:NeoTreeEndOfBuffer
     setlocal nolist nospell nonumber norelativenumber
     ]])
+
+    local winhighlight = 'Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer'
+    if vim.version().major >= 7 then
+      vim.cmd("setlocal winhighlight=" .. winhighlight .. ',WinSeparator:NeoTreeWinSeparator')
+    else
+      vim.cmd("setlocal winhighlight=" .. winhighlight)
+    end
+
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
     last_buffer_enter_filetype = vim.bo.filetype
     return
