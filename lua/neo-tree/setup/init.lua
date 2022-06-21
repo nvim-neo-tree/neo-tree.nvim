@@ -100,7 +100,7 @@ M.buffer_enter_event = function()
     ]])
 
     local winhighlight = 'Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer'
-    if vim.version().major >= 7 then
+    if vim.version().minor >= 7 then
       vim.cmd("setlocal winhighlight=" .. winhighlight .. ',WinSeparator:NeoTreeWinSeparator')
     else
       vim.cmd("setlocal winhighlight=" .. winhighlight)
