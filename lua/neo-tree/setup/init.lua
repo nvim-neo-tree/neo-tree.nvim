@@ -181,6 +181,8 @@ M.buffer_enter_event = function()
         },
       }
       utils.open_file(fake_state, bufname)
+      -- move to end of change list
+      pcall(vim.cmd, ":normal 999g,")
     end)
   end
 end
