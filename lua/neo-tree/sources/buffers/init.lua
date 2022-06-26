@@ -19,7 +19,7 @@ local get_state = function()
   return manager.get_state(M.name)
 end
 
-local follow_internal = function ()
+local follow_internal = function()
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return
   end
@@ -81,7 +81,7 @@ end
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(state, path)
+M.navigate = function(state, path, path_to_reveal)
   state.dirty = false
   local path_changed = false
   if path == nil then
@@ -90,6 +90,9 @@ M.navigate = function(state, path)
   if path ~= state.path then
     state.path = path
     path_changed = true
+  end
+  if path_to_reveal then
+    renderer.position.set(state, path_to_reveal)
   end
 
   items.get_open_buffers(state)
@@ -145,7 +148,7 @@ M.setup = function(config, global_config)
         if utils.is_real_file(args.afile) then
           M.buffers_changed()
         end
-      end
+      end,
     })
   end
 

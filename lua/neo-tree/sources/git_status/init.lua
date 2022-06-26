@@ -20,8 +20,11 @@ end
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(state, path)
+M.navigate = function(state, path, path_to_reveal)
   state.dirty = false
+  if path_to_reveal then
+    renderer.position.set(state, path_to_reveal)
+  end
   items.get_git_status(state)
 end
 
@@ -49,7 +52,7 @@ M.setup = function(config, global_config)
         if utils.is_real_file(args.afile) then
           manager.refresh(M.name)
         end
-      end
+      end,
     })
   end
 
