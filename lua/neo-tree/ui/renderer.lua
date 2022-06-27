@@ -703,6 +703,9 @@ create_window = function(state)
       filetype = "neo-tree",
       undolevels = -1,
     },
+    win_options = {
+        colorcolumn = "",
+    }
   }
 
   local win
