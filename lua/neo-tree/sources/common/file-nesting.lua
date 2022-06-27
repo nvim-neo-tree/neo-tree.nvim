@@ -1,5 +1,6 @@
 local iter = require("plenary.iterators").iter
 local utils = require("neo-tree.utils")
+local Path = require("plenary.path")
 
 -- File nesting a la JetBrains (#117).
 local M = {}
@@ -17,7 +18,10 @@ function M.get_parent(item)
   for base_exts, nesting_exts in pairs(M.config) do
     for _, exts in ipairs(nesting_exts) do
       if item.exts == exts then
-        return utils.path_join(item.parent_path, item.base) .. "." .. base_exts
+        local parent_id = utils.path_join(item.parent_path, item.base) .. "." .. base_exts
+        if Path:new(parent_id):exists() then
+          return parent_id
+        end
       end
     end
   end
