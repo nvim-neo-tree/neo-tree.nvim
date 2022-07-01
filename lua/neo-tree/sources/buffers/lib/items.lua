@@ -28,8 +28,9 @@ M.get_open_buffers = function(state)
     if vim.startswith(path, "term://") then
       local name = path:match("term://(.*)//.*")
       local abs_path = vim.fn.fnamemodify(name, ":p")
+      local has_title, title = pcall(vim.api.nvim_buf_get_var, b, "term_title")
       local item = {
-        name = name,
+        name = has_title and title or name,
         ext = "terminal",
         path = abs_path,
         id = path,
