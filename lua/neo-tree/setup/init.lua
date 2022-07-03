@@ -15,6 +15,7 @@ local sources = {
   "filesystem",
   "buffers",
   "git_status",
+  "example"
 }
 
 local M = {}
@@ -408,6 +409,10 @@ M.merge_config = function(user_config, is_auto_config)
   normalize_mappings(user_config)
   merge_renderers(default_config, nil, user_config)
   for _, source_name in ipairs(sources) do
+    default_config[source_name] = default_config[source_name] or {
+      renderers = {},
+      components = {},
+    }
     local source_default_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
     source_default_config.components = require(mod_root .. ".components")

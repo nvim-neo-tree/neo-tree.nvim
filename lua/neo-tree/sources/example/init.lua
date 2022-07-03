@@ -21,25 +21,30 @@ M.navigate = function(state, path)
     {
       id = "1",
       name = "root",
+      type = "directory",
       children = {
         {
           id = "1.1",
           name = "child1",
+          type = "directory",
           children = {
             {
               id = "1.1.1",
-              name = "child1.1",
+              name = "child1.1 (you'll need a custom renderer to display this properly)",
+              type = "custom",
+              extra = { custom_text = "HI!" },
             },
             {
               id = "1.1.2",
               name = "child1.2",
+              type = "file"
             },
           },
         },
       },
     },
   }
-  renderer.show_nodes(state, items)
+  renderer.show_nodes(items, state)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
@@ -50,7 +55,7 @@ M.setup = function(config, global_config)
   manager.subscribe(M.name, {
     event = events.FS_EVENT,
     handler = function(args)
-      M.navigate()
+      manager.navigate(M.name)
     end,
   })
 end

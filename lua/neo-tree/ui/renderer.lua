@@ -865,8 +865,10 @@ draw = function(nodes, state, parent_id)
       expanded_nodes = M.get_expanded_nodes(state.tree)
     end
   end
-  for _, id in ipairs(state.default_expanded_nodes) do
-    table.insert(expanded_nodes, id)
+  if state.default_expanded_nodes then
+    for _, id in ipairs(state.default_expanded_nodes) do
+      table.insert(expanded_nodes, id)
+    end
   end
 
   -- Create the tree if it doesn't exist.

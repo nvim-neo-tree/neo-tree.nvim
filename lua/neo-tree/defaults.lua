@@ -360,5 +360,22 @@ local config = {
       },
     },
   },
+  example = {
+    renderers = {
+      custom = {
+        {"indent"},
+        {"icon", default="C" },
+        {"custom"},
+        {"name"}
+      }
+    },
+    window = {
+      mappings = {
+        ["<cr>"] = "toggle_node",
+        ["e"] = "example_command",
+        ["d"] = "show_debug_info",
+      },
+    },
+  },
 }
 return config

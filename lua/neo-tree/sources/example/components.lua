@@ -11,8 +11,18 @@
 --    highlight: The highlight group to apply to this text.
 
 local highlights = require("neo-tree.ui.highlights")
+local common = require("neo-tree.sources.common.components")
 
 local M = {}
+
+M.custom = function(config, node, state)
+  local text = node.extra.custom_text or ""
+  local highlight = highlights.DIM_TEXT
+  return {
+    text = text .. " ",
+    highlight = highlight,
+  }
+end
 
 M.icon = function(config, node, state)
   local icon = config.default or " "
@@ -53,4 +63,4 @@ M.name = function(config, node, state)
   }
 end
 
-return M
+return vim.tbl_deep_extend("force", common, M)
