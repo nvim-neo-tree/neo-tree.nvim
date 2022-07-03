@@ -52,12 +52,14 @@ end
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   -- You most likely want to use this function to subscribe to events
-  manager.subscribe(M.name, {
-    event = events.FS_EVENT,
-    handler = function(args)
-      manager.navigate(M.name)
-    end,
-  })
+  if config.use_libuv_file_watcher then
+    manager.subscribe(M.name, {
+      event = events.FS_EVENT,
+      handler = function(args)
+        manager.refresh(M.name)
+      end,
+    })
+  end
 end
 
 return M
