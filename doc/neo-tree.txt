@@ -539,6 +539,33 @@ commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
 lua file just to read it as documentation. 
 
+CURRENT WORKING DIRECTORY                                         *neo-tree-cwd*
+
+By default, Neo-tree will maintain a two-way binding between the cwd of nvim and
+the root of the tree. Changing the root in Neo-tree will change the working
+directory of nvim and vice versa.
+
+In the case of a sidebar, this will be synced with the tab working directory
+(|tcd|). If you open it in the "current" position, aka netrw style, it will sync
+with the window local working directory (|lcd|).
+
+These defaults can be changed by setting the following options:
+
+>
+    require("neo-tree").setup({
+      filesystem = {
+        bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
+        cwd_target = {
+          sidebar = "tab",   -- sidebar is when position = left or right
+          current = "window" -- current is when position = current
+        },
+      }
+    })
+<
+
+In addition to `"tab"` and `"window"`, you can also set the target to `"global"`
+for either option, which is the same as using the |cd| command.
+        
 
 FILTERED ITEMS                                         *neo-tree-filtered-items*
 
