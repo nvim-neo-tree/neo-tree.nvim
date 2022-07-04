@@ -267,10 +267,30 @@ M.git_status_changed = function(source_name, args)
   end)
 end
 
-M.get_cwd = function(state)
+local get_params_for_cwd = function(state)
   local tabnr = state.tabnr
   -- the id is either the tabnr for sidebars or the winid for splits
   local winid = state.id == tabnr and -1 or state.id
+
+  if state.cwd_target then
+    local target = state.cwd_target.sidebar
+    if state.current_position == "current" then
+      target = state.cwd_target.current
+    end
+    if target == "window" then
+      return winid, tabnr
+    elseif target == "global" then
+      return -1, -1
+    else -- default to tab
+      return -1, tabnr
+    end
+  else
+    return winid, tabnr
+  end
+end
+
+M.get_cwd = function(state)
+  local winid, tabnr = get_params_for_cwd(state)
   local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if success then
     return cwd
@@ -289,16 +309,15 @@ M.set_cwd = function(state)
     return
   end
 
-  local tabnr = state.tabnr
-  -- the id is either the tabnr for sidebars or the winid for splits
-  local winid = state.id == tabnr and -1 or state.id
+  local winid, tabnr = get_params_for_cwd(state)
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
-
   if state.path ~= cwd then
     if winid > 0 then
       vim.cmd("lcd " .. state.path)
-    else
+    elseif tabnr > 0 then
       vim.cmd("tcd " .. state.path)
+    else
+      vim.cmd("cd " .. state.path)
     end
   end
 end
