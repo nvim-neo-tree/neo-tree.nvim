@@ -261,7 +261,22 @@ R = refresh:       Rescan the filesystem and redraw the tree. Changes made
 
 
 FILTER                                                        *neo-tree-filter*
-/     = filter_as_you_type: Filter the tree recursively, searching for
+
+NOTE: All of the below commands are affected by the `find_by_full_path_words`
+option:
+>
+    require("neo-tree").setup({
+      filesystem = {
+        find_by_full_path_words = false,  
+      }
+    })
+<
+`false` means it only searches the tail of a path and is the default.
+`true` will change the filter into a full path search with space as an implicit
+`".*"`, so `fi init` will match: `./sources/filesystem/init.lua`
+
+
+/ = fuzzy_finder:           Filter the tree recursively, searching for
                             files and folders that contain the specified term as
                             you type. This will use fd if it is installed, or 
                             find, or which if you are on Windows.
@@ -274,7 +289,12 @@ FILTER                                                        *neo-tree-filter*
                             closing the filter window will also clear the
                             filter.
 
-f     = filter_on_submit:   Same as above, but does not search until you hit
+D = fuzzy_finder_directory: Like fuzzy_finder above, but only shows directories.
+                            Pressing <enter> on a directory will clear the
+                            search and set the focus on that directory.
+                            Requires `fd` or `find` to be installed~
+
+f = filter_on_submit:       Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
                             Also useful if you want to leave the tree
                             filtered.

@@ -82,6 +82,11 @@ M.fuzzy_finder = function(state)
   filter.show_filter(state, true, true)
 end
 
+---Shows the filter input in fuzzy finder mode.
+M.fuzzy_finder_directory = function(state)
+  filter.show_filter(state, true, "directory")
+end
+
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
