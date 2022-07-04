@@ -225,6 +225,7 @@ local config = {
       ["w"] = "open_with_window_picker",
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
+      --["Z"] = "expand_all_nodes",
       ["R"] = "refresh",
       ["a"] = {
         "add",

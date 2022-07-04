@@ -162,9 +162,16 @@ HELP                                                            *neo-tree-help*
 NAVIGATION                                                *neo-tree-navigation*
 
 Within the neo-tree window, for the filesystem source, the following mappings
-are defined by default.
+are defined by default. All built-in commands are listed here but some are not 
+mapped by default. See |neo-tree-custom-commands| for details on how to use them
+in a custom mapping.
 
 Note: The "selected" item is the line the cursor is currently on.
+
+<bs>          = navigate_up: Moves the root directory up one level.
+
+.             = set_root:    Changes the root directory to the currently 
+                             selected folder.
 
 <space>       = toggle_node  Expand or collapse a node with children, which
                              may be a directory or a nested file.
@@ -173,6 +180,12 @@ Note: The "selected" item is the line the cursor is currently on.
                              open it in the window closest to the tree.
 
 <cr>          = open:        Same as above.
+
+C             = close_node:  Close node if it is open, else close it's parent.
+
+z         = close_all_nodes: Close all nodes in the tree.
+
+           expand_all_nodes: Expand all directory nodes in the tree recursively.
 
 S             = open_split:  Same as open, but opens in a new horizontal split.
 
@@ -190,11 +203,6 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
 
   vsplit_with_window_picker: Same as `open_with_window_picker` but opens
                              vertical split in selected node instead.
-
-<bs>          = navigate_up: Moves the root directory up one level.
-
-.             = set_root:    Changes the root directory to the currently 
-                             selected folder.
 
 [g      = prev_git_modified: Jump to the previous file reported by `git status`
                              that is within the current working directory.
