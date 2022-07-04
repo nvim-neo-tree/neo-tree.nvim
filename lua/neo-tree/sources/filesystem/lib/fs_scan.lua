@@ -209,6 +209,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
       term = state.search_pattern,
       find_args = state.find_args,
       find_by_full_path_words = state.find_by_full_path_words,
+      fuzzy_finder_mode = state.fuzzy_finder_mode,
       on_insert = function(err, path)
         if err then
           log.debug(err)

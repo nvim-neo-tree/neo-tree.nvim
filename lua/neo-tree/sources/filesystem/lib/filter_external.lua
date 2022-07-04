@@ -50,6 +50,7 @@ M.find_files = function(opts)
   local path = opts.path
   local full_path_words = opts.find_by_full_path_words
   local regex, glob = opts.term, opts.term
+  local fuzzy_finder_mode = opts.fuzzy_finder_mode
 
   if full_path_words then
     local words = utils.split(glob, " ")
@@ -89,9 +90,16 @@ M.find_files = function(opts)
     if fd_supports_max_results then
       append("--max-results", limit)
     end
+    if fuzzy_finder_mode == "directory" then
+      append("--type", "directory")
+    end
   elseif cmd == "find" then
     append(path)
-    append("-type", "f,d")
+    if fuzzy_finder_mode == "directory" then
+      append("-type", "d")
+    else
+      append("-type", "f,d")
+    end
     if not filters.visible and filters.hide_dotfiles then
       append("-not", "-path", "*/.*")
     end

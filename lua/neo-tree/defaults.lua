@@ -251,6 +251,7 @@ local config = {
       mappings = {
         ["H"] = "toggle_hidden",
         ["/"] = "fuzzy_finder",
+        ["D"] = "fuzzy_finder_directory",
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",

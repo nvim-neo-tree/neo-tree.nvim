@@ -14,6 +14,7 @@ local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
+
 M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   local popup_options
   local winid = vim.api.nvim_get_current_win()
@@ -45,6 +46,16 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
       },
       size = width,
     })
+  end
+
+  local select_first_file = function ()
+    local is_file = function(node)
+      return node.type == "file"
+    end
+    local files = renderer.select_nodes(state.tree, is_file, 1)
+    if #files > 0 then
+      renderer.focus_node(state, files[1]:get_id(), true)
+    end
   end
 
   local has_pre_search_folders = utils.truthy(state.open_folders_before_search)
@@ -109,9 +120,14 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
       else
         log.trace("Setting search in on_change to: " .. value)
         state.search_pattern = value
+        state.fuzzy_finder_mode = fuzzy_finder_mode
+        local callback = select_first_file
+        if fuzzy_finder_mode == "directory" then
+          callback = nil
+        end
+
         local len = #value
         local delay = 500
-
         if len > 3 then
           delay = 100
         elseif len > 2 then
@@ -119,18 +135,11 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
         elseif len > 1 then
           delay = 400
         end
+
         utils.debounce(
           "filesystem_filter",
           function()
-            local is_file = function(node)
-              return node.type == "file"
-            end
-            fs._navigate_internal(state, nil, nil, function ()
-              local files = renderer.select_nodes(state.tree, is_file, 1)
-              if #files > 0 then
-                renderer.focus_node(state, files[1]:get_id(), true)
-              end
-            end)
+            fs._navigate_internal(state, nil, nil, callback)
           end,
           delay,
           utils.debounce_strategy.CALL_LAST_ONLY
