@@ -377,7 +377,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state, node, path_to_reveal)
+M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive)
   local tree = state.tree
   if not node then
     node = tree:get_node()
@@ -390,7 +390,7 @@ M.toggle_directory = function(state, node, path_to_reveal)
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil)
-    fs_scan.get_items(state, id, path_to_reveal)
+    fs_scan.get_items(state, id, path_to_reveal, nil, false, recursive)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
@@ -400,7 +400,7 @@ M.toggle_directory = function(state, node, path_to_reveal)
       updated = node:expand()
       state.explicitly_opened_directories[node:get_id()] = true
     end
-    if updated then
+    if updated and not skip_redraw then
       renderer.redraw(state)
     end
     if path_to_reveal then

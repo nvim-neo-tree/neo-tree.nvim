@@ -80,13 +80,22 @@ M.close_all_nodes = function(state)
   renderer.redraw(state)
 end
 
-M.expand_all_nodes = function(state)
-  local tree = state.tree
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+M.expand_all_nodes = function(state, toggle_directory)
+  if toggle_directory == nil then
+    toggle_directory = function (_, node)
+      node:expand()
+    end
+  end
+  --state.explicitly_opened_directories = state.explicitly_opened_directories or {}
 
   local expand_node
   expand_node = function(node)
-    local children = tree:get_nodes(node:get_id())
+    local id = node:get_id()
+    if node.type == "directory" and not node:is_expanded() then
+      toggle_directory(state, node)
+      node = state.tree:get_node(id)
+    end
+    local children = state.tree:get_nodes(id)
     if children then
       for _, child in ipairs(children) do
         if child.type == "directory" then
@@ -94,11 +103,9 @@ M.expand_all_nodes = function(state)
         end
       end
     end
-    node:expand()
-    state.explicitly_opened_directories[node:get_id()] = true
   end
 
-  for _, node in ipairs(tree:get_nodes()) do
+  for _, node in ipairs(state.tree:get_nodes()) do
     expand_node(node)
   end
   renderer.redraw(state)

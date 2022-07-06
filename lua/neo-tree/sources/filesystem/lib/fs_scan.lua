@@ -69,6 +69,7 @@ local function async_scan(context, path)
   table.insert(context.paths_to_load, 1, path)
 
   local directories_scanned = 0
+  local directories_to_scan = #context.paths_to_load
 
   local on_exit = vim.schedule_wrap(function()
     context.job_complete()
@@ -86,8 +87,13 @@ local function async_scan(context, path)
             break
           end
           local entry = current_dir .. os_sep .. name
-          local success, _ = pcall(file_items.create_item, context, entry, typ)
-          if not success then
+          local success, item = pcall(file_items.create_item, context, entry, typ)
+          if success then
+            if context.recursive and item.type == "directory" then
+              directories_to_scan = directories_to_scan + 1
+              read_dir(item.path)
+            end
+          else
             log.error("error creating item for ", path)
           end
         end
@@ -117,7 +123,7 @@ local function async_scan(context, path)
   --if not success then
   --  log.error(first, ": ", err)
   --end
-  for i = 1, #context.paths_to_load do
+  for i = 1, directories_to_scan do
     read_dir(context.paths_to_load[i])
   end
 end
@@ -132,8 +138,12 @@ local function sync_scan(context, path_to_scan)
   if success2 and stats then
     for _, stat in ipairs(stats) do
       local path = path_to_scan .. utils.path_separator .. stat.name
-      success, _ = pcall(file_items.create_item, context, path, stat.type)
-      if not success then
+      local success3, item = pcall(file_items.create_item, context, path, stat.type)
+      if success3 then
+        if context.recursive and stat.type == "directory" then
+          table.insert(context.paths_to_load, path)
+        end
+      else
         log.error("error creating item for ", path)
       end
     end
@@ -155,7 +165,7 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   M.get_items(state, parent_id, path_to_reveal, callback, true)
 end
 
-M.get_items = function(state, parent_id, path_to_reveal, callback, async)
+M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive)
   if state.async_directory_scan == "always" then
     async = true
   elseif state.async_directory_scan == "never" then
@@ -169,6 +179,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async)
   end
   local context = file_items.create_context(state)
   context.path_to_reveal = path_to_reveal
+  context.recursive = recursive
 
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory")
