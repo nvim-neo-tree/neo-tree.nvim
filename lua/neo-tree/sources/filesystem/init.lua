@@ -200,9 +200,7 @@ M.reset_search = function(state, refresh, open_current_node)
       local path = node:get_id()
       renderer.position.set(state, path)
       if node.type == "directory" then
-        if vim.endswith(path, "/") then
-          path = path:sub(1, -2)
-        end
+        path = utils.remove_trailing_slash(path)
         log.trace("opening directory from search: ", path)
         M.navigate(state, nil, path, function()
           pcall(renderer.focus_node, state, path, false)

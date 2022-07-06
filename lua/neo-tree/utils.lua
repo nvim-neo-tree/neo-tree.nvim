@@ -515,6 +515,17 @@ if M.is_windows == true then
   M.path_separator = "\\"
 end
 
+---Remove the path separator from the end of a path in a cross-platform way.
+---@param path string The path to remove the separator from.
+---@return string string The path without any trailing separator.
+M.remove_trailing_slash = function(path)
+  if M.is_windows then
+    return path:gsub("\\$", "")
+  else
+    return path:gsub("/$", "")
+  end
+end
+
 ---Sorts a list of paths in the order they would appear in a tree.
 ---@param paths table The list of paths to sort.
 ---@return table table The sorted list of paths.
