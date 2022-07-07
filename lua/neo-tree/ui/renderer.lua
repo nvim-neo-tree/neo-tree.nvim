@@ -988,6 +988,11 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
 
   if sourceItems then
     -- normal path
+    if parentId == nil and require("neo-tree").config.hide_root_node then
+      -- if we are not showing the root node, then we need to remove it from the list
+      -- of items to display.
+      sourceItems = sourceItems[1].children
+    end
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)
   else
