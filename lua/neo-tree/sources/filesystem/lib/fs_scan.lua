@@ -191,14 +191,16 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
 
   context.job_complete = function()
     local f = state.filtered_items or {}
-    if f.hide_gitignored then
-      local git_ignored = git.mark_ignored(state, context.all_items)
-      if parent_id then
-        vim.list_extend(state.git_ignored, git_ignored)
-      else
-        state.git_ignored = git_ignored
-      end
+    -- We need to check git_ignored at all times because even if they are not hidden
+    -- they should be displayed differently.
+    --if f.hide_gitignored then
+    local git_ignored = git.mark_ignored(state, context.all_items)
+    if parent_id then
+      vim.list_extend(state.git_ignored, git_ignored)
+    else
+      state.git_ignored = git_ignored
     end
+    --end
 
     file_items.deep_sort(root.children)
     if parent_id then
