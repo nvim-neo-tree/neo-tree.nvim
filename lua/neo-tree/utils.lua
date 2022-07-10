@@ -566,7 +566,7 @@ M.sort_by_tree_display = function(paths)
   local original_paths = M.list_to_dict(paths)
 
   -- sort folders before files
-  local sort_by_name = function (a, b)
+  local sort_by_name = function(a, b)
     local a_isdir = #a.children > 0
     local b_isdir = #b.children > 0
     if a_isdir and not b_isdir then

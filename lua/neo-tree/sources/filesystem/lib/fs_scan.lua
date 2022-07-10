@@ -9,7 +9,7 @@ local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 
-local Path = require "plenary.path"
+local Path = require("plenary.path")
 local os_sep = Path.path.sep
 
 local M = {}
@@ -98,7 +98,7 @@ local function async_scan(context, path)
           end
         end
         on_directory_loaded(context, current_dir)
-        directories_scanned = directories_scanned+1
+        directories_scanned = directories_scanned + 1
         if directories_scanned == #context.paths_to_load then
           on_exit()
         end

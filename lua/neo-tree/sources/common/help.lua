@@ -1,16 +1,15 @@
 local Popup = require("nui.popup")
 local NuiLine = require("nui.line")
 local utils = require("neo-tree.utils")
-local popups= require("neo-tree.ui.popups")
+local popups = require("neo-tree.ui.popups")
 local highlights = require("neo-tree.ui.highlights")
 local M = {}
 
 local add_text = function(text, highlight)
   local line = NuiLine()
-  line:append(text,highlight)
+  line:append(text, highlight)
   return line
 end
-
 
 M.show = function(state)
   local tree_width = vim.api.nvim_win_get_width(state.winid)
@@ -50,11 +49,11 @@ M.show = function(state)
   local options = {
     position = {
       row = 2,
-      col = col
+      col = col,
     },
     size = {
       width = width,
-      height = #keys + 5
+      height = #keys + 5,
     },
     enter = true,
     focusable = true,

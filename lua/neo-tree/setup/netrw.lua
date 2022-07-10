@@ -4,7 +4,6 @@ local manager = require("neo-tree.sources.manager")
 local command = require("neo-tree.command")
 local M = {}
 
-
 local get_position = function(source_name)
   local pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left")
   return pos

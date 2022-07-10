@@ -46,7 +46,7 @@ M.git_commit = function(state, and_push)
 
   inputs.input("Commit message: ", "", function(msg)
     msg = msg:gsub('"', "'")
-    local cmd = 'git commit -m \'' .. msg .. '\''
+    local cmd = "git commit -m '" .. msg .. "'"
     local title = "git commit"
     if and_push then
       cmd = cmd .. " && git push"
