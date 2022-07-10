@@ -431,11 +431,22 @@ local use_window_picker = function(state, path, cmd)
     )
     return
   end
+  local events = require("neo-tree.events")
+  local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
+    state = state,
+    path = path,
+    open_cmd = cmd,
+  }) or {}
+  if event_result.handled then
+    events.fire_event(events.FILE_OPENED, path)
+    return
+  end
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
     vim.cmd(cmd .. ' ' .. vim.fn.fnameescape(path))
   end
+  events.fire_event(events.FILE_OPENED, path)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
