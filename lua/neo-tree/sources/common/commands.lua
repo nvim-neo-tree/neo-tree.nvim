@@ -5,7 +5,7 @@ local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
-local help= require("neo-tree.sources.common.help")
+local help = require("neo-tree.sources.common.help")
 
 ---Gets the node parent folder recursively
 ---@param tree table to look for nodes
@@ -34,7 +34,11 @@ local function get_using_root_directory(state)
   elseif show_path == "relative" then
     using_root_directory = state.path
   elseif show_path ~= nil and show_path ~= "none" then
-    log.warn("A neo-tree mapping was setup with a config.show_path option with invalid value: \""..show_path.."\", falling back to its default: nil/\"none\"")
+    log.warn(
+      'A neo-tree mapping was setup with a config.show_path option with invalid value: "'
+        .. show_path
+        .. '", falling back to its default: nil/"none"'
+    )
   end
   return using_root_directory
 end
@@ -82,7 +86,7 @@ end
 
 M.expand_all_nodes = function(state, toggle_directory)
   if toggle_directory == nil then
-    toggle_directory = function (_, node)
+    toggle_directory = function(_, node)
       node:expand()
     end
   end
@@ -134,7 +138,7 @@ M.close_window = function(state)
   renderer.close(state)
 end
 
-local copy_node_to_clipboard = function (state, node)
+local copy_node_to_clipboard = function(state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
   if existing and existing.action == "copy" then
@@ -157,7 +161,7 @@ M.copy_to_clipboard = function(state, callback)
   end
 end
 
-M.copy_to_clipboard_visual = function (state, selected_nodes, callback)
+M.copy_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
       copy_node_to_clipboard(state, node)
@@ -188,7 +192,7 @@ M.cut_to_clipboard = function(state, callback)
   end
 end
 
-M.cut_to_clipboard_visual = function (state, selected_nodes, callback)
+M.cut_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
       cut_node_to_clipboard(state, node)
@@ -444,24 +448,24 @@ local use_window_picker = function(state, path, cmd)
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
-    vim.cmd(cmd .. ' ' .. vim.fn.fnameescape(path))
+    vim.cmd(cmd .. " " .. vim.fn.fnameescape(path))
   end
   events.fire_event(events.FILE_OPENED, path)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
 M.open_with_window_picker = function(state, toggle_directory)
-  open_with_cmd(state, 'edit', toggle_directory, use_window_picker)
+  open_with_cmd(state, "edit", toggle_directory, use_window_picker)
 end
 
 ---Marks potential windows with letters and will open the give node in a split next to the picked window.
 M.split_with_window_picker = function(state, toggle_directory)
-  open_with_cmd(state, 'split', toggle_directory, use_window_picker)
+  open_with_cmd(state, "split", toggle_directory, use_window_picker)
 end
 
 ---Marks potential windows with letters and will open the give node in a vertical split next to the picked window.
 M.vsplit_with_window_picker = function(state, toggle_directory)
-  open_with_cmd(state, 'vsplit', toggle_directory, use_window_picker)
+  open_with_cmd(state, "vsplit", toggle_directory, use_window_picker)
 end
 
 M.show_help = function(state)

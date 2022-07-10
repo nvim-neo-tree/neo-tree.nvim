@@ -32,7 +32,6 @@ local get_position = function(source_name)
   return pos
 end
 
-
 M.ensure_config = function()
   if not M.config then
     M.setup({ log_to_file = false }, true)
@@ -243,7 +242,6 @@ M.setup = function(config, is_auto_config)
   if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
   end
-
 end
 
 M.show_logs = function()

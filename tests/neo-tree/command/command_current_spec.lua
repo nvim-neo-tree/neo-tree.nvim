@@ -1,4 +1,4 @@
-local Path = require('plenary.path')
+local Path = require("plenary.path")
 local util = require("tests.helpers.util")
 local verify = require("tests.helpers.verify")
 local config = require("neo-tree").config
@@ -29,12 +29,15 @@ describe("Command", function()
       run_in_current_command(cmd)
     end)
 
-    it("`:Neotree current reveal` should show neo-tree and reveal file in current window", function()
-      local cmd = "Neotree current reveal"
-      local testfile = fs.lookup["topfile1"].abspath
-      util.editfile(testfile)
-      run_in_current_command(cmd, testfile)
-    end)
+    it(
+      "`:Neotree current reveal` should show neo-tree and reveal file in current window",
+      function()
+        local cmd = "Neotree current reveal"
+        local testfile = fs.lookup["topfile1"].abspath
+        util.editfile(testfile)
+        run_in_current_command(cmd, testfile)
+      end
+    )
 
     it("`:Neotree current reveal toggle` should toggle neo-tree in current window", function()
       local cmd = "Neotree current reveal toggle"
@@ -51,20 +54,26 @@ describe("Command", function()
       verify.buf_name_is(testfile)
     end)
 
-    it("`:Neotree current reveal_force_cwd reveal_file=xyz` should reveal file current window if cwd is not a parent of file", function()
-      vim.cmd("cd ~")
-      local testfile = fs.lookup["deepfile2"].abspath
-      local cmd = "Neotree current reveal_force_cwd reveal_file=" .. testfile
-      run_in_current_command(cmd, testfile)
-    end)
+    it(
+      "`:Neotree current reveal_force_cwd reveal_file=xyz` should reveal file current window if cwd is not a parent of file",
+      function()
+        vim.cmd("cd ~")
+        local testfile = fs.lookup["deepfile2"].abspath
+        local cmd = "Neotree current reveal_force_cwd reveal_file=" .. testfile
+        run_in_current_command(cmd, testfile)
+      end
+    )
 
-    it("`:Neotree current reveal_force_cwd reveal_file=xyz` should reveal file current window if cwd is a parent of file", function()
-      local testfile = fs.lookup["deepfile2"].abspath
-      local testfile_dir = Path:new(testfile):parent().filename
-      vim.cmd(string.format("cd %s", testfile_dir))
-      local cmd = "Neotree current reveal_force_cwd reveal_file=" .. testfile
-      run_in_current_command(cmd, testfile)
-    end)
+    it(
+      "`:Neotree current reveal_force_cwd reveal_file=xyz` should reveal file current window if cwd is a parent of file",
+      function()
+        local testfile = fs.lookup["deepfile2"].abspath
+        local testfile_dir = Path:new(testfile):parent().filename
+        vim.cmd(string.format("cd %s", testfile_dir))
+        local cmd = "Neotree current reveal_force_cwd reveal_file=" .. testfile
+        run_in_current_command(cmd, testfile)
+      end
+    )
   end)
 
   util.teardown_test_fs()

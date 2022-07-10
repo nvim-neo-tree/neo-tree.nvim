@@ -15,7 +15,7 @@ local sources = {
   "filesystem",
   "buffers",
   "git_status",
-  "example"
+  "example",
 }
 
 local M = {}
@@ -50,22 +50,23 @@ local define_events = function()
     return args
   end)
 
-  events.define_autocmd_event(
-    events.VIM_BUFFER_CHANGED,
-    { "BufWritePost", "BufFilePost" },
-    200
-  )
+  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
 
-  events.define_autocmd_event(events.VIM_BUFFER_MODIFIED_SET, { "BufModifiedSet" }, 0, function(args)
-    if utils.is_real_file(args.afile) then
-      -- we could use args.afile to update the sigle file that changed, but it seems like we miss
-      -- buffers when `:wa` is used.
-      args.modified_buffers = utils.get_modified_buffers()
-      return args
-    else
-      return false
+  events.define_autocmd_event(
+    events.VIM_BUFFER_MODIFIED_SET,
+    { "BufModifiedSet" },
+    0,
+    function(args)
+      if utils.is_real_file(args.afile) then
+        -- we could use args.afile to update the sigle file that changed, but it seems like we miss
+        -- buffers when `:wa` is used.
+        args.modified_buffers = utils.get_modified_buffers()
+        return args
+      else
+        return false
+      end
     end
-  end)
+  )
 
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
@@ -78,7 +79,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
-  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100 )
+  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
 
@@ -86,7 +87,7 @@ local define_events = function()
     event = events.VIM_LEAVE,
     handler = function()
       events.clear_all_events()
-    end
+    end,
   })
 end
 
@@ -100,9 +101,10 @@ M.buffer_enter_event = function()
     setlocal nolist nospell nonumber norelativenumber
     ]])
 
-    local winhighlight = 'Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer'
+    local winhighlight =
+      "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
     if vim.version().minor >= 7 then
-      vim.cmd("setlocal winhighlight=" .. winhighlight .. ',WinSeparator:NeoTreeWinSeparator')
+      vim.cmd("setlocal winhighlight=" .. winhighlight .. ",WinSeparator:NeoTreeWinSeparator")
     else
       vim.cmd("setlocal winhighlight=" .. winhighlight)
     end
@@ -409,10 +411,11 @@ M.merge_config = function(user_config, is_auto_config)
   normalize_mappings(user_config)
   merge_renderers(default_config, nil, user_config)
   for _, source_name in ipairs(sources) do
-    default_config[source_name] = default_config[source_name] or {
-      renderers = {},
-      components = {},
-    }
+    default_config[source_name] = default_config[source_name]
+      or {
+        renderers = {},
+        components = {},
+      }
     local source_default_config = default_config[source_name]
     local mod_root = "neo-tree.sources." .. source_name
     source_default_config.components = require(mod_root .. ".components")

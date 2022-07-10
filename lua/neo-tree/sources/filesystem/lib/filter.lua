@@ -14,7 +14,6 @@ local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
-
 M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   local popup_options
   local winid = vim.api.nvim_get_current_win()
@@ -48,7 +47,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     })
   end
 
-  local select_first_file = function ()
+  local select_first_file = function()
     local is_file = function(node)
       return node.type == "file"
     end
@@ -136,14 +135,9 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
           delay = 400
         end
 
-        utils.debounce(
-          "filesystem_filter",
-          function()
-            fs._navigate_internal(state, nil, nil, callback)
-          end,
-          delay,
-          utils.debounce_strategy.CALL_LAST_ONLY
-        )
+        utils.debounce("filesystem_filter", function()
+          fs._navigate_internal(state, nil, nil, callback)
+        end, delay, utils.debounce_strategy.CALL_LAST_ONLY)
       end
     end,
   })
@@ -170,7 +164,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     vim.cmd("stopinsert")
     input:unmount()
     -- If this was closed due to submit, that function will handle the reset_search
-    vim.defer_fn(function ()
+    vim.defer_fn(function()
       if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
         fs.reset_search(state, true)
       end

@@ -28,7 +28,7 @@ M.popup_options = function(title, min_width, override_options)
     size = width,
     border = {
       text = {
-        top = popup_border_text
+        top = popup_border_text,
       },
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,

@@ -37,7 +37,7 @@ M.navigate = function(state, path)
             {
               id = "1.1.2",
               name = "child1.2",
-              type = "file"
+              type = "file",
             },
           },
         },

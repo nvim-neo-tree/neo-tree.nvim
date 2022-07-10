@@ -47,13 +47,9 @@ verify.buf_name_endswith = function(buf_name, timeout)
 end
 
 verify.buf_name_is = function(buf_name, timeout)
-  verify.eventually(
-    timeout or 500,
-    function()
-      return buf_name == vim.api.nvim_buf_get_name(0)
-    end,
-    string.format("Current buffer name is expected to be '%s' but is not", buf_name)
-  )
+  verify.eventually(timeout or 500, function()
+    return buf_name == vim.api.nvim_buf_get_name(0)
+  end, string.format("Current buffer name is expected to be '%s' but is not", buf_name))
 end
 
 verify.tree_focused = function(timeout)

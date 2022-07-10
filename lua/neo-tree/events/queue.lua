@@ -3,7 +3,7 @@ local log = require("neo-tree.log")
 
 Node = {}
 function Node:new(value)
-  local props = {prev = nil, next = nil, value = value}
+  local props = { prev = nil, next = nil, value = value }
   setmetatable(props, self)
   self.__index = self
   return props

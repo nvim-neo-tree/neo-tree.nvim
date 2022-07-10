@@ -39,7 +39,7 @@ M.get_open_buffers = function(state)
         extra = {
           bufnr = b,
           is_listed = true,
-        }
+        },
       }
       if utils.is_subpath(state.path, abs_path) then
         table.insert(terminals, item)

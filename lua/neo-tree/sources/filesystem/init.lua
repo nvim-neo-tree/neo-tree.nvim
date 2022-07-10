@@ -374,7 +374,6 @@ M.setup = function(config, global_config)
       end,
     })
   end
-
 end
 
 ---Expands or collapses the current node.
