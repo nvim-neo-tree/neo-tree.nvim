@@ -87,12 +87,14 @@ M.mark_ignored = function(state, items)
     vim.list_extend(all_results, result)
   end
 
-  log.trace("IGNORED: Comparing results to mark items as ignored")
+  local show_anyway = state.filtered_items and state.filtered_items.hide_gitignored == false
+  log.trace("IGNORED: Comparing results to mark items as ignored, show_anyway:", show_anyway)
   local ignored, not_ignored = 0, 0
   for _, item in ipairs(items) do
     if M.is_ignored(all_results, item.path, item.type) then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.gitignored = true
+      item.filtered_by.show_anyway = show_anyway
       ignored = ignored + 1
     else
       not_ignored = not_ignored + 1

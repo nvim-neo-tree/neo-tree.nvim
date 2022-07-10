@@ -123,8 +123,8 @@ log.new = function(config, standalone)
         x = tostring(round(x, config.float_precision))
       elseif type(x) == "table" then
         x = vim.inspect(x)
-        if #x > 200 then
-          x = x:sub(1, 200) .. "..."
+        if #x > 300 then
+          x = x:sub(1, 300) .. "..."
         end
       else
         x = tostring(x)
