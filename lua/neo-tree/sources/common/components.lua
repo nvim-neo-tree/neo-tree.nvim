@@ -18,6 +18,13 @@ local log = require("neo-tree.log")
 
 local M = {}
 
+local make_two_char = function(symbol)
+  if vim.fn.strchars(symbol) == 1 then
+    return symbol .. " "
+  else
+    return symbol
+  end
+end
 -- only works in the buffers component, but it's here so we don't have to defined
 -- multple renderers.
 M.bufnr = function(config, node, state)
@@ -90,17 +97,13 @@ M.diagnostics = function(config, node, state)
   end
   defined = defined and defined[1]
   if defined and defined.text and defined.texthl then
-    -- for some reason it always comes padded with a space
-    if type(defined.text) == "string" and defined.text:sub(#defined.text) == " " then
-      defined.text = defined.text:sub(1, -2)
-    end
     return {
-      text = " " .. defined.text,
+      text = make_two_char(defined.text),
       highlight = defined.texthl,
     }
   else
     return {
-      text = " " .. severity:sub(1, 1),
+      text = severity:sub(1, 1) .. " ",
       highlight = "Diagnostic" .. severity,
     }
   end
@@ -184,20 +187,20 @@ M.git_status = function(config, node, state)
     local components = {}
     if type(change_symbol) == "string" and #change_symbol > 0 then
       table.insert(components, {
-        text = " " .. change_symbol,
+        text = make_two_char(change_symbol),
         highlight = change_highlt,
       })
     end
     if type(status_symbol) == "string" and #status_symbol > 0 then
       table.insert(components, {
-        text = " " .. status_symbol,
+        text = make_two_char(status_symbol),
         highlight = status_highlt,
       })
     end
     return components
   else
     return {
-      text = " [" .. git_status .. "]",
+      text = "[" .. git_status .. "]",
       highlight = config.highlight or change_highlt,
     }
   end
@@ -208,27 +211,27 @@ M.filtered_by = function(config, node, state)
     local fby = node.filtered_by
     if fby.name then
       return {
-        text = " (hide by name)",
+        text = "(hide by name) ",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
       return {
-        text = " (hide by pattern)",
+        text = "(hide by pattern) ",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
       return {
-        text = " (gitignored)",
+        text = "(gitignored) ",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
       return {
-        text = " (dotfile)",
+        text = "(dotfile) ",
         highlight = highlights.DOTFILE,
       }
     elseif fby.hidden then
       return {
-        text = " (hidden)",
+        text = "(hidden) ",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
@@ -269,7 +272,7 @@ M.modified = function(config, node, state)
   local modified_buffers = state.modified_buffers or {}
   if modified_buffers[node.path] then
     return {
-      text = " " .. (config.symbol or "[+]"),
+      text = (config.symbol or "[+] "),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
@@ -301,7 +304,7 @@ M.name = function(config, node, state)
   end
 
   return {
-    text = text,
+    text = text .. " ",
     highlight = highlight,
   }
 end
