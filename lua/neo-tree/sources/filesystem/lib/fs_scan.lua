@@ -202,6 +202,15 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
     end
     --end
 
+    if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
+      log.trace("Starting .git folder watcher")
+      local path = root.path
+      if root.is_link then
+        path = root.link_to
+      end
+      fs_watch.watch_git_index(path)
+    end
+
     file_items.deep_sort(root.children)
     if parent_id then
       -- lazy loading a child folder
@@ -281,6 +290,7 @@ M.stop_watchers = function(state)
     local loaded_folders = renderer.select_nodes(state.tree, function(node)
       return node.type == "directory" and node.loaded
     end)
+    fs_watch.unwatch_git_index(state.path)
     for _, folder in ipairs(loaded_folders) do
       log.trace("Unwatching folder ", folder.path)
       if folder.is_link then

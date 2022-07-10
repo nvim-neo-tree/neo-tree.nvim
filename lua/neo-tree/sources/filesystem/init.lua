@@ -255,6 +255,7 @@ end
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
+  config.enable_git_status = global_config.enable_git_status
 
   local hide_by_name = config.filtered_items.hide_by_name
   if hide_by_name then
