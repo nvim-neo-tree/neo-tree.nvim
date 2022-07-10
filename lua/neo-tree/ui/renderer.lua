@@ -705,6 +705,7 @@ create_window = function(state)
     },
     win_options = {
         colorcolumn = "",
+        signcolumn = "no",
     }
   }
 
