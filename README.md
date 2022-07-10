@@ -474,7 +474,7 @@ See `:h neo-tree-file-nesting` for more details about file nesting.
 ```
 
 If `"filesystem.window.position"` is set to `"current"`, or if you have specified
-`filesystem.netrw_hijack_behavior = "open_current"`, then any command
+`filesystem.hijack_netrw_behavior = "open_current"`, then any command
 that would open a directory will open neo-tree in the specified window.
 
 
