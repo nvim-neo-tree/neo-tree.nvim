@@ -1,4 +1,4 @@
-local utils = require "neo-tree.utils"
+local utils = require("neo-tree.utils")
 
 local M = {}
 
@@ -9,7 +9,11 @@ M.show_migrations = function()
     for i, message in ipairs(migrations) do
       migrations[i] = "  * " .. message
     end
-    table.insert(migrations, 1, "# Neo-tree configuration has been updated. Please review the changes below.")
+    table.insert(
+      migrations,
+      1,
+      "# Neo-tree configuration has been updated. Please review the changes below."
+    )
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, migrations)
     vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
@@ -19,17 +23,17 @@ M.show_migrations = function()
     vim.api.nvim_buf_set_option(buf, "modifiable", false)
     vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
     vim.api.nvim_buf_set_name(buf, "Neo-tree migrations")
-    vim.defer_fn(function ()
+    vim.defer_fn(function()
       vim.cmd(string.format("%ssplit", #migrations))
       vim.api.nvim_win_set_buf(0, buf)
     end, 100)
   end
 end
 
-M.migrate = function (config)
+M.migrate = function(config)
   migrations = {}
 
-  local moved = function (old, new, converter)
+  local moved = function(old, new, converter)
     local exising = utils.get_value(config, old)
     if type(exising) ~= "nil" then
       if type(converter) == "function" then
@@ -37,7 +41,8 @@ M.migrate = function (config)
       end
       utils.set_value(config, new, exising)
       config[old] = nil
-      migrations[#migrations + 1] = string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
+      migrations[#migrations + 1] =
+        string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
     end
   end
 
@@ -53,11 +58,12 @@ M.migrate = function (config)
     local value = utils.get_value(config, key)
     if value == old_value then
       utils.set_value(config, key, new_value)
-      migrations[#migrations + 1] = string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
+      migrations[#migrations + 1] =
+        string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
     end
   end
 
-  local opposite = function (value)
+  local opposite = function(value)
     return not value
   end
 
@@ -67,7 +73,7 @@ M.migrate = function (config)
   removed("filesystem.filters.gitignore_source")
   removed("filesystem.filter_items.gitignore_source")
   renamed_value("filesystem.hijack_netrw_behavior", "open_split", "open_current")
-  for _, source in ipairs({"filesystem", "buffers", "git_status"}) do
+  for _, source in ipairs({ "filesystem", "buffers", "git_status" }) do
     renamed_value(source .. "window.position", "split", "current")
   end
 

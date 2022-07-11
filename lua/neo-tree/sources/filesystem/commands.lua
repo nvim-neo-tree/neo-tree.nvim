@@ -68,7 +68,7 @@ M.delete_visual = function(state, selected_nodes)
 end
 
 M.expand_all_nodes = function(state)
-  local toggle_dir_no_redraw = function (_state, node)
+  local toggle_dir_no_redraw = function(_state, node)
     fs.toggle_directory(_state, node, nil, true, true)
   end
   cc.expand_all_nodes(state, toggle_dir_no_redraw)
@@ -133,7 +133,7 @@ local focus_next_git_modified = function(state, reverse)
     sorted_paths = utils.reverse_list(sorted_paths)
   end
 
-  local is_file = function (path)
+  local is_file = function(path)
     local success, stats = pcall(vim.loop.fs_stat, path)
     return (success and stats and stats.type ~= "directory")
   end
@@ -179,7 +179,7 @@ end
 M.open_vsplit = function(state)
   cc.open_vsplit(state, utils.wrap(fs.toggle_directory, state))
 end
-M.open_tabnew = function (state)
+M.open_tabnew = function(state)
   cc.open_tabnew(state, utils.wrap(fs.toggle_directory, state))
 end
 
@@ -223,7 +223,7 @@ M.toggle_gitignore = function(state)
   M.toggle_hidden(state)
 end
 
-M.toggle_node = function (state)
+M.toggle_node = function(state)
   cc.toggle_node(state, utils.wrap(fs.toggle_directory, state))
 end
 

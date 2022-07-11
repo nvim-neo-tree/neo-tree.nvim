@@ -6,7 +6,6 @@
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
 
-
 local vim = vim
 -- User configuration section
 local default_config = {
@@ -28,8 +27,8 @@ local default_config = {
   -- Level configuration
   modes = {
     { name = "trace", hl = "None", level = vim.log.levels.TRACE },
-    { name = "debug", hl = "None" , level = vim.log.levels.DEBGUG},
-    { name = "info", hl = "None" , level = vim.log.levels.INFO},
+    { name = "debug", hl = "None", level = vim.log.levels.DEBGUG },
+    { name = "info", hl = "None", level = vim.log.levels.INFO },
     { name = "warn", hl = "WarningMsg", level = vim.log.levels.WARN },
     { name = "error", hl = "ErrorMsg", level = vim.log.levels.ERROR },
     { name = "fatal", hl = "ErrorMsg", level = vim.log.levels.ERROR },
@@ -44,13 +43,13 @@ local log = {}
 
 local unpack = unpack or table.unpack
 
-local notify = function (message, level_config)
+local notify = function(message, level_config)
   if type(vim.notify) == "table" then
     -- probably using nvim-notify
     vim.notify(message, level_config.level, { title = "Neo-tree" })
   else
     local nameupper = level_config.name:upper()
-    local console_string = string.format( "[Neo-tree %s] %s", nameupper, message)
+    local console_string = string.format("[Neo-tree %s] %s", nameupper, message)
     vim.notify(console_string, level_config.level)
   end
 end
@@ -58,11 +57,8 @@ end
 log.new = function(config, standalone)
   config = vim.tbl_deep_extend("force", default_config, config)
 
-  local outfile = string.format(
-    "%s/%s.log",
-    vim.api.nvim_call_function("stdpath", { "data" }),
-    config.plugin
-  )
+  local outfile =
+    string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "data" }), config.plugin)
 
   local obj
   if standalone then
@@ -95,7 +91,6 @@ log.new = function(config, standalone)
   for i, v in ipairs(config.modes) do
     levels[v.name] = i
   end
-
 
   obj.set_level = function(level)
     if levels[level] then

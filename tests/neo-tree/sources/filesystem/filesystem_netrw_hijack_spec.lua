@@ -36,7 +36,7 @@ describe("Filesystem netrw hijack", function()
   })
   it("opens in sidebar when behavior is open_default", function()
     vim.cmd("edit .")
-    verify.eventually(200, function ()
+    verify.eventually(200, function()
       return #vim.api.nvim_list_wins() == 2
     end, "there should be two windows")
 

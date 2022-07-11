@@ -84,25 +84,28 @@ describe("Command", function()
       run_focus_command(cmd, testfile)
     end)
 
-    it("`:Neotree float reveal toggle` should toggle the reveal-state of the floating window", function()
-      local cmd = "Neotree float reveal toggle"
-      local testfile = fs.lookup["./foo/foofile1.txt"].abspath
-      util.editfile(testfile)
+    it(
+      "`:Neotree float reveal toggle` should toggle the reveal-state of the floating window",
+      function()
+        local cmd = "Neotree float reveal toggle"
+        local testfile = fs.lookup["./foo/foofile1.txt"].abspath
+        util.editfile(testfile)
 
-      -- toggle OPEN
-      run_focus_command(cmd, testfile)
-      local tree_winid = vim.api.nvim_get_current_win()
+        -- toggle OPEN
+        run_focus_command(cmd, testfile)
+        local tree_winid = vim.api.nvim_get_current_win()
 
-      -- toggle CLOSE
-      vim.cmd("Neotree float reveal toggle")
-      verify.window_handle_is_not(tree_winid)
-      verify.buf_name_is(testfile)
+        -- toggle CLOSE
+        vim.cmd("Neotree float reveal toggle")
+        verify.window_handle_is_not(tree_winid)
+        verify.buf_name_is(testfile)
 
-      -- toggle OPEN
-      testfile = fs.lookup["./foo/bar/baz2.txt"].abspath
-      util.editfile(testfile)
-      run_focus_command(cmd, testfile)
-    end)
+        -- toggle OPEN
+        testfile = fs.lookup["./foo/bar/baz2.txt"].abspath
+        util.editfile(testfile)
+        run_focus_command(cmd, testfile)
+      end
+    )
 
     it("`:Neotree reveal` should reveal the current file in the sidebar", function()
       local cmd = "Neotree reveal"

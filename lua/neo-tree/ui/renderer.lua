@@ -17,7 +17,7 @@ local floating_windows = {}
 local draw, create_window, create_tree
 
 local resize_monitor_timer = nil
-local start_resize_monitor = function ()
+local start_resize_monitor = function()
   local interval = M.resize_timer_interval or -1
   if interval < 0 then
     return
@@ -68,7 +68,6 @@ local start_resize_monitor = function ()
 
   vim.defer_fn(check_window_size, interval)
 end
-
 
 M.close = function(state)
   local window_existed = false
@@ -199,7 +198,7 @@ create_nodes = function(source_items, state, level)
     if level == 0 then
       estimated_node_length = estimated_node_length + 16
     end
-    state.longest_node = math.max(state.longest_node, estimated_node_length )
+    state.longest_node = math.max(state.longest_node, estimated_node_length)
 
     local node_children = nil
     if item.children ~= nil then
@@ -605,7 +604,7 @@ create_tree = function(state)
   })
 end
 
-local get_selected_nodes = function (state)
+local get_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
   end
@@ -668,7 +667,7 @@ local set_window_mappings = function(state)
           if type(vfunc) == "function" then
             keymap.set(state.bufnr, "v", cmd, function()
               vim.api.nvim_feedkeys(ESC_KEY, "i", true)
-              vim.schedule(function ()
+              vim.schedule(function()
                 local selected_nodes = get_selected_nodes(state)
                 if utils.truthy(selected_nodes) then
                   state.config = config
@@ -902,7 +901,6 @@ draw = function(nodes, state, parent_id)
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
   M.position.restore(state)
-
 end
 
 local function group_empty_dirs(node)
@@ -952,7 +950,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       -- this is a lazy load of a single sub folder
       group_empty_dirs(sourceItems)
       if #sourceItems == 1 and sourceItems[1].type == "directory" then
-        -- This folder needs to be grouped. 
+        -- This folder needs to be grouped.
         -- The goal is to just update the existing node in place.
         -- To avoid digging into private internals of Nui, we will just export the entire level and replace
         -- the one node. This keeps it in the right order, because nui doesn't have methods to replace something
