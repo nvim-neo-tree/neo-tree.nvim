@@ -41,11 +41,8 @@ M.migrate = function(config)
       end
       utils.set_value(config, new, exising)
       config[old] = nil
-      migrations[#migrations + 1] = string.format(
-        "The `%s` option has been deprecated, please use `%s` instead.",
-        old,
-        new
-      )
+      migrations[#migrations + 1] =
+        string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
     end
   end
 
@@ -61,12 +58,8 @@ M.migrate = function(config)
     local value = utils.get_value(config, key)
     if value == old_value then
       utils.set_value(config, key, new_value)
-      migrations[#migrations + 1] = string.format(
-        "The `%s=%s` option has been renamed to `%s`.",
-        key,
-        old_value,
-        new_value
-      )
+      migrations[#migrations + 1] =
+        string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
     end
   end
 
