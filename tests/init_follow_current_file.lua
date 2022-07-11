@@ -2,15 +2,13 @@
 -- to where our temporary filesystem lives
 vim.opt.rtp = {
   vim.fn.fnamemodify(vim.trim(vim.fn.system("git rev-parse --show-toplevel")), ":p"),
-  "/plugins/nui.nvim",
-  "/plugins/plenary.nvim",
-  "/plugins/neo-tree.nvim",
   vim.env.VIMRUNTIME,
 }
 
 vim.cmd([[
   filetype on
-  runtime plugin/plenary.vim
+  packadd plenary.nvim
+  packadd nui.nvim
 ]])
 
 require("neo-tree").setup({
@@ -28,5 +26,5 @@ vim.cmd([[
 
 -- For debugging
 P = function(...)
-  print(table.unpack(vim.tbl_map(vim.inspect, { ... })))
+  print(unpack(vim.tbl_map(vim.inspect, { ... })))
 end
