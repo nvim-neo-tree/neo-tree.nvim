@@ -2,6 +2,7 @@
 -- to where our temporary filesystem lives
 vim.opt.rtp = {
   vim.fn.fnamemodify(vim.trim(vim.fn.system("git rev-parse --show-toplevel")), ":p"),
+  "/plugins",
   vim.env.VIMRUNTIME,
 }
 
@@ -26,5 +27,5 @@ vim.cmd([[
 
 -- For debugging
 P = function(...)
-  print(unpack(vim.tbl_map(vim.inspect, { ... })))
+  print(table.unpack(vim.tbl_map(vim.inspect, { ... })))
 end
