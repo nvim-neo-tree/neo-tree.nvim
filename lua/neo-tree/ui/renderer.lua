@@ -703,9 +703,9 @@ create_window = function(state)
       undolevels = -1,
     },
     win_options = {
-        colorcolumn = "",
-        signcolumn = "no",
-    }
+      colorcolumn = "",
+      signcolumn = "no",
+    },
   }
 
   local win
