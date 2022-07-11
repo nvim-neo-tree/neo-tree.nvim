@@ -11,3 +11,5 @@ RUN mkdir plugins
 RUN git clone https://github.com/MunifTanjim/nui.nvim plugins/nui.nvim
 RUN git clone https://github.com/nvim-lua/plenary.nvim plugins/plenary.nvim
 RUN git clone https://github.com/danilshvalov/neo-tree.nvim plugins/neo-tree.nvim
+RUN cd plugins/neo-tree.nvim && git checkout ci-docker
+RUN nvim --headless --noplugin -u tests/mininit.lua -c "PlenaryBustedDirectory tests/neo-tree/ { minimal_init = 'tests/mininit.lua' }"

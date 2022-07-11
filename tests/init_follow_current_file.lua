@@ -2,14 +2,15 @@
 -- to where our temporary filesystem lives
 vim.opt.rtp = {
   vim.fn.fnamemodify(vim.trim(vim.fn.system("git rev-parse --show-toplevel")), ":p"),
-  "/plugins",
+  "/plugins/nui.nvim",
+  "/plugins/plenary.nvim",
+  "/plugins/neo-tree.nvim",
   vim.env.VIMRUNTIME,
 }
 
 vim.cmd([[
   filetype on
-  packadd plenary.nvim
-  packadd nui.nvim
+  runtime plugin/plenary.vim
 ]])
 
 require("neo-tree").setup({
