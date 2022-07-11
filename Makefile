@@ -1,7 +1,7 @@
 .PHONY: test
 test:
 	docker build -t neo-tree .
-	docker run --rm -it neo-tree make test-run
+	docker run --rm neo-tree make test-run
 
 .PHONY: test-run
 test-run:
