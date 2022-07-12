@@ -67,3 +67,6 @@ jobs:
         run: |
             export PATH="${PWD}/build/:${PATH}"
             ./scripts/test.sh
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
