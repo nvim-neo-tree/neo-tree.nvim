@@ -44,3 +44,4 @@ tags
 
 # Others
 .testcache
+luacov.*.out

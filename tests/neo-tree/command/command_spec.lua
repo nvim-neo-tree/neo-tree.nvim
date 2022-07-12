@@ -1,3 +1,5 @@
+pcall(require, "luacov")
+
 local util = require("tests.helpers.util")
 local verify = require("tests.helpers.verify")
 local config = require("neo-tree").config

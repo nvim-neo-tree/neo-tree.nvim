@@ -1,3 +1,5 @@
+pcall(require, "luacov")
+
 local Path = require("plenary.path")
 local util = require("tests.helpers.util")
 local verify = require("tests.helpers.verify")
