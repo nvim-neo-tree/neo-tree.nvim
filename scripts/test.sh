@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+luacov_dir=""
+
 while [[ $# -gt 0 ]]; do
   case "${1}" in
     --clean)
@@ -36,6 +38,8 @@ function setup_environment() {
   if [[ ! -d "${plugins_dir}/plenary.nvim" ]]; then
     echo "[plugins] plenary.nvim: installing..."
     git clone https://github.com/nvim-lua/plenary.nvim "${plugins_dir}/plenary.nvim"
+    # this commit broke luacov
+    git -C "${plugins_dir}/plenary.nvim" revert --no-commit 9069d14a120cadb4f6825f76821533f2babcab92
     echo "[plugins] plenary.nvim: installed"
     echo
   fi
@@ -44,6 +48,31 @@ function setup_environment() {
   echo
 }
 
+function luacov_start() {
+  luacov_dir="$(dirname "$(luarocks which luacov 2>/dev/null | head -1)")"
+  if [[ "${luacov_dir}" == "." ]]; then
+    luacov_dir=""
+  fi
+
+  if test -n "${luacov_dir}"; then
+    rm -f luacov.*.out
+    export LUA_PATH=";;${luacov_dir}/?.lua"
+  fi
+}
+
+function luacov_end() {
+  if test -n "${luacov_dir}"; then
+    luacov
+
+    echo
+    tail -n +$(($(grep -n "^Summary$" luacov.report.out | cut -d":" -f1) - 1)) luacov.report.out
+  fi
+}
+
 setup_environment
 
+luacov_start
+
 make test
+
+luacov_end
