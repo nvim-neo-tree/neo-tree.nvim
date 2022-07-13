@@ -278,7 +278,7 @@ M.render_component = function(component, item, state, remaining_width)
 end
 
 local prepare_node = function(item, state)
-  if item.level == 0 and require("neo-tree").config.hide_root_node then
+  if item.level < 0 then
     return nil
   end
   local line = NuiLine()
@@ -946,6 +946,10 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     state.longest_node = state.longest_node or 0
   else
     state.longest_node = 0
+  end
+
+  if require("neo-tree").config.hide_root_node then
+    level = level - 1
   end
 
   if state.group_empty_dirs then
