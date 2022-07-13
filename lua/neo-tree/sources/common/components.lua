@@ -356,6 +356,7 @@ M.indent = function(config, node, state)
     table.insert(indent, { text = string.rep(" ", padding) })
   end
 
+  local padding_remaining = padding
   for i = 1, level do
     local char = ""
     local spaces_count = indent_size
@@ -377,6 +378,10 @@ M.indent = function(config, node, state)
       end
     end
 
+    if padding_remaining < 0 then
+      padding_remaining = padding_remaining + spaces_count
+      spaces_count = padding_remaining
+    end
     table.insert(indent, { text = char .. string.rep(" ", spaces_count), highlight = highlight })
   end
 
