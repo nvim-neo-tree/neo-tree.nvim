@@ -376,8 +376,9 @@ M.float = function(source_name)
 end
 
 ---Focus the window, opening it if it is not already open.
----@param path_to_reveal string Node to focus after the items are loaded.
----@param callback function Callback to call after the items are loaded.
+---@param source_name string Source name.
+---@param path_to_reveal string|nil Node to focus after the items are loaded.
+---@param callback function|nil Callback to call after the items are loaded.
 M.focus = function(source_name, path_to_reveal, callback)
   local state = M.get_state(source_name)
   state.current_position = nil

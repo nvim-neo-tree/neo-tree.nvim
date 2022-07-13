@@ -164,7 +164,6 @@ local config = {
         content = {
           {
             "name",
-            use_git_status_colors = true,
             zindex = 10
           },
           -- {

@@ -295,7 +295,7 @@ M.name = function(config, node, state)
   else
     local filtered_by = M.filtered_by(config, node, state)
     highlight = filtered_by.highlight or highlight
-    if config.use_git_status_colors == nil or config.use_git_status_colors then
+    if config.use_git_status_colors then
       local git_status = state.components.git_status({}, node, state)
       if git_status and git_status.highlight then
         highlight = git_status.highlight

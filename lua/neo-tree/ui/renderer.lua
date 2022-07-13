@@ -316,7 +316,7 @@ end
 M.focus_node = function(state, id, do_not_focus_window, relative_movement, bottom_scroll_padding)
   if not id and not relative_movement then
     log.debug("focus_node called with no id and no relative movement")
-    return nil
+    return false
   end
   relative_movement = relative_movement or 0
   bottom_scroll_padding = bottom_scroll_padding or 0

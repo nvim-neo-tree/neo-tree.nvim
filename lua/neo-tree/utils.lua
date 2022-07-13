@@ -248,7 +248,7 @@ end
 ---@param defaultValue any The default value to return if the value is nil.
 ---@param strict_type_check boolean Whether to require the type of the value is
 ---the same as the default value.
----@return table table The value at the path or the default value.
+---@return table|nil table The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
     return defaultValue
@@ -435,7 +435,7 @@ M.open_file = function(state, path, open_cmd)
       if vim.bo.filetype == "neo-tree" then
         -- Neo-tree must be the only window, restore it's status as a sidebar
         local winid = vim.api.nvim_get_current_win()
-        local width = M.get_value(state, "window.width", 40)
+        local width = M.get_value(state, "window.width", 40, false)
         result, err = pcall(vim.cmd, "vsplit " .. escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
@@ -518,6 +518,7 @@ end
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
 ---@return string string The path without any trailing separator.
+---@return number count The number of separators removed.
 M.remove_trailing_slash = function(path)
   if M.is_windows then
     return path:gsub("\\$", "")
@@ -612,7 +613,8 @@ end
 
 ---Split a path into a parentPath and a name.
 ---@param path string The path to split.
----@return table table parentPath, name
+---@return string|nil parentPath
+---@return string|nil name
 M.split_path = function(path)
   if not path then
     return nil, nil
@@ -627,7 +629,7 @@ M.split_path = function(path)
     if #parts == 1 then
       parentPath = parentPath .. M.path_separator
     elseif parentPath == "" then
-      parentPath = nil
+      return nil, name
     end
   else
     parentPath = M.path_separator .. parentPath
