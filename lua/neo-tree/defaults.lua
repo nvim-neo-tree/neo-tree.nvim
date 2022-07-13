@@ -38,6 +38,18 @@ local config = {
   sort_function = nil , -- uses a custom function for sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   use_default_mappings = true,
+  source_switcher = {
+    enable = true,
+    tabs_default = { icon = "裡", hl = "NeoTreeTitleBar", hl_active = "NeoTreeModified" },
+    tabs = { -- could be table or string
+      filesystem = { icon = "", text = "Files" },
+      buffers = "",
+      git_status = "",
+    },
+    -- not implemented but maybe nice to have configs
+    justify = "center", -- start, end, center, between, around
+                        -- idea from bootstrap https://getbootstrap.com/docs/4.0/utilities/flex/#justify-content
+  },
   --
   --event_handlers = {
   --  {

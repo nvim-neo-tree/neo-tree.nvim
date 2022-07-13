@@ -689,6 +689,41 @@ local set_window_mappings = function(state)
   state.resolved_mappings = resolved_mappings
 end
 
+local create_winbar = function(state)
+  local config = require("neo-tree").config
+  local padding = utils.resolve_config_option(config, "default_component_configs.indent.padding", 0)
+  local tabs_default = utils.resolve_config_option(config, "source_switcher.tabs_default", {})
+  local winbars = {}
+  for i, source_name in ipairs(config.sources) do
+    local tab = utils.resolve_config_option(config, "source_switcher.tabs." .. source_name, {})
+    if type(tab) == "string" then
+      tab = { text = source_name, icon = tab }
+    end
+    tab = vim.tbl_deep_extend("force", tabs_default, tab)
+    table.insert(
+      winbars,
+      string.format(
+        "%%%s@v:lua.___neotree_winbar_click@%%#%s#%s%s%%#NeoTreeNormalNC#",
+        i,
+        state.name == source_name and tab.hl_active or tab.hl,
+        tab.icon == "" and "" or (tab.icon .. " "),
+        tab.text
+      )
+    )
+  end
+  return string.rep(" ", padding + 2) .. table.concat(winbars, " | ")
+end
+
+-- @v:lua@ in the tabline only supports global functions, so this is
+-- the only way to add click handlers without autoloaded vimscript functions
+_G.___neotree_winbar_click = function(id, _, _, _)
+  local sources = require("neo-tree").config.sources
+  require("neo-tree.command").execute({
+    source = sources[id],
+    position = "current",
+  })
+end
+
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
@@ -708,6 +743,7 @@ create_window = function(state)
     win_options = {
       colorcolumn = "",
       signcolumn = "no",
+      winbar = create_winbar(state),
     },
   }
 
