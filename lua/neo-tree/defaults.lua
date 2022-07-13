@@ -1,4 +1,13 @@
 local config = {
+  -- If a user has a sources list it will replace this one.
+  -- Only sources listed here will be loaded.
+  -- You can also add an external source by adding it's name to this list.
+  -- The name used here must be the same name you would use in a require() call.
+  sources = {
+    "filesystem",
+    "buffers",
+    "git_status",
+  },
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
@@ -106,7 +115,7 @@ local config = {
       highlight = "NeoTreeFileIcon"
     },
     modified = {
-      symbol = "[+]",
+      symbol = "[+] ",
       highlight = "NeoTreeModified",
     },
     name = {
@@ -139,7 +148,7 @@ local config = {
       {
         "container",
         width = "100%",
-        right_padding = 1,
+        right_padding = 0,
         --max_width = 60,
         content = {
           { "name", zindex = 10 },
@@ -159,7 +168,7 @@ local config = {
       {
         "container",
         width = "100%",
-        right_padding = 1,
+        right_padding = 0,
         --max_width = 60,
         content = {
           {

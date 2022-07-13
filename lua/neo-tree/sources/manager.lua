@@ -411,6 +411,7 @@ end
 ---@param callback function Callback to call after the items are loaded.
 ---@param async boolean Whether to load the items asynchronously, may not be respected by all sources.
 M.navigate = function(state_or_source_name, path, path_to_reveal, callback, async)
+  require("neo-tree").ensure_config()
   local state, source_name
   if type(state_or_source_name) == "string" then
     state = M.get_state(state_or_source_name)
@@ -422,7 +423,11 @@ M.navigate = function(state_or_source_name, path, path_to_reveal, callback, asyn
     log.error("navigate: state_or_source_name must be a string or a table")
   end
   log.trace("navigate", source_name, path, path_to_reveal)
-  require("neo-tree.sources." .. source_name).navigate(state, path, path_to_reveal, callback, async)
+  local mod = get_source_data(source_name).module
+  if not mod then
+    mod = require("neo-tree.sources." .. source_name)
+  end
+  mod.navigate(state, path, path_to_reveal, callback, async)
 end
 
 ---Redraws the tree without scanning the filesystem again. Use this after
@@ -554,13 +559,17 @@ M.validate_source = function(source_name, module)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
---wants to change from the defaults. May be empty to accept default values.
-M.setup = function(source_name, config, global_config)
+---@param source_name string Name of the source.
+---@param config table Configuration table containing merged configuration for the source.
+---@param global_config table Global configuration table, shared between all sources.
+---@param module table Module containing the source's code.
+M.setup = function(source_name, config, global_config, module)
   log.debug(source_name, " setup ", config)
   M.unsubscribe_all(source_name)
   M.set_default_config(source_name, config)
-  local module = require("neo-tree.sources." .. source_name)
+  if module == nil then
+    module = require("neo-tree.sources." .. source_name)
+  end
   local success, err = pcall(M.validate_source, source_name, module)
   if success then
     success, err = pcall(module.setup, config, global_config)

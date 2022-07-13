@@ -7,76 +7,76 @@ local M = {
   REF = "<REF>",
 }
 
--- For lists, the first value is the default value.
-local arguments = {
-  action = {
-    type = M.LIST,
-    values = {
-      "close",
-      "focus",
-      "show",
-    },
-  },
-  position = {
-    type = M.LIST,
-    values = {
-      "left",
-      "right",
-      --"top", --technically valid, but why show it if no one will use it?
-      --"bottom", --technically valid, but why show it if no one will use it?
-      "float",
-      "current",
-    },
-  },
-  source = {
-    type = M.LIST,
-    values = {
-      "filesystem",
-      "buffers",
-      "git_status",
-      "migrations",
-    },
-  },
-  dir = { type = M.PATH, stat_type = "directory" },
-  reveal_file = { type = M.PATH, stat_type = "file" },
-  git_base = { type = M.REF },
-  toggle = { type = M.FLAG },
-  reveal = { type = M.FLAG },
-  reveal_force_cwd = { type = M.FLAG },
-}
+M.setup = function(all_source_names)
+  local source_names = utils.table_copy(all_source_names)
+  table.insert(source_names, "migrations")
 
-local arg_type_lookup = {}
-local list_args = {}
-local path_args = {}
-local ref_args = {}
-local flag_args = {}
-local reverse_lookup = {}
-for name, def in pairs(arguments) do
-  arg_type_lookup[name] = def.type
-  if def.type == M.LIST then
-    table.insert(list_args, name)
-    for _, vv in ipairs(def.values) do
-      reverse_lookup[tostring(vv)] = name
+  -- For lists, the first value is the default value.
+  local arguments = {
+    action = {
+      type = M.LIST,
+      values = {
+        "close",
+        "focus",
+        "show",
+      },
+    },
+    position = {
+      type = M.LIST,
+      values = {
+        "left",
+        "right",
+        --"top", --technically valid, but why show it if no one will use it?
+        --"bottom", --technically valid, but why show it if no one will use it?
+        "float",
+        "current",
+      },
+    },
+    source = {
+      type = M.LIST,
+      values = source_names,
+    },
+    dir = { type = M.PATH, stat_type = "directory" },
+    reveal_file = { type = M.PATH, stat_type = "file" },
+    git_base = { type = M.REF },
+    toggle = { type = M.FLAG },
+    reveal = { type = M.FLAG },
+    reveal_force_cwd = { type = M.FLAG },
+  }
+
+  local arg_type_lookup = {}
+  local list_args = {}
+  local path_args = {}
+  local ref_args = {}
+  local flag_args = {}
+  local reverse_lookup = {}
+  for name, def in pairs(arguments) do
+    arg_type_lookup[name] = def.type
+    if def.type == M.LIST then
+      table.insert(list_args, name)
+      for _, vv in ipairs(def.values) do
+        reverse_lookup[tostring(vv)] = name
+      end
+    elseif def.type == M.PATH then
+      table.insert(path_args, name)
+    elseif def.type == M.FLAG then
+      table.insert(flag_args, name)
+      reverse_lookup[name] = M.FLAG
+    elseif def.type == M.REF then
+      table.insert(ref_args, name)
+    else
+      error("Unknown type: " .. def.type)
     end
-  elseif def.type == M.PATH then
-    table.insert(path_args, name)
-  elseif def.type == M.FLAG then
-    table.insert(flag_args, name)
-    reverse_lookup[name] = M.FLAG
-  elseif def.type == M.REF then
-    table.insert(ref_args, name)
-  else
-    error("Unknown type: " .. def.type)
   end
-end
 
-M.arguments = arguments
-M.list_args = list_args
-M.path_args = path_args
-M.ref_args = ref_args
-M.flag_args = flag_args
-M.arg_type_lookup = arg_type_lookup
-M.reverse_lookup = reverse_lookup
+  M.arguments = arguments
+  M.list_args = list_args
+  M.path_args = path_args
+  M.ref_args = ref_args
+  M.flag_args = flag_args
+  M.arg_type_lookup = arg_type_lookup
+  M.reverse_lookup = reverse_lookup
+end
 
 M.resolve_path = function(path, validate_type)
   local expanded = vim.fn.expand(path)
@@ -101,7 +101,7 @@ local parse_arg = function(result, arg)
     if eq then
       local key = arg:sub(1, eq - 1)
       local value = arg:sub(eq + 1)
-      local def = arguments[key]
+      local def = M.arguments[key]
       if not def.type then
         error("Invalid argument: " .. arg)
       end
@@ -126,7 +126,7 @@ local parse_arg = function(result, arg)
       end
     else
       local value = arg
-      local key = reverse_lookup[value]
+      local key = M.reverse_lookup[value]
       if key == nil then
         -- maybe it's a git ref
         if M.verify_git_ref(value) then
@@ -155,6 +155,7 @@ local parse_arg = function(result, arg)
 end
 
 M.parse = function(args, strict_checking)
+  require("neo-tree").ensure_config()
   local result = {}
 
   if type(args) == "string" then

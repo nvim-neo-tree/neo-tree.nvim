@@ -8,16 +8,6 @@ local highlights = require("neo-tree.ui.highlights")
 local manager = require("neo-tree.sources.manager")
 local netrw = require("neo-tree.setup.netrw")
 
--- If you add a new source, you need to add it to the sources table.
--- Each source should have a defaults module that contains the default values
--- for the source config, and a setup function that takes that config.
-local sources = {
-  "filesystem",
-  "buffers",
-  "git_status",
-  "example",
-}
-
 local M = {}
 
 local normalize_mappings = function(config)
@@ -410,16 +400,49 @@ M.merge_config = function(user_config, is_auto_config)
   normalize_mappings(default_config)
   normalize_mappings(user_config)
   merge_renderers(default_config, nil, user_config)
-  for _, source_name in ipairs(sources) do
+
+  -- used to either limit the sources that or loaded, or add extra external sources
+  local all_sources = {}
+  local all_source_names = {}
+  for _, source in ipairs(user_config.sources or default_config.sources) do
+    local parts = utils.split(source, ".")
+    local name = parts[#parts]
+    if #parts > 1 then
+      -- fully qualified module name
+      all_sources[name] = source
+    else
+      -- might be a module name in the internal namespace
+      local is_internal_ns, _ = pcall(require, "neo-tree.sources." .. source)
+      if is_internal_ns then
+        all_sources[name] = "neo-tree.sources." .. name
+      else
+        -- could also be a root level module name
+        local exists, module = pcall(require, source)
+        if exists then
+          all_sources[name] = module.name or source
+        else
+          log.error("Source module not found", source)
+          name = nil
+        end
+      end
+    end
+    if name then
+      table.insert(all_source_names, name)
+    end
+  end
+  log.debug("Sources to load: ", vim.inspect(all_sources))
+  require("neo-tree.command.parser").setup(all_source_names)
+
+  for source_name, mod_root in pairs(all_sources) do
+    local module = require(mod_root)
     default_config[source_name] = default_config[source_name]
       or {
         renderers = {},
         components = {},
       }
     local source_default_config = default_config[source_name]
-    local mod_root = "neo-tree.sources." .. source_name
-    source_default_config.components = require(mod_root .. ".components")
-    source_default_config.commands = require(mod_root .. ".commands")
+    source_default_config.components = module.components or require(mod_root .. ".components")
+    source_default_config.commands = module.commands or require(mod_root .. ".commands")
     source_default_config.name = source_name
 
     if user_config.use_default_mappings == false then
@@ -465,11 +488,12 @@ M.merge_config = function(user_config, is_auto_config)
 
   file_nesting.setup(M.config.nesting_rules)
 
-  for _, source_name in ipairs(sources) do
+  for source_name, mod_root in pairs(all_sources) do
     for name, rndr in pairs(M.config[source_name].renderers) do
       M.config[source_name].renderers[name] = merge_global_components_config(rndr, M.config)
     end
-    manager.setup(source_name, M.config[source_name], M.config)
+    local module = require(mod_root)
+    manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
   end
 
