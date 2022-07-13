@@ -183,8 +183,12 @@ M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
   local green = (f_green * fade_percentage) + (b_green * (1 - fade_percentage))
   local blue = (f_blue * fade_percentage) + (b_blue * (1 - fade_percentage))
 
-  local new_foreground =
-    string.format("%s%s%s", dec_to_hex(red, 2), dec_to_hex(green, 2), dec_to_hex(blue, 2))
+  local new_foreground = string.format(
+    "%s%s%s",
+    dec_to_hex(red, 2),
+    dec_to_hex(green, 2),
+    dec_to_hex(blue, 2)
+  )
 
   create_highlight_group(key, {}, hl_group.background, new_foreground, gui)
   faded_highlight_group_cache[key] = key
@@ -208,8 +212,12 @@ M.setup = function()
 
   create_highlight_group(M.END_OF_BUFFER, { "EndOfBuffer" })
 
-  local float_border_hl =
-    create_highlight_group(M.FLOAT_BORDER, { "FloatBorder" }, normalnc_hl.background, "444444")
+  local float_border_hl = create_highlight_group(
+    M.FLOAT_BORDER,
+    { "FloatBorder" },
+    normalnc_hl.background,
+    "444444"
+  )
 
   create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
   create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)

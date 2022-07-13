@@ -270,9 +270,10 @@ end
 
 M.modified = function(config, node, state)
   local modified_buffers = state.modified_buffers or {}
+
   if modified_buffers[node.path] then
     return {
-      text = (config.symbol or "[+] "),
+      text = (make_two_char(config.symbol) or "[+] "),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
