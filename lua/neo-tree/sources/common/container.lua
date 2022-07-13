@@ -187,7 +187,7 @@ local merge_content = function(context)
   -- * Repeat until all layers have been merged.
   -- * Join the left and right tables together and return.
   --
-  local remaining_width = context.container_width - 2 -- I don't know why I need to subtract 2
+  local remaining_width = context.container_width
   local left, right = {}, {}
   local left_width, right_width = 0, 0
 
