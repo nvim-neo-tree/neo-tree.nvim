@@ -35,6 +35,13 @@ function setup_environment() {
     echo
   fi
 
+  if [[ ! -d "${plugins_dir}/nvim-web-devicons" ]]; then
+    echo "[plugins] nvim-web-devicons: installing..."
+    git clone https://github.com/kyazdani42/nvim-web-devicons "${plugins_dir}/nvim-web-devicons"
+    echo "[plugins] nvim-web-devicons: installed"
+    echo
+  fi
+
   if [[ ! -d "${plugins_dir}/plenary.nvim" ]]; then
     echo "[plugins] plenary.nvim: installing..."
     git clone https://github.com/nvim-lua/plenary.nvim "${plugins_dir}/plenary.nvim"

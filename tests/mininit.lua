@@ -15,6 +15,7 @@ vim.cmd([[
   filetype on
   packadd plenary.nvim
   packadd nui.nvim
+  packadd nvim-web-devicons
 ]])
 
 vim.opt.swapfile = false
