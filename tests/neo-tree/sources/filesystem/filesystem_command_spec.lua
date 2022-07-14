@@ -1,5 +1,6 @@
 pcall(require, "luacov")
 
+local u = require("tests.util")
 local util = require("tests.helpers.util")
 local fs = require("tests.helpers.fs")
 local verify = require("tests.helpers.verify")
@@ -68,7 +69,7 @@ describe("Filesystem", function()
   local is_follow = get_value(config, "filesystem.follow_current_file", false)
 
   after_each(function()
-    util.clear_test_state()
+    u.clear_environment()
   end)
 
   describe("reveal command", function()
