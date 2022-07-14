@@ -4,8 +4,6 @@ local u = require("tests.util")
 local util = require("tests.helpers.util")
 local fs = require("tests.helpers.fs")
 local verify = require("tests.helpers.verify")
-local config = require("neo-tree").config
-local get_value = require("neo-tree.utils").get_value
 
 local run_focus_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
@@ -66,7 +64,6 @@ describe("Filesystem", function()
   test.setup()
 
   local fs_tree = test.fs_tree
-  local is_follow = get_value(config, "filesystem.follow_current_file", false)
 
   after_each(function()
     u.clear_environment()
@@ -128,71 +125,81 @@ describe("Filesystem", function()
     end)
   end)
 
-  describe("show command", function()
-    it("should show the window without focusing", function()
-      local cmd = "NeoTreeShow"
-      local testfile = fs_tree.lookup["topfile1"].abspath
-      util.editfile(testfile)
-      run_show_command(cmd)
-    end)
+  for _, follow_current_file in ipairs({ true, false }) do
+    require("neo-tree").setup({
+      filesystem = {
+        follow_current_file = follow_current_file,
+      },
+    })
 
-    it("should retain the focused node on next show", function()
-      local cmd = "NeoTreeShowToggle"
-      local topfile = fs_tree.lookup["topfile1"].abspath
-      local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
+    describe(string.format("w/ follow_current_file=%s", follow_current_file), function()
+      describe("show command", function()
+        it("should show the window without focusing", function()
+          local cmd = "NeoTreeShow"
+          local testfile = fs_tree.lookup["topfile1"].abspath
+          util.editfile(testfile)
+          run_show_command(cmd)
+        end)
 
-      -- focus a sub node to see if state is retained
-      util.editfile(baz)
-      run_focus_command("NeoTreeReveal", baz)
-      local expected_tree_node = baz
+        it("should retain the focused node on next show", function()
+          local cmd = "NeoTreeShowToggle"
+          local topfile = fs_tree.lookup["topfile1"].abspath
+          local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
-      verify.after(500, function()
-        -- toggle CLOSE
-        vim.cmd(cmd)
+          -- focus a sub node to see if state is retained
+          util.editfile(baz)
+          run_focus_command("NeoTreeReveal", baz)
+          local expected_tree_node = baz
 
-        -- toggle OPEN
-        util.editfile(topfile)
-        if is_follow then
-          expected_tree_node = topfile
-        end
-        run_show_command(cmd, expected_tree_node)
-        return true
+          verify.after(500, function()
+            -- toggle CLOSE
+            vim.cmd(cmd)
+
+            -- toggle OPEN
+            util.editfile(topfile)
+            if follow_current_file then
+              expected_tree_node = topfile
+            end
+            run_show_command(cmd, expected_tree_node)
+            return true
+          end)
+        end)
+      end)
+
+      describe("focus command", function()
+        it("should show the window and focus it", function()
+          local cmd = "NeoTreeFocus"
+          local testfile = fs_tree.lookup["topfile1"].abspath
+          util.editfile(testfile)
+          run_focus_command(cmd)
+        end)
+
+        it("should retain the focused node on next focus", function()
+          local cmd = "NeoTreeFocusToggle"
+          local topfile = fs_tree.lookup["topfile1"].abspath
+          local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
+
+          -- focus a sub node to see if state is retained
+          util.editfile(baz)
+          run_focus_command("NeoTreeReveal", baz)
+          local expected_tree_node = baz
+
+          verify.after(500, function()
+            -- toggle CLOSE
+            vim.cmd(cmd)
+
+            -- toggle OPEN
+            util.editfile(topfile)
+            if follow_current_file then
+              expected_tree_node = topfile
+            end
+            run_focus_command(cmd, expected_tree_node)
+            return true
+          end)
+        end)
       end)
     end)
-  end)
-
-  describe("focus command", function()
-    it("should show the window and focus it", function()
-      local cmd = "NeoTreeFocus"
-      local testfile = fs_tree.lookup["topfile1"].abspath
-      util.editfile(testfile)
-      run_focus_command(cmd)
-    end)
-
-    it("should retain the focused node on next focus", function()
-      local cmd = "NeoTreeFocusToggle"
-      local topfile = fs_tree.lookup["topfile1"].abspath
-      local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
-
-      -- focus a sub node to see if state is retained
-      util.editfile(baz)
-      run_focus_command("NeoTreeReveal", baz)
-      local expected_tree_node = baz
-
-      verify.after(500, function()
-        -- toggle CLOSE
-        vim.cmd(cmd)
-
-        -- toggle OPEN
-        util.editfile(topfile)
-        if is_follow then
-          expected_tree_node = topfile
-        end
-        run_focus_command(cmd, expected_tree_node)
-        return true
-      end)
-    end)
-  end)
+  end
 
   test.teardown()
 end)
