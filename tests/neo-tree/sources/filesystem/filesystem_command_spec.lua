@@ -1,6 +1,7 @@
 pcall(require, "luacov")
 
 local util = require("tests.helpers.util")
+local fs = require("tests.helpers.fs")
 local verify = require("tests.helpers.verify")
 local config = require("neo-tree").config
 local get_value = require("neo-tree.utils").get_value
@@ -40,7 +41,30 @@ local run_show_command = function(command, expected_tree_node)
 end
 
 describe("Filesystem", function()
-  local fs = util.setup_test_fs()
+  local test = fs.init_test({
+    items = {
+      {
+        name = "foo",
+        type = "dir",
+        items = {
+          {
+            name = "bar",
+            type = "dir",
+            items = {
+              { name = "baz1.txt", type = "file" },
+              { name = "baz2.txt", type = "file", id = "deepfile2" },
+            },
+          },
+          { name = "foofile1.txt", type = "file" },
+        },
+      },
+      { name = "topfile1.txt", type = "file", id = "topfile1" },
+    },
+  })
+
+  test.setup()
+
+  local fs_tree = test.fs_tree
   local is_follow = get_value(config, "filesystem.follow_current_file", false)
 
   after_each(function()
@@ -50,21 +74,21 @@ describe("Filesystem", function()
   describe("reveal command", function()
     it("should reveal the current file in the sidebar", function()
       local cmd = "NeoTreeReveal"
-      local testfile = fs.lookup["topfile1"].abspath
+      local testfile = fs_tree.lookup["topfile1"].abspath
       util.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should reveal the current file in the floating window", function()
       local cmd = "NeoTreeFloat"
-      local testfile = fs.lookup["./foo/bar/baz1.txt"].abspath
+      local testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
       util.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should toggle the reveal-state of the tree", function()
       local cmd = "NeoTreeRevealToggle"
-      local testfile = fs.lookup["./foo/foofile1.txt"].abspath
+      local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
       util.editfile(testfile)
 
       -- toggle OPEN
@@ -77,14 +101,14 @@ describe("Filesystem", function()
       verify.buf_name_is(testfile)
 
       -- toggle OPEN with a different file
-      testfile = fs.lookup["./foo/bar/baz1.txt"].abspath
+      testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
       util.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should toggle the reveal-state of the floating window", function()
       local cmd = "NeoTreeFloatToggle"
-      local testfile = fs.lookup["./foo/foofile1.txt"].abspath
+      local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
       util.editfile(testfile)
 
       -- toggle OPEN
@@ -97,7 +121,7 @@ describe("Filesystem", function()
       verify.buf_name_is(testfile)
 
       -- toggle OPEN
-      testfile = fs.lookup["./foo/bar/baz2.txt"].abspath
+      testfile = fs_tree.lookup["./foo/bar/baz2.txt"].abspath
       util.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
@@ -106,15 +130,15 @@ describe("Filesystem", function()
   describe("show command", function()
     it("should show the window without focusing", function()
       local cmd = "NeoTreeShow"
-      local testfile = fs.lookup["topfile1"].abspath
+      local testfile = fs_tree.lookup["topfile1"].abspath
       util.editfile(testfile)
       run_show_command(cmd)
     end)
 
     it("should retain the focused node on next show", function()
       local cmd = "NeoTreeShowToggle"
-      local topfile = fs.lookup["topfile1"].abspath
-      local baz = fs.lookup["./foo/bar/baz1.txt"].abspath
+      local topfile = fs_tree.lookup["topfile1"].abspath
+      local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
       -- focus a sub node to see if state is retained
       util.editfile(baz)
@@ -139,15 +163,15 @@ describe("Filesystem", function()
   describe("focus command", function()
     it("should show the window and focus it", function()
       local cmd = "NeoTreeFocus"
-      local testfile = fs.lookup["topfile1"].abspath
+      local testfile = fs_tree.lookup["topfile1"].abspath
       util.editfile(testfile)
       run_focus_command(cmd)
     end)
 
     it("should retain the focused node on next focus", function()
       local cmd = "NeoTreeFocusToggle"
-      local topfile = fs.lookup["topfile1"].abspath
-      local baz = fs.lookup["./foo/bar/baz1.txt"].abspath
+      local topfile = fs_tree.lookup["topfile1"].abspath
+      local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
       -- focus a sub node to see if state is retained
       util.editfile(baz)
@@ -169,5 +193,5 @@ describe("Filesystem", function()
     end)
   end)
 
-  util.teardown_test_fs()
+  test.teardown()
 end)
