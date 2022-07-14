@@ -1,17 +1,11 @@
 local utils = {}
 
-local Path = require("plenary.path")
--- Resolve for two reasons.
--- 1. Follow any symlinks which make comparing paths fail. (on macOS, TMPDIR can be under /var which is symlinked to
---    /private/var)
--- 2. Remove any double separators (on macOS TMPDIR can end in a trailing / which absolute doesn't remove, this should
---    be coverted by https://github.com/nvim-lua/plenary.nvim/issues/330).
-local testdir = vim.fn.resolve(Path:new(vim.env.TMPDIR or "/tmp", "neo-tree-testing"):absolute())
+local fs = require("tests.helpers.fs")
+
+local testdir = fs.create_temp_dir()
 
 local function rm_test_dir()
-  if vim.fn.isdirectory(testdir) == 1 then
-    vim.fn.delete(testdir, "rf")
-  end
+  fs.remove_dir(testdir, true)
 end
 
 utils.setup_test_fs = function()
@@ -21,17 +15,17 @@ utils.setup_test_fs = function()
   --
   -- When/if editing this, be cautious as (for now) other tests might be accessing
   -- files from within this array by index
-  local fs = {
-    basedir = testdir,
-    content = {
+  local fs_tree = {
+    abspath = testdir,
+    items = {
       {
         name = "foo",
         type = "dir",
-        content = {
+        items = {
           {
             name = "bar",
             type = "dir",
-            content = {
+            items = {
               { name = "baz1.txt", type = "file" },
               { name = "baz2.txt", type = "file", id = "deepfile2" },
             },
@@ -47,32 +41,10 @@ utils.setup_test_fs = function()
     lookup = {},
   }
 
-  local function makefs(content, basedir, relative_root_path)
-    relative_root_path = relative_root_path or "."
-    for _, info in ipairs(content) do
-      local relative_path = relative_root_path .. "/" .. info.name
-      -- create lookups
-      fs.lookup[relative_path] = info
-      if info.id then
-        fs.lookup[info.id] = info
-      end
-      -- create actual files and directories
-      if info.type == "dir" then
-        info.abspath = Path:new(basedir, info.name):absolute()
-        vim.fn.mkdir(info.abspath, "p")
-        if info.content then
-          makefs(info.content, info.abspath, relative_path)
-        end
-      elseif info.type == "file" then
-        info.abspath = Path:new(basedir, info.name):absolute()
-        vim.fn.writefile({}, info.abspath)
-      end
-    end
-  end
-  makefs(fs.content, testdir)
+  fs.create_fs_tree(fs_tree)
 
   vim.cmd("tcd " .. testdir)
-  return fs
+  return fs_tree
 end
 
 utils.teardown_test_fs = function()
