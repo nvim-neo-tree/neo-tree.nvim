@@ -2,6 +2,8 @@
 -- to where our temporary filesystem lives
 local root_dir = vim.fn.fnamemodify(vim.trim(vim.fn.system("git rev-parse --show-toplevel")), ":p")
 
+package.path = string.format("%s;%s?.lua;%s?/init.lua", package.path, root_dir, root_dir)
+
 vim.opt.packpath:prepend(string.format("%s", root_dir .. ".testcache/site"))
 
 vim.opt.rtp = {
