@@ -2,7 +2,6 @@ pcall(require, "luacov")
 
 local util = require("tests.helpers.util")
 local verify = require("tests.helpers.verify")
-local utils = require("neo-tree.utils")
 
 describe("Filesystem netrw hijack", function()
   after_each(function()

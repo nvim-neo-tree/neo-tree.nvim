@@ -68,4 +68,27 @@ function fs.create_fs_tree(fs_tree)
   return fs_tree
 end
 
+function fs.init_test(fs_tree)
+  fs_tree.lookup = {}
+  if not fs_tree.abspath then
+    fs_tree.abspath = fs.create_temp_dir()
+  end
+
+  local function setup()
+    fs.remove_dir(fs_tree.abspath, true)
+    fs.create_fs_tree(fs_tree)
+    vim.cmd("tcd " .. fs_tree.abspath)
+  end
+
+  local function teardown()
+    fs.remove_dir(fs_tree.abspath, true)
+  end
+
+  return {
+    fs_tree = fs_tree,
+    setup = setup,
+    teardown = teardown,
+  }
+end
+
 return fs
