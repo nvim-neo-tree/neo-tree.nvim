@@ -1,6 +1,7 @@
 pcall(require, "luacov")
 
 local Path = require("plenary.path")
+local u = require("tests.util")
 local util = require("tests.helpers.util")
 local fs = require("tests.helpers.fs")
 local verify = require("tests.helpers.verify")
@@ -43,7 +44,7 @@ describe("Command", function()
   local fs_tree = test.fs_tree
 
   after_each(function()
-    util.clear_test_state()
+    u.clear_environment()
   end)
 
   describe("netrw style:", function()
