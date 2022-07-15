@@ -1,7 +1,7 @@
 pcall(require, "luacov")
 
-local u = require("tests.util")
-local verify = require("tests.helpers.verify")
+local u = require("tests.utils")
+local verify = require("tests.utils.verify")
 
 describe("Filesystem netrw hijack", function()
   after_each(function()

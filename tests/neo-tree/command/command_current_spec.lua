@@ -1,10 +1,8 @@
 pcall(require, "luacov")
 
 local Path = require("plenary.path")
-local u = require("tests.util")
-local util = require("tests.helpers.util")
-local fs = require("tests.helpers.fs")
-local verify = require("tests.helpers.verify")
+local u = require("tests.utils")
+local verify = require("tests.utils.verify")
 
 local run_in_current_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
@@ -18,7 +16,7 @@ local run_in_current_command = function(command, expected_tree_node)
 end
 
 describe("Command", function()
-  local test = fs.init_test({
+  local test = u.fs.init_test({
     items = {
       {
         name = "foo",
@@ -58,7 +56,7 @@ describe("Command", function()
       function()
         local cmd = "Neotree current reveal"
         local testfile = fs_tree.lookup["topfile1"].abspath
-        util.editfile(testfile)
+        u.editfile(testfile)
         run_in_current_command(cmd, testfile)
       end
     )
@@ -66,7 +64,7 @@ describe("Command", function()
     it("`:Neotree current reveal toggle` should toggle neo-tree in current window", function()
       local cmd = "Neotree current reveal toggle"
       local testfile = fs_tree.lookup["topfile1"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       local tree_winid = vim.api.nvim_get_current_win()
 
       -- toggle OPEN
