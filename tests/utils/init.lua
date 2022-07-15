@@ -1,5 +1,5 @@
 local mod = {
-  fs = require("tests.helpers.fs"),
+  fs = require("tests.utils.fs"),
 }
 
 function mod.clear_environment()
@@ -16,6 +16,14 @@ function mod.clear_environment()
   end
   assert(#vim.api.nvim_tabpage_list_wins(0) == 1, "Failed to properly clear tab")
   assert(#vim.api.nvim_list_bufs() == 1, "Failed to properly clear buffers")
+end
+
+mod.editfile = function(testfile)
+  vim.cmd("e " .. testfile)
+  assert.are.same(
+    vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":p"),
+    vim.fn.fnamemodify(testfile, ":p")
+  )
 end
 
 return mod

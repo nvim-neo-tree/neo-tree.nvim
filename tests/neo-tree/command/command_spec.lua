@@ -1,9 +1,7 @@
 pcall(require, "luacov")
 
-local u = require("tests.util")
-local util = require("tests.helpers.util")
-local fs = require("tests.helpers.fs")
-local verify = require("tests.helpers.verify")
+local u = require("tests.utils")
+local verify = require("tests.utils.verify")
 
 local run_focus_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
@@ -40,7 +38,7 @@ local run_show_command = function(command, expected_tree_node)
 end
 
 describe("Command", function()
-  local test = fs.init_test({
+  local test = u.fs.init_test({
     items = {
       {
         name = "foo",
@@ -73,14 +71,14 @@ describe("Command", function()
     it("`:Neotree float reveal` should reveal the current file in the floating window", function()
       local cmd = "Neotree float reveal"
       local testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("`:Neotree reveal toggle` should toggle the reveal-state of the tree", function()
       local cmd = "Neotree reveal toggle"
       local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
 
       -- toggle OPEN
       run_focus_command(cmd, testfile)
@@ -93,7 +91,7 @@ describe("Command", function()
 
       -- toggle OPEN with a different file
       testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
@@ -102,7 +100,7 @@ describe("Command", function()
       function()
         local cmd = "Neotree float reveal toggle"
         local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
-        util.editfile(testfile)
+        u.editfile(testfile)
 
         -- toggle OPEN
         run_focus_command(cmd, testfile)
@@ -115,7 +113,7 @@ describe("Command", function()
 
         -- toggle OPEN
         testfile = fs_tree.lookup["./foo/bar/baz2.txt"].abspath
-        util.editfile(testfile)
+        u.editfile(testfile)
         run_focus_command(cmd, testfile)
       end
     )
@@ -123,7 +121,7 @@ describe("Command", function()
     it("`:Neotree reveal` should reveal the current file in the sidebar", function()
       local cmd = "Neotree reveal"
       local testfile = fs_tree.lookup["topfile1"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
   end)
@@ -140,7 +138,7 @@ describe("Command", function()
         it("`:Neotree show` should show the window without focusing", function()
           local cmd = "Neotree show"
           local testfile = fs_tree.lookup["topfile1"].abspath
-          util.editfile(testfile)
+          u.editfile(testfile)
           run_show_command(cmd)
         end)
 
@@ -150,7 +148,7 @@ describe("Command", function()
           local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
           -- focus a sub node to see if state is retained
-          util.editfile(baz)
+          u.editfile(baz)
           run_focus_command(":Neotree reveal", baz)
           local expected_tree_node = baz
 
@@ -159,7 +157,7 @@ describe("Command", function()
             vim.cmd(cmd)
 
             -- toggle OPEN
-            util.editfile(topfile)
+            u.editfile(topfile)
             if follow_current_file then
               expected_tree_node = topfile
             end
@@ -173,7 +171,7 @@ describe("Command", function()
         it("`:Neotree focus` should show the window and focus it", function()
           local cmd = "Neotree focus"
           local testfile = fs_tree.lookup["topfile1"].abspath
-          util.editfile(testfile)
+          u.editfile(testfile)
           run_focus_command(cmd)
         end)
 
@@ -183,7 +181,7 @@ describe("Command", function()
           local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
           -- focus a sub node to see if state is retained
-          util.editfile(baz)
+          u.editfile(baz)
           run_focus_command("Neotree reveal", baz)
           local expected_tree_node = baz
 
@@ -192,7 +190,7 @@ describe("Command", function()
             vim.cmd(cmd)
 
             -- toggle OPEN
-            util.editfile(topfile)
+            u.editfile(topfile)
             if follow_current_file then
               expected_tree_node = topfile
             end

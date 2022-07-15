@@ -1,9 +1,7 @@
 pcall(require, "luacov")
 
-local u = require("tests.util")
-local util = require("tests.helpers.util")
-local fs = require("tests.helpers.fs")
-local verify = require("tests.helpers.verify")
+local u = require("tests.utils")
+local verify = require("tests.utils.verify")
 
 local run_focus_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
@@ -40,7 +38,7 @@ local run_show_command = function(command, expected_tree_node)
 end
 
 describe("Filesystem", function()
-  local test = fs.init_test({
+  local test = u.fs.init_test({
     items = {
       {
         name = "foo",
@@ -73,21 +71,21 @@ describe("Filesystem", function()
     it("should reveal the current file in the sidebar", function()
       local cmd = "NeoTreeReveal"
       local testfile = fs_tree.lookup["topfile1"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should reveal the current file in the floating window", function()
       local cmd = "NeoTreeFloat"
       local testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should toggle the reveal-state of the tree", function()
       local cmd = "NeoTreeRevealToggle"
       local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
 
       -- toggle OPEN
       run_focus_command(cmd, testfile)
@@ -100,14 +98,14 @@ describe("Filesystem", function()
 
       -- toggle OPEN with a different file
       testfile = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
 
     it("should toggle the reveal-state of the floating window", function()
       local cmd = "NeoTreeFloatToggle"
       local testfile = fs_tree.lookup["./foo/foofile1.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
 
       -- toggle OPEN
       run_focus_command(cmd, testfile)
@@ -120,7 +118,7 @@ describe("Filesystem", function()
 
       -- toggle OPEN
       testfile = fs_tree.lookup["./foo/bar/baz2.txt"].abspath
-      util.editfile(testfile)
+      u.editfile(testfile)
       run_focus_command(cmd, testfile)
     end)
   end)
@@ -137,7 +135,7 @@ describe("Filesystem", function()
         it("should show the window without focusing", function()
           local cmd = "NeoTreeShow"
           local testfile = fs_tree.lookup["topfile1"].abspath
-          util.editfile(testfile)
+          u.editfile(testfile)
           run_show_command(cmd)
         end)
 
@@ -147,7 +145,7 @@ describe("Filesystem", function()
           local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
           -- focus a sub node to see if state is retained
-          util.editfile(baz)
+          u.editfile(baz)
           run_focus_command("NeoTreeReveal", baz)
           local expected_tree_node = baz
 
@@ -156,7 +154,7 @@ describe("Filesystem", function()
             vim.cmd(cmd)
 
             -- toggle OPEN
-            util.editfile(topfile)
+            u.editfile(topfile)
             if follow_current_file then
               expected_tree_node = topfile
             end
@@ -170,7 +168,7 @@ describe("Filesystem", function()
         it("should show the window and focus it", function()
           local cmd = "NeoTreeFocus"
           local testfile = fs_tree.lookup["topfile1"].abspath
-          util.editfile(testfile)
+          u.editfile(testfile)
           run_focus_command(cmd)
         end)
 
@@ -180,7 +178,7 @@ describe("Filesystem", function()
           local baz = fs_tree.lookup["./foo/bar/baz1.txt"].abspath
 
           -- focus a sub node to see if state is retained
-          util.editfile(baz)
+          u.editfile(baz)
           run_focus_command("NeoTreeReveal", baz)
           local expected_tree_node = baz
 
@@ -189,7 +187,7 @@ describe("Filesystem", function()
             vim.cmd(cmd)
 
             -- toggle OPEN
-            util.editfile(topfile)
+            u.editfile(topfile)
             if follow_current_file then
               expected_tree_node = topfile
             end
