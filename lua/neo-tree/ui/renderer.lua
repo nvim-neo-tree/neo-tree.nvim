@@ -597,6 +597,7 @@ end
 
 create_tree = function(state)
   state.tree = NuiTree({
+    ns_id = highlights.ns_id,
     winid = state.winid,
     get_node_id = function(node)
       return node.id
@@ -695,6 +696,7 @@ create_window = function(state)
 
   local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
   local win_options = {
+    ns_id = highlights.ns_id,
     size = utils.resolve_config_option(state, "window.width", "40"),
     position = state.current_position,
     relative = "editor",

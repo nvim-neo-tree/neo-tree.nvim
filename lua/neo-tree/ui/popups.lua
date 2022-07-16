@@ -20,6 +20,7 @@ M.popup_options = function(title, min_width, override_options)
   local popup_border_style = nt.config.popup_border_style
   local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
   local popup_options = {
+    ns_id = highlights.ns_id,
     relative = "cursor",
     position = {
       row = 1,
