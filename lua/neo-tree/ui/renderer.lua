@@ -172,8 +172,13 @@ create_nodes = function(source_items, state, level)
     source_items = visible
   end
 
+  local source_items_length = #source_items
+  if #hidden > 0 and filtered_items.show_hidden_count then
+    source_items_length = source_items_length + 1
+  end
+
   for i, item in ipairs(source_items) do
-    local is_last_child = i == #source_items
+    local is_last_child = i == source_items_length
 
     local nodeData = {
       id = item.id,
@@ -219,7 +224,7 @@ create_nodes = function(source_items, state, level)
         name = "(forced to show " .. #hidden .. " hidden items)",
         type = "message",
         level = level,
-        is_last_child = false,
+        is_last_child = true,
       }
       local node = NuiTree.Node(nodeData)
       table.insert(nodes, 1, node)
@@ -229,7 +234,7 @@ create_nodes = function(source_items, state, level)
         name = "(" .. #hidden .. " hidden items)",
         type = "message",
         level = level,
-        is_last_child = false,
+        is_last_child = true,
       }
       local node = NuiTree.Node(nodeData)
       table.insert(nodes, 1, node)
