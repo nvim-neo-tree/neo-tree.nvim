@@ -222,7 +222,7 @@ create_nodes = function(source_items, state, level)
         is_last_child = false,
       }
       local node = NuiTree.Node(nodeData)
-      table.insert(nodes, node)
+      table.insert(nodes, 1, node)
     elseif filtered_items.show_hidden_count or (#visible == 0 and level <= 1) then
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
@@ -232,7 +232,7 @@ create_nodes = function(source_items, state, level)
         is_last_child = false,
       }
       local node = NuiTree.Node(nodeData)
-      table.insert(nodes, node)
+      table.insert(nodes, 1, node)
     end
   end
   return nodes
