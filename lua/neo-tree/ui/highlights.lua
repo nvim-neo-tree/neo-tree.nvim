@@ -3,6 +3,9 @@ local utils = require("neo-tree.utils")
 local vim = vim
 local M = {}
 
+---@type integer
+M.ns_id = vim.api.nvim_create_namespace("neo-tree.nvim")
+
 M.BUFFER_NUMBER = "NeoTreeBufferNumber"
 M.CURSOR_LINE = "NeoTreeCursorLine"
 M.DIM_TEXT = "NeoTreeDimText"
