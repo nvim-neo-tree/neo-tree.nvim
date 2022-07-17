@@ -20,9 +20,8 @@ M.popup_options = function(title, min_width, override_options)
   local popup_border_style = nt.config.popup_border_style
   local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
   local col = 0
-  local tree_pos = vim.api.nvim_buf_get_var(0, "neo_tree_position")
   local offset = (vim.api.nvim_win_get_width(0) - width) - 2
-  if tree_pos == "right" and offset < 0 then
+  if vim.api.nvim_win_get_number(0) ~= 1 and offset < 0 then
     col = offset
   end
   local popup_options = {
