@@ -59,17 +59,20 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
 end
 
 local text_with_hl = function(text, tab_hl)
+  if tab_hl == nil then
+    return text
+  end
   return string.format("%%#%s#%s", tab_hl, text)
 end
 
-local add_padding = function(padding_legth, padchar)
+local add_padding = function(padding_legth, hl_padding, padchar)
   if padchar == nil then
     padchar = " "
   end
-  return string.rep(padchar, math.floor(padding_legth))
+  return text_with_hl(string.rep(padchar, math.floor(padding_legth)), hl_padding)
 end
 
-M.text_layout = function(text, content_layout, output_width, text_length)
+M.text_layout = function(text, content_layout, output_width, text_length, hl_padding)
   if text_length == nil then
     text_length = vim.fn.strdisplaywidth(text)
   end
@@ -77,11 +80,13 @@ M.text_layout = function(text, content_layout, output_width, text_length)
   if pad_length < 0 then
     return string.sub(text, 1, vim.str_byteindex(text, output_width)) -- lua string sub with multibyte seq
   elseif content_layout == "start" then
-    return text .. add_padding(pad_length)
+    return text .. add_padding(pad_length, hl_padding)
   elseif content_layout == "end" then
-    return add_padding(pad_length) .. text
+    return add_padding(pad_length, hl_padding) .. text
   elseif content_layout == "center" then
-    return add_padding(pad_length / 2) .. text .. add_padding(math.ceil(pad_length / 2))
+    return add_padding(pad_length / 2, hl_padding)
+      .. text
+      .. add_padding(math.ceil(pad_length / 2), hl_padding)
   else
     return text
   end
@@ -140,8 +145,9 @@ M.create_selector = function(state, width)
   -- start creating string to display
   local tabs_layout = config.source_selector.tabs_layout
   local content_layout = config.source_selector.content_layout or "center"
+  local hl_background = config.source_selector.highlight_background
   local remaining_width = width - length_separators
-  local return_string = add_padding(padding.left)
+  local return_string = text_with_hl(add_padding(padding.left), hl_background)
   if width < length_sum and config.source_selector.text_trunc_to_fit then -- not enough width
     local each_width = math.floor(remaining_width / #tabs)
     local remaining = remaining_width % each_width
@@ -185,7 +191,8 @@ M.create_selector = function(state, width)
     for _, tab in ipairs(tabs) do
       tmp = tmp .. M.render_tab(tab.left, tab.right, tab.sep_hl, tab.text, tab.tab_hl, tab.index)
     end
-    return_string = return_string .. M.text_layout(tmp, tabs_layout, width, length_sum)
+    return_string = return_string
+      .. M.text_layout(tmp, tabs_layout, width, length_sum, hl_background)
   end
   return return_string .. "%0@v:lua.___neotree_selector_click@"
 end
