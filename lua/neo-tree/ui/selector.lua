@@ -92,8 +92,8 @@ M.text_layout = function(text, content_layout, output_width, text_length, hl_pad
   end
 end
 
-M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, source_index)
-  local res = "%" .. source_index .. "@v:lua.___neotree_selector_click@"
+M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
+  local res = "%" .. click_id .. "@v:lua.___neotree_selector_click@"
   if left_sep ~= nil then
     res = res .. text_with_hl(left_sep, sep_hl)
   end
@@ -171,7 +171,7 @@ M.create_selector = function(state, width)
           tab.sep_hl,
           M.text_layout(tab.text, tab.is_active and content_layout or nil, active_tab_length),
           tab.tab_hl,
-          tab.index
+          M.calc_click_id_from_source(state.winid or 0, tab.index)
         )
     end
   elseif tabs_layout == "equal" then
@@ -183,13 +183,21 @@ M.create_selector = function(state, width)
           tab.sep_hl,
           M.text_layout(tab.text, content_layout, math.floor(remaining_width / #tabs)),
           tab.tab_hl,
-          tab.index
+          M.calc_click_id_from_source(state.winid or 0, tab.index)
         )
     end
   else -- config.source_selector.tab_labels == "start", "end", "center"
     local tmp = ""
     for _, tab in ipairs(tabs) do
-      tmp = tmp .. M.render_tab(tab.left, tab.right, tab.sep_hl, tab.text, tab.tab_hl, tab.index)
+      tmp = tmp
+        .. M.render_tab(
+          tab.left,
+          tab.right,
+          tab.sep_hl,
+          tab.text,
+          tab.tab_hl,
+          M.calc_click_id_from_source(state.winid or 0, tab.index)
+        )
     end
     return_string = return_string
       .. M.text_layout(tmp, tabs_layout, width, length_sum, hl_background)
@@ -207,17 +215,43 @@ M.append_source_selector = function(win_options, state, size)
   end
 end
 
+M.set_source_selector = function(state, size)
+  local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
+  if sel_config and sel_config.winbar then
+    vim.wo.winbar = M.create_selector(state, size)
+  end
+  if sel_config and sel_config.statusline then
+    vim.wo.statusline = M.create_selector(state, size)
+  end
+end
+
+M.calc_click_id_from_source = function(winid, source_index)
+  local base_number = #require("neo-tree").config.sources + 1
+  return base_number * winid + source_index
+end
+
+M.calc_source_from_click_id = function(click_id)
+  local base_number = #require("neo-tree").config.sources + 1
+  return math.floor(click_id / base_number), click_id % base_number
+end
+
 -- @v:lua@ in the tabline only supports global functions, so this is
 -- the only way to add click handlers without autoloaded vimscript functions
 _G.___neotree_selector_click = function(id, _, _, _)
   local sources = require("neo-tree").config.sources
-  if id < 1 or id > #sources then
+  if id < 1 then
     return
   end
+  local current_win = vim.api.nvim_get_current_win()
+  local winid, source_index = M.calc_source_from_click_id(id)
+  vim.api.nvim_set_current_win(winid)
   require("neo-tree.command").execute({
-    source = sources[id],
+    source = sources[source_index],
     position = "current",
   })
+  if current_win ~= winid then
+    vim.api.nvim_set_current_win(current_win)
+  end
 end
 
 return M
