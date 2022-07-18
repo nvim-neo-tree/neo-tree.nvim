@@ -71,7 +71,7 @@ local config = {
     --                       false : |     a    \/    b    \/    c     |
     highlight_tab = "NeoTreeModified",
     highlight_tab_active = "NeoTreeGitDeleted",
-    highlight_backgound = "NeoTreeCursorLine",
+    highlight_background = "NeoTreeCursorLine",
     highlight_separator = "NeoTreeNormalNC",
     highlight_separator_active = "NeoTreeGitDeleted",
   },
