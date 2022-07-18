@@ -38,17 +38,42 @@ local config = {
   sort_function = nil , -- uses a custom function for sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   use_default_mappings = true,
-  source_switcher = {
-    enable = true,
-    tabs_default = { icon = "裡", hl = "NeoTreeTitleBar", hl_active = "NeoTreeModified" },
-    tabs = { -- could be table or string
-      filesystem = { icon = "", text = "Files" },
-      buffers = "",
-      git_status = "",
+  source_selector = {
+    winbar = true, -- toggle to show selector on winbar
+    statusline = false, -- toggle to show selector on statusline
+    tab_labels = { -- falls back to source_name if nil
+      filesystem = " Files",
+      buffers = " Buffers",
+      git_status = " Git",
     },
-    -- not implemented but maybe nice to have configs
-    justify = "center", -- start, end, center, between, around
-                        -- idea from bootstrap https://getbootstrap.com/docs/4.0/utilities/flex/#justify-content
+    content_layout = "center", -- only with `tabs_layout` = "equal", "focus"
+    --                start  : |/ 裡 bufname     \/...
+    --                end    : |/     裡 bufname \/...
+    --                center : |/   裡 bufname   \/...
+    tabs_layout = "equal", -- start, end, center, equal, focus
+    --             start  : |/  a  \/  b  \/  c  \            |
+    --             end    : |            /  a  \/  b  \/  c  \|
+    --             center : |      /  a  \/  b  \/  c  \      |
+    --             equal  : |/    a    \/    b    \/    c    \|
+    --             active : |/  focused tab    \/  b  \/  c  \|
+    text_trunc_to_fit = true, -- toggle to truncate text in each tab when not enough width
+    padding = 0, -- can be int or table
+    -- padding = { left = 2, right = 0 },
+    separator = "|", -- can be string or table, see bellow
+    -- separator = { left = "/", right = "\\", override = nil },     -- |/  a  \/  b  \/  c  \...
+    -- separator = { left = "/", right = "\\", override = "right" }, -- |/  a  \  b  \  c  \...
+    -- separator = { left = "/", right = "\\", override = "left" },  -- |/  a  /  b  /  c  /...
+    -- separator = { left = "/", right = "\\", override = "active" },-- |/  a  / b:active \  c  \...
+    -- separator = "|",                                              -- ||  a  |  b  |  c  |...
+    separator_active = nil, -- set separators around the active tab. nil falls back to `source_selector.separator`
+    show_separator_on_edge = false,
+    --                       true  : |/    a    \/    b    \/    c    \|
+    --                       false : |     a    \/    b    \/    c     |
+    highlight_tab = "NeoTreeGitDeleted",
+    highlight_tab_active = "NeoTreeGitDeleted",
+    highlight_backgound = "NeoTreeCursorLine",
+    highlight_separator = "NeoTreeNormalNC",
+    highlight_separator_active = "NeoTreeGitDeleted",
   },
   --
   --event_handlers = {
