@@ -4,7 +4,7 @@ local log = require("neo-tree.log")
 
 local M = {}
 
-local get_separator_tbl = function(sep)
+local sep_tbl = function(sep)
   if type(sep) == "nil" then
     return {}
   elseif type(sep) ~= "table" then
@@ -16,10 +16,9 @@ end
 local get_separators = function(source_index, active_index, force_ignore_left, force_ignore_right)
   local config = require("neo-tree").config
   local is_active = source_index == active_index
-  local sep = get_separator_tbl(config.source_selector.separator)
+  local sep = sep_tbl(config.source_selector.separator)
   if is_active then
-    sep =
-      vim.tbl_deep_extend("force", sep, get_separator_tbl(config.source_selector.separator_active))
+    sep = vim.tbl_deep_extend("force", sep, sep_tbl(config.source_selector.separator_active))
   end
   local show_left = sep.override == "left"
     or (sep.override == "active" and source_index <= active_index)
@@ -34,8 +33,8 @@ local get_separators = function(source_index, active_index, force_ignore_left, f
 end
 
 M.get_selector_tab_info = function(source_name, source_index, is_active, separator)
-  local separator_config =
-    utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
+  local config = require("neo-tree").config
+  local separator_config = utils.resolve_config_option(config, "source_selector", nil)
   if separator_config == nil then
     log.warn("Cannot find source_selector config. `create_selector` abort.")
     return {}
