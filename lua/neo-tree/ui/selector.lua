@@ -39,7 +39,7 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
     log.warn("Cannot find source_selector config. `create_selector` abort.")
     return {}
   end
-  local get_strlen = vim.fn.strdisplaywidth
+  local get_strlen = vim.api.nvim_strwidth
   local text = separator_config.tab_labels[source_name] or source_name
   local text_length = get_strlen(text)
   if separator_config.tabs_min_width ~= nil then
