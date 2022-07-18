@@ -39,12 +39,21 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
     log.warn("Cannot find source_selector config. `create_selector` abort.")
     return {}
   end
+  local get_strlen = vim.fn.strdisplaywidth
   local text = separator_config.tab_labels[source_name] or source_name
+  local text_length = get_strlen(text)
+  if separator_config.tabs_min_width ~= nil then
+    text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_min_width)
+    text_length = separator_config.tabs_min_width
+  end
+  if separator_config.tabs_max_width ~= nil then
+    text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_max_width)
+    text_length = separator_config.tabs_max_width
+  end
   local tab_hl = is_active and separator_config.highlight_tab_active
     or separator_config.highlight_tab
   local sep_hl = is_active and separator_config.highlight_separator_active
     or separator_config.highlight_separator
-  local get_strlen = vim.fn.strdisplaywidth
   return {
     index = source_index,
     is_active = is_active,
@@ -53,8 +62,8 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
     text = text,
     tab_hl = tab_hl,
     sep_hl = sep_hl,
-    length = get_strlen(text) + get_strlen(separator.left) + get_strlen(separator.right),
-    text_length = get_strlen(text),
+    length = text_length + get_strlen(separator.left) + get_strlen(separator.right),
+    text_length = text_length,
   }
 end
 
@@ -77,19 +86,17 @@ M.text_layout = function(text, content_layout, output_width, text_length, hl_pad
     text_length = vim.fn.strdisplaywidth(text)
   end
   local pad_length = output_width - text_length
+  local left_pad, right_pad = 0, 0
   if pad_length < 0 then
     return string.sub(text, 1, vim.str_byteindex(text, output_width)) -- lua string sub with multibyte seq
   elseif content_layout == "start" then
-    return text .. add_padding(pad_length, hl_padding)
+    left_pad, right_pad = 0, pad_length
   elseif content_layout == "end" then
-    return add_padding(pad_length, hl_padding) .. text
+    left_pad, right_pad = pad_length, 0
   elseif content_layout == "center" then
-    return add_padding(pad_length / 2, hl_padding)
-      .. text
-      .. add_padding(math.ceil(pad_length / 2), hl_padding)
-  else
-    return text
+    left_pad, right_pad = pad_length / 2, math.ceil(pad_length / 2)
   end
+  return add_padding(left_pad, hl_padding) .. text .. add_padding(right_pad, hl_padding)
 end
 
 M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
@@ -173,6 +180,7 @@ M.create_selector = function(state, width)
           tab.tab_hl,
           M.calc_click_id_from_source(state.winid or 0, tab.index)
         )
+        .. text_with_hl("", hl_background)
     end
   elseif tabs_layout == "equal" then
     for _, tab in ipairs(tabs) do
@@ -185,6 +193,7 @@ M.create_selector = function(state, width)
           tab.tab_hl,
           M.calc_click_id_from_source(state.winid or 0, tab.index)
         )
+        .. text_with_hl("", hl_background)
     end
   else -- config.source_selector.tab_labels == "start", "end", "center"
     local tmp = ""

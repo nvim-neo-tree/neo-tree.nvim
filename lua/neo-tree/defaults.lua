@@ -57,6 +57,8 @@ local config = {
     --             equal  : |/    a    \/    b    \/    c    \|
     --             active : |/  focused tab    \/  b  \/  c  \|
     text_trunc_to_fit = true, -- toggle to truncate text in each tab when not enough width
+    tabs_min_width = nil, -- nil | int: if int padding is added based on `content_layout`
+    tabs_max_width = nil, -- this will truncate text even if `text_trunc_to_fit = false`
     padding = 0, -- can be int or table
     -- padding = { left = 2, right = 0 },
     separator = "│", -- can be string or table, see below
