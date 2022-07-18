@@ -276,6 +276,7 @@ M.render = function(config, node, state, available_width)
   render_content(config, node, state, context)
   calc_container_width(config, node, state, context)
   merge_content(context)
+  require("neo-tree.ui.selector").set_source_selector(state, context.container_width)
 
   if context.has_right_content then
     state.has_right_content = true

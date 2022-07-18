@@ -710,12 +710,6 @@ create_window = function(state)
       signcolumn = "no",
     },
   }
-  -- add source_selector to winbar or statusline
-  require("neo-tree.ui.selector").append_source_selector(
-    win_options.win_options,
-    state,
-    win_options.size
-  )
 
   local win
   if state.current_position == "float" then
@@ -732,13 +726,6 @@ create_window = function(state)
     win_options.size = utils.resolve_config_option(state, "window.popup.size", size)
     win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
     win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
-
-    -- win_options.size changed, rerendering source_selector
-    require("neo-tree.ui.selector").append_source_selector(
-      win_options.win_options,
-      state,
-      win_options.size.width
-    )
 
     win = NuiPopup(win_options)
     win:mount()
