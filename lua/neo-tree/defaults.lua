@@ -69,7 +69,7 @@ local config = {
     show_separator_on_edge = false,
     --                       true  : |/    a    \/    b    \/    c    \|
     --                       false : |     a    \/    b    \/    c     |
-    highlight_tab = "NeoTreeGitDeleted",
+    highlight_tab = "NeoTreeModified",
     highlight_tab_active = "NeoTreeGitDeleted",
     highlight_backgound = "NeoTreeCursorLine",
     highlight_separator = "NeoTreeNormalNC",
