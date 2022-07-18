@@ -42,11 +42,11 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
   local get_strlen = vim.api.nvim_strwidth
   local text = separator_config.tab_labels[source_name] or source_name
   local text_length = get_strlen(text)
-  if separator_config.tabs_min_width ~= nil then
+  if separator_config.tabs_min_width ~= nil and text_length < separator_config.tabs_min_width then
     text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_min_width)
     text_length = separator_config.tabs_min_width
   end
-  if separator_config.tabs_max_width ~= nil then
+  if separator_config.tabs_max_width ~= nil and text_length > separator_config.tabs_max_width then
     text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_max_width)
     text_length = separator_config.tabs_max_width
   end
