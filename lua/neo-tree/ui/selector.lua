@@ -227,10 +227,10 @@ end
 M.set_source_selector = function(state, size)
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
   if sel_config and sel_config.winbar then
-    vim.wo.winbar = M.create_selector(state, size)
+    vim.wo[state.winid].winbar = M.create_selector(state, size)
   end
   if sel_config and sel_config.statusline then
-    vim.wo.statusline = M.create_selector(state, size)
+    vim.wo[state.winid].statusline = M.create_selector(state, size)
   end
 end
 
