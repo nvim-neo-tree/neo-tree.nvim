@@ -234,6 +234,22 @@ M.set_source_selector = function(state, size)
   end
 end
 
+M.auto_set_source_selector = function(state)
+  local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
+  local win_width = vim.api.nvim_win_get_width(state.winid)
+  if sel_config and sel_config.winbar then
+    vim.wo[state.winid].winbar = M.create_selector(state, win_width)
+  end
+  if sel_config and sel_config.statusline then
+    vim.wo[state.winid].statusline = M.create_selector(state, win_width)
+  end
+end
+
+M.return_source_selector = function(state)
+  local win_width = vim.api.nvim_win_get_width(state.winid)
+  return M.create_selector(state, win_width)
+end
+
 M.calc_click_id_from_source = function(winid, source_index)
   local base_number = #require("neo-tree").config.sources + 1
   return base_number * winid + source_index
