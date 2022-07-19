@@ -172,6 +172,12 @@ create_nodes = function(source_items, state, level)
     source_items = visible
   end
 
+  local show_indent_marker_for_message
+  local msg = state.renderers.message or {}
+  if msg[1] and msg[1][1] == "indent" then
+    show_indent_marker_for_message = msg[1].with_markers
+  end
+
   for i, item in ipairs(source_items) do
     local is_last_child = i == #source_items
 
@@ -220,7 +226,7 @@ create_nodes = function(source_items, state, level)
         name = "(forced to show " .. #hidden .. " hidden items)",
         type = "message",
         level = level,
-        is_last_child = false,
+        is_last_child = show_indent_marker_for_message,
       }
       local node = NuiTree.Node(nodeData)
       table.insert(nodes, node)
@@ -230,8 +236,9 @@ create_nodes = function(source_items, state, level)
         name = "(" .. #hidden .. " hidden items)",
         type = "message",
         level = level,
-        is_last_child = false,
+        is_last_child = show_indent_marker_for_message,
       }
+      nodes[#nodes].is_last_child = not show_indent_marker_for_message
       local node = NuiTree.Node(nodeData)
       table.insert(nodes, node)
     end
