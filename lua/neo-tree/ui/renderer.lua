@@ -183,6 +183,7 @@ create_nodes = function(source_items, state, level)
       filtered_by = item.filtered_by,
       extra = item.extra,
       is_nested = item.is_nested,
+      skip_node = item.skip_node,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,
@@ -278,7 +279,7 @@ M.render_component = function(component, item, state, remaining_width)
 end
 
 local prepare_node = function(item, state)
-  if item.level < 0 then
+  if item.skip_node then
     return nil
   end
   local line = NuiLine()
@@ -956,8 +957,12 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     state.longest_node = 0
   end
 
-  if require("neo-tree").config.hide_root_node then
-    level = level - 1
+  local config = require("neo-tree").config
+  if config.hide_root_node then
+    sourceItems[1].skip_node = true
+    if not config.retain_hidden_root_indent then
+      level = level - 1
+    end
   end
 
   if state.group_empty_dirs then

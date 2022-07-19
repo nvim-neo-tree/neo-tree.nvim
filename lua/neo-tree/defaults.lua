@@ -27,6 +27,8 @@ local config = {
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   hide_root_node = false, -- Hide the root node.
+  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
+                                     -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
