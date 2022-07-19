@@ -381,7 +381,7 @@ end
 ---@param open_cmd string The vimcommand to use to open the file
 M.open_file = function(state, path, open_cmd)
   open_cmd = open_cmd or "edit"
-  if open_cmd == "edit" then
+  if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
     local bufnr = M.find_buffer_by_name(path)
     if bufnr > 0 then
