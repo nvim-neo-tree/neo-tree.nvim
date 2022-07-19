@@ -391,6 +391,8 @@ Where to show it, can be one of:
 |--------|-------------|
 | left    | Open as left hand sidebar. DEFAULT |
 | right   | Open as right hand sidebar. |
+| top     | Open as top window. |
+| botom   | Open as bottom window. |
 | float   | Open as floating window. |
 | current | Open within the current window, like netrw or vinegar would. |
 

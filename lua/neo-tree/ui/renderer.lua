@@ -695,9 +695,15 @@ create_window = function(state)
   state.current_position = state.current_position or default_position
 
   local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
+  local size_opt, default_size
+  if state.current_position == "top" or state.current_position == "bottom" then
+    size_opt, default_size = "window.height", "15"
+  else
+    size_opt, default_size = "window.width", "40"
+  end
   local win_options = {
     ns_id = highlights.ns_id,
-    size = utils.resolve_config_option(state, "window.width", "40"),
+    size = utils.resolve_config_option(state, size_opt, default_size),
     position = state.current_position,
     relative = "editor",
     buf_options = {

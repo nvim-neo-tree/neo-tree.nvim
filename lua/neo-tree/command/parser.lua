@@ -26,8 +26,8 @@ M.setup = function(all_source_names)
       values = {
         "left",
         "right",
-        --"top", --technically valid, but why show it if no one will use it?
-        --"bottom", --technically valid, but why show it if no one will use it?
+        "top",
+        "bottom",
         "float",
         "current",
       },
