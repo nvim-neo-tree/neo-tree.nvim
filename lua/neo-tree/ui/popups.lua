@@ -20,11 +20,10 @@ M.popup_options = function(title, min_width, override_options)
   local popup_border_style = nt.config.popup_border_style
   local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
   local col = 0
-  local offset = (vim.api.nvim_win_get_width(0) - width) - 2
-  local is_right_window = vim.api.nvim_win_get_position(0)[2] + vim.api.nvim_win_get_width(0)
-      == vim.o.columns
-  if is_right_window and offset < 0 then
-    col = offset
+  -- fix popup position when using multigrid
+  local popup_last_col = vim.api.nvim_win_get_position(0)[2] + width + 2
+  if popup_last_col >= vim.o.columns then
+    col = vim.o.columns - popup_last_col
   end
   local popup_options = {
     relative = "cursor",
