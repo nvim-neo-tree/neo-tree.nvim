@@ -21,7 +21,9 @@ M.popup_options = function(title, min_width, override_options)
   local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
   local col = 0
   local offset = (vim.api.nvim_win_get_width(0) - width) - 2
-  if vim.api.nvim_win_get_number(0) ~= 1 and offset < 0 then
+  local is_right_window = vim.api.nvim_win_get_position(0)[2] + vim.api.nvim_win_get_width(0)
+      == vim.o.columns
+  if is_right_window and offset < 0 then
     col = offset
   end
   local popup_options = {
