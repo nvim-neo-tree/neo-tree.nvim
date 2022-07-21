@@ -119,9 +119,9 @@ end
 ---@return {table}| nil The state for the current buffer, or nil if it is not a
 ---neo-tree buffer.
 M.get_state_for_active_window = function()
-  local _, source = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
+  local _, source_name = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
   local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
-  if not source or not position then
+  if not source_name or not position then
     return nil
   end
 

@@ -48,6 +48,7 @@ local config = {
   source_selector = {
     winbar = false, -- toggle to show selector on winbar
     statusline = false, -- toggle to show selector on statusline
+    show_scrolled_off_parent_node = true,
     tab_labels = { -- falls back to source_name if nil
       filesystem = "   Files ",
       buffers =    "   Buffers ",

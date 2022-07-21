@@ -918,7 +918,7 @@ draw = function(nodes, state, parent_id)
   state.tree:render()
 
   -- draw winbar / statusbar
-  require("neo-tree.ui.selector").set_source_selector(state, state.win_width)
+  require("neo-tree.ui.selector").set_source_selector(state)
 
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed

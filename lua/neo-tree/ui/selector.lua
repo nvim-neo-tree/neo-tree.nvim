@@ -111,11 +111,34 @@ M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
   return res
 end
 
+M.get_scrolled_off_node_text = function(state)
+  if state == nil then
+    state = require("neo-tree.sources.manager").get_state_for_active_window()
+    if state == nil then
+      return
+    end
+  end
+  local win_top_line = vim.fn.line("w0")
+  if win_top_line == nil or win_top_line == 1 then
+    return
+  end
+  local node = state.tree:get_node(win_top_line)
+  return "   " .. vim.fn.fnamemodify(node.path, ":~:h")
+end
+
 M.get = function()
   local state = require("neo-tree.sources.manager").get_state_for_active_window()
   if state == nil then
     return
   else
+    local config = require("neo-tree").config
+    local scrolled_off = utils.resolve_config_option(config, "source_selector.show_scrolled_off_parent_node", false)
+    if scrolled_off then
+      local node_text = M.get_scrolled_off_node_text(state)
+      if node_text ~= nil then
+        return node_text
+      end
+    end
     return M.create_selector(state, vim.api.nvim_win_get_width(0))
   end
 end
@@ -233,30 +256,14 @@ M.append_source_selector = function(win_options, state, size)
   end
 end
 
-M.set_source_selector = function(state, size)
+M.set_source_selector = function(state)
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
-  if sel_config and sel_config.winbar then
-    vim.wo[state.winid].winbar = M.create_selector(state, size)
-  end
-  if sel_config and sel_config.statusline then
-    vim.wo[state.winid].statusline = M.create_selector(state, size)
-  end
-end
-
-M.auto_set_source_selector = function(state)
-  local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
-  local win_width = vim.api.nvim_win_get_width(state.winid)
   if sel_config and sel_config.winbar then
     vim.wo[state.winid].winbar = "%{%v:lua.require'neo-tree.ui.selector'.get()%}"
   end
   if sel_config and sel_config.statusline then
     vim.wo[state.winid].statusline = "%{%v:lua.require'neo-tree.ui.selector'.get()%}"
   end
-end
-
-M.return_source_selector = function(state)
-  local win_width = vim.api.nvim_win_get_width(state.winid)
-  return M.create_selector(state, win_width)
 end
 
 M.calc_click_id_from_source = function(winid, source_index)
