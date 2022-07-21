@@ -115,6 +115,25 @@ M.get_state = function(source_name, tabnr, winid)
   end
 end
 
+---Returns the state for the current buffer, assuming it is a neo-tree buffer.
+---@return {table}| nil The state for the current buffer, or nil if it is not a
+---neo-tree buffer.
+M.get_state_for_active_window = function()
+  local _, source = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
+  local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
+  if not source or not position then
+    return nil
+  end
+
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  local winid = vim.api.nvim_get_current_win()
+  if position == "current" then
+    return M.get_state(source_name, tabnr, winid)
+  else
+    return M.get_state(source_name, tabnr, nil)
+  end
+end
+
 M.get_path_to_reveal = function(include_terminals)
   local win_id = vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
