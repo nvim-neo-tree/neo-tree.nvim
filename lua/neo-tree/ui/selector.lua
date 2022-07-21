@@ -111,6 +111,15 @@ M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
   return res
 end
 
+M.get = function()
+  local state = require("neo-tree.sources.manager").get_state_for_active_window()
+  if state == nil then
+    return
+  else
+    return M.create_selector(state, vim.api.nvim_win_get_width(0))
+  end
+end
+
 M.create_selector = function(state, width)
   local config = require("neo-tree").config
   if config == nil then
@@ -238,10 +247,10 @@ M.auto_set_source_selector = function(state)
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
   local win_width = vim.api.nvim_win_get_width(state.winid)
   if sel_config and sel_config.winbar then
-    vim.wo[state.winid].winbar = M.create_selector(state, win_width)
+    vim.wo[state.winid].winbar = "%{%v:lua.require'neo-tree.ui.selector'.get()%}"
   end
   if sel_config and sel_config.statusline then
-    vim.wo[state.winid].statusline = M.create_selector(state, win_width)
+    vim.wo[state.winid].statusline = "%{%v:lua.require'neo-tree.ui.selector'.get()%}"
   end
 end
 
