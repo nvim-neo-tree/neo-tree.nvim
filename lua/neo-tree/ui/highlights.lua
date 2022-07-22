@@ -261,9 +261,9 @@ M.setup = function()
   M.create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 
   M.create_highlight_group(M.TAB_ACTIVE, {}, nil, nil, "bold")
-  M.create_highlight_group(M.TAB_INACTIVE, {}, "080808", "888888")
-  M.create_highlight_group(M.TAB_SEPARATOR_ACTIVE, {}, nil, "3a3a3a")
-  M.create_highlight_group(M.TAB_SEPARATOR_INACTIVE, {}, "080808", "000000")
+  M.create_highlight_group(M.TAB_INACTIVE, {}, "101010", "888888")
+  M.create_highlight_group(M.TAB_SEPARATOR_ACTIVE, {}, nil, "303030")
+  M.create_highlight_group(M.TAB_SEPARATOR_INACTIVE, {}, "101010", "000000")
 end
 
 return M
