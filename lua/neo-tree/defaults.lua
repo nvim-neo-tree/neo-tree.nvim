@@ -50,9 +50,10 @@ local config = {
     statusline = false, -- toggle to show selector on statusline
     show_scrolled_off_parent_node = true,
     tab_labels = { -- falls back to source_name if nil
-      filesystem = "   Files ",
-      buffers =    "   Buffers ",
-      git_status = "   Git ",
+      filesystem = "  Files ",
+      buffers =    "  Buffers ",
+      git_status = "  Git ",
+      diagnostics = " 裂Diagnostics ",
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
     --                start  : |/ 裡 bufname     \/...
@@ -65,7 +66,7 @@ local config = {
     --             equal  : |/    a    \/    b    \/    c    \|
     --             active : |/  focused tab    \/  b  \/  c  \|
     text_trunc_to_fit = true, -- toggle to truncate text in each tab when not enough width
-    tabs_min_width = 11, -- nil | int: if int padding is added based on `content_layout`
+    tabs_min_width = nil, -- nil | int: if int padding is added based on `content_layout`
     tabs_max_width = nil, -- this will truncate text even if `text_trunc_to_fit = false`
     padding = 0, -- can be int or table
     -- padding = { left = 2, right = 0 },

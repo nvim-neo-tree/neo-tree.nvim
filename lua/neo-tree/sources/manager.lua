@@ -116,17 +116,19 @@ M.get_state = function(source_name, tabnr, winid)
 end
 
 ---Returns the state for the current buffer, assuming it is a neo-tree buffer.
----@return {table}| nil The state for the current buffer, or nil if it is not a
+---@param winid number|nil The window id to use, if nil, the current window is used.
+---@return table|nil The state for the current buffer, or nil if it is not a
 ---neo-tree buffer.
-M.get_state_for_active_window = function()
-  local _, source_name = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
-  local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
+M.get_state_for_window = function(winid)
+  local winid = winid or vim.api.nvim_get_current_win()
+  local bufnr = vim.api.nvim_win_get_buf(winid)
+  local _, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
+  local _, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
   if not source_name or not position then
     return nil
   end
 
   local tabnr = vim.api.nvim_get_current_tabpage()
-  local winid = vim.api.nvim_get_current_win()
   if position == "current" then
     return M.get_state(source_name, tabnr, winid)
   else

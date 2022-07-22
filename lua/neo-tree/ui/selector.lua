@@ -1,6 +1,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
@@ -113,7 +114,7 @@ end
 
 M.get_scrolled_off_node_text = function(state)
   if state == nil then
-    state = require("neo-tree.sources.manager").get_state_for_active_window()
+    state = require("neo-tree.sources.manager").get_state_for_window()
     if state == nil then
       return
     end
@@ -127,12 +128,16 @@ M.get_scrolled_off_node_text = function(state)
 end
 
 M.get = function()
-  local state = require("neo-tree.sources.manager").get_state_for_active_window()
+  local state = require("neo-tree.sources.manager").get_state_for_window()
   if state == nil then
     return
   else
     local config = require("neo-tree").config
-    local scrolled_off = utils.resolve_config_option(config, "source_selector.show_scrolled_off_parent_node", false)
+    local scrolled_off = utils.resolve_config_option(
+      config,
+      "source_selector.show_scrolled_off_parent_node",
+      false
+    )
     if scrolled_off then
       local node_text = M.get_scrolled_off_node_text(state)
       if node_text ~= nil then
@@ -149,6 +154,7 @@ M.create_selector = function(state, width)
     log.warn("Cannot find config. `create_selector` abort.")
     return nil
   end
+  local winid = state.winid or vim.api.nvim_get_current_win()
 
   -- load padding from config
   local padding = config.source_selector.padding
@@ -210,7 +216,7 @@ M.create_selector = function(state, width)
           tab.sep_hl,
           M.text_layout(tab.text, tab.is_active and content_layout or nil, active_tab_length),
           tab.tab_hl,
-          M.calc_click_id_from_source(state.winid or 0, tab.index)
+          M.calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
@@ -223,7 +229,7 @@ M.create_selector = function(state, width)
           tab.sep_hl,
           M.text_layout(tab.text, content_layout, math.floor(remaining_width / #tabs)),
           tab.tab_hl,
-          M.calc_click_id_from_source(state.winid or 0, tab.index)
+          M.calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
@@ -237,13 +243,13 @@ M.create_selector = function(state, width)
           tab.sep_hl,
           tab.text,
           tab.tab_hl,
-          M.calc_click_id_from_source(state.winid or 0, tab.index)
+          M.calc_click_id_from_source(winid, tab.index)
         )
     end
     return_string = return_string
       .. M.text_layout(tmp, tabs_layout, width, length_sum, hl_background)
   end
-  return return_string .. "%0@v:lua.___neotree_selector_click@"
+  return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
 
 M.append_source_selector = function(win_options, state, size)
@@ -279,20 +285,22 @@ end
 -- @v:lua@ in the tabline only supports global functions, so this is
 -- the only way to add click handlers without autoloaded vimscript functions
 _G.___neotree_selector_click = function(id, _, _, _)
-  local sources = require("neo-tree").config.sources
   if id < 1 then
     return
   end
-  local current_win = vim.api.nvim_get_current_win()
+  local sources = require("neo-tree").config.sources
   local winid, source_index = M.calc_source_from_click_id(id)
+  local state = manager.get_state_for_window(winid)
+  if state == nil then
+    log.warn("state not found for window ", winid, "; ignoring click")
+    return
+  end
   vim.api.nvim_set_current_win(winid)
   require("neo-tree.command").execute({
     source = sources[source_index],
-    position = "current",
+    position = state.current_position,
+    action = "show",
   })
-  if current_win ~= winid then
-    vim.api.nvim_set_current_win(current_win)
-  end
 end
 
 return M
