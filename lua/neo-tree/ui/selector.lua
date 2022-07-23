@@ -161,7 +161,7 @@ M.create_selector = function(state, width)
   if type(padding) == "number" then
     padding = { left = padding, right = padding }
   end
-  width = width - padding.left - padding.right
+  width = math.floor(width - padding.left - padding.right)
 
   -- generate information of each tab (look `M.get_selector_tab_info` for type hint)
   local tabs = {}
