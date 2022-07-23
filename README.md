@@ -508,7 +508,6 @@ the same list you would see from `:ls`. To show with the `buffers` list, use:
 :Neotree buffers
 ```
 
-
 ### git_status
 This view take the results of the `git status` command and display them in a
 tree. It includes commands for adding, unstaging, reverting, and committing.
@@ -524,6 +523,24 @@ possible to unstage / revert a file that is already committed.
 ```
 :Neotree float git_status git_base=main
 ```
+
+### Source Selector
+![Neo-tree source selector](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-source-selector.png)
+
+You can enable a clickable source selector in either the winbar (requires neovim 0.8+) or the statusline.
+To do so, set one of these options to `true`:
+
+```lua
+    requires("neo-tree").setup({
+        source_selector = {
+            winbar = false,
+            statusline = false
+        }
+    })
+```
+
+There are many configuration options to change the style of these tabs. 
+See [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua) for details.
 
 
 ## Configuration and Customization
