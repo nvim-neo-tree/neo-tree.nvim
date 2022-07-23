@@ -356,7 +356,7 @@ M.get_selector = function(state, width)
         )
     end
     return_string = return_string
-      .. text_layout(tmp, tabs_layout, width, length_sum)
+      .. text_layout(tmp, tabs_layout, width, trunc_char)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
