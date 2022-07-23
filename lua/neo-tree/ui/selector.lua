@@ -5,6 +5,26 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
+---calc_click_id_from_source:
+-- Calculates click_id that stores information of the source and window id
+-- DANGER: Do not change this function unless you know what you are doing
+---@param winid integer: window id of the window source_selector is placed
+---@param source_index integer: index of the source
+---@return integer
+local calc_click_id_from_source = function(winid, source_index)
+  local base_number = #require("neo-tree").config.sources + 1
+  return base_number * winid + source_index
+end
+
+---calc_source_from_click_id:
+-- Calculates source index and window id from click_id. Paired with `M.calc_click_id_from_source`
+-- DANGER: Do not change this function unless you know what you are doing
+---@param click_id integer: click_id
+---@return integer, integer
+local calc_source_from_click_id = function(click_id)
+  local base_number = #require("neo-tree").config.sources + 1
+  return math.floor(click_id / base_number), click_id % base_number
+end
 ---sep_tbl:
 -- Returns table expression of separator.
 -- Converts to table expression if sep is string.
@@ -17,6 +37,27 @@ local sep_tbl = function(sep)
     return { left = sep, right = sep, override = "active" }
   end
   return sep
+end
+
+-- Function below provided by @akinsho
+-- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
+
+-- truncate a string based on number of display columns/cells it occupies
+-- so that multibyte characters are not broken up mid-character
+---@param str string
+---@param col_limit number
+---@return string
+local function truncate_by_cell(str, col_limit)
+  local api = vim.api
+  local fn = vim.fn
+  if str and str:len() == api.nvim_strwidth(str) then return fn.strcharpart(str, 0, col_limit) end
+  local short = fn.strcharpart(str, 0, col_limit)
+  if api.nvim_strwidth(short) > col_limit then
+    while api.nvim_strwidth(short) > col_limit do
+      short = fn.strcharpart(short, 0, fn.strchars(short) - 1)
+    end
+  end
+  return short
 end
 
 ---get_separators
@@ -52,7 +93,7 @@ end
 ---@param is_active boolean: whether this source is currently focused
 ---@param separator table: `{ left = .., right = .. }`: output from `get_separators()`
 ---@return table (see code): Note: `length`: length of whole tab (including seps), `text_length`: length of tab excluding seps
-M.get_selector_tab_info = function(source_name, source_index, is_active, separator)
+local get_selector_tab_info = function(source_name, source_index, is_active, separator)
   local config = require("neo-tree").config
   local separator_config = utils.resolve_config_option(config, "source_selector", nil)
   if separator_config == nil then
@@ -102,14 +143,13 @@ end
 ---add_padding:
 -- Use for creating padding with highlight
 ---@param padding_legth number: number of padding. if float, value is rounded with `math.floor`
----@param hl_padding string | nil: highlight of the padding characters
 ---@param padchar string | nil: if nil, " " (space) is used
 ---@return string
-local add_padding = function(padding_legth, hl_padding, padchar)
+local add_padding = function(padding_legth, padchar)
   if padchar == nil then
     padchar = " "
   end
-  return text_with_hl(string.rep(padchar, math.floor(padding_legth)), hl_padding)
+  return string.rep(padchar, math.floor(padding_legth))
 end
 
 ---text_layout:
@@ -118,17 +158,21 @@ end
 ---@param text string:
 ---@param content_layout string: `"start", "center", "end"`: see `config.source_selector.tabs_layout` for more details
 ---@param output_width integer: exact `strdisplaywidth` of the output string
----@param text_length integer | nil: length of `text`, if nil, this function calculates it with `vim.fn.strdisplaywidth`
----@param hl_padding string | nil: highlight for paddings. if nil, " " is used
+---@param trunc_char string | nil: Character used to indicate truncation. If nil, "…" (ellipsis) is used.
 ---@return string
-M.text_layout = function(text, content_layout, output_width, text_length, hl_padding)
-  if text_length == nil then
-    text_length = vim.fn.strdisplaywidth(text)
+local text_layout = function(text, content_layout, output_width, trunc_char)
+  if output_width < 1 then
+    return ""
   end
+  local text_length = vim.fn.strdisplaywidth(text)
   local pad_length = output_width - text_length
   local left_pad, right_pad = 0, 0
   if pad_length < 0 then
-    return string.sub(text, 1, vim.str_byteindex(text, output_width)) -- lua string sub with multibyte seq
+    if output_width < 4 then
+      return truncate_by_cell(text, output_width)
+    else
+      return truncate_by_cell(text, output_width - 1) .. trunc_char
+    end
   elseif content_layout == "start" then
     left_pad, right_pad = 0, pad_length
   elseif content_layout == "end" then
@@ -136,7 +180,7 @@ M.text_layout = function(text, content_layout, output_width, text_length, hl_pad
   elseif content_layout == "center" then
     left_pad, right_pad = pad_length / 2, math.ceil(pad_length / 2)
   end
-  return add_padding(left_pad, hl_padding) .. text .. add_padding(right_pad, hl_padding)
+  return add_padding(left_pad) .. text .. add_padding(right_pad)
 end
 
 ---render_tab:
@@ -148,7 +192,7 @@ end
 ---@param tab_hl string: highlight of text
 ---@param click_id integer: id passed to `___neotree_selector_click`, should be calculated with `M.calc_click_id_from_source`
 ---@return string: complete string to render one tab
-M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
+local render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
   local res = "%" .. click_id .. "@v:lua.___neotree_selector_click@"
   if left_sep ~= nil then
     res = res .. text_with_hl(left_sep, sep_hl)
@@ -192,16 +236,16 @@ M.get = function()
         return node_text
       end
     end
-    return M.create_selector(state, vim.api.nvim_win_get_width(0))
+    return M.get_selector(state, vim.api.nvim_win_get_width(0))
   end
 end
 
----create_selector:
+---get_selector:
 -- Does everything to generate the string for source_selector in winbar / statusline.
 ---@param state table:
 ---@param width integer: width of the entire window where the source_selector is displayed
 ---@return string | nil
-M.create_selector = function(state, width)
+M.get_selector = function(state, width)
   local config = require("neo-tree").config
   if config == nil then
     log.warn("Cannot find config. `create_selector` abort.")
@@ -216,7 +260,7 @@ M.create_selector = function(state, width)
   end
   width = math.floor(width - padding.left - padding.right)
 
-  -- generate information of each tab (look `M.get_selector_tab_info` for type hint)
+  -- generate information of each tab (look `get_selector_tab_info` for type hint)
   local tabs = {}
   local active_index = #config.sources
   local length_sum, length_active, length_separators = 0, 0, 0
@@ -231,7 +275,7 @@ M.create_selector = function(state, width)
       config.source_selector.show_separator_on_edge == false and i == 1,
       config.source_selector.show_separator_on_edge == false and i == #config.sources
     )
-    local element = M.get_selector_tab_info(source_name, i, is_active, separator)
+    local element = get_selector_tab_info(source_name, i, is_active, separator)
     length_sum = length_sum + element.length
     length_separators = length_separators + element.length - element.text_length
     if is_active then
@@ -244,6 +288,7 @@ M.create_selector = function(state, width)
   local tabs_layout = config.source_selector.tabs_layout
   local content_layout = config.source_selector.content_layout or "center"
   local hl_background = config.source_selector.highlight_background
+  local trunc_char = config.source_selector.truncation_character or "…"
   local remaining_width = width - length_separators
   local return_string = text_with_hl(add_padding(padding.left), hl_background)
   if width < length_sum and config.source_selector.text_trunc_to_fit then -- not enough width
@@ -252,10 +297,11 @@ M.create_selector = function(state, width)
     tabs_layout = "start"
     length_sum = width
     for _, tab in ipairs(tabs) do
-      tab.text = M.text_layout( -- truncate text and pass it to "start"
+      tab.text = text_layout( -- truncate text and pass it to "start"
         tab.text,
         "center",
-        each_width + (tab.is_active and remaining or 0)
+        each_width + (tab.is_active and remaining or 0),
+        trunc_char
       )
     end
   end
@@ -263,26 +309,36 @@ M.create_selector = function(state, width)
     local active_tab_length = width - length_sum + length_active
     for _, tab in ipairs(tabs) do
       return_string = return_string
-        .. M.render_tab(
+        .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
-          M.text_layout(tab.text, tab.is_active and content_layout or nil, active_tab_length),
+          text_layout(
+            tab.text,
+            tab.is_active and content_layout or nil,
+            active_tab_length,
+            trunc_char
+         ),
           tab.tab_hl,
-          M.calc_click_id_from_source(winid, tab.index)
+          calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
   elseif tabs_layout == "equal" then
     for _, tab in ipairs(tabs) do
       return_string = return_string
-        .. M.render_tab(
+        .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
-          M.text_layout(tab.text, content_layout, math.floor(remaining_width / #tabs)),
+          text_layout(
+            tab.text,
+            content_layout,
+            math.floor(remaining_width / #tabs),
+            trunc_char
+          ),
           tab.tab_hl,
-          M.calc_click_id_from_source(winid, tab.index)
+          calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
@@ -290,35 +346,19 @@ M.create_selector = function(state, width)
     local tmp = ""
     for _, tab in ipairs(tabs) do
       tmp = tmp
-        .. M.render_tab(
+        .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
           tab.text,
           tab.tab_hl,
-          M.calc_click_id_from_source(winid, tab.index)
+          calc_click_id_from_source(winid, tab.index)
         )
     end
     return_string = return_string
-      .. M.text_layout(tmp, tabs_layout, width, length_sum, hl_background)
+      .. text_layout(tmp, tabs_layout, width, length_sum)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
-end
-
----append_source_selector:
--- (public): Sets source_selector to winbar or statusline in `win_options`
----@param win_options table: should be passed to `nui.nvim`
----@param state table: state
----@param size integer: width of the entire window where the source_selector is displayed
----@return nil
-M.append_source_selector = function(win_options, state, size)
-  local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
-  if sel_config and sel_config.winbar then
-    win_options.winbar = M.create_selector(state, size)
-  end
-  if sel_config and sel_config.statusline then
-    win_options.statusline = M.create_selector(state, size)
-  end
 end
 
 ---set_source_selector:
@@ -335,27 +375,6 @@ M.set_source_selector = function(state)
   end
 end
 
----calc_click_id_from_source:
--- Calculates click_id that stores information of the source and window id
--- DANGER: Do not change this function unless you know what you are doing
----@param winid integer: window id of the window source_selector is placed
----@param source_index integer: index of the source
----@return integer
-M.calc_click_id_from_source = function(winid, source_index)
-  local base_number = #require("neo-tree").config.sources + 1
-  return base_number * winid + source_index
-end
-
----calc_source_from_click_id:
--- Calculates source index and window id from click_id. Paired with `M.calc_click_id_from_source`
--- DANGER: Do not change this function unless you know what you are doing
----@param click_id integer: click_id
----@return integer, integer
-M.calc_source_from_click_id = function(click_id)
-  local base_number = #require("neo-tree").config.sources + 1
-  return math.floor(click_id / base_number), click_id % base_number
-end
-
 -- @v:lua@ in the tabline only supports global functions, so this is
 -- the only way to add click handlers without autoloaded vimscript functions
 _G.___neotree_selector_click = function(id, _, _, _)
@@ -363,7 +382,7 @@ _G.___neotree_selector_click = function(id, _, _, _)
     return
   end
   local sources = require("neo-tree").config.sources
-  local winid, source_index = M.calc_source_from_click_id(id)
+  local winid, source_index = calc_source_from_click_id(id)
   local state = manager.get_state_for_window(winid)
   if state == nil then
     log.warn("state not found for window ", winid, "; ignoring click")

@@ -48,7 +48,8 @@ local config = {
   source_selector = {
     winbar = false, -- toggle to show selector on winbar
     statusline = false, -- toggle to show selector on statusline
-    show_scrolled_off_parent_node = true,
+    show_scrolled_off_parent_node = false, -- this will replace the tabs with the parent path
+                                           -- of the top visible node when scrolled down.
     tab_labels = { -- falls back to source_name if nil
       filesystem = "  Files ",
       buffers =    "  Buffers ",
@@ -65,7 +66,7 @@ local config = {
     --             center : |      /  a  \/  b  \/  c  \      |
     --             equal  : |/    a    \/    b    \/    c    \|
     --             active : |/  focused tab    \/  b  \/  c  \|
-    text_trunc_to_fit = true, -- toggle to truncate text in each tab when not enough width
+    truncation_character = "…", -- character to use when truncating the tab label
     tabs_min_width = nil, -- nil | int: if int padding is added based on `content_layout`
     tabs_max_width = nil, -- this will truncate text even if `text_trunc_to_fit = false`
     padding = 0, -- can be int or table
