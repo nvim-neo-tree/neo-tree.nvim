@@ -50,7 +50,9 @@ end
 local function truncate_by_cell(str, col_limit)
   local api = vim.api
   local fn = vim.fn
-  if str and str:len() == api.nvim_strwidth(str) then return fn.strcharpart(str, 0, col_limit) end
+  if str and str:len() == api.nvim_strwidth(str) then
+    return fn.strcharpart(str, 0, col_limit)
+  end
   local short = fn.strcharpart(str, 0, col_limit)
   if api.nvim_strwidth(short) > col_limit then
     while api.nvim_strwidth(short) > col_limit do
@@ -318,7 +320,7 @@ M.get_selector = function(state, width)
             tab.is_active and content_layout or nil,
             active_tab_length,
             trunc_char
-         ),
+          ),
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
@@ -331,12 +333,7 @@ M.get_selector = function(state, width)
           tab.left,
           tab.right,
           tab.sep_hl,
-          text_layout(
-            tab.text,
-            content_layout,
-            math.floor(remaining_width / #tabs),
-            trunc_char
-          ),
+          text_layout(tab.text, content_layout, math.floor(remaining_width / #tabs), trunc_char),
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
@@ -355,8 +352,7 @@ M.get_selector = function(state, width)
           calc_click_id_from_source(winid, tab.index)
         )
     end
-    return_string = return_string
-      .. text_layout(tmp, tabs_layout, width, trunc_char)
+    return_string = return_string .. text_layout(tmp, tabs_layout, width, trunc_char)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
