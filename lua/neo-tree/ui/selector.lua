@@ -5,6 +5,11 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
+---sep_tbl:
+-- Returns table expression of separator.
+-- Converts to table expression if sep is string.
+---@param sep string | table:
+---@return table: `{ left = .., right = .., override = .. }`
 local sep_tbl = function(sep)
   if type(sep) == "nil" then
     return {}
@@ -14,6 +19,13 @@ local sep_tbl = function(sep)
   return sep
 end
 
+---get_separators
+-- Returns information about separator on each tab.
+---@param source_index integer: index of source
+---@param active_index integer: index of active source. used to check if source is active and when `override = "active"`
+---@param force_ignore_left boolean: overwrites calculated results with "" if set to true
+---@param force_ignore_right boolean: overwrites calculated results with "" if set to true
+---@return table: something like `{ left = "|", right = "|" }`
 local get_separators = function(source_index, active_index, force_ignore_left, force_ignore_right)
   local config = require("neo-tree").config
   local is_active = source_index == active_index
@@ -33,6 +45,13 @@ local get_separators = function(source_index, active_index, force_ignore_left, f
   }
 end
 
+---get_selector_tab_info:
+-- Returns information to create a tab
+---@param source_name string: name of source. should be same as names in `config.sources`
+---@param source_index integer: index of source_name
+---@param is_active boolean: whether this source is currently focused
+---@param separator table: `{ left = .., right = .. }`: output from `get_separators()`
+---@return table (see code): Note: `length`: length of whole tab (including seps), `text_length`: length of tab excluding seps
 M.get_selector_tab_info = function(source_name, source_index, is_active, separator)
   local config = require("neo-tree").config
   local separator_config = utils.resolve_config_option(config, "source_selector", nil)
@@ -68,6 +87,11 @@ M.get_selector_tab_info = function(source_name, source_index, is_active, separat
   }
 end
 
+---text_with_hl:
+-- Returns text with highlight syntax for winbar / statusline
+---@param text string: text to highlight
+---@param tab_hl string | nil: if nil, does nothing
+---@return string: e.g. "%#HiName#text"
 local text_with_hl = function(text, tab_hl)
   if tab_hl == nil then
     return text
@@ -75,6 +99,12 @@ local text_with_hl = function(text, tab_hl)
   return string.format("%%#%s#%s", tab_hl, text)
 end
 
+---add_padding:
+-- Use for creating padding with highlight
+---@param padding_legth number: number of padding. if float, value is rounded with `math.floor`
+---@param hl_padding string | nil: highlight of the padding characters
+---@param padchar string | nil: if nil, " " (space) is used
+---@return string
 local add_padding = function(padding_legth, hl_padding, padchar)
   if padchar == nil then
     padchar = " "
@@ -82,6 +112,15 @@ local add_padding = function(padding_legth, hl_padding, padchar)
   return text_with_hl(string.rep(padchar, math.floor(padding_legth)), hl_padding)
 end
 
+---text_layout:
+-- Add padding to fill `output_width`.
+-- If `output_width` is less than `text_length`, text is truncated to fit `output_width`.
+---@param text string:
+---@param content_layout string: `"start", "center", "end"`: see `config.source_selector.tabs_layout` for more details
+---@param output_width integer: exact `strdisplaywidth` of the output string
+---@param text_length integer | nil: length of `text`, if nil, this function calculates it with `vim.fn.strdisplaywidth`
+---@param hl_padding string | nil: highlight for paddings. if nil, " " is used
+---@return string
 M.text_layout = function(text, content_layout, output_width, text_length, hl_padding)
   if text_length == nil then
     text_length = vim.fn.strdisplaywidth(text)
@@ -100,6 +139,15 @@ M.text_layout = function(text, content_layout, output_width, text_length, hl_pad
   return add_padding(left_pad, hl_padding) .. text .. add_padding(right_pad, hl_padding)
 end
 
+---render_tab:
+-- Renders string to express one tab for winbar / statusline.
+---@param left_sep string: left separator
+---@param right_sep string: right separator
+---@param sep_hl string: highlight of separators
+---@param text string: text, mostly name of source in this case
+---@param tab_hl string: highlight of text
+---@param click_id integer: id passed to `___neotree_selector_click`, should be calculated with `M.calc_click_id_from_source`
+---@return string: complete string to render one tab
 M.render_tab = function(left_sep, right_sep, sep_hl, text, tab_hl, click_id)
   local res = "%" .. click_id .. "@v:lua.___neotree_selector_click@"
   if left_sep ~= nil then
@@ -148,6 +196,11 @@ M.get = function()
   end
 end
 
+---create_selector:
+-- Does everything to generate the string for source_selector in winbar / statusline.
+---@param state table:
+---@param width integer: width of the entire window where the source_selector is displayed
+---@return string | nil
 M.create_selector = function(state, width)
   local config = require("neo-tree").config
   if config == nil then
@@ -252,6 +305,12 @@ M.create_selector = function(state, width)
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
 
+---append_source_selector:
+-- (public): Sets source_selector to winbar or statusline in `win_options`
+---@param win_options table: should be passed to `nui.nvim`
+---@param state table: state
+---@param size integer: width of the entire window where the source_selector is displayed
+---@return nil
 M.append_source_selector = function(win_options, state, size)
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
   if sel_config and sel_config.winbar then
@@ -262,6 +321,10 @@ M.append_source_selector = function(win_options, state, size)
   end
 end
 
+---set_source_selector:
+-- (public): Directly set source_selector to current window's winbar / statusline
+---@param state table: state
+---@return nil
 M.set_source_selector = function(state)
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
   if sel_config and sel_config.winbar then
@@ -272,11 +335,22 @@ M.set_source_selector = function(state)
   end
 end
 
+---calc_click_id_from_source:
+-- Calculates click_id that stores information of the source and window id
+-- DANGER: Do not change this function unless you know what you are doing
+---@param winid integer: window id of the window source_selector is placed
+---@param source_index integer: index of the source
+---@return integer
 M.calc_click_id_from_source = function(winid, source_index)
   local base_number = #require("neo-tree").config.sources + 1
   return base_number * winid + source_index
 end
 
+---calc_source_from_click_id:
+-- Calculates source index and window id from click_id. Paired with `M.calc_click_id_from_source`
+-- DANGER: Do not change this function unless you know what you are doing
+---@param click_id integer: click_id
+---@return integer, integer
 M.calc_source_from_click_id = function(click_id)
   local base_number = #require("neo-tree").config.sources + 1
   return math.floor(click_id / base_number), click_id % base_number
