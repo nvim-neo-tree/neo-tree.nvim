@@ -40,11 +40,7 @@ local config = {
   sort_function = nil , -- uses a custom function for sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   use_default_mappings = true,
-  ----------------------------------------------------------------------------------
-  -- WARNING: The `source_selector` below is is an experimental feature and the 
-  -- configuration and feature set is not yet final. 
-  -- See https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427
-  ----------------------------------------------------------------------------------
+  -- source_selector provides clickable tabs to switch between sources.
   source_selector = {
     winbar = false, -- toggle to show selector on winbar
     statusline = false, -- toggle to show selector on statusline

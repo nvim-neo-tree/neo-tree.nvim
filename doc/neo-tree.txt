@@ -11,6 +11,7 @@ Mappings .................... |neo-tree-mappings|
   Filter .................... |neo-tree-filter|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
+  Source Selector ........... |neo-tree-source-selector|
   Filtered Items ............ |neo-tree-filtered-items|
   Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
@@ -566,6 +567,26 @@ Run `:lua require("neo-tree").paste_default_config()` to dump the fully
 commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
 lua file just to read it as documentation. 
+
+
+SOURCE SELECTOR                                       *neo-tree-source-selector*
+
+You can enable a clickable source selector in either the winbar
+(requires neovim 0.8+) or the statusline. To do so, set one of these options
+to `true`:
+
+>
+    requires("neo-tree").setup({
+        source_selector = {
+            winbar = false,
+            statusline = false
+        }
+    })
+<
+
+There are many configuration options to change the style of these tabs. 
+See `defaults.lua` for details.
+
 
 CURRENT WORKING DIRECTORY                                         *neo-tree-cwd*
 

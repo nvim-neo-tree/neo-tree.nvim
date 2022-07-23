@@ -9,10 +9,12 @@ function fs.create_temp_dir()
   -- 2. Remove any double separators (on macOS TMPDIR can end in a trailing / which absolute doesn't remove, this should
   --    be coverted by https://github.com/nvim-lua/plenary.nvim/issues/330).
   local temp_dir = vim.fn.resolve(
-    Path:new(
-      vim.fn.fnamemodify(vim.fn.tempname(), ":h"),
-      string.format("neo-tree-test-%s", vim.fn.rand())
-    ):absolute()
+    Path
+      :new(
+        vim.fn.fnamemodify(vim.fn.tempname(), ":h"),
+        string.format("neo-tree-test-%s", vim.fn.rand())
+      )
+      :absolute()
   )
   vim.fn.mkdir(temp_dir, "p")
   return temp_dir
