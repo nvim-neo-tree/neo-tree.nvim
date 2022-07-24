@@ -8,6 +8,7 @@ local config = {
     "buffers",
     "git_status",
   },
+  add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
