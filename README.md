@@ -231,6 +231,8 @@ use {
             ["q"] = "close_window",
             ["R"] = "refresh",
             ["?"] = "show_help",
+            ["<"] = "prev_source",
+            [">"] = "next_source",
           }
         },
         nesting_rules = {},

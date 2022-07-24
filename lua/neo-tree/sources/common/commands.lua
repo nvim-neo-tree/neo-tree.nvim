@@ -203,6 +203,46 @@ M.cut_to_clipboard_visual = function(state, selected_nodes, callback)
   end
 end
 
+M.next_source = function(state)
+  local sources = require("neo-tree").config.sources
+  local next_source = sources[1]
+  for i, source in ipairs(sources) do
+    if source == state.name then
+      next_source = sources[i + 1]
+      if not next_source then
+        next_source = sources[1]
+      end
+      break
+    end
+  end
+
+  require("neo-tree.command").execute({
+    source = next_source,
+    position = state.current_position,
+    action = "focus",
+  })
+end
+
+M.prev_source = function(state)
+  local sources = require("neo-tree").config.sources
+  local next_source = sources[#sources]
+  for i, source in ipairs(sources) do
+    if source == state.name then
+      next_source = sources[i - 1]
+      if not next_source then
+        next_source = sources[#sources]
+      end
+      break
+    end
+  end
+
+  require("neo-tree.command").execute({
+    source = next_source,
+    position = state.current_position,
+    action = "focus",
+  })
+end
+
 M.show_debug_info = function(state)
   print(vim.inspect(state))
 end

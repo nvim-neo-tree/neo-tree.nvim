@@ -169,6 +169,10 @@ in a custom mapping.
 
 Note: The "selected" item is the line the cursor is currently on.
 
+<             = prev_source  Switches to the previous source.
+
+>             = next_source  Switches to the next source.
+
 <bs>          = navigate_up: Moves the root directory up one level.
 
 .             = set_root:    Changes the root directory to the currently 

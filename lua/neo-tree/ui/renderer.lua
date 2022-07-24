@@ -981,7 +981,6 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       name = "",
       path = "",
       id = "blank_line_at_top"
-
     })
   end
 
