@@ -511,7 +511,14 @@ end
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
+
+local shellslash_exists = vim.fn.exists("+shellslash") ~= 0
+M.use_shellslash = false
+if shellslash_exists then
+    M.use_shellslash = vim.o.shellslash
+end
+
+if M.is_windows == true and not M.use_shellslash then
   M.path_separator = "\\"
 end
 
@@ -720,7 +727,10 @@ M.is_expandable = function(node)
 end
 
 M.windowize_path = function(path)
-  return path:gsub("/", "\\")
+  if not M.use_shellslash then
+    return path:gsub("/", "\\")
+  end
+  return path
 end
 
 M.wrap = function(func, ...)
