@@ -201,6 +201,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       state.git_ignored = git_ignored
     end
     --end
+    context = nil
 
     if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
       log.trace("Starting .git folder watcher")

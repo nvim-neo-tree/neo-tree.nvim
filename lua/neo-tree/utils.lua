@@ -43,6 +43,28 @@ M.debounce_action = {
   COMPLETE_ASYNC_JOB = 2,
 }
 
+local defer_function
+-- Part of debounce. Moved out of the function to eliminate memory leaks.
+defer_function = function(id, frequency_in_ms, strategy, action)
+  tracked_functions[id].in_debounce_period = true
+  vim.defer_fn(function()
+    local current_data = tracked_functions[id]
+    if not current_data then
+      return
+    end
+    if current_data.async_in_progress then
+      defer_function(id, frequency_in_ms, strategy, action)
+      return
+    end
+    local _fn = current_data.fn
+    current_data.fn = nil
+    current_data.in_debounce_period = false
+    if _fn ~= nil then
+      M.debounce(id, _fn, frequency_in_ms, strategy, action)
+    end
+  end, frequency_in_ms)
+end
+
 ---Call fn, but not more than once every x milliseconds.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
@@ -50,27 +72,6 @@ M.debounce_action = {
 ---@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
-
-  local defer_function
-  defer_function = function()
-    fn_data.in_debounce_period = true
-    vim.defer_fn(function()
-      local current_data = tracked_functions[id]
-      if not current_data then
-        return
-      end
-      if fn_data.async_in_progress then
-        defer_function()
-        return
-      end
-      local _fn = current_data.fn
-      current_data.fn = nil
-      current_data.in_debounce_period = false
-      if _fn ~= nil then
-        M.debounce(id, _fn, current_data.frequency_in_ms, strategy, action)
-      end
-    end, frequency_in_ms)
-  end
 
   if fn_data == nil then
     if action == M.debounce_action.COMPLETE_ASYNC_JOB then
@@ -86,7 +87,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
     }
     tracked_functions[id] = fn_data
     if strategy == M.debounce_strategy.CALL_LAST_ONLY then
-      defer_function()
+      defer_function(id, frequency_in_ms, strategy, action)
       return
     end
   else
@@ -96,7 +97,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
       fn_data.async_in_progress = false
       return
     elseif fn_data.async_in_progress then
-      defer_function()
+      defer_function(id, frequency_in_ms, strategy, action)
       return
     end
   end
@@ -127,7 +128,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
 
   if strategy == M.debounce_strategy.CALL_LAST_ONLY then
     if fn_data.async_in_progress then
-      defer_function()
+      defer_function(id, frequency_in_ms, strategy, action)
     else
       -- We are done with this debounce
       tracked_functions[id] = nil
@@ -138,7 +139,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
     -- and when this deferred executes, nothing will happen.
     -- If there are several calls, only the last one in will run.
     strategy = M.debounce_strategy.CALL_LAST_ONLY
-    defer_function()
+    defer_function(id, frequency_in_ms, strategy, action)
   end
 end
 
