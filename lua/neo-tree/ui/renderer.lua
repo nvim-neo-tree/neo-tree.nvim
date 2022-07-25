@@ -980,7 +980,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       type = "message",
       name = "",
       path = "",
-      id = "blank_line_at_top"
+      id = "blank_line_at_top",
     })
   end
 
