@@ -126,7 +126,7 @@ M.status = function(base, exclude_directories, path)
 
   local C = git_root
   local staged_cmd = { "git", "-C", C, "diff", "--staged", "--name-status", base, "--" }
-  local staged_ok, staged_result = utils.execute_command(base_cmd + staged_cmd)
+  local staged_ok, staged_result = utils.execute_command(staged_cmd)
   if not staged_ok then
     return {}
   end
