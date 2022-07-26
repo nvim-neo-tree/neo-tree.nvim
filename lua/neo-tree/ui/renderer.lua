@@ -238,7 +238,9 @@ create_nodes = function(source_items, state, level)
         level = level,
         is_last_child = show_indent_marker_for_message,
       }
-      nodes[#nodes].is_last_child = not show_indent_marker_for_message
+      if #nodes > 0 then
+        nodes[#nodes].is_last_child = not show_indent_marker_for_message
+      end
       local node = NuiTree.Node(nodeData)
       table.insert(nodes, node)
     end
