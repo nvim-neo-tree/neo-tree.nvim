@@ -124,17 +124,18 @@ M.status = function(base, exclude_directories, path)
     return {}
   end
 
-  local staged_cmd = 'git -C "' .. git_root .. '" diff --staged --name-status ' .. base .. " --"
-  local staged_ok, staged_result = utils.execute_command(staged_cmd)
+  local C = git_root
+  local staged_cmd = { "git", "-C", C, "diff", "--staged", "--name-status", base, "--" }
+  local staged_ok, staged_result = utils.execute_command(base_cmd + staged_cmd)
   if not staged_ok then
     return {}
   end
-  local unstaged_cmd = 'git -C "' .. git_root .. '" diff --name-status'
+  local unstaged_cmd = { "git", "-C", C, "diff", "--name-status" }
   local unstaged_ok, unstaged_result = utils.execute_command(unstaged_cmd)
   if not unstaged_ok then
     return {}
   end
-  local untracked_cmd = 'git -C "' .. git_root .. '" ls-files --exclude-standard --others'
+  local untracked_cmd = { "git", "-C", C, "ls-files", "--exclude-standard", "--others" }
   local untracked_ok, untracked_result = utils.execute_command(untracked_cmd)
   if not untracked_ok then
     return {}

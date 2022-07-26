@@ -4,9 +4,9 @@ local log = require("neo-tree.log")
 local M = {}
 
 M.get_repository_root = function(path)
-  local cmd = "git rev-parse --show-toplevel"
+  local cmd = { "git", "rev-parse", "--show-toplevel" }
   if utils.truthy(path) then
-    cmd = "git -C " .. path .. " rev-parse --show-toplevel"
+    cmd = { "git", "-C", path, "rev-parse", "--show-toplevel" }
   end
   local ok, git_root = utils.execute_command(cmd)
   if not ok then
