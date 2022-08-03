@@ -181,16 +181,6 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
 end
 
-M.refresh = function()
-  manager._for_each_state(M.name, function(state)
-    if state.path and renderer.window_exists(state) then
-      M._navigate_internal(state, nil, nil, nil, true)
-    else
-      state.dirty = true
-    end
-  end)
-end
-
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
   state.fuzzy_finder_mode = nil
@@ -329,7 +319,7 @@ M.setup = function(config, global_config)
   if config.use_libuv_file_watcher then
     manager.subscribe(M.name, {
       event = events.FS_EVENT,
-      handler = M.refresh
+      handler = wrap(manager.refresh),
     })
   else
     require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()

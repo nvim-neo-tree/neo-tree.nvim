@@ -14,7 +14,7 @@ M.get_open_buffers = function(state)
   end
   state.loading = true
   local context = file_items.create_context()
-  context.staate = state
+  context.state = state
   -- Create root folder
   local root = file_items.create_item(context, state.path, "directory")
   root.name = vim.fn.fnamemodify(root.path, ":~")

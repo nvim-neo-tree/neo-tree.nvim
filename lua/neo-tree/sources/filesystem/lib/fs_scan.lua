@@ -75,7 +75,6 @@ local job_complete = function(context)
     state.git_ignored = git_ignored
   end
   --end
-  context = nil
 
   if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
     log.trace("Starting .git folder watcher")
@@ -90,13 +89,19 @@ local job_complete = function(context)
   file_items.deep_sort(root.children)
   if parent_id then
     -- lazy loading a child folder
-    renderer.show_nodes(root.children, state, parent_id)
+    renderer.show_nodes(root.children, state, parent_id, context.callback)
   else
     -- full render of the tree
-    renderer.show_nodes({ root }, state)
+    renderer.show_nodes({ root }, state, nil, context.callback)
   end
-end
 
+  context.state = nil
+  context.callback = nil
+  context.all_items = nil
+  context.root = nil
+  context.parent_id = nil
+  context = nil
+end
 
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
@@ -220,6 +225,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
   context.parent_id = parent_id
   context.path_to_reveal = path_to_reveal
   context.recursive = recursive
+  context.callback = callback
 
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory")
@@ -229,7 +235,6 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
   context.root = root
   context.folders[root.path] = root
   state.default_expanded_nodes = state.force_open_folders or { state.path }
-
 
   if state.search_pattern then
     -- Use the external command because the plenary search is slow
@@ -249,7 +254,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
           file_items.create_item(context, path)
         end
       end,
-      on_exit = vim.schedule_wrap(function ()
+      on_exit = vim.schedule_wrap(function()
         job_complete(context)
       end),
     })
@@ -294,7 +299,6 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
     end
   end
 end
-
 
 M.stop_watchers = function(state)
   if state.use_libuv_file_watcher and state.tree then

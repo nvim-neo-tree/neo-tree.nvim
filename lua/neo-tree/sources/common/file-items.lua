@@ -198,10 +198,14 @@ function set_parents(context, item)
   end
 end
 
-local create_context = function()
+---Create context to be used in other file-items functions.
+---@param state table|nil The state of the file-items.
+---@return table
+local create_context = function(state)
   local context = {}
   -- Make the context a weak table so that it can be garbage collected
   --setmetatable(context, { __mode = 'v' })
+  context.state = state
   context.folders = {}
   context.nesting = {}
   context.item_exists = {}
