@@ -198,14 +198,14 @@ function set_parents(context, item)
   end
 end
 
-local create_context = function(state)
-  local context = {
-    state = state,
-    folders = {},
-    nesting = {},
-    item_exists = {},
-    all_items = {},
-  }
+local create_context = function()
+  local context = {}
+  -- Make the context a weak table so that it can be garbage collected
+  --setmetatable(context, { __mode = 'v' })
+  context.folders = {}
+  context.nesting = {}
+  context.item_exists = {}
+  context.all_items = {}
   return context
 end
 

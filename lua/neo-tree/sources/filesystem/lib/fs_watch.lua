@@ -44,8 +44,8 @@ end
 
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
-M.watch_folder = function(path, git_watch_callback)
-  if not git_watch_callback then
+M.watch_folder = function(path, custom_callback, allow_git_watch)
+  if not allow_git_watch then
     if path:find("/%.git$") or path:find("/%.git/") then
       -- git folders seem to throw off fs events constantly.
       log.debug("watch_folder(path): Skipping git folder: ", path)
@@ -55,17 +55,19 @@ M.watch_folder = function(path, git_watch_callback)
   local h = watched[path]
   if h == nil then
     log.trace("Starting new fs watch on: ", path)
-    local w = vim.loop.new_fs_event()
-    watched[path] = {
-      handle = w,
+    h = {
+      handle = vim.loop.new_fs_event(),
       path = path,
-      references = 1,
+      references = 0,
+      active = false,
+      callback = custom_callback or fs_event_callback,
     }
-    w:start(path, flags, git_watch_callback or fs_event_callback)
+    watched[path] = h
+    --w:start(path, flags, callback)
   else
     log.trace("Incrementing references for fs watch on: ", path)
-    h.references = h.references + 1
   end
+  h.references = h.references + 1
 end
 
 M.watch_git_index = function(path)
@@ -82,25 +84,36 @@ M.watch_git_index = function(path)
       events.fire_event(events.GIT_EVENT, { path = fname, repository = git_root })
     end)
 
-    M.watch_folder(git_folder, git_event_callback)
+    M.watch_folder(git_folder, git_event_callback, true)
+  end
+end
+
+M.updated_watched = function()
+  for path, w in pairs(watched) do
+    if w.references > 0 then
+      if not w.active then
+        log.trace("References added for fs watch on: ", path, ", starting.")
+        w.handle:start(path, flags, w.callback)
+        w.active = true
+      end
+    else
+      if w.active then
+        log.trace("No more references for fs watch on: ", path, ", stopping.")
+        w.handle:stop()
+        w.active = false
+      end
+    end
   end
 end
 
 ---Stop watching a directory. If there are no more references to the handle,
 ---it will be destroyed. Otherwise, the reference count will be decremented.
 ---@param path string The directory to stop watching.
-M.unwatch_folder = function(path)
+M.unwatch_folder = function(path, callback_id)
   local h = watched[path]
   if h then
-    log.trace("Decrementing references for fs watch on: ", path)
+    log.trace("Decrementing references for fs watch on: ", path, callback_id)
     h.references = h.references - 1
-    if h.references < 1 then
-      log.trace("No more references for fs watch on: ", path, ", stopping.")
-      h.handle:stop()
-      watched[path] = nil
-    else
-      log.trace("Still references for fs watch on: ", path, ", NOT stopping.")
-    end
   else
     log.trace("(unwatch_folder) No fs watch found for: ", path)
   end
@@ -118,6 +131,7 @@ end
 M.unwatch_all = function()
   for _, h in pairs(watched) do
     h.handle:stop()
+    h.handle = nil
   end
   watched = {}
 end
