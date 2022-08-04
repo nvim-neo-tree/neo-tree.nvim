@@ -117,7 +117,7 @@ end
 ---@exclude_directories boolean Whether to skip bubling up status to directories
 ---@path string Path to run the git status command in, defaults to cwd.
 ---@return table table Table with the path as key and the status as value.
----@return string string The git root for the specified path.
+---@return table, string|nil The git root for the specified path.
 M.status = function(base, exclude_directories, path)
   local git_root = git_utils.get_repository_root(path)
   if not utils.truthy(git_root) then

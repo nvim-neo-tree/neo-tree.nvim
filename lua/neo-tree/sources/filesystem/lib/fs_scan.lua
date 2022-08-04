@@ -61,6 +61,48 @@ local dir_complete = function(context, dir_path)
   return next_path
 end
 
+local job_complete = function(context)
+  local state = context.state
+  local root = context.root
+  local parent_id = context.parent_id
+  -- We need to check git_ignored at all times because even if they are not hidden
+  -- they should be displayed differently.
+  --if f.hide_gitignored then
+  local git_ignored = git.mark_ignored(state, context.all_items)
+  if parent_id then
+    vim.list_extend(state.git_ignored, git_ignored)
+  else
+    state.git_ignored = git_ignored
+  end
+  --end
+
+  if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
+    log.trace("Starting .git folder watcher")
+    local path = root.path
+    if root.is_link then
+      path = root.link_to
+    end
+    fs_watch.watch_git_index(path)
+  end
+  fs_watch.updated_watched()
+
+  file_items.deep_sort(root.children)
+  if parent_id then
+    -- lazy loading a child folder
+    renderer.show_nodes(root.children, state, parent_id, context.callback)
+  else
+    -- full render of the tree
+    renderer.show_nodes({ root }, state, nil, context.callback)
+  end
+
+  context.state = nil
+  context.callback = nil
+  context.all_items = nil
+  context.root = nil
+  context.parent_id = nil
+  context = nil
+end
+
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
 local function async_scan(context, path)
@@ -72,7 +114,7 @@ local function async_scan(context, path)
   local directories_to_scan = #context.paths_to_load
 
   local on_exit = vim.schedule_wrap(function()
-    context.job_complete()
+    job_complete(context)
   end)
 
   -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
@@ -148,12 +190,13 @@ local function sync_scan(context, path_to_scan)
       end
     end
   end
+  vim.loop.fs_closedir(dir)
 
   local next_path = dir_complete(context, path_to_scan)
   if next_path then
     sync_scan(context, next_path)
   else
-    context.job_complete()
+    job_complete(context)
   end
 end
 
@@ -177,50 +220,21 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
   if not parent_id then
     M.stop_watchers(state)
   end
-  local context = file_items.create_context(state)
+  local context = file_items.create_context()
+  context.state = state
+  context.parent_id = parent_id
   context.path_to_reveal = path_to_reveal
   context.recursive = recursive
+  context.callback = callback
 
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory")
   root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
+  context.root = root
   context.folders[root.path] = root
   state.default_expanded_nodes = state.force_open_folders or { state.path }
-
-  context.job_complete = function()
-    local f = state.filtered_items or {}
-    -- We need to check git_ignored at all times because even if they are not hidden
-    -- they should be displayed differently.
-    --if f.hide_gitignored then
-    local git_ignored = git.mark_ignored(state, context.all_items)
-    if parent_id then
-      vim.list_extend(state.git_ignored, git_ignored)
-    else
-      state.git_ignored = git_ignored
-    end
-    --end
-    context = nil
-
-    if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
-      log.trace("Starting .git folder watcher")
-      local path = root.path
-      if root.is_link then
-        path = root.link_to
-      end
-      fs_watch.watch_git_index(path)
-    end
-
-    file_items.deep_sort(root.children)
-    if parent_id then
-      -- lazy loading a child folder
-      renderer.show_nodes(root.children, state, parent_id, callback)
-    else
-      -- full render of the tree
-      renderer.show_nodes({ root }, state, nil, callback)
-    end
-  end
 
   if state.search_pattern then
     -- Use the external command because the plenary search is slow
@@ -240,7 +254,9 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
           file_items.create_item(context, path)
         end
       end,
-      on_exit = vim.schedule_wrap(context.job_complete),
+      on_exit = vim.schedule_wrap(function()
+        job_complete(context)
+      end),
     })
   else
     -- In the case of a refresh or navigating up, we need to make sure that all

@@ -30,6 +30,11 @@ local define_events = function()
     return
   end
 
+  events.define_event(events.FS_EVENT, {
+    debounce_frequency = 100,
+    debounce_strategy = utils.debounce_strategy.CALL_LAST_ONLY,
+  })
+
   local v = vim.version()
   local diag_autocmd = "DiagnosticChanged"
   if v.major < 1 and v.minor < 6 then
