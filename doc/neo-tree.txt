@@ -731,6 +731,7 @@ highlight group which will be applied when they are visible, see
           },
           hide_by_pattern = {
             --"*.meta",
+            --"*/src/*/tsconfig.json",
           },
           always_show = { -- remains visible even if other settings would normally hide it
             --".gitignored",
