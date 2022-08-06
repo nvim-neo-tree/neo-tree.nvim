@@ -136,7 +136,9 @@ local config = {
   --},
   default_component_configs = {
     container = {
-      enable_character_fade = true
+      enable_character_fade = true,
+      width = "100%",
+      right_padding = 0,
     },
     indent = {
       indent_size = 2,
@@ -194,9 +196,6 @@ local config = {
       { "current_filter" },
       {
         "container",
-        width = "100%",
-        right_padding = 0,
-        --max_width = 60,
         content = {
           { "name", zindex = 10 },
           -- {
@@ -214,9 +213,6 @@ local config = {
       { "icon" },
       {
         "container",
-        width = "100%",
-        right_padding = 0,
-        --max_width = 60,
         content = {
           {
             "name",
