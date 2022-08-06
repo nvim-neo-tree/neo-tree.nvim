@@ -65,16 +65,14 @@ local job_complete = function(context)
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
-  -- We need to check git_ignored at all times because even if they are not hidden
-  -- they should be displayed differently.
-  --if f.hide_gitignored then
-  local git_ignored = git.mark_ignored(state, context.all_items)
-  if parent_id then
-    vim.list_extend(state.git_ignored, git_ignored)
-  else
-    state.git_ignored = git_ignored
+  if state.filtered_items.hide_gitignored or state.enable_git_status then
+    local git_ignored = git.mark_ignored(state, context.all_items)
+    if parent_id then
+      vim.list_extend(state.git_ignored, git_ignored)
+    else
+      state.git_ignored = git_ignored
+    end
   end
-  --end
 
   if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
     log.trace("Starting .git folder watcher")

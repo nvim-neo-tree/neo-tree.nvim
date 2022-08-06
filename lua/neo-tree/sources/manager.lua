@@ -467,7 +467,8 @@ M.refresh = function(source_name, callback)
   end
   local current_tabnr = vim.api.nvim_get_current_tabpage()
   log.trace(source_name, "refresh")
-  M._for_each_state(source_name, function(state)
+  for i = 1, #all_states, 1 do
+    local state = all_states[i]
     if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
       local success, err = pcall(M.navigate, state, state.path, nil, callback)
       if not success then
@@ -476,7 +477,7 @@ M.refresh = function(source_name, callback)
     else
       state.dirty = true
     end
-  end)
+  end
 end
 
 M.reveal_current_file = function(source_name, callback, force_cwd)

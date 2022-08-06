@@ -330,7 +330,7 @@ M.setup = function(config, global_config)
           local afile = arg.afile or ""
           if utils.is_real_file(afile) then
             log.trace("refreshing due to vim_buffer_changed event: ", afile)
-            manager.refresh(M.name)
+            manager.refresh("filesystem")
           else
             log.trace("Ignoring vim_buffer_changed event for non-file: ", afile)
           end
