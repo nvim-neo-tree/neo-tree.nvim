@@ -6,7 +6,6 @@ local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
-local manager = require("neo-tree.sources.manager")
 
 local M = {}
 local refresh = function(state)

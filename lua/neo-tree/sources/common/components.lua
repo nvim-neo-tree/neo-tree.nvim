@@ -207,36 +207,38 @@ M.git_status = function(config, node, state)
 end
 
 M.filtered_by = function(config, node, state)
+  local result = {}
   if type(node.filtered_by) == "table" then
     local fby = node.filtered_by
     if fby.name then
-      return {
+      result = {
         text = "(hide by name) ",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
-      return {
+      result = {
         text = "(hide by pattern) ",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
-      return {
+      result = {
         text = "(gitignored) ",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
-      return {
+      result = {
         text = "(dotfile) ",
         highlight = highlights.DOTFILE,
       }
     elseif fby.hidden then
-      return {
+      result = {
         text = "(hidden) ",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
+    fby = nil
   end
-  return {}
+  return result
 end
 
 M.icon = function(config, node, state)
