@@ -113,6 +113,10 @@ function create_item(context, path, _type)
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.never_show = true
     end
+    if f.always_show[name] then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.always_show = true
+    end
     if f.hide_by_name[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.name = true

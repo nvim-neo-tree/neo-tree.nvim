@@ -257,11 +257,6 @@ M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
   config.enable_git_status = global_config.enable_git_status
 
-  local hide_by_name = config.filtered_items.hide_by_name
-  if hide_by_name then
-    config.filtered_items.hide_by_name = utils.list_to_dict(hide_by_name)
-  end
-
   local hide_by_pattern = config.filtered_items.hide_by_pattern
   if hide_by_pattern then
     local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
@@ -271,9 +266,11 @@ M.setup = function(config, global_config)
     end
   end
 
-  local never_show = config.filtered_items.never_show
-  if never_show then
-    config.filtered_items.never_show = utils.list_to_dict(never_show)
+  for _, key in ipairs({ "hide_by_name", "always_show", "never_show" }) do
+    local list = config.filtered_items[key]
+    if type(list) == "table" then
+      config.filtered_items[key] = utils.list_to_dict(list)
+    end
   end
 
   --Configure events for before_render

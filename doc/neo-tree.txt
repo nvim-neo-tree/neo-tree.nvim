@@ -645,7 +645,10 @@ highlight group which will be applied when they are visible, see
           hide_by_pattern = {
             --"*.meta",
           },
-          never_show = { -- remains hidden even if visible is toggled to true
+          always_show = { -- remains visible even if other settings would normally hide it
+            --".gitignored",
+          },
+          never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
             --".DS_Store",
             --"thumbs.db",
           },
@@ -653,18 +656,31 @@ highlight group which will be applied when they are visible, see
       }
     })
 <
+
 The `visible` option just defines the default value. This value is toggled by
 the "toggle_hidden" command, which is mapped to H by default.
 
-The `never_show` option is the same as `hide_by_name`, except that those items
-will remain hidden even if you toggle `visible` to true. This section takes
-precedence over the others.
+The `hide_dotfiles` option just hides anything that starts with `. `(period).
+
+The `hide_gitignored` option will query git for the files and folders being
+shown, and hide those that are marked as ignored.
+
+The `hide_hidden` option only will work on Windows using the Windows logic
+that determines if a file or directory is hidden.
+
+The `hide_by_name` option is a list of file/folder names that should be
+hidden. This is an exact match.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
 patterns. No gaurantees on how it handles advanced patterns.
 
-The `hide_hidden` option only will work on Windows using the Windows logic
-that determines if a file or directory is hidden.
+The `always_show` option is a list of file/folder names that will always be 
+visible, even if other settings would normally hide it. This section takes
+precedence over all other options except for `never_show`.
+
+The `never_show` option is the same as `hide_by_name`, except that those items
+will remain hidden even if you toggle `visible` to true. This section takes
+precedence over the others.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*

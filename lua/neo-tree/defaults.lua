@@ -345,7 +345,10 @@ local config = {
       hide_by_pattern = { -- uses glob style patterns
         --"*.meta"
       },
-      never_show = { -- remains hidden even if visible is toggled to true
+      always_show = { -- remains visible even if other settings would normally hide it
+        --".gitignored",
+      },
+      never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
         --".DS_Store",
         --"thumbs.db"
       },
