@@ -326,16 +326,17 @@ end
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == "message" then
-    return
+  if node.type == "file" or node.type == "directory" then
+    fs_actions.delete_node(node.path, callback)
+  else
+    log.warn("The `delete` command can only be used on files and directories")
   end
-  fs_actions.delete_node(node.path, callback)
 end
 
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
-    if node_to_delete.type ~= "message" then
+    if node_to_delete.type == "file" or node_to_delete.type == "directory" then
       table.insert(paths_to_delete, node_to_delete.path)
     end
   end
