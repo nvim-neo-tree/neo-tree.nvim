@@ -12,7 +12,7 @@ local M = {}
 ---@param source_index integer: index of the source
 ---@return integer
 local calc_click_id_from_source = function(winid, source_index)
-  local base_number = #require("neo-tree").config.sources + 1
+  local base_number = #require("neo-tree").config.source_selector.sources + 1
   return base_number * winid + source_index
 end
 
@@ -22,7 +22,7 @@ end
 ---@param click_id integer: click_id
 ---@return integer, integer
 local calc_source_from_click_id = function(click_id)
-  local base_number = #require("neo-tree").config.sources + 1
+  local base_number = #require("neo-tree").config.source_selector.sources + 1
   return math.floor(click_id / base_number), click_id % base_number
 end
 ---sep_tbl:
@@ -262,9 +262,9 @@ M.get_selector = function(state, width)
 
   -- generate information of each tab (look `get_selector_tab_info` for type hint)
   local tabs = {}
-  local active_index = #config.sources
+  local active_index = #config.source_selector.sources
   local length_sum, length_active, length_separators = 0, 0, 0
-  for i, source_name in ipairs(config.sources) do
+  for i, source_name in ipairs(config.source_selector.sources) do
     local is_active = source_name == state.name
     if is_active then
       active_index = i
@@ -273,7 +273,7 @@ M.get_selector = function(state, width)
       i,
       active_index,
       config.source_selector.show_separator_on_edge == false and i == 1,
-      config.source_selector.show_separator_on_edge == false and i == #config.sources
+      config.source_selector.show_separator_on_edge == false and i == #config.source_selector.sources
     )
     local element = get_selector_tab_info(source_name, i, is_active, separator)
     length_sum = length_sum + element.length
@@ -375,7 +375,7 @@ _G.___neotree_selector_click = function(id, _, _, _)
   if id < 1 then
     return
   end
-  local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local winid, source_index = calc_source_from_click_id(id)
   local state = manager.get_state_for_window(winid)
   if state == nil then

@@ -51,6 +51,11 @@ local config = {
     statusline = false, -- toggle to show selector on statusline
     show_scrolled_off_parent_node = false, -- this will replace the tabs with the parent path
                                            -- of the top visible node when scrolled down.
+    sources = {
+      'filesystem',
+      'buffers',
+      'git_status',
+    },
     tab_labels = { -- falls back to source_name if nil
       diagnostics = " 裂Diagnostics ",
       document_symbols = "  Symbols ",
