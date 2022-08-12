@@ -90,7 +90,23 @@ M.close = function(state)
         else
           local win_list = vim.api.nvim_tabpage_list_wins(0)
           if #win_list > 1 then
+            local args = {
+              position = state.current_position,
+              source = state.name,
+              winid = state.winid,
+              tabnr = state.tabnr,
+            }
+            events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
+            -- focus the prior used window if we are closing the currently focused window
+            local current_winid = vim.api.nvim_get_current_win()
+            if current_winid == state.winid then
+              local pwin = require("neo-tree").get_prior_window()
+              if type(pwin) == "number" and pwin > 0 then
+                pcall(vim.api.nvim_set_current_win, pwin)
+              end
+            end
             vim.api.nvim_win_close(state.winid, true)
+            events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
           end
         end
       end
@@ -731,6 +747,13 @@ create_window = function(state)
   }
 
   local win
+  local event_args = {
+    position = state.current_position,
+    source = state.name,
+    tabnr = state.tabnr,
+  }
+  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+
   if state.current_position == "float" then
     state.force_float = nil
     -- First get the default options for floating windows.
@@ -791,6 +814,8 @@ create_window = function(state)
     state.bufnr = win.bufnr
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
   end
+  event_args.winid = state.winid
+  events.fire_event(events.NEO_TREE_WINDOW_AFTER_OPEN, event_args)
 
   if type(state.bufnr) == "number" then
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)

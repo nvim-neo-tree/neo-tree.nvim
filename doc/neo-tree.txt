@@ -1061,6 +1061,26 @@ have.
 "neo_tree_popup_buffer_leave"~
 Fired after leaving a neo-tree popup buffer.
 
+"neo_tree_window_before_open"~
+Fired before opening a new Neo-tree window. Called with the following arg:
+                                                     *neo-tree-window-event-args*
+The event argument for all window events is a table with the following keys:
+    `winid`    = the |winid| of the window being opned or closed.
+    `tabnr`    = the tab number that the window is in.
+    `source`   = the name of the source that is in the window, such as "filesystem".
+    `position` = the position of the window, i.e. "left", "bottom", "right".
+
+"neo_tree_window_after_open"~
+Fired after opening a new Neo-tree window. Called with 
+|neo-tree-window-event-args|.
+
+"neo_tree_window_before_close"~
+Fired before closing a Neo-tree window. Called with 
+|neo-tree-window-event-args|.
+
+"neo_tree_window_after_close"~
+Fired after closing a Neo-tree window. Called with 
+|neo-tree-window-event-args|.
 
 NOTE: The following events are used internally and not intended for end user
 usage. You can use them if you want, but beware that they may be debounced, and

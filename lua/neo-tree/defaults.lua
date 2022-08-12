@@ -132,7 +132,31 @@ local config = {
   --    handler = function()
   --      vim.cmd 'highlight! Cursor guibg=#5f87af blend=0'
   --    end
-  --  }
+  --  },
+  -- {
+  --   event = "neo_tree_window_before_open",
+  --   handler = function(args)
+  --     print("neo_tree_window_before_open", vim.inspect(args))
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_after_open",
+  --   handler = function(args)
+  --     vim.cmd("wincmd =")
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_before_close",
+  --   handler = function(args)
+  --     print("neo_tree_window_before_close", vim.inspect(args))
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_after_close",
+  --   handler = function(args)
+  --     vim.cmd("wincmd =")
+  --   end
+  -- }
   --},
   default_component_configs = {
     container = {
