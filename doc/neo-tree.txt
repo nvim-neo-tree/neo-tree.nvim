@@ -588,8 +588,95 @@ to `true`:
     })
 <
 
-There are many configuration options to change the style of these tabs. 
-See `defaults.lua` for details.
+The configuration options for source selector are all placed inside
+`source_selector` table. Below are the options with their default values and
+type notations.
+
+>
+    requires("neo-tree").setup({
+        source_selector = {
+            winbar = false, -- toggle to show selector on winbar
+            statusline = false, -- toggle to show selector on statusline
+            show_scrolled_off_parent_node = false,                    -- boolean
+            tab_labels = {                                            -- table
+                filesystem = "  Files ",                             -- string | nil
+                buffers =    "  Buffers ",                           -- string | nil
+                git_status = "  Git ",                               -- string | nil
+                diagnostics = " 裂Diagnostics " ,                     -- string | nil
+            },
+            content_layout = "start",                                 -- string
+            tabs_layout = "equal",                                    -- string
+            truncation_character = "…",                               -- string
+            tabs_min_width = nil,                                     -- int | nil
+            tabs_max_width = nil,                                     -- int | nil
+            padding = 0,                                              -- int | { left: int, right: int }
+            separator = { left = "▏", right= "▕" },                   -- string | { left: string, right: string, override: string | nil }
+            separator_active = nil,                                   -- string | { left: string, right: string, override: string | nil } | nil
+            show_separator_on_edge = false,                           -- boolean
+            highlight_tab = "NeoTreeTabInactive",                     -- string
+            highlight_tab_active = "NeoTreeTabActive",                -- string
+            highlight_background = "NeoTreeTabInactive",              -- string
+            highlight_separator = "NeoTreeTabSeparatorInactive",      -- string
+            highlight_separator_active = "NeoTreeTabSeparatorActive", -- string
+        },
+    })
+<
+
+Keywords: >
+      <tab>  <tab>  <tab> <background>
+    ┃/  a  \/  b  \/  c  \            ┃ <- edge of window
+     ^     ^^     ^^     ^  separators
+     left separator      right separator
+<
+
+Configuration Options:
+When `show_scrolled_off_parent_node` is `true`, tabs are replaced with the parent
+path of the top visible node when scrolled down.
+
+`tab_labels` is a table to configure the characters shown on each tab. Keys of
+the table should match the source names defined in `sources`. Value is what is
+printed inside the tab. If value is `nil` or not set, the source name is used
+instead.
+
+`content_layout` defines how the labels are placed inside a tab. This only takes
+effect when the tab width is greater than the length of label i.e.
+`tabs_layout = "equal", "focus"` or when `tabs_min_width` is large enough.
+Following options are available.
+    'start'  : left aligned                  / 裡 bufname     \/..
+    'end'    : right aligned                 /     裡 bufname \/...
+    'center' : centered with equal padding   /   裡 bufname   \/...
+
+`tabs_layout` defines how the tabs are aligned inside the window when there is
+more than enough space. The following options are available. `active` will
+expand the focused tab as much as possible. Bars denote the edge of window.
+    'start'  : left aligned                                       ┃/  ~  \/  ~  \/  ~  \            ┃
+    'end'    : right aligned                                      ┃            /  ~  \/  ~  \/  ~  \┃
+    'center' : centered with equal padding                        ┃      /  ~  \/  ~  \/  ~  \      ┃
+    'equal'  : expand all tabs equally to fit the window width    ┃/    ~    \/    ~    \/    ~    \┃
+    'active' : expand the focused tab to fit the window width     ┃/  focused tab    \/  ~  \/  ~  \┃
+
+`padding` defines the global padding of the source selector. It can be an
+integer or a table with keys `left` and `right`. Setting `padding = 2` is
+exactly the same as `{ left = 2, right = 2 }`
+
+`separator` and `separator_active` take string or table to define the separators
+surrounding non-active and active tab respectively. When `separator_active` is
+`nil`, it falls back to `separator`. They require three keys `left`, `right`,
+and `override` which define how the separators of neighboring tabs are merged
+together. The following four options are available for `override`. The examples
+show the result of `{ left = "/", right = "\", override = ... }`
+    'nil'      : never merged                       /  ~  \/  ~  \/  ~  \...
+    '"right"'  : all merged to the right            /  ~  \  ~  \  ~  \...
+    '"left"'   : all merged to the left             /  ~  /  ~  /  ~  /...
+    '"active"' : merged towards the active tab      /  ~  / focused tab \  ~  \...
+When set to string such as "┃", it is equivalent to
+`{ left = "┃", right = "┃", override = "active" }`.
+
+`show_separator_on_edge` takes a boolean value where `false` (default) hides the
+separators on the far left / right. Especially useful when left and right
+separator are the same.
+    'true'  : ┃/    ~    \/    ~    \/    ~    \┃
+    'false' : ┃     ~    \/    ~    \/    ~     ┃
 
 
 CURRENT WORKING DIRECTORY                                         *neo-tree-cwd*
