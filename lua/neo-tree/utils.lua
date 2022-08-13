@@ -376,6 +376,42 @@ M.map = function(tbl, fn)
   return t
 end
 
+M.move_to_appropriate_window = function(state)
+  -- use last window if possible
+  local suitable_window_found = false
+  local nt = require("neo-tree")
+  if nt.config.open_files_in_last_window then
+    local prior_window = nt.get_prior_window()
+    if prior_window > 0 then
+      local success = pcall(vim.api.nvim_set_current_win, prior_window)
+      if success then
+        suitable_window_found = true
+      end
+    end
+  end
+  -- find a suitable window to open the file in
+  if not suitable_window_found then
+    if state.current_position == "right" then
+      vim.cmd("wincmd t")
+    else
+      vim.cmd("wincmd w")
+    end
+  end
+  local attempts = 0
+  while attempts < 5 and vim.bo.filetype == "neo-tree" do
+    attempts = attempts + 1
+    vim.cmd("wincmd w")
+  end
+end
+
+M.get_appropriate_window = function(state)
+  local current_window = vim.api.nvim_get_current_win()
+  M.move_to_appropriate_window(state)
+  local winid = vim.api.nvim_get_current_win()
+  vim.api.nvim_set_current_win(current_window)
+  return winid
+end
+
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
@@ -407,31 +443,7 @@ M.open_file = function(state, path, open_cmd)
     if state.current_position == "current" then
       result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
     else
-      -- use last window if possible
-      local suitable_window_found = false
-      local nt = require("neo-tree")
-      if nt.config.open_files_in_last_window then
-        local prior_window = nt.get_prior_window()
-        if prior_window > 0 then
-          local success = pcall(vim.api.nvim_set_current_win, prior_window)
-          if success then
-            suitable_window_found = true
-          end
-        end
-      end
-      -- find a suitable window to open the file in
-      if not suitable_window_found then
-        if state.current_position == "right" then
-          vim.cmd("wincmd t")
-        else
-          vim.cmd("wincmd w")
-        end
-      end
-      local attempts = 0
-      while attempts < 4 and vim.bo.filetype == "neo-tree" do
-        attempts = attempts + 1
-        vim.cmd("wincmd w")
-      end
+      M.move_to_appropriate_window(state)
       -- TODO: make this configurable, see issue #43
       if vim.bo.filetype == "neo-tree" then
         -- Neo-tree must be the only window, restore it's status as a sidebar

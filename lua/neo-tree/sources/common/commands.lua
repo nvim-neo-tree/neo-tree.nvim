@@ -6,6 +6,7 @@ local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
+local Preview = require("neo-tree.sources.common.preview")
 
 ---Gets the node parent folder recursively
 ---@param tree table to look for nodes
@@ -343,6 +344,39 @@ M.delete_visual = function(state, selected_nodes, callback)
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
+M.preview = function(state)
+  local node = state.tree:get_node()
+  if state.current_position == "current" or node.type == "directory" then
+    return
+  end
+
+  if not state.preview then
+    state.preview = Preview:new(state)
+  else
+    state.preview:findWindow(state)
+  end
+
+  local extra = node.extra or {}
+  local position = extra.position
+  local end_position = extra.end_position
+  local bufnr = extra.bufnr
+  if bufnr == nil then
+    local path = node.path or node:get_id()
+    pcall(vim.cmd, "badd " .. path)
+    bufnr = utils.find_buffer_by_name(path)
+  end
+
+  if bufnr and bufnr > 0 then
+    state.preview:preview(bufnr, position, end_position)
+  end
+end
+
+M.revert_preview = function(state)
+  if state.preview and state.preview.active then
+    state.preview:revert()
+  end
+end
+
 ---Open file or directory
 ---@param state table The state of the source
 ---@param open_cmd string The vim command to use to open the file
@@ -360,11 +394,22 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
-    local path = node:get_id()
+    if state.preview and state.preview.active then
+      state.preview:revert()
+    end
+    local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)
     else
       utils.open_file(state, path, open_cmd)
+    end
+    local extra = node.extra or {}
+    local pos = extra.position or extra.end_position
+    if pos ~= nil then
+      vim.api.nvim_win_set_cursor(0, { (pos[1] or 0) + 1, pos[2] or 0 })
+      vim.api.nvim_win_call(0, function()
+        vim.cmd("normal! zvzz") -- expand folds and center cursor
+      end)
     end
   end
 
@@ -372,7 +417,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
-      if node:is_expanded() and node.type == "file" then
+      if node:is_expanded() and node.type ~= "directory" then
         return open()
       end
 
