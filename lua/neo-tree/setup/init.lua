@@ -152,7 +152,11 @@ M.buffer_enter_event = function()
   end
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
-    local position = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_position")
+    local success, position = pcall(vim.api.nvim_buf_get_var, prior_buf, "neo_tree_position")
+    if not success then
+      -- just bail out now, the rest of these lookups will probably fail too.
+      return
+    end
     if position == "current" then
       -- nothing to do here, files are supposed to open in same window
       return

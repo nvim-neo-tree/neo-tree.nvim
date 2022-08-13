@@ -243,6 +243,18 @@ M.get_keys = function(tbl, sorted)
   return keys
 end
 
+---Gets the usable columns in a window, subtracting sign, fold, and line number columns.
+---@param winid integer The window id to get the columns of.
+---@return number
+M.get_inner_win_width = function(winid)
+  local info = vim.fn.getwininfo(winid)
+  if info and info[1] then
+    return info[1].width - info[1].textoff
+  else
+    log.error("Could not get window info for window", winid)
+  end
+end
+
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.

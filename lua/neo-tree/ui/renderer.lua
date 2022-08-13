@@ -38,7 +38,7 @@ local start_resize_monitor = function()
     local success, err = pcall(manager._for_each_state, nil, function(state)
       if state.win_width and M.window_exists(state) then
         windows_exist = true
-        local current_size = vim.api.nvim_win_get_width(state.winid)
+        local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
           log.trace("Window size changed, redrawing tree")
           state.win_width = current_size
@@ -951,7 +951,7 @@ draw = function(nodes, state, parent_id)
   end
 
   -- This is to ensure that containers are always the right size
-  state.win_width = vim.api.nvim_win_get_width(state.winid)
+  state.win_width = utils.get_inner_win_width(state.winid)
   start_resize_monitor()
 
   state.tree:render()
@@ -1069,7 +1069,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     draw(nodes, state, parentId)
   else
     -- this was a force grouping of a lazy loaded folder
-    state.win_width = vim.api.nvim_win_get_width(state.winid)
+    state.win_width = utils.get_inner_win_width(state.winid)
     state.tree:render()
   end
 
