@@ -67,6 +67,7 @@ function Preview:revert()
   end)
   vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", self.truth.options.bufhidden)
   vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
+  vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
 end
 
 ---Finds the appropriate window and updates the preview accordingly.
@@ -103,6 +104,7 @@ function Preview:activate()
   vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", "hide")
   vim.api.nvim_win_set_option(self.winid, "foldenable", false)
   self.active = true
+  vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)
 end
 
 ---Move the cursor to the previewed position and center the screen.
