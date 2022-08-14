@@ -306,8 +306,16 @@ M.name = function(config, node, state)
     end
   end
 
+  if type(config.right_padding) == "number" then
+    if config.right_padding > 0 then
+      text = text .. string.rep(" ", config.right_padding)
+    end
+  else
+    text = text .. " "
+  end
+
   return {
-    text = text .. " ",
+    text = text,
     highlight = highlight,
   }
 end
