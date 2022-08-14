@@ -4,6 +4,8 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local manager = require("neo-tree.sources.manager")
+local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
@@ -374,6 +376,20 @@ end
 M.revert_preview = function(state)
   if state.preview and state.preview.active then
     state.preview:revert()
+  end
+end
+
+M.toggle_preview = function(state)
+  local preview_event = {
+    event = events.VIM_CURSOR_MOVED,
+    handler = utils.wrap(M.preview, state),
+    id = "preview-event",
+  }
+  if state.preview and state.preview.active then
+    state.preview:revert()
+    manager.unsubscribe(state.name, preview_event)
+  else
+    manager.subscribe(state.name, preview_event)
   end
 end
 
