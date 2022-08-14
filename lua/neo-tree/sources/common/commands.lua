@@ -382,9 +382,14 @@ end
 M.toggle_preview = function(state)
   local preview_event = {
     event = events.VIM_CURSOR_MOVED,
-    handler = utils.wrap(M.preview, state),
+    handler = function()
+      if vim.api.nvim_get_current_win() == state.winid then
+        M.preview(state)
+      end
+    end,
     id = "preview-event",
   }
+
   if state.preview and state.preview.active then
     state.preview:revert()
     manager.unsubscribe(state.name, preview_event)
