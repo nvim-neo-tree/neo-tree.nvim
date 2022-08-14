@@ -123,7 +123,7 @@ function create_item(context, path, _type)
     end
     if f.hide_by_pattern then
       for _, p in ipairs(f.hide_by_pattern) do
-        local separator_pattern = utils.is_windows and '\\' or '/'
+        local separator_pattern = utils.is_windows and "\\" or "/"
         local match = string.find(p, separator_pattern) and path or name
         if string.find(match, p) then
           item.filtered_by = item.filtered_by or {}
