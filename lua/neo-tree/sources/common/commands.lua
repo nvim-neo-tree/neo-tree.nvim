@@ -361,12 +361,8 @@ M.preview = function(state)
   local extra = node.extra or {}
   local position = extra.position
   local end_position = extra.end_position
-  local bufnr = extra.bufnr
-  if bufnr == nil then
-    local path = node.path or node:get_id()
-    pcall(vim.cmd, "badd " .. path)
-    bufnr = utils.find_buffer_by_name(path)
-  end
+  local path = node.path or node:get_id()
+  local bufnr = extra.bufnr or vim.fn.bufadd(path)
 
   if bufnr and bufnr > 0 then
     state.preview:preview(bufnr, position, end_position)
