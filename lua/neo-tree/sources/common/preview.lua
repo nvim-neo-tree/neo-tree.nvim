@@ -1,6 +1,7 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
+local log = require("neo-tree.log")
 
 local neo_tree_preview = vim.api.nvim_create_namespace("neo_tree_preview")
 
@@ -31,6 +32,11 @@ end
 ---@param start_pos table? The (0-indexed) starting position of the previewed text. May be absent.
 ---@param end_pos table? The (0-indexed) ending position of the previewed text. May be absent
 function Preview:preview(bufnr, start_pos, end_pos)
+  if self.is_neo_tree_window then
+    log.error("Could not find appropriate window for preview")
+    return
+  end
+
   bufnr = bufnr or self.bufnr
   if not self.active then
     self:activate()
