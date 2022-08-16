@@ -4,8 +4,10 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
+local Preview = require("neo-tree.sources.common.preview")
 
 ---Gets the node parent folder recursively
 ---@param tree table to look for nodes
@@ -343,6 +345,66 @@ M.delete_visual = function(state, selected_nodes, callback)
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
+M.preview = function(state)
+  local node = state.tree:get_node()
+  if state.current_position == "current" or node.type == "directory" then
+    return
+  end
+
+  if not state.preview then
+    state.preview = Preview:new(state)
+  else
+    state.preview:findWindow(state)
+  end
+
+  local extra = node.extra or {}
+  local position = extra.position
+  local end_position = extra.end_position
+  local path = node.path or node:get_id()
+  local bufnr = extra.bufnr or vim.fn.bufadd(path)
+
+  if bufnr and bufnr > 0 then
+    state.preview:preview(bufnr, position, end_position)
+  end
+end
+
+M.revert_preview = function(state)
+  if state.preview and state.preview.active then
+    state.preview:revert()
+  end
+end
+
+M.toggle_preview = function(state)
+  local preview_event = {
+    event = events.VIM_CURSOR_MOVED,
+    handler = function()
+      if vim.api.nvim_get_current_win() == state.winid then
+        state.commands.preview(state)
+      end
+    end,
+    id = "preview-event",
+  }
+  local preview_buf_leave_event = {
+    event = events.NEO_TREE_BUFFER_LEAVE,
+    handler = function()
+      local winid, bufnr = state.preview.winid, state.preview.bufnr
+      state.preview:revert()
+      if vim.api.nvim_get_current_win() == winid then
+        vim.api.nvim_set_current_buf(bufnr)
+      end
+    end,
+    id = "preview-buf-leave-event",
+  }
+
+  if state.preview and state.preview.active then
+    state.preview:revert()
+  else
+    state.commands.preview(state)
+    state.preview:subscribe(state.name, preview_event)
+    state.preview:subscribe(state.name, preview_buf_leave_event)
+  end
+end
+
 ---Open file or directory
 ---@param state table The state of the source
 ---@param open_cmd string The vim command to use to open the file
@@ -360,11 +422,19 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
-    local path = node:get_id()
+    local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)
     else
       utils.open_file(state, path, open_cmd)
+    end
+    local extra = node.extra or {}
+    local pos = extra.position or extra.end_position
+    if pos ~= nil then
+      vim.api.nvim_win_set_cursor(0, { (pos[1] or 0) + 1, pos[2] or 0 })
+      vim.api.nvim_win_call(0, function()
+        vim.cmd("normal! zvzz") -- expand folds and center cursor
+      end)
     end
   end
 
@@ -372,7 +442,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
-      if node:is_expanded() and node.type == "file" then
+      if node:is_expanded() and node.type ~= "directory" then
         return open()
       end
 

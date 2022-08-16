@@ -51,6 +51,7 @@ M.TITLE_BAR = "NeoTreeTitleBar"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.EXPANDER = "NeoTreeExpander"
 M.WINDOWS_HIDDEN = "NeoTreeWindowsHidden"
+M.PREVIEW = "NeoTreePreview"
 
 local function dec_to_hex(n, chars)
   chars = chars or 6
@@ -249,6 +250,7 @@ M.setup = function()
   M.create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
   M.create_highlight_group(M.MODIFIED, {}, nil, "d7d787")
   M.create_highlight_group(M.WINDOWS_HIDDEN, { M.DOTFILE }, nil, nil)
+  M.create_highlight_group(M.PREVIEW, { "Search" }, nil, nil)
 
   M.create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
   M.create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
