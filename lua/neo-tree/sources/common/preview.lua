@@ -43,7 +43,7 @@ function Preview:preview(bufnr, start_pos, end_pos)
   end
 
   if bufnr ~= self.bufnr then
-    vim.api.nvim_win_set_buf(self.winid, bufnr)
+    self:setBuffer(bufnr)
   end
 
   self:clearHighlight()
@@ -66,8 +66,8 @@ function Preview:revert()
   end
 
   local bufnr = self.truth.bufnr
+  self:setBuffer(bufnr)
   self.bufnr = bufnr
-  vim.api.nvim_win_set_buf(self.winid, bufnr)
   vim.api.nvim_win_call(self.winid, function()
     vim.fn.winrestview(self.truth.view)
   end)
@@ -111,6 +111,15 @@ function Preview:activate()
   vim.api.nvim_win_set_option(self.winid, "foldenable", false)
   self.active = true
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)
+end
+
+---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
+--@param bufnr number The buffer number of the buffer to set.
+function Preview:setBuffer(bufnr)
+  local eventignore = vim.opt.eventignore
+  vim.opt.eventignore:append("BufEnter,BufWinEnter")
+  vim.api.nvim_win_set_buf(self.winid, bufnr)
+  vim.opt.eventignore = eventignore
 end
 
 ---Move the cursor to the previewed position and center the screen.
