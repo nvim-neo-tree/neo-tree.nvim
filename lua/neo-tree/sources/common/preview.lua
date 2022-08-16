@@ -1,6 +1,8 @@
 local vim = vim
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
+local events = require("neo-tree.events")
+local manager = require("neo-tree.sources.manager")
 local log = require("neo-tree.log")
 
 local neo_tree_preview = vim.api.nvim_create_namespace("neo_tree_preview")
@@ -17,6 +19,7 @@ Preview = {}
 --  start_pos = array or nil   An array-like table specifying the (0-indexed) starting position of the previewed text.
 --  end_pos = array or nil     An array-like table specifying the (0-indexed) ending position of the preview text.
 --  truth = table              A table containing information to be restored when the preview ends.
+--  events = array             A list of events the preview is subscribed to.
 --These keys should not be altered directly. Note that the keys `start_pos`, `end_pos` and `truth`
 --may be inaccurate if `active` is false.
 function Preview:new(state)
@@ -59,6 +62,7 @@ end
 ---Reverts the preview and inactivates it, restoring the preview window to its previous state.
 function Preview:revert()
   self.active = false
+  self:unsubscribe()
   self:clearHighlight()
 
   if not vim.api.nvim_win_is_valid(self.winid) then
@@ -74,6 +78,31 @@ function Preview:revert()
   vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", self.truth.options.bufhidden)
   vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
+end
+
+---Subscribe to event and add it to the preview event list.
+--@param source string? Name of the source to add the event to. Will use `events.subscribe` if nil.
+--@param event table Event to subscribe to.
+function Preview:subscribe(source, event)
+  if source == nil then
+    events.subscribe(event)
+  else
+    manager.subscribe(source, event)
+  end
+  self.events = self.events or {}
+  table.insert(self.events, { source = source, event = event })
+end
+
+---Unsubscribe to all events in the preview event list.
+function Preview:unsubscribe()
+  for _, event in ipairs(self.events) do
+    if event.source == nil then
+      events.unsubscribe(event.event)
+    else
+      manager.unsubscribe(event.source, event.event)
+    end
+  end
+  self.events = {}
 end
 
 ---Finds the appropriate window and updates the preview accordingly.

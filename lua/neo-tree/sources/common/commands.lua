@@ -4,7 +4,6 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
-local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
@@ -380,17 +379,29 @@ M.toggle_preview = function(state)
     event = events.VIM_CURSOR_MOVED,
     handler = function()
       if vim.api.nvim_get_current_win() == state.winid then
-        M.preview(state)
+        state.commands.preview(state)
       end
     end,
     id = "preview-event",
   }
+  local preview_buf_leave_event = {
+    event = events.NEO_TREE_BUFFER_LEAVE,
+    handler = function()
+      local winid, bufnr = state.preview.winid, state.preview.bufnr
+      state.preview:revert()
+      if vim.api.nvim_get_current_win() == winid then
+        vim.api.nvim_set_current_buf(bufnr)
+      end
+    end,
+    id = "preview-buf-leave-event",
+  }
 
   if state.preview and state.preview.active then
     state.preview:revert()
-    manager.unsubscribe(state.name, preview_event)
   else
-    manager.subscribe(state.name, preview_event)
+    state.commands.preview(state)
+    state.preview:subscribe(state.name, preview_event)
+    state.preview:subscribe(state.name, preview_buf_leave_event)
   end
 end
 
@@ -411,9 +422,6 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
-    if state.preview and state.preview.active then
-      state.preview:revert()
-    end
     local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)
