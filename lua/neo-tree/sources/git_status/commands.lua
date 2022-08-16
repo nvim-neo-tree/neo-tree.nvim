@@ -7,7 +7,7 @@ local inputs = require("neo-tree.ui.inputs")
 local popups = require("neo-tree.ui.popups")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
-local log    = require("neo-tree.log")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -44,7 +44,7 @@ M.git_commit = function(state, and_push)
   }
 
   inputs.input("Commit message: ", "", function(msg)
-    local cmd = {"git", "commit", "-m", msg }
+    local cmd = { "git", "commit", "-m", msg }
     local title = "git commit"
     local result = vim.fn.systemlist(cmd)
     if vim.v.shell_error ~= 0 or (#result > 0 and vim.startswith(result[1], "fatal:")) then
@@ -53,7 +53,7 @@ M.git_commit = function(state, and_push)
     end
     if and_push then
       title = "git commit && git push"
-      cmd = {"git", "push"}
+      cmd = { "git", "push" }
       local result2 = vim.fn.systemlist(cmd)
       table.insert(result, "")
       for i = 1, #result2 do
@@ -85,7 +85,7 @@ M.git_unstage_file = function(state)
     return
   end
   local path = node:get_id()
-  local cmd = { "git", "reset",  "--", path }
+  local cmd = { "git", "reset", "--", path }
   vim.fn.system(cmd)
   events.fire_event(events.GIT_EVENT)
 end
