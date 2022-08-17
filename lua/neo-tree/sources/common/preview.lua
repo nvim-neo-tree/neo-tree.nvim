@@ -70,6 +70,9 @@ function Preview:revert()
   end
 
   local bufnr = self.truth.bufnr
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
   self:setBuffer(bufnr)
   self.bufnr = bufnr
   vim.api.nvim_win_call(self.winid, function()

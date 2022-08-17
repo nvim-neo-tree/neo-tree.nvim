@@ -375,31 +375,33 @@ M.revert_preview = function(state)
 end
 
 M.toggle_preview = function(state)
-  local preview_event = {
-    event = events.VIM_CURSOR_MOVED,
-    handler = function()
-      if vim.api.nvim_get_current_win() == state.winid then
-        state.commands.preview(state)
-      end
-    end,
-    id = "preview-event",
-  }
-  local preview_buf_leave_event = {
-    event = events.NEO_TREE_BUFFER_LEAVE,
-    handler = function()
-      local winid, bufnr = state.preview.winid, state.preview.bufnr
-      state.preview:revert()
-      if vim.api.nvim_get_current_win() == winid then
-        vim.api.nvim_set_current_buf(bufnr)
-      end
-    end,
-    id = "preview-buf-leave-event",
-  }
-
   if state.preview and state.preview.active then
     state.preview:revert()
   else
     state.commands.preview(state)
+    if not state.preview then
+      return
+    end
+    local preview_event = {
+      event = events.VIM_CURSOR_MOVED,
+      handler = function()
+        if vim.api.nvim_get_current_win() == state.winid then
+          state.commands.preview(state)
+        end
+      end,
+      id = "preview-event",
+    }
+    local preview_buf_leave_event = {
+      event = events.NEO_TREE_BUFFER_LEAVE,
+      handler = function()
+        local winid, bufnr = state.preview.winid, state.preview.bufnr
+        state.preview:revert()
+        if vim.api.nvim_get_current_win() == winid then
+          vim.api.nvim_set_current_buf(bufnr)
+        end
+      end,
+      id = "preview-buf-leave-event",
+    }
     state.preview:subscribe(state.name, preview_event)
     state.preview:subscribe(state.name, preview_buf_leave_event)
   end
