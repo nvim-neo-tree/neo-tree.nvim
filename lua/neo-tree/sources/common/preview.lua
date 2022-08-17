@@ -68,6 +68,8 @@ function Preview:revert()
   if not vim.api.nvim_win_is_valid(self.winid) then
     return
   end
+  vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
+  vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
 
   local bufnr = self.truth.bufnr
   if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -79,8 +81,6 @@ function Preview:revert()
     vim.fn.winrestview(self.truth.view)
   end)
   vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", self.truth.options.bufhidden)
-  vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
-  vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
 end
 
 ---Subscribe to event and add it to the preview event list.
