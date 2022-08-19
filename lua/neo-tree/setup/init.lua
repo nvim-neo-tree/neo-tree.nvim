@@ -99,6 +99,10 @@ local last_buffer_enter_filetype = nil
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
+    if last_buffer_enter_filetype == "neo-tree" then
+      -- we've switched to another neo-tree window
+      events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
+    end
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
