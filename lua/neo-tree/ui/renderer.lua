@@ -105,7 +105,8 @@ M.close = function(state)
                 pcall(vim.api.nvim_set_current_win, pwin)
               end
             end
-            vim.api.nvim_win_close(state.winid, true)
+            -- if the window was a float, changing the current win would have closed it already
+            pcall(vim.api.nvim_win_close, state.winid, true)
             events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
           end
         end
