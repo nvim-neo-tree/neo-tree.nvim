@@ -182,6 +182,12 @@ end
 M.open_tabnew = function(state)
   cc.open_tabnew(state, utils.wrap(fs.toggle_directory, state))
 end
+M.open_drop = function(state)
+  cc.open_drop(state, utils.wrap(fs.toggle_directory, state))
+end
+M.open_tab_drop = function(state)
+  cc.open_tab_drop(state, utils.wrap(fs.toggle_directory, state))
+end
 
 M.open_with_window_picker = function(state)
   cc.open_with_window_picker(state, utils.wrap(fs.toggle_directory, state))

@@ -495,6 +495,22 @@ M.open_tabnew = function(state, toggle_directory)
   open_with_cmd(state, "tabnew", toggle_directory)
 end
 
+---Open file or directory or focus it if a buffer already exists with it
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_drop = function(state, toggle_directory)
+  open_with_cmd(state, "drop", toggle_directory)
+end
+
+---Open file or directory in new tab or focus it if a buffer already exists with it
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_tab_drop = function(state, toggle_directory)
+  open_with_cmd(state, "tab drop", toggle_directory)
+end
+
 M.rename = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
