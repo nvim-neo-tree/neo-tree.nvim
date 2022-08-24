@@ -198,12 +198,10 @@ s             = open_vsplit: Same as open, but opens in a vertical split.
 
 t             = open_tabnew: Same as open, but opens in a new tab.
 
-                  open_drop: Same as open, but opens with the `:drop` command. 
-                             (run `:help drop` for more info)
+                  open_drop: Same as open, but opens with the |:drop| command. 
 
               open_tab_drop: Same as open, but opens in a new tab with the 
-                             `:tab drop` command. (run `:help drop` for more
-                             info)
+                             |:drop| command with the |:tab| modifier. 
 
 w = open_with_window_picker: Uses the `window-picker` plugin to select a window
                              to open the selected node in. Requires that
