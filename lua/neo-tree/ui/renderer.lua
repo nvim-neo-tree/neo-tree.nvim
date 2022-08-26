@@ -241,7 +241,11 @@ create_nodes = function(source_items, state, level)
     if source_items == hidden then
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
-        name = "(forced to show " .. #hidden .. " hidden items)",
+        name = "(forced to show "
+          .. #hidden
+          .. " hidden "
+          .. (#hidden > 1 and "items" or "item")
+          .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -251,7 +255,7 @@ create_nodes = function(source_items, state, level)
     elseif filtered_items.show_hidden_count or (#visible == 0 and level <= 1) then
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
-        name = "(" .. #hidden .. " hidden items)",
+        name = "(" .. #hidden .. " hidden " .. (#hidden > 1 and "items" or "item") .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
