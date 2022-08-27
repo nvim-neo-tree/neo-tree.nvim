@@ -115,6 +115,7 @@ describe("Filesystem", function()
       vim.cmd("NeoTreeRevealToggle")
       verify.window_handle_is_not(tree_winid)
       verify.buf_name_is(testfile)
+      vim.wait(1000)
 
       -- toggle OPEN
       testfile = fs_tree.lookup["./foo/bar/baz2.txt"].abspath

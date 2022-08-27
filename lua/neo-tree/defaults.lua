@@ -317,7 +317,14 @@ local config = {
       -- ["<cr>"] = "open_drop",
       -- ["t"] = "open_tab_drop",
       ["w"] = "open_with_window_picker",
-      --["P"] = "toggle_preview",
+      ["F"] = {
+        "toggle_preview",
+        config = { use_float = true },
+      },
+      ["P"] = {
+        "toggle_preview",
+        config = { use_float = false },
+      },
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
       --["Z"] = "expand_all_nodes",
