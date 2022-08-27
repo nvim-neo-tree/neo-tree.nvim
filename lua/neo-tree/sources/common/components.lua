@@ -128,6 +128,9 @@ M.git_status = function(config, node, state)
   local change_highlt = highlights.FILE_NAME
   local status_symbol = symbols.staged
   local status_highlt = highlights.GIT_STAGED
+  if git_status:len() == 1 then
+    status_symbol = nil
+  end
 
   if git_status:sub(1, 1) == " " then
     status_symbol = symbols.unstaged
