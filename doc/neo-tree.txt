@@ -932,6 +932,32 @@ define those somewhere in your nvim configuration. Here is an example:
         {text = "", texthl = "LspDiagnosticsSignHint"})
 <
 
+Alternatively, you can also specify the signs and/or highlights in the
+neo-tree setup call like this:
+
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        diagnostics = {
+          symbols = {
+            hint = "H",
+            info = "I",
+            warn = "!",
+            error = "X",
+          },
+          highlights = {
+            hint = "DiagnosticSignHint",
+            info = "DiagnosticSignInfo",
+            warn = "DiagnosticSignWarn",
+            error = "DiagnosticSignError",
+          },
+        },
+      }
+    })
+>
+Anything not specified in the `default_component_configs` will fallback to the
+`sign_define` method.
+
 To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
 
