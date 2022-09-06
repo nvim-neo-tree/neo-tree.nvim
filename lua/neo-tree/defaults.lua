@@ -309,6 +309,8 @@ local config = {
       },
       ["<2-LeftMouse>"] = "open",
       ["<cr>"] = "open",
+      ["<esc>"] = "revert_preview",
+      ["P"] = { "toggle_preview", config = { use_float = true } },
       ["S"] = "open_split",
       -- ["S"] = "split_with_window_picker",
       ["s"] = "open_vsplit",
@@ -317,14 +319,6 @@ local config = {
       -- ["<cr>"] = "open_drop",
       -- ["t"] = "open_tab_drop",
       ["w"] = "open_with_window_picker",
-      ["F"] = {
-        "toggle_preview",
-        config = { use_float = true },
-      },
-      ["P"] = {
-        "toggle_preview",
-        config = { use_float = false },
-      },
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
       --["Z"] = "expand_all_nodes",
