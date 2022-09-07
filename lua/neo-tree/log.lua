@@ -99,7 +99,6 @@ log.new = function(config, standalone)
     if levels[level] then
       if config.level ~= level then
         config.level = level
-        notify("Log level set to " .. level, config.modes[2])
       end
     else
       notify("Invalid log level: " .. level, config.modes[5])
