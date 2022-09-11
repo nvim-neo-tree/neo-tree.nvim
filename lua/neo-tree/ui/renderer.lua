@@ -1021,8 +1021,10 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   end
 
   local config = require("neo-tree").config
-  if config.hide_root_node and not parentId then
-    sourceItems[1].skip_node = true
+  if config.hide_root_node then
+    if not parentId then
+      sourceItems[1].skip_node = true
+    end
     if not config.retain_hidden_root_indent then
       level = level - 1
     end
