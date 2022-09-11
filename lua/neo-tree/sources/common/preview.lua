@@ -4,9 +4,80 @@ local highlights = require("neo-tree.ui.highlights")
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local log = require("neo-tree.log")
+local renderer = require("neo-tree.ui.renderer")
 
-local neo_tree_preview = vim.api.nvim_create_namespace("neo_tree_preview")
+local neo_tree_preview_namespace = vim.api.nvim_create_namespace("neo_tree_preview")
 
+local function create_floating_preview_window(state)
+  local default_position = utils.resolve_config_option(state, "window.position", "left")
+  state.current_position = state.current_position or default_position
+
+  local winwidth = vim.api.nvim_win_get_width(state.winid)
+  local winheight = vim.api.nvim_win_get_height(state.winid)
+  local height = vim.o.lines - 4
+  local width = 120
+  local row, col = 0, 0
+
+  if state.current_position == "left" then
+    col = winwidth + 1
+    width = math.min(vim.o.columns - col, 120)
+  elseif state.current_position == "top" or state.current_position == "bottom" then
+    height = height - winheight
+    width = winwidth - 2
+    if state.current_position == "top" then
+      row = vim.api.nvim_win_get_height(state.winid) + 1
+    end
+  elseif state.current_position == "right" then
+    width = math.min(vim.o.columns - winwidth - 4, 120)
+    col = vim.o.columns - winwidth - width - 3
+  elseif state.current_position == "float" then
+    local pos = vim.api.nvim_win_get_position(state.winid)
+    -- preview will be same height and top as tree
+    row = pos[1] - 1
+    height = winheight
+
+    -- tree and preview window will be side by side and centered in the editor
+    width = math.min(vim.o.columns - winwidth - 4, 120)
+    local total_width = winwidth + width + 4
+    local margin = math.floor((vim.o.columns - total_width) / 2)
+    col = margin + winwidth + 2
+
+    -- move the tree window to make the combined layout centered
+    local popup = renderer.get_nui_popup(state.winid)
+    popup:update_layout({
+      relative = "editor",
+      position = {
+        row = row,
+        col = margin,
+      },
+    })
+  else
+    local cur_pos = state.current_position or "unknown"
+    log.error('Preview cannot be used when position = "' .. cur_pos .. '"')
+    return
+  end
+
+  local popups = require("neo-tree.ui.popups")
+  local options = popups.popup_options("Neo-tree Preview", width, {
+    ns_id = highlights.ns_id,
+    size = { height = height, width = width },
+    relative = "editor",
+    position = {
+      row = row,
+      col = col,
+    },
+    win_options = {
+      number = true,
+    },
+  })
+  options.zindex = 40
+  options.buf_options.filetype = "neo-tree-preview"
+
+  local NuiPopup = require("nui.popup")
+  local win = NuiPopup(options)
+  win:mount()
+  return win
+end
 Preview = {}
 
 ---Creates a new preview.
@@ -25,6 +96,7 @@ Preview = {}
 function Preview:new(state)
   local preview = {}
   preview.active = false
+  preview.config = state.config
   setmetatable(preview, { __index = self })
   preview:findWindow(state)
   return preview
@@ -45,6 +117,11 @@ function Preview:preview(bufnr, start_pos, end_pos)
     self:activate()
   end
 
+  if not self.active then
+    log.warn("Could not activate preview window.")
+    return
+  end
+
   if bufnr ~= self.bufnr then
     self:setBuffer(bufnr)
   end
@@ -59,27 +136,52 @@ function Preview:preview(bufnr, start_pos, end_pos)
   self:highlight()
 end
 
+function Preview.dispose(state)
+  if state.preview and state.preview.active then
+    if state.preview.active then
+      state.preview:revert()
+    end
+  end
+  state.preview = nil
+end
+
 ---Reverts the preview and inactivates it, restoring the preview window to its previous state.
 function Preview:revert()
   self.active = false
   self:unsubscribe()
   self:clearHighlight()
 
-  if not vim.api.nvim_win_is_valid(self.winid) then
+  if not renderer.is_window_valid(self.winid) then
+    self.winid = nil
     return
   end
-  vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
-  vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
+
+  if self.config.use_float then
+    vim.api.nvim_win_close(self.winid, true)
+    self.winid = nil
+    return
+  else
+    local foldenable = utils.get_value(self.truth, "options.foldenable", nil, false)
+    if foldenable ~= nil then
+      vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
+    end
+    vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
+  end
 
   local bufnr = self.truth.bufnr
+  if type(bufnr) ~= "number" then
+    return
+  end
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
   self:setBuffer(bufnr)
   self.bufnr = bufnr
-  vim.api.nvim_win_call(self.winid, function()
-    vim.fn.winrestview(self.truth.view)
-  end)
+  if vim.api.nvim_win_is_valid(self.winid) then
+    vim.api.nvim_win_call(self.winid, function()
+      vim.fn.winrestview(self.truth.view)
+    end)
+  end
   vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", self.truth.options.bufhidden)
 end
 
@@ -111,18 +213,37 @@ end
 ---Finds the appropriate window and updates the preview accordingly.
 ---@param state table The state of the source.
 function Preview:findWindow(state)
-  local winid, is_neo_tree_window = utils.get_appropriate_window(state)
+  self.config = state.config
+  local winid, is_neo_tree_window
+  if self.config.use_float then
+    if
+      type(self.winid) == "number"
+      and vim.api.nvim_win_is_valid(self.winid)
+      and utils.is_floating(self.winid)
+    then
+      return
+    end
+    local renderer = require("neo-tree.ui.renderer")
+    local win = create_floating_preview_window(state)
+    if not win then
+      self.active = false
+      return
+    end
+    winid = win.winid
+    is_neo_tree_window = false
+  else
+    winid, is_neo_tree_window = utils.get_appropriate_window(state)
+    self.bufnr = vim.api.nvim_win_get_buf(winid)
+  end
+
   if winid == self.winid then
     return
   end
+  self.winid, self.is_neo_tree_window = winid, is_neo_tree_window
 
   if self.active then
     self:revert()
-    self.winid, self.is_neo_tree_window = winid, is_neo_tree_window
     self:preview()
-  else
-    self.winid, self.is_neo_tree_window = winid, is_neo_tree_window
-    self.bufnr = vim.api.nvim_win_get_buf(self.winid)
   end
 end
 
@@ -131,16 +252,23 @@ function Preview:activate()
   if self.active then
     return
   end
-  self.truth = {
-    bufnr = self.bufnr,
-    view = vim.api.nvim_win_call(self.winid, vim.fn.winsaveview),
-    options = {
-      bufhidden = vim.api.nvim_buf_get_option(self.bufnr, "bufhidden"),
-      foldenable = vim.api.nvim_win_get_option(self.winid, "foldenable"),
-    },
-  }
-  vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", "hide")
-  vim.api.nvim_win_set_option(self.winid, "foldenable", false)
+  if not renderer.is_window_valid(self.winid) then
+    return
+  end
+  if self.config.use_float then
+    self.truth = {}
+  else
+    self.truth = {
+      bufnr = self.bufnr,
+      view = vim.api.nvim_win_call(self.winid, vim.fn.winsaveview),
+      options = {
+        bufhidden = vim.api.nvim_buf_get_option(self.bufnr, "bufhidden"),
+        foldenable = vim.api.nvim_win_get_option(self.winid, "foldenable"),
+      },
+    }
+    vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", "hide")
+    vim.api.nvim_win_set_option(self.winid, "foldenable", false)
+  end
   self.active = true
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)
 end
@@ -151,6 +279,10 @@ function Preview:setBuffer(bufnr)
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
   vim.api.nvim_win_set_buf(self.winid, bufnr)
+  if self.config.use_float then
+    -- I'm not sufe why float windows won;t show numbers without this
+    vim.api.nvim_win_set_option(self.winid, "number", true)
+  end
   vim.opt.eventignore = eventignore
 end
 
@@ -183,7 +315,7 @@ function Preview:highlight()
   local highlight = function(line, col_start, col_end)
     vim.api.nvim_buf_add_highlight(
       self.bufnr,
-      neo_tree_preview,
+      neo_tree_preview_namespace,
       highlights.PREVIEW,
       line,
       col_start,
@@ -206,7 +338,9 @@ end
 
 ---Clear the preview highlight in the buffer currently in the preview window.
 function Preview:clearHighlight()
-  vim.api.nvim_buf_clear_namespace(self.bufnr, neo_tree_preview, 0, -1)
+  if type(self.bufnr) == "number" and vim.api.nvim_buf_is_valid(self.bufnr) then
+    vim.api.nvim_buf_clear_namespace(self.bufnr, neo_tree_preview_namespace, 0, -1)
+  end
 end
 
 return Preview

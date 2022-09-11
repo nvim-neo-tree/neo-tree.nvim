@@ -198,6 +198,8 @@ use {
             },
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
+            ["<esc>"] = "revert_preview",
+            ["P"] = { "toggle_preview", config = { use_float = true } },
             ["S"] = "open_split",
             ["s"] = "open_vsplit",
             -- ["S"] = "split_with_window_picker",

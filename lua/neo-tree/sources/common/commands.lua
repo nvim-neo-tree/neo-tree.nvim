@@ -347,13 +347,14 @@ end
 
 M.preview = function(state)
   local node = state.tree:get_node()
-  if state.current_position == "current" or node.type == "directory" then
+  if node.type == "directory" then
     return
   end
 
   if not state.preview then
     state.preview = Preview:new(state)
   else
+    state.preview.active = true
     state.preview:findWindow(state)
   end
 
@@ -363,20 +364,23 @@ M.preview = function(state)
   local path = node.path or node:get_id()
   local bufnr = extra.bufnr or vim.fn.bufadd(path)
 
-  if bufnr and bufnr > 0 then
-    state.preview:preview(bufnr, position, end_position)
+  if bufnr and bufnr > 0 and state.preview then
+    if renderer.is_window_valid(state.preview.winid) then
+      state.preview:preview(bufnr, position, end_position)
+    else
+      log.warn("Preview window is not valid")
+      Preview.dispose(state)
+    end
   end
 end
 
 M.revert_preview = function(state)
-  if state.preview and state.preview.active then
-    state.preview:revert()
-  end
+  Preview.dispose(state)
 end
 
 M.toggle_preview = function(state)
-  if state.preview and state.preview.active then
-    state.preview:revert()
+  if state.preview then
+    M.revert_preview(state)
   else
     state.commands.preview(state)
     if not state.preview then
@@ -385,25 +389,20 @@ M.toggle_preview = function(state)
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
+        if not state.preview then
+          return
+        end
         if vim.api.nvim_get_current_win() == state.winid then
-          state.commands.preview(state)
+          if state.preview.active then
+            state.commands.preview(state)
+          end
+        else
+          Preview.dispose(state)
         end
       end,
       id = "preview-event",
     }
-    local preview_buf_leave_event = {
-      event = events.NEO_TREE_BUFFER_LEAVE,
-      handler = function()
-        local winid, bufnr = state.preview.winid, state.preview.bufnr
-        state.preview:revert()
-        if vim.api.nvim_get_current_win() == winid then
-          vim.api.nvim_set_current_buf(bufnr)
-        end
-      end,
-      id = "preview-buf-leave-event",
-    }
     state.preview:subscribe(state.name, preview_event)
-    state.preview:subscribe(state.name, preview_buf_leave_event)
   end
 end
 
@@ -424,6 +423,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
+    M.revert_preview(state)
     local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)

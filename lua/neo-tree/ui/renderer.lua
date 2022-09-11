@@ -74,6 +74,7 @@ M.close = function(state)
   local window_existed = false
   if state and state.winid then
     if M.window_exists(state) then
+      Preview.dispose(state)
       local bufnr = vim.api.nvim_win_get_buf(state.winid)
       -- if bufnr is different then we expect,  then it was taken over by
       -- another buffer, so we can't delete it now
@@ -147,6 +148,14 @@ M.close_all_floating_windows = function()
   while #floating_windows > 0 do
     local win = table.remove(floating_windows)
     win:unmount()
+  end
+end
+
+M.get_nui_popup = function(winid)
+  for _, win in ipairs(floating_windows) do
+    if win.winid == winid then
+      return win
+    end
   end
 end
 

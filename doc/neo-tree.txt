@@ -13,6 +13,7 @@ Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
   Filtered Items ............ |neo-tree-filtered-items|
+  Preview Mode .............. |neo-tree-preview-mode|
   Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
   Git Status ................ |neo-tree-git-status|
@@ -169,9 +170,9 @@ in a custom mapping.
 
 Note: The "selected" item is the line the cursor is currently on.
 
-<             = prev_source  Switches to the previous source.
+<             = prev_source: Switches to the previous source.
 
->             = next_source  Switches to the next source.
+>             = next_source: Switches to the next source.
 
 <bs>          = navigate_up: Moves the root directory up one level.
 
@@ -191,6 +192,12 @@ C             = close_node:  Close node if it is open, else close it's parent.
 z         = close_all_nodes: Close all nodes in the tree.
 
            expand_all_nodes: Expand all directory nodes in the tree recursively.
+
+P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
+
+<esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
+                             any preview windows to what was being shown before
+                             preview mode began.
 
 S             = open_split:  Same as open, but opens in a new horizontal split.
 
@@ -310,6 +317,34 @@ f = filter_on_submit:       Same as above, but does not search until you hit
                             filtered.
 
 <C-x> = clear_filter:       Removes the filter.
+
+PREVIEW MODE                                             *neo-tree-preview-mode*
+
+Preview mode will temporarily show whatever file the cursor is on without 
+switching focus from the Neo-tree window. By default, files will be previewed 
+in a new floating window. This can also be configured to automatically choose 
+an existing split by configuring the command like this:
+
+>
+    require("neo-tree").setup({
+      window = {
+        mappings = {
+          ["P"] = { "toggle_preview", config = { use_float = false } },
+        }
+      }
+    })
+<
+Anything that causes Neo-tree to lose focus will end preview mode. When
+`use_float = false`, the window that was taken over by preview mode will revert
+back to whatever was shown in that window before preview mode began.
+
+If you want to work with the floating preview mode window in autocmds or other
+custom code, the window will have the `neo-tree-preview` filetype. 
+
+When preview mode is not using floats, the window will have the window local
+variable `neo_tree_preview` set to `1` to indicate that it is being used as a
+preview window. You can refer to this in statusline and winbar configs to mark a
+window as being used as a preview.
 
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
