@@ -19,6 +19,11 @@ local function get_folder_node(tree, node)
   if not node then
     node = tree:get_node()
   end
+  local use_parent = require("neo-tree").config.window.same_level
+  if use_parent then
+    return tree:get_node(node:get_parent_id())
+  end
+
   if node.type == "directory" then
     return node
   end
@@ -384,8 +389,9 @@ M.paste_from_clipboard = function(state, callback)
 
     paste_complete = function(source, destination)
       if callback then
+        local same_level = require("neo-tree").config.window.same_level
         -- open the folder so the user can see the new files
-        local node = state.tree:get_node(folder)
+        local node = same_level and state.tree:get_node() or state.tree:get_node(folder)
         if not node then
           log.warn("Could not find node for " .. folder)
         end

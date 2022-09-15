@@ -298,6 +298,7 @@ local config = {
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
+    same_level = false, -- Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
     -- Mappings for tree window. See `:h neo-tree-mappings` for a list of built-in commands.
     -- You can also create your own commands by providing a function instead of a string.
     mapping_options = {
