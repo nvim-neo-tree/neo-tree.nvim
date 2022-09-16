@@ -243,6 +243,18 @@ M.get_keys = function(tbl, sorted)
   return keys
 end
 
+---Gets the usable columns in a window, subtracting sign, fold, and line number columns.
+---@param winid integer The window id to get the columns of.
+---@return number
+M.get_inner_win_width = function(winid)
+  local info = vim.fn.getwininfo(winid)
+  if info and info[1] then
+    return info[1].width - info[1].textoff
+  else
+    log.error("Could not get window info for window", winid)
+  end
+end
+
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
@@ -376,6 +388,48 @@ M.map = function(tbl, fn)
   return t
 end
 
+M.get_appropriate_window = function(state)
+  -- Avoid triggering autocommands when switching windows
+  local eventignore = vim.o.eventignore
+  vim.o.eventignore = "all"
+
+  local current_window = vim.api.nvim_get_current_win()
+
+  -- use last window if possible
+  local suitable_window_found = false
+  local nt = require("neo-tree")
+  if nt.config.open_files_in_last_window then
+    local prior_window = nt.get_prior_window()
+    if prior_window > 0 then
+      local success = pcall(vim.api.nvim_set_current_win, prior_window)
+      if success then
+        suitable_window_found = true
+      end
+    end
+  end
+  -- find a suitable window to open the file in
+  if not suitable_window_found then
+    if state.current_position == "right" then
+      vim.cmd("wincmd t")
+    else
+      vim.cmd("wincmd w")
+    end
+  end
+  local attempts = 0
+  while attempts < 5 and vim.bo.filetype == "neo-tree" do
+    attempts = attempts + 1
+    vim.cmd("wincmd w")
+  end
+
+  local winid = vim.api.nvim_get_current_win()
+  local is_neo_tree_window = vim.bo.filetype == "neo-tree"
+  vim.api.nvim_set_current_win(current_window)
+
+  vim.o.eventignore = eventignore
+
+  return winid, is_neo_tree_window
+end
+
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
@@ -407,35 +461,11 @@ M.open_file = function(state, path, open_cmd)
     if state.current_position == "current" then
       result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
     else
-      -- use last window if possible
-      local suitable_window_found = false
-      local nt = require("neo-tree")
-      if nt.config.open_files_in_last_window then
-        local prior_window = nt.get_prior_window()
-        if prior_window > 0 then
-          local success = pcall(vim.api.nvim_set_current_win, prior_window)
-          if success then
-            suitable_window_found = true
-          end
-        end
-      end
-      -- find a suitable window to open the file in
-      if not suitable_window_found then
-        if state.current_position == "right" then
-          vim.cmd("wincmd t")
-        else
-          vim.cmd("wincmd w")
-        end
-      end
-      local attempts = 0
-      while attempts < 4 and vim.bo.filetype == "neo-tree" do
-        attempts = attempts + 1
-        vim.cmd("wincmd w")
-      end
+      local winid, is_neo_tree_window = M.get_appropriate_window(state)
+      vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
-      if vim.bo.filetype == "neo-tree" then
+      if is_neo_tree_window then
         -- Neo-tree must be the only window, restore it's status as a sidebar
-        local winid = vim.api.nvim_get_current_win()
         local width = M.get_value(state, "window.width", 40, false)
         result, err = pcall(vim.cmd, "vsplit " .. escaped_path)
         vim.api.nvim_win_set_width(winid, width)

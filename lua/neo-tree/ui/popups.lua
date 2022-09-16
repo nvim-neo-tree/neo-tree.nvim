@@ -10,11 +10,6 @@ local M = {}
 M.popup_options = function(title, min_width, override_options)
   local min_width = min_width or 30
   local width = string.len(title) + 2
-  local right_padding = " "
-  if width < min_width then
-    right_padding = string.rep(" ", min_width - width + 1)
-    width = min_width
-  end
 
   local nt = require("neo-tree")
   local popup_border_style = nt.config.popup_border_style

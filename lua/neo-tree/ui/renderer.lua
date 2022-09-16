@@ -38,7 +38,7 @@ local start_resize_monitor = function()
     local success, err = pcall(manager._for_each_state, nil, function(state)
       if state.win_width and M.window_exists(state) then
         windows_exist = true
-        local current_size = vim.api.nvim_win_get_width(state.winid)
+        local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
           log.trace("Window size changed, redrawing tree")
           state.win_width = current_size
@@ -74,6 +74,7 @@ M.close = function(state)
   local window_existed = false
   if state and state.winid then
     if M.window_exists(state) then
+      Preview.dispose(state)
       local bufnr = vim.api.nvim_win_get_buf(state.winid)
       -- if bufnr is different then we expect,  then it was taken over by
       -- another buffer, so we can't delete it now
@@ -90,7 +91,24 @@ M.close = function(state)
         else
           local win_list = vim.api.nvim_tabpage_list_wins(0)
           if #win_list > 1 then
-            vim.api.nvim_win_close(state.winid, true)
+            local args = {
+              position = state.current_position,
+              source = state.name,
+              winid = state.winid,
+              tabnr = state.tabnr,
+            }
+            events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
+            -- focus the prior used window if we are closing the currently focused window
+            local current_winid = vim.api.nvim_get_current_win()
+            if current_winid == state.winid then
+              local pwin = require("neo-tree").get_prior_window()
+              if type(pwin) == "number" and pwin > 0 then
+                pcall(vim.api.nvim_set_current_win, pwin)
+              end
+            end
+            -- if the window was a float, changing the current win would have closed it already
+            pcall(vim.api.nvim_win_close, state.winid, true)
+            events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
           end
         end
       end
@@ -130,6 +148,14 @@ M.close_all_floating_windows = function()
   while #floating_windows > 0 do
     local win = table.remove(floating_windows)
     win:unmount()
+  end
+end
+
+M.get_nui_popup = function(winid)
+  for _, win in ipairs(floating_windows) do
+    if win.winid == winid then
+      return win
+    end
   end
 end
 
@@ -224,7 +250,11 @@ create_nodes = function(source_items, state, level)
     if source_items == hidden then
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
-        name = "(forced to show " .. #hidden .. " hidden items)",
+        name = "(forced to show "
+          .. #hidden
+          .. " hidden "
+          .. (#hidden > 1 and "items" or "item")
+          .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -234,7 +264,7 @@ create_nodes = function(source_items, state, level)
     elseif filtered_items.show_hidden_count or (#visible == 0 and level <= 1) then
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
-        name = "(" .. #hidden .. " hidden items)",
+        name = "(" .. #hidden .. " hidden " .. (#hidden > 1 and "items" or "item") .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -731,6 +761,13 @@ create_window = function(state)
   }
 
   local win
+  local event_args = {
+    position = state.current_position,
+    source = state.name,
+    tabnr = state.tabnr,
+  }
+  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+
   if state.current_position == "float" then
     state.force_float = nil
     -- First get the default options for floating windows.
@@ -791,6 +828,8 @@ create_window = function(state)
     state.bufnr = win.bufnr
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
   end
+  event_args.winid = state.winid
+  events.fire_event(events.NEO_TREE_WINDOW_AFTER_OPEN, event_args)
 
   if type(state.bufnr) == "number" then
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)
@@ -926,7 +965,7 @@ draw = function(nodes, state, parent_id)
   end
 
   -- This is to ensure that containers are always the right size
-  state.win_width = vim.api.nvim_win_get_width(state.winid)
+  state.win_width = utils.get_inner_win_width(state.winid)
   start_resize_monitor()
 
   state.tree:render()
@@ -982,8 +1021,10 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   end
 
   local config = require("neo-tree").config
-  if config.hide_root_node and not parentId then
-    sourceItems[1].skip_node = true
+  if config.hide_root_node then
+    if not parentId then
+      sourceItems[1].skip_node = true
+    end
     if not config.retain_hidden_root_indent then
       level = level - 1
     end
@@ -1044,7 +1085,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     draw(nodes, state, parentId)
   else
     -- this was a force grouping of a lazy loaded folder
-    state.win_width = vim.api.nvim_win_get_width(state.winid)
+    state.win_width = utils.get_inner_win_width(state.winid)
     state.tree:render()
   end
 

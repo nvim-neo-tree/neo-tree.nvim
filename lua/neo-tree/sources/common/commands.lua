@@ -4,8 +4,10 @@ local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
+local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
+local Preview = require("neo-tree.sources.common.preview")
 
 ---Gets the node parent folder recursively
 ---@param tree table to look for nodes
@@ -326,20 +328,82 @@ end
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == "message" then
-    return
+  if node.type == "file" or node.type == "directory" then
+    fs_actions.delete_node(node.path, callback)
+  else
+    log.warn("The `delete` command can only be used on files and directories")
   end
-  fs_actions.delete_node(node.path, callback)
 end
 
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
-    if node_to_delete.type ~= "message" then
+    if node_to_delete.type == "file" or node_to_delete.type == "directory" then
       table.insert(paths_to_delete, node_to_delete.path)
     end
   end
   fs_actions.delete_nodes(paths_to_delete, callback)
+end
+
+M.preview = function(state)
+  local node = state.tree:get_node()
+  if node.type == "directory" then
+    return
+  end
+
+  if not state.preview then
+    state.preview = Preview:new(state)
+  else
+    state.preview.active = true
+    state.preview:findWindow(state)
+  end
+
+  local extra = node.extra or {}
+  local position = extra.position
+  local end_position = extra.end_position
+  local path = node.path or node:get_id()
+  local bufnr = extra.bufnr or vim.fn.bufadd(path)
+
+  if bufnr and bufnr > 0 and state.preview then
+    if renderer.is_window_valid(state.preview.winid) then
+      state.preview:preview(bufnr, position, end_position)
+    else
+      log.warn("Preview window is not valid")
+      Preview.dispose(state)
+    end
+  end
+end
+
+M.revert_preview = function(state)
+  Preview.dispose(state)
+end
+
+M.toggle_preview = function(state)
+  if state.preview then
+    M.revert_preview(state)
+  else
+    state.commands.preview(state)
+    if not state.preview then
+      return
+    end
+    local preview_event = {
+      event = events.VIM_CURSOR_MOVED,
+      handler = function()
+        if not state.preview then
+          return
+        end
+        if vim.api.nvim_get_current_win() == state.winid then
+          if state.preview.active then
+            state.commands.preview(state)
+          end
+        else
+          Preview.dispose(state)
+        end
+      end,
+      id = "preview-event",
+    }
+    state.preview:subscribe(state.name, preview_event)
+  end
 end
 
 ---Open file or directory
@@ -359,11 +423,20 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
-    local path = node:get_id()
+    M.revert_preview(state)
+    local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)
     else
       utils.open_file(state, path, open_cmd)
+    end
+    local extra = node.extra or {}
+    local pos = extra.position or extra.end_position
+    if pos ~= nil then
+      vim.api.nvim_win_set_cursor(0, { (pos[1] or 0) + 1, pos[2] or 0 })
+      vim.api.nvim_win_call(0, function()
+        vim.cmd("normal! zvzz") -- expand folds and center cursor
+      end)
     end
   end
 
@@ -371,7 +444,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
-      if node:is_expanded() and node.type == "file" then
+      if node:is_expanded() and node.type ~= "directory" then
         return open()
       end
 
@@ -420,6 +493,22 @@ end
 ---open/closed
 M.open_tabnew = function(state, toggle_directory)
   open_with_cmd(state, "tabnew", toggle_directory)
+end
+
+---Open file or directory or focus it if a buffer already exists with it
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_drop = function(state, toggle_directory)
+  open_with_cmd(state, "drop", toggle_directory)
+end
+
+---Open file or directory in new tab or focus it if a buffer already exists with it
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_tab_drop = function(state, toggle_directory)
+  open_with_cmd(state, "tab drop", toggle_directory)
 end
 
 M.rename = function(state, callback)

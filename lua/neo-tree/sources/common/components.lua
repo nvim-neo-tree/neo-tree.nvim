@@ -96,6 +96,18 @@ M.diagnostics = function(config, node, state)
     defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
   end
   defined = defined and defined[1]
+
+  -- check for overrides in the component config
+  local severity_lower = severity:lower()
+  if config.symbols and config.symbols[severity_lower] then
+    defined = defined or { texthl = "Diagnostic" .. severity }
+    defined.text = config.symbols[severity_lower]
+  end
+  if config.highlights and config.highlights[severity_lower] then
+    defined = defined or { text = severity:sub(1, 1) .. " " }
+    defined.texthl = config.highlights[severity_lower]
+  end
+
   if defined and defined.text and defined.texthl then
     return {
       text = make_two_char(defined.text),
@@ -128,6 +140,9 @@ M.git_status = function(config, node, state)
   local change_highlt = highlights.FILE_NAME
   local status_symbol = symbols.staged
   local status_highlt = highlights.GIT_STAGED
+  if git_status:len() == 1 then
+    status_symbol = nil
+  end
 
   if git_status:sub(1, 1) == " " then
     status_symbol = symbols.unstaged
@@ -306,8 +321,16 @@ M.name = function(config, node, state)
     end
   end
 
+  if type(config.right_padding) == "number" then
+    if config.right_padding > 0 then
+      text = text .. string.rep(" ", config.right_padding)
+    end
+  else
+    text = text .. " "
+  end
+
   return {
-    text = text .. " ",
+    text = text,
     highlight = highlight,
   }
 end

@@ -75,6 +75,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
+  events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
@@ -98,6 +99,10 @@ local last_buffer_enter_filetype = nil
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
+    if last_buffer_enter_filetype == "neo-tree" then
+      -- we've switched to another neo-tree window
+      events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
+    end
     vim.cmd([[
     setlocal cursorline
     setlocal nowrap
@@ -152,7 +157,11 @@ M.buffer_enter_event = function()
   end
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
-    local position = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_position")
+    local success, position = pcall(vim.api.nvim_buf_get_var, prior_buf, "neo_tree_position")
+    if not success then
+      -- just bail out now, the rest of these lookups will probably fail too.
+      return
+    end
     if position == "current" then
       -- nothing to do here, files are supposed to open in same window
       return

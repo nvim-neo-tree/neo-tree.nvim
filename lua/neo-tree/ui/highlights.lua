@@ -51,6 +51,7 @@ M.TITLE_BAR = "NeoTreeTitleBar"
 M.INDENT_MARKER = "NeoTreeIndentMarker"
 M.EXPANDER = "NeoTreeExpander"
 M.WINDOWS_HIDDEN = "NeoTreeWindowsHidden"
+M.PREVIEW = "NeoTreePreview"
 
 local function dec_to_hex(n, chars)
   chars = chars or 6
@@ -227,7 +228,12 @@ M.setup = function()
   )
 
   M.create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
-  M.create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, nil)
+
+  local title_fg = normal_hl.background
+  if title_fg == float_border_hl.foreground then
+    title_fg = normal_hl.foreground
+  end
+  M.create_highlight_group(M.TITLE_BAR, {}, float_border_hl.foreground, title_fg)
 
   M.create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   M.create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
@@ -249,6 +255,7 @@ M.setup = function()
   M.create_highlight_group(M.EXPANDER, { M.DIM_TEXT })
   M.create_highlight_group(M.MODIFIED, {}, nil, "d7d787")
   M.create_highlight_group(M.WINDOWS_HIDDEN, { M.DOTFILE }, nil, nil)
+  M.create_highlight_group(M.PREVIEW, { "Search" }, nil, nil)
 
   M.create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
   M.create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")

@@ -20,6 +20,10 @@ local M = {
   NEO_TREE_BUFFER_LEAVE = "neo_tree_buffer_leave",
   NEO_TREE_POPUP_BUFFER_ENTER = "neo_tree_popup_buffer_enter",
   NEO_TREE_POPUP_BUFFER_LEAVE = "neo_tree_popup_buffer_leave",
+  NEO_TREE_WINDOW_BEFORE_CLOSE = "neo_tree_window_before_close",
+  NEO_TREE_WINDOW_AFTER_CLOSE = "neo_tree_window_after_close",
+  NEO_TREE_WINDOW_BEFORE_OPEN = "neo_tree_window_before_open",
+  NEO_TREE_WINDOW_AFTER_OPEN = "neo_tree_window_after_open",
   VIM_BUFFER_ADDED = "vim_buffer_added",
   VIM_BUFFER_CHANGED = "vim_buffer_changed",
   VIM_BUFFER_DELETED = "vim_buffer_deleted",
@@ -34,6 +38,7 @@ local M = {
   VIM_COLORSCHEME = "vim_colorscheme",
   VIM_LEAVE = "vim_leave",
   VIM_RESIZED = "vim_resized",
+  VIM_CURSOR_MOVED = "vim_cursor_moved",
 }
 
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)

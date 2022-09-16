@@ -137,7 +137,31 @@ local config = {
   --    handler = function()
   --      vim.cmd 'highlight! Cursor guibg=#5f87af blend=0'
   --    end
-  --  }
+  --  },
+  -- {
+  --   event = "neo_tree_window_before_open",
+  --   handler = function(args)
+  --     print("neo_tree_window_before_open", vim.inspect(args))
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_after_open",
+  --   handler = function(args)
+  --     vim.cmd("wincmd =")
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_before_close",
+  --   handler = function(args)
+  --     print("neo_tree_window_before_close", vim.inspect(args))
+  --   end
+  -- },
+  -- {
+  --   event = "neo_tree_window_after_close",
+  --   handler = function(args)
+  --     vim.cmd("wincmd =")
+  --   end
+  -- }
   --},
   default_component_configs = {
     container = {
@@ -145,6 +169,20 @@ local config = {
       width = "100%",
       right_padding = 0,
     },
+    --diagnostics = {
+    --  symbols = {
+    --    hint = "H",
+    --    info = "I",
+    --    warn = "!",
+    --    error = "X",
+    --  },
+    --  highlights = {
+    --    hint = "DiagnosticSignHint",
+    --    info = "DiagnosticSignInfo",
+    --    warn = "DiagnosticSignWarn",
+    --    error = "DiagnosticSignError",
+    --  },
+    --},
     indent = {
       indent_size = 2,
       padding = 1,
@@ -210,6 +248,7 @@ local config = {
           -- },
           { "clipboard", zindex = 10 },
           { "diagnostics", errors_only = true, zindex = 20, align = "right" },
+          { "git_status", zindex = 20, align = "right" },
         },
       },
     },
@@ -275,11 +314,15 @@ local config = {
       },
       ["<2-LeftMouse>"] = "open",
       ["<cr>"] = "open",
+      ["<esc>"] = "revert_preview",
+      ["P"] = { "toggle_preview", config = { use_float = true } },
       ["S"] = "open_split",
       -- ["S"] = "split_with_window_picker",
       ["s"] = "open_vsplit",
       -- ["s"] = "vsplit_with_window_picker",
       ["t"] = "open_tabnew",
+      -- ["<cr>"] = "open_drop",
+      -- ["t"] = "open_tab_drop",
       ["w"] = "open_with_window_picker",
       ["C"] = "close_node",
       ["z"] = "close_all_nodes",
@@ -348,7 +391,8 @@ local config = {
         --"node_modules",
       },
       hide_by_pattern = { -- uses glob style patterns
-        --"*.meta"
+        --"*.meta",
+        --"*/src/*/tsconfig.json"
       },
       always_show = { -- remains visible even if other settings would normally hide it
         --".gitignored",

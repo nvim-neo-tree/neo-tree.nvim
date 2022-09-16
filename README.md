@@ -198,12 +198,17 @@ use {
             },
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
+            ["<esc>"] = "revert_preview",
+            ["P"] = { "toggle_preview", config = { use_float = true } },
             ["S"] = "open_split",
             ["s"] = "open_vsplit",
             -- ["S"] = "split_with_window_picker",
             -- ["s"] = "vsplit_with_window_picker",
             ["t"] = "open_tabnew",
+            -- ["<cr>"] = "open_drop",
+            -- ["t"] = "open_tab_drop",
             ["w"] = "open_with_window_picker",
+            --["P"] = "toggle_preview", -- enter preview mode, which shows the current node without focusing
             ["C"] = "close_node",
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
@@ -246,7 +251,8 @@ use {
               --"node_modules"
             },
             hide_by_pattern = { -- uses glob style patterns
-              --"*.meta"
+              --"*.meta",
+              --"*/src/*/tsconfig.json",
             },
             always_show = { -- remains visible even if other settings would normally hide it
               --".gitignored",

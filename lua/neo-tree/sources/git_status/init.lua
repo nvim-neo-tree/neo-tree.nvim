@@ -28,6 +28,10 @@ M.navigate = function(state, path, path_to_reveal)
   items.get_git_status(state)
 end
 
+M.refresh = function()
+  manager.refresh(M.name)
+end
+
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
@@ -50,7 +54,7 @@ M.setup = function(config, global_config)
       event = events.VIM_BUFFER_CHANGED,
       handler = function(args)
         if utils.is_real_file(args.afile) then
-          manager.refresh(M.name)
+          M.refresh()
         end
       end,
     })
@@ -59,7 +63,7 @@ M.setup = function(config, global_config)
   if config.bind_to_cwd then
     manager.subscribe(M.name, {
       event = events.VIM_DIR_CHANGED,
-      handler = wrap(manager.refresh),
+      handler = M.refresh,
     })
   end
 
@@ -77,6 +81,11 @@ M.setup = function(config, global_config)
       handler = wrap(manager.modified_buffers_changed),
     })
   end
+
+  manager.subscribe(M.name, {
+    event = events.GIT_EVENT,
+    handler = M.refresh,
+  })
 end
 
 return M

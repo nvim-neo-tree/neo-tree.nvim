@@ -7,6 +7,7 @@ local inputs = require("neo-tree.ui.inputs")
 local popups = require("neo-tree.ui.popups")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
+local log = require("neo-tree.log")
 
 local M = {}
 
@@ -19,17 +20,15 @@ M.git_add_file = function(state)
     return
   end
   local path = node:get_id()
-  local cmd = "git add " .. path
+  local cmd = { "git", "add", path }
   vim.fn.system(cmd)
   events.fire_event(events.GIT_EVENT)
-  refresh()
 end
 
 M.git_add_all = function(state)
-  local cmd = "git add -A"
+  local cmd = { "git", "add", "-A" }
   vim.fn.system(cmd)
   events.fire_event(events.GIT_EVENT)
-  refresh()
 end
 
 M.git_commit = function(state, and_push)
@@ -45,31 +44,36 @@ M.git_commit = function(state, and_push)
   }
 
   inputs.input("Commit message: ", "", function(msg)
-    msg = msg:gsub('"', "'")
-    local cmd = "git commit -m '" .. msg .. "'"
+    local cmd = { "git", "commit", "-m", msg }
     local title = "git commit"
-    if and_push then
-      cmd = cmd .. " && git push"
-      title = "git commit && git push"
-    end
     local result = vim.fn.systemlist(cmd)
+    if vim.v.shell_error ~= 0 or (#result > 0 and vim.startswith(result[1], "fatal:")) then
+      popups.alert("ERROR: git commit", result)
+      return
+    end
+    if and_push then
+      title = "git commit && git push"
+      cmd = { "git", "push" }
+      local result2 = vim.fn.systemlist(cmd)
+      table.insert(result, "")
+      for i = 1, #result2 do
+        table.insert(result, result2[i])
+      end
+    end
     events.fire_event(events.GIT_EVENT)
-    refresh()
     popups.alert(title, result)
   end, popup_options)
 end
 
 M.git_commit_and_push = function(state)
   M.git_commit(state, true)
-  events.fire_event(events.GIT_EVENT)
 end
 
 M.git_push = function(state)
   inputs.confirm("Are you sure you want to push your changes?", function(yes)
     if yes then
-      local result = vim.fn.systemlist("git push")
+      local result = vim.fn.systemlist({ "git", "push" })
       events.fire_event(events.GIT_EVENT)
-      refresh()
       popups.alert("git push", result)
     end
   end)
@@ -81,10 +85,9 @@ M.git_unstage_file = function(state)
     return
   end
   local path = node:get_id()
-  local cmd = "git reset -- " .. path
+  local cmd = { "git", "reset", "--", path }
   vim.fn.system(cmd)
   events.fire_event(events.GIT_EVENT)
-  refresh()
 end
 
 M.git_revert_file = function(state)
@@ -93,13 +96,12 @@ M.git_revert_file = function(state)
     return
   end
   local path = node:get_id()
-  local cmd = "git checkout HEAD -- " .. path
+  local cmd = { "git", "checkout", "HEAD", "--", path }
   local msg = string.format("Are you sure you want to revert %s?", node.name)
   inputs.confirm(msg, function(yes)
     if yes then
       vim.fn.system(cmd)
       events.fire_event(events.GIT_EVENT)
-      refresh()
     end
   end)
 end

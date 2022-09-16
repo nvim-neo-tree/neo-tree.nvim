@@ -13,6 +13,7 @@ Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
   Filtered Items ............ |neo-tree-filtered-items|
+  Preview Mode .............. |neo-tree-preview-mode|
   Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
   Git Status ................ |neo-tree-git-status|
@@ -169,9 +170,9 @@ in a custom mapping.
 
 Note: The "selected" item is the line the cursor is currently on.
 
-<             = prev_source  Switches to the previous source.
+<             = prev_source: Switches to the previous source.
 
->             = next_source  Switches to the next source.
+>             = next_source: Switches to the next source.
 
 <bs>          = navigate_up: Moves the root directory up one level.
 
@@ -192,11 +193,22 @@ z         = close_all_nodes: Close all nodes in the tree.
 
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
+P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
+
+<esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
+                             any preview windows to what was being shown before
+                             preview mode began.
+
 S             = open_split:  Same as open, but opens in a new horizontal split.
 
 s             = open_vsplit: Same as open, but opens in a vertical split.
 
 t             = open_tabnew: Same as open, but opens in a new tab.
+
+                  open_drop: Same as open, but opens with the |:drop| command. 
+
+              open_tab_drop: Same as open, but opens in a new tab with the 
+                             |:drop| command with the |:tab| modifier. 
 
 w = open_with_window_picker: Uses the `window-picker` plugin to select a window
                              to open the selected node in. Requires that
@@ -305,6 +317,34 @@ f = filter_on_submit:       Same as above, but does not search until you hit
                             filtered.
 
 <C-x> = clear_filter:       Removes the filter.
+
+PREVIEW MODE                                             *neo-tree-preview-mode*
+
+Preview mode will temporarily show whatever file the cursor is on without 
+switching focus from the Neo-tree window. By default, files will be previewed 
+in a new floating window. This can also be configured to automatically choose 
+an existing split by configuring the command like this:
+
+>
+    require("neo-tree").setup({
+      window = {
+        mappings = {
+          ["P"] = { "toggle_preview", config = { use_float = false } },
+        }
+      }
+    })
+<
+Anything that causes Neo-tree to lose focus will end preview mode. When
+`use_float = false`, the window that was taken over by preview mode will revert
+back to whatever was shown in that window before preview mode began.
+
+If you want to work with the floating preview mode window in autocmds or other
+custom code, the window will have the `neo-tree-preview` filetype. 
+
+When preview mode is not using floats, the window will have the window local
+variable `neo_tree_preview` set to `1` to indicate that it is being used as a
+preview window. You can refer to this in statusline and winbar configs to mark a
+window as being used as a preview.
 
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
@@ -588,8 +628,95 @@ to `true`:
     })
 <
 
-There are many configuration options to change the style of these tabs. 
-See `defaults.lua` for details.
+The configuration options for source selector are all placed inside
+`source_selector` table. Below are the options with their default values and
+type notations.
+
+>
+    requires("neo-tree").setup({
+        source_selector = {
+            winbar = false, -- toggle to show selector on winbar
+            statusline = false, -- toggle to show selector on statusline
+            show_scrolled_off_parent_node = false,                    -- boolean
+            tab_labels = {                                            -- table
+                filesystem = "  Files ",                             -- string | nil
+                buffers =    "  Buffers ",                           -- string | nil
+                git_status = "  Git ",                               -- string | nil
+                diagnostics = " 裂Diagnostics " ,                     -- string | nil
+            },
+            content_layout = "start",                                 -- string
+            tabs_layout = "equal",                                    -- string
+            truncation_character = "…",                               -- string
+            tabs_min_width = nil,                                     -- int | nil
+            tabs_max_width = nil,                                     -- int | nil
+            padding = 0,                                              -- int | { left: int, right: int }
+            separator = { left = "▏", right= "▕" },                   -- string | { left: string, right: string, override: string | nil }
+            separator_active = nil,                                   -- string | { left: string, right: string, override: string | nil } | nil
+            show_separator_on_edge = false,                           -- boolean
+            highlight_tab = "NeoTreeTabInactive",                     -- string
+            highlight_tab_active = "NeoTreeTabActive",                -- string
+            highlight_background = "NeoTreeTabInactive",              -- string
+            highlight_separator = "NeoTreeTabSeparatorInactive",      -- string
+            highlight_separator_active = "NeoTreeTabSeparatorActive", -- string
+        },
+    })
+<
+
+Keywords: >
+      <tab>  <tab>  <tab> <background>
+    ┃/  a  \/  b  \/  c  \            ┃ <- edge of window
+     ^     ^^     ^^     ^  separators
+     left separator      right separator
+<
+
+Configuration Options:
+When `show_scrolled_off_parent_node` is `true`, tabs are replaced with the parent
+path of the top visible node when scrolled down.
+
+`tab_labels` is a table to configure the characters shown on each tab. Keys of
+the table should match the source names defined in `sources`. Value is what is
+printed inside the tab. If value is `nil` or not set, the source name is used
+instead.
+
+`content_layout` defines how the labels are placed inside a tab. This only takes
+effect when the tab width is greater than the length of label i.e.
+`tabs_layout = "equal", "focus"` or when `tabs_min_width` is large enough.
+Following options are available.
+    'start'  : left aligned                  / 裡 bufname     \/..
+    'end'    : right aligned                 /     裡 bufname \/...
+    'center' : centered with equal padding   /   裡 bufname   \/...
+
+`tabs_layout` defines how the tabs are aligned inside the window when there is
+more than enough space. The following options are available. `active` will
+expand the focused tab as much as possible. Bars denote the edge of window.
+    'start'  : left aligned                                       ┃/  ~  \/  ~  \/  ~  \            ┃
+    'end'    : right aligned                                      ┃            /  ~  \/  ~  \/  ~  \┃
+    'center' : centered with equal padding                        ┃      /  ~  \/  ~  \/  ~  \      ┃
+    'equal'  : expand all tabs equally to fit the window width    ┃/    ~    \/    ~    \/    ~    \┃
+    'active' : expand the focused tab to fit the window width     ┃/  focused tab    \/  ~  \/  ~  \┃
+
+`padding` defines the global padding of the source selector. It can be an
+integer or a table with keys `left` and `right`. Setting `padding = 2` is
+exactly the same as `{ left = 2, right = 2 }`
+
+`separator` and `separator_active` take string or table to define the separators
+surrounding non-active and active tab respectively. When `separator_active` is
+`nil`, it falls back to `separator`. They require three keys `left`, `right`,
+and `override` which define how the separators of neighboring tabs are merged
+together. The following four options are available for `override`. The examples
+show the result of `{ left = "/", right = "\", override = ... }`
+    'nil'      : never merged                       /  ~  \/  ~  \/  ~  \...
+    '"right"'  : all merged to the right            /  ~  \  ~  \  ~  \...
+    '"left"'   : all merged to the left             /  ~  /  ~  /  ~  /...
+    '"active"' : merged towards the active tab      /  ~  / focused tab \  ~  \...
+When set to string such as "┃", it is equivalent to
+`{ left = "┃", right = "┃", override = "active" }`.
+
+`show_separator_on_edge` takes a boolean value where `false` (default) hides the
+separators on the far left / right. Especially useful when left and right
+separator are the same.
+    'true'  : ┃/    ~    \/    ~    \/    ~    \┃
+    'false' : ┃     ~    \/    ~    \/    ~     ┃
 
 
 CURRENT WORKING DIRECTORY                                         *neo-tree-cwd*
@@ -644,6 +771,7 @@ highlight group which will be applied when they are visible, see
           },
           hide_by_pattern = {
             --"*.meta",
+            --"*/src/*/tsconfig.json",
           },
           always_show = { -- remains visible even if other settings would normally hide it
             --".gitignored",
@@ -838,6 +966,32 @@ define those somewhere in your nvim configuration. Here is an example:
     vim.fn.sign_define("LspDiagnosticsSignHint",
         {text = "", texthl = "LspDiagnosticsSignHint"})
 <
+
+Alternatively, you can also specify the signs and/or highlights in the
+neo-tree setup call like this:
+
+>
+    require("neo-tree").setup({
+      default_component_configs = {
+        diagnostics = {
+          symbols = {
+            hint = "H",
+            info = "I",
+            warn = "!",
+            error = "X",
+          },
+          highlights = {
+            hint = "DiagnosticSignHint",
+            info = "DiagnosticSignInfo",
+            warn = "DiagnosticSignWarn",
+            error = "DiagnosticSignError",
+          },
+        },
+      }
+    })
+>
+Anything not specified in the `default_component_configs` will fallback to the
+`sign_define` method.
 
 To disable this feature entirely, set `enable_diagnostics = false` in your
 config when calling the setup function.
@@ -1061,6 +1215,26 @@ have.
 "neo_tree_popup_buffer_leave"~
 Fired after leaving a neo-tree popup buffer.
 
+"neo_tree_window_before_open"~
+Fired before opening a new Neo-tree window. Called with the following arg:
+                                                     *neo-tree-window-event-args*
+The event argument for all window events is a table with the following keys:
+    `winid`    = the |winid| of the window being opned or closed.
+    `tabnr`    = the tab number that the window is in.
+    `source`   = the name of the source that is in the window, such as "filesystem".
+    `position` = the position of the window, i.e. "left", "bottom", "right".
+
+"neo_tree_window_after_open"~
+Fired after opening a new Neo-tree window. Called with 
+|neo-tree-window-event-args|.
+
+"neo_tree_window_before_close"~
+Fired before closing a Neo-tree window. Called with 
+|neo-tree-window-event-args|.
+
+"neo_tree_window_after_close"~
+Fired after closing a Neo-tree window. Called with 
+|neo-tree-window-event-args|.
 
 NOTE: The following events are used internally and not intended for end user
 usage. You can use them if you want, but beware that they may be debounced, and
