@@ -346,64 +346,15 @@ M.delete_visual = function(state, selected_nodes, callback)
 end
 
 M.preview = function(state)
-  local node = state.tree:get_node()
-  if node.type == "directory" then
-    return
-  end
-
-  if not state.preview then
-    state.preview = Preview:new(state)
-  else
-    state.preview.active = true
-    state.preview:findWindow(state)
-  end
-
-  local extra = node.extra or {}
-  local position = extra.position
-  local end_position = extra.end_position
-  local path = node.path or node:get_id()
-  local bufnr = extra.bufnr or vim.fn.bufadd(path)
-
-  if bufnr and bufnr > 0 and state.preview then
-    if renderer.is_window_valid(state.preview.winid) then
-      state.preview:preview(bufnr, position, end_position)
-    else
-      log.warn("Preview window is not valid")
-      Preview.dispose(state)
-    end
-  end
+  Preview.show(state)
 end
 
-M.revert_preview = function(state)
-  Preview.dispose(state)
+M.revert_preview = function()
+  Preview.hide()
 end
 
 M.toggle_preview = function(state)
-  if state.preview then
-    M.revert_preview(state)
-  else
-    state.commands.preview(state)
-    if not state.preview then
-      return
-    end
-    local preview_event = {
-      event = events.VIM_CURSOR_MOVED,
-      handler = function()
-        if not state.preview then
-          return
-        end
-        if vim.api.nvim_get_current_win() == state.winid then
-          if state.preview.active then
-            state.commands.preview(state)
-          end
-        else
-          Preview.dispose(state)
-        end
-      end,
-      id = "preview-event",
-    }
-    state.preview:subscribe(state.name, preview_event)
-  end
+  Preview.toggle(state)
 end
 
 ---Open file or directory
@@ -423,7 +374,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local function open()
-    M.revert_preview(state)
+    M.revert_preview()
     local path = node.path or node:get_id()
     if type(open_file) == "function" then
       open_file(state, path, open_cmd)

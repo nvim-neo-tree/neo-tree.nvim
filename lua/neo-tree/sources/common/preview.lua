@@ -78,7 +78,9 @@ local function create_floating_preview_window(state)
   win:mount()
   return win
 end
-Preview = {}
+
+local Preview = {}
+local instance = nil
 
 ---Creates a new preview.
 ---@param state table The state of the source.
@@ -107,6 +109,7 @@ end
 ---@param start_pos table? The (0-indexed) starting position of the previewed text. May be absent.
 ---@param end_pos table? The (0-indexed) ending position of the previewed text. May be absent
 function Preview:preview(bufnr, start_pos, end_pos)
+  log.warn("Creating preview window")
   if self.is_neo_tree_window then
     log.error("Could not find appropriate window for preview")
     return
@@ -134,15 +137,6 @@ function Preview:preview(bufnr, start_pos, end_pos)
 
   self:reveal()
   self:highlight()
-end
-
-function Preview.dispose(state)
-  if state.preview and state.preview.active then
-    if state.preview.active then
-      state.preview:revert()
-    end
-  end
-  state.preview = nil
 end
 
 ---Reverts the preview and inactivates it, restoring the preview window to its previous state.
@@ -340,6 +334,65 @@ end
 function Preview:clearHighlight()
   if type(self.bufnr) == "number" and vim.api.nvim_buf_is_valid(self.bufnr) then
     vim.api.nvim_buf_clear_namespace(self.bufnr, neo_tree_preview_namespace, 0, -1)
+  end
+end
+
+Preview.hide = function()
+  if instance then
+    instance:revert()
+  end
+  instance = nil
+end
+
+Preview.show = function(state)
+  local node = state.tree:get_node()
+  if node.type == "directory" then
+    return
+  end
+
+  if instance then
+    instance:findWindow(state)
+    if not renderer.is_window_valid(instance.winid) then
+      log.warn("Preview window is not valid")
+      Preview.hide()
+      instance = Preview:new(state)
+    end
+  else
+    instance = Preview:new(state)
+  end
+
+  local extra = node.extra or {}
+  local position = extra.position
+  local end_position = extra.end_position
+  local path = node.path or node:get_id()
+  local bufnr = extra.bufnr or vim.fn.bufadd(path)
+
+  if bufnr and bufnr > 0 and instance then
+    instance:preview(bufnr, position, end_position)
+  end
+end
+
+Preview.toggle = function(state)
+  if instance then
+    Preview.hide()
+  else
+    Preview.show(state)
+    local preview_event = {
+      event = events.VIM_CURSOR_MOVED,
+      handler = function()
+        if not instance.active then
+          return
+        end
+        if vim.api.nvim_get_current_win() == state.winid then
+          Preview.show(state)
+        else
+          log.debug("Neo-tree window lost focus, disposing preview")
+          Preview.hide()
+        end
+      end,
+      id = "preview-event",
+    }
+    instance:subscribe(state.name, preview_event)
   end
 end
 
