@@ -98,7 +98,7 @@ local instance = nil
 function Preview:new(state)
   local preview = {}
   preview.active = false
-  preview.config = state.config
+  preview.config = vim.deepcopy(state.config)
   setmetatable(preview, { __index = self })
   preview:findWindow(state)
   return preview
@@ -207,7 +207,6 @@ end
 ---Finds the appropriate window and updates the preview accordingly.
 ---@param state table The state of the source.
 function Preview:findWindow(state)
-  self.config = state.config
   local winid, is_neo_tree_window
   if self.config.use_float then
     if
@@ -337,7 +336,10 @@ function Preview:clearHighlight()
   end
 end
 
+local toggle_state = false
+
 Preview.hide = function()
+  toggle_state = false
   if instance then
     instance:revert()
   end
@@ -352,11 +354,6 @@ Preview.show = function(state)
 
   if instance then
     instance:findWindow(state)
-    if not renderer.is_window_valid(instance.winid) then
-      log.warn("Preview window is not valid")
-      Preview.hide()
-      instance = Preview:new(state)
-    end
   else
     instance = Preview:new(state)
   end
@@ -373,17 +370,23 @@ Preview.show = function(state)
 end
 
 Preview.toggle = function(state)
-  if instance then
+  if toggle_state then
     Preview.hide()
   else
+    toggle_state = true
     Preview.show(state)
+    local winid = state.winid
+    local source_name = state.name
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
-        if not instance.active then
+        log.debug("Cursor moved, updating preview")
+        if not toggle_state then
+          log.warn("Preview is not active, not updating")
           return
         end
-        if vim.api.nvim_get_current_win() == state.winid then
+        if vim.api.nvim_get_current_win() == winid then
+          log.debug("Cursor moved in tree window, updating preview")
           Preview.show(state)
         else
           log.debug("Neo-tree window lost focus, disposing preview")
@@ -392,7 +395,7 @@ Preview.toggle = function(state)
       end,
       id = "preview-event",
     }
-    instance:subscribe(state.name, preview_event)
+    instance:subscribe(source_name, preview_event)
   end
 end
 
