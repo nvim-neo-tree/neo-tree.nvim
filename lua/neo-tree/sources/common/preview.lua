@@ -109,9 +109,8 @@ end
 ---@param start_pos table? The (0-indexed) starting position of the previewed text. May be absent.
 ---@param end_pos table? The (0-indexed) ending position of the previewed text. May be absent
 function Preview:preview(bufnr, start_pos, end_pos)
-  log.warn("Creating preview window")
   if self.is_neo_tree_window then
-    log.error("Could not find appropriate window for preview")
+    log.warn("Could not find appropriate window for preview")
     return
   end
 
@@ -121,7 +120,6 @@ function Preview:preview(bufnr, start_pos, end_pos)
   end
 
   if not self.active then
-    log.warn("Could not activate preview window.")
     return
   end
 
@@ -194,6 +192,9 @@ end
 
 ---Unsubscribe to all events in the preview event list.
 function Preview:unsubscribe()
+  if self.events == nil then
+    return
+  end
   for _, event in ipairs(self.events) do
     if event.source == nil then
       events.unsubscribe(event.event)
@@ -216,7 +217,6 @@ function Preview:findWindow(state)
     then
       return
     end
-    local renderer = require("neo-tree.ui.renderer")
     local win = create_floating_preview_window(state)
     if not win then
       self.active = false
@@ -373,16 +373,19 @@ Preview.toggle = function(state)
   if toggle_state then
     Preview.hide()
   else
-    toggle_state = true
     Preview.show(state)
+    if instance and instance.active then
+      toggle_state = true
+    else
+      Preview.hide()
+      return
+    end
     local winid = state.winid
     local source_name = state.name
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
-        log.debug("Cursor moved, updating preview")
         if not toggle_state then
-          log.warn("Preview is not active, not updating")
           return
         end
         if vim.api.nvim_get_current_win() == winid then
