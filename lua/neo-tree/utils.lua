@@ -322,6 +322,28 @@ M.group_by = function(array, key)
   return result
 end
 
+---Determines if a file should be filtered by a given list of glob patterns.
+---@param pattern_list table The list of glob patterns to filter by.
+---@param path string The full path to the file.
+---@param name string|nil The name of the file.
+---@return boolean
+M.is_filtered_by_pattern = function(pattern_list, path, name)
+  if pattern_list == nil then
+    return false
+  end
+  if name == nil then
+    _, name = M.split_path(path)
+  end
+  for _, p in ipairs(pattern_list) do
+    local separator_pattern = M.is_windows and "\\" or "/"
+    local filename = string.find(p, separator_pattern) and path or name
+    if string.find(filename, p) then
+      return true
+    end
+  end
+  return false
+end
+
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)

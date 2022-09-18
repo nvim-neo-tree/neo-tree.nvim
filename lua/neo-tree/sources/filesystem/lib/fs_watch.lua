@@ -36,6 +36,8 @@ end
 
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
+---@param custom_callback? function The callback to call when a change is detected.
+---@param allow_git_watch? boolean Allow watching of git folders.
 M.watch_folder = function(path, custom_callback, allow_git_watch)
   if not allow_git_watch then
     if path:find("/%.git$") or path:find("/%.git/") then
@@ -49,7 +51,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
     log.trace("Starting new fs watch on: ", path)
     local callback = custom_callback
       or vim.schedule_wrap(function(err, fname)
-        if fname and fname:match("^%._null-ls_.+") then
+        if fname and fname:match("^%.null[-]ls_.+") then
           -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
           return
         end

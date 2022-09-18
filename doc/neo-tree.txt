@@ -798,6 +798,9 @@ highlight group which will be applied when they are visible, see
             --".DS_Store",
             --"thumbs.db",
           },
+          never_show_by_pattern = { -- uses glob style patterns
+              --".null-ls_*",
+          },
         },
       }
     })
@@ -827,6 +830,10 @@ precedence over all other options except for `never_show`.
 The `never_show` option is the same as `hide_by_name`, except that those items
 will remain hidden even if you toggle `visible` to true. This section takes
 precedence over the others.
+
+The `never_show_by_pattern` option is the same as `hide_by_pattern`, except that
+those items will remain hidden even if you toggle `visible` to true. This
+section takes precedence over the others.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*

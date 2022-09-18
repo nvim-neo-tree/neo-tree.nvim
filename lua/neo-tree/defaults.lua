@@ -396,6 +396,9 @@ local config = {
         --".DS_Store",
         --"thumbs.db"
       },
+      never_show_by_pattern = { -- uses glob style patterns
+        --".null-ls_*",
+      },
     },
     find_by_full_path_words = false,  -- `false` means it only searches the tail of a path.
                                       -- `true` will change the filter into a full path

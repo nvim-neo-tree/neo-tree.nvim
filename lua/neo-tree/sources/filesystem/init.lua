@@ -9,6 +9,7 @@ local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
+local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = { name = "filesystem" }
 
@@ -257,12 +258,12 @@ M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
   config.enable_git_status = global_config.enable_git_status
 
-  local hide_by_pattern = config.filtered_items.hide_by_pattern
-  if hide_by_pattern then
-    local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
-    for i, pattern in ipairs(hide_by_pattern) do
-      hide_by_pattern[i] = glob.globtopattern(pattern)
-      log.trace("hide_by_pattern: ", pattern, " -> ", hide_by_pattern[i])
+  for _, key in ipairs({ "hide_by_pattern", "never_show_by_pattern" }) do
+    local list = config.filtered_items[key]
+    if type(list) == "table" then
+      for i, pattern in ipairs(list) do
+        list[i] = glob.globtopattern(pattern)
+      end
     end
   end
 

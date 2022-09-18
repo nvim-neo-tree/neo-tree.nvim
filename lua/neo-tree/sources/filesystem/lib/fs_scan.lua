@@ -8,6 +8,7 @@ local file_items = require("neo-tree.sources.common.file-items")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
+local events = require("neo-tree.events")
 
 local Path = require("plenary.path")
 local os_sep = Path.path.sep
@@ -23,13 +24,22 @@ local on_directory_loaded = function(context, dir_path)
   if state.use_libuv_file_watcher then
     local root = context.folders[dir_path]
     if root then
-      if root.is_link then
-        log.trace("Adding fs watcher for ", root.link_to)
-        fs_watch.watch_folder(root.link_to)
-      else
-        log.trace("Adding fs watcher for ", root.path)
-        fs_watch.watch_folder(root.path)
-      end
+      local target_path = root.is_link and root.link_to or root.path
+      local fs_watch_callback = vim.schedule_wrap(function(err, fname)
+        if err then
+          log.error("file_event_callback: ", err)
+          return
+        end
+        if context.is_a_never_show_file(fname) then
+          -- don't fire events for nodes that are designated as "never show"
+          return
+        else
+          events.fire_event(events.FS_EVENT, { afile = target_path })
+        end
+      end)
+
+      log.trace("Adding fs watcher for ", target_path)
+      fs_watch.watch_folder(target_path, fs_watch_callback)
     end
   end
 end
@@ -289,6 +299,22 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
         end)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
+    end
+
+    local filtered_items = state.filtered_items or {}
+    context.is_a_never_show_file = function(fname)
+      if fname then
+        local _, name = utils.split_path(fname)
+        if name then
+          if filtered_items.never_show and filtered_items.never_show[name] then
+            return true
+          end
+          if utils.is_filtered_by_pattern(filtered_items.never_show_by_pattern, fname, name) then
+            return true
+          end
+        end
+      end
+      return false
     end
     if async then
       async_scan(context, path)
