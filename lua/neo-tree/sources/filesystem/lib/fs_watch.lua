@@ -48,7 +48,15 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
   if h == nil then
     log.trace("Starting new fs watch on: ", path)
     local callback = custom_callback
-      or vim.schedule_wrap(function()
+      or vim.schedule_wrap(function(err, fname)
+        if fname and fname:match("^%._null-ls_.+") then
+          -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
+          return
+        end
+        if err then
+          log.error("file_event_callback: ", err)
+          return
+        end
         events.fire_event(events.FS_EVENT, { afile = path })
       end)
     h = {
@@ -71,6 +79,10 @@ M.watch_git_index = function(path)
   if git_folder then
     local git_event_callback = vim.schedule_wrap(function(err, fname)
       if fname and fname:match("^.+%.lock$") then
+        return
+      end
+      if fname and fname:match("^%._null-ls_.+") then
+        -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
         return
       end
       if err then
