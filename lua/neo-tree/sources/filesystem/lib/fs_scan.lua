@@ -136,7 +136,7 @@ local function async_scan(context, path)
           if name == nil then
             break
           end
-          local entry = current_dir .. os_sep .. name
+          local entry = utils.path_join(current_dir, name)
           local success, item = pcall(file_items.create_item, ctx, entry, typ)
           if success then
             if ctx.recursive and item.type == "directory" then
@@ -187,7 +187,7 @@ local function sync_scan(context, path_to_scan)
   local success2, stats = pcall(vim.loop.fs_readdir, dir)
   if success2 and stats then
     for _, stat in ipairs(stats) do
-      local path = path_to_scan .. utils.path_separator .. stat.name
+      local path = utils.path_join(path_to_scan, stat.name)
       local success3, item = pcall(file_items.create_item, context, path, stat.type)
       if success3 then
         if context.recursive and stat.type == "directory" then
