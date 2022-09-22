@@ -346,6 +346,10 @@ Preview.hide = function()
   instance = nil
 end
 
+Preview.is_active = function()
+  return instance and instance.active
+end
+
 Preview.show = function(state)
   local node = state.tree:get_node()
   if node.type == "directory" then

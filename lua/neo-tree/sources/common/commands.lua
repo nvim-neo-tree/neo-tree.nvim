@@ -307,7 +307,6 @@ end
 -- END Git commands
 --------------------------------------------------------------------------------
 
-
 M.next_source = function(state)
   local sources = require("neo-tree").config.sources
   local next_source = sources[1]
