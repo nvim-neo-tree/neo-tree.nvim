@@ -57,21 +57,21 @@ M.complete_args = function(argLead, cmdLine)
       -- may be the start of a new key=value pair
       for _, key in ipairs(parser.list_args) do
         key = tostring(key)
-        if key:find(argLead) and not parsed[key] then
+        if key:find(argLead, 1, true) and not parsed[key] then
           table.insert(candidates, key .. "=")
         end
       end
 
       for _, key in ipairs(parser.path_args) do
         key = tostring(key)
-        if key:find(argLead) and not parsed[key] then
+        if key:find(argLead, 1, true) and not parsed[key] then
           table.insert(candidates, key .. "=./")
         end
       end
 
       for _, key in ipairs(parser.ref_args) do
         key = tostring(key)
-        if key:find(argLead) and not parsed[key] then
+        if key:find(argLead, 1, true) and not parsed[key] then
           table.insert(candidates, key .. "=")
         end
       end
@@ -107,7 +107,7 @@ M.complete_args = function(argLead, cmdLine)
       key_already_used = type(parsed[value]) ~= "nil"
     end
 
-    if not key_already_used and value:find(argLead) then
+    if not key_already_used and value:find(argLead, 1, true) then
       table.insert(candidates, value)
     end
   end
