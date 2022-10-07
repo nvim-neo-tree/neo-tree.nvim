@@ -269,8 +269,8 @@ M.setup = function()
 
   M.create_highlight_group(M.TAB_ACTIVE, {}, nil, nil, "bold")
   M.create_highlight_group(M.TAB_INACTIVE, {}, "141414", "777777")
-  M.create_highlight_group(M.TAB_SEPARATOR_ACTIVE, {}, nil, "0a0a0a")
-  M.create_highlight_group(M.TAB_SEPARATOR_INACTIVE, {}, "141414", "101010")
+  M.create_highlight_group(M.TAB_SEPARATOR_ACTIVE, {}, nil, nil)
+  M.create_highlight_group(M.TAB_SEPARATOR_INACTIVE, {}, nil, nil)
 end
 
 return M
