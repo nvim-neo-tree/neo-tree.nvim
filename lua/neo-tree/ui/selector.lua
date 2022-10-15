@@ -384,11 +384,10 @@ _G.___neotree_selector_click = function(id, _, _, _)
     log.warn("state not found for window ", winid, "; ignoring click")
     return
   end
-  vim.api.nvim_set_current_win(winid)
   require("neo-tree.command").execute({
     source = sources[source_index],
     position = state.current_position,
-    action = "show",
+    action = "focus",
   })
 end
 
