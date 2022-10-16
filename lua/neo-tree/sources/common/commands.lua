@@ -454,6 +454,17 @@ end
 M.revert_preview = function()
   Preview.hide()
 end
+--
+-- Multi-purpose function to back out of whatever we are in
+M.cancel = function(state)
+  if Preview.is_active() then
+    Preview.hide()
+  else
+    if state.current_position == "float" then
+      renderer.close_all_floating_windows()
+    end
+  end
+end
 
 M.toggle_preview = function(state)
   Preview.toggle(state)
@@ -630,9 +641,15 @@ local use_window_picker = function(state, path, cmd)
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
-    vim.cmd(cmd .. " " .. vim.fn.fnameescape(path))
+    local result, err = vim.cmd(cmd .. " " .. vim.fn.fnameescape(path))
+    if result or err == "Vim(edit):E325: ATTENTION" then
+      -- fixes #321
+      vim.api.nvim_buf_set_option(0, "buflisted", true)
+      events.fire_event(events.FILE_OPENED, path)
+    else
+      log.error("Error opening file:", err)
+    end
   end
-  events.fire_event(events.FILE_OPENED, path)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
