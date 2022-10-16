@@ -641,7 +641,7 @@ local use_window_picker = function(state, path, cmd)
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
-    local result, err = vim.cmd(cmd .. " " .. vim.fn.fnameescape(path))
+    local result, err = pcall(vim.cmd, cmd .. " " .. vim.fn.fnameescape(path))
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321
       vim.api.nvim_buf_set_option(0, "buflisted", true)
