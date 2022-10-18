@@ -77,7 +77,7 @@ end
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
-  if node:is_expanded() then
+  if node.type == "directory" and node:is_expanded() then
     return {}
   end
   if not diag_state then
