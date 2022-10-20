@@ -126,6 +126,9 @@ end
 
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
+  if node.type == "directory" and node:is_expanded() then
+    return {}
+  end
   if not git_status_lookup then
     return {}
   end
@@ -350,14 +353,14 @@ M.indent = function(config, node, state)
   local level = node.level
   local with_markers = config.with_markers
   local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
-    or config.with_expanders
+      or config.with_expanders
   local marker_highlight = config.highlight or highlights.INDENT_MARKER
   local expander_highlight = config.expander_highlight or config.highlight or highlights.EXPANDER
 
   local function get_expander()
     if with_expanders and utils.is_expandable(node) then
       return node:is_expanded() and (config.expander_expanded or "")
-        or (config.expander_collapsed or "")
+          or (config.expander_collapsed or "")
     end
   end
 
