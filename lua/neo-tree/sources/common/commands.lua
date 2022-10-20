@@ -20,7 +20,14 @@ local function get_folder_node(state, node)
   if not node then
     node = tree:get_node()
   end
-  local use_parent = require("neo-tree").config.window.same_level
+  local use_parent_local = state.config.same_level
+  local use_parent_global = require("neo-tree").config.window.same_level
+  local use_parent
+  if not use_parent_global then
+    use_parent = use_parent_local
+  else
+    use_parent = use_parent_local ~= false
+  end
   if use_parent then
     return tree:get_node(node:get_parent_id())
   end
