@@ -77,7 +77,7 @@ end
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
-  if node.type == "directory" and node:is_expanded() then
+  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
     return {}
   end
   if not diag_state then
@@ -126,7 +126,7 @@ end
 
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
-  if node.type == "directory" and node:is_expanded() then
+  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
     return {}
   end
   if not git_status_lookup then
