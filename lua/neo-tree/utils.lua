@@ -489,7 +489,15 @@ M.open_file = function(state, path, open_cmd)
       if is_neo_tree_window then
         -- Neo-tree must be the only window, restore it's status as a sidebar
         local width = M.get_value(state, "window.width", 40, false)
-        result, err = pcall(vim.cmd, "vsplit " .. escaped_path)
+        local nt = require("neo-tree")
+        local split_command = "vsplit "
+        -- respect window position in user config when Neo-tree is the only window
+        if nt.config.window.position == "left" then 
+          split_command = "rightbelow vs "
+        elseif nt.config.window.position == "right" then
+          split_command = "leftabove vs "
+        end
+        result, err = pcall(vim.cmd, split_command .. escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
         result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
