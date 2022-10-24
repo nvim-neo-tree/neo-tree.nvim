@@ -335,6 +335,12 @@ local prepare_node = function(item, state)
         end
       end
     end
+    if state.window.auto_expand_width and state.window.position ~= "float" then
+      local str_length = vim.api.nvim_strwidth(line:content())
+      if str_length > vim.api.nvim_win_get_width(0) then
+        vim.api.nvim_win_set_width(0, str_length)
+      end
+    end
   end
 
   return line
