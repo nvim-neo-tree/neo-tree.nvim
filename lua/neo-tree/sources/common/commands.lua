@@ -140,6 +140,17 @@ M.close_window = function(state)
   renderer.close(state)
 end
 
+M.toggle_auto_expand_width = function(state)
+  if state.window.position == "float" then
+    return
+  end
+  state.window.auto_expand_width = state.window.auto_expand_width == false
+  if not state.window.auto_expand_width then
+    vim.api.nvim_win_set_width(0, state.window.width)
+  end
+  renderer.redraw(state)
+end
+
 local copy_node_to_clipboard = function(state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]

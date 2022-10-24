@@ -338,6 +338,7 @@ local config = {
       ["p"] = "paste_from_clipboard",
       ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path option
       ["m"] = "move", -- takes text input for destination, also accepts the config.show_path option
+      ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
       ["<"] = "prev_source",
