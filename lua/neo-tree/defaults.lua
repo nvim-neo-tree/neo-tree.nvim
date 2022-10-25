@@ -481,7 +481,7 @@ local config = {
     window = {
       mappings = {
         ["<cr>"] = "toggle_node",
-        ["e"] = "example_command",
+        ["<C-e>"] = "example_command",
         ["d"] = "show_debug_info",
       },
     },
