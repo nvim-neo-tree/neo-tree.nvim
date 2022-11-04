@@ -250,10 +250,10 @@ create_nodes = function(source_items, state, level)
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
         name = "(forced to show "
-          .. #hidden
-          .. " hidden "
-          .. (#hidden > 1 and "items" or "item")
-          .. ")",
+            .. #hidden
+            .. " hidden "
+            .. (#hidden > 1 and "items" or "item")
+            .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -732,6 +732,7 @@ end
 
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
+  local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
 
   local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
@@ -745,7 +746,7 @@ create_window = function(state)
     ns_id = highlights.ns_id,
     size = utils.resolve_config_option(state, size_opt, default_size),
     position = state.current_position,
-    relative = "editor",
+    relative = relative,
     buf_options = {
       buftype = "nofile",
       modifiable = false,
@@ -900,8 +901,8 @@ M.window_exists = function(state)
     window_exists = false
   elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
-      and vim.api.nvim_buf_is_valid(bufnr)
-      and vim.api.nvim_win_get_buf(winid) == bufnr
+        and vim.api.nvim_buf_is_valid(bufnr)
+        and vim.api.nvim_win_get_buf(winid) == bufnr
   else
     local isvalid = M.is_window_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
