@@ -39,6 +39,18 @@ local function clear_buffer(path)
   end
 end
 
+---Opens new_buf in each window that has old_buf currently open.
+---Useful during file rename.
+---@param old_buf number
+---@param new_buf number
+local function replace_buffer_in_windows(old_buf, new_buf)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(win) == old_buf then
+      vim.api.nvim_win_set_buf(win, new_buf)
+    end
+  end
+end
+
 local function rename_buffer(old_path, new_path)
   local force_save = function()
     vim.cmd("silent! write!")
@@ -54,15 +66,21 @@ local function rename_buffer(old_path, new_path)
         new_buf_name = new_path .. buf_name:sub(#old_path + 1)
       end
       if utils.truthy(new_buf_name) then
-        vim.api.nvim_buf_set_name(buf, new_buf_name)
-        -- Force write to avoid E13 error
+        local new_buf = vim.fn.bufadd(new_buf_name)
+        vim.fn.bufload(new_buf)
+        vim.api.nvim_buf_set_option(new_buf, "buflisted", true)
+        replace_buffer_in_windows(buf, new_buf)
+
         if vim.api.nvim_buf_get_option(buf, "buftype") == "" then
           local modified = vim.api.nvim_buf_get_option(buf, "modified")
           if modified then
+            local old_buffer_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, old_buffer_lines)
+
             local msg = buf_name .. " has been modified. Save under new name? (y/n) "
             inputs.confirm(msg, function(confirmed)
               if confirmed then
-                vim.api.nvim_buf_call(buf, force_save)
+                vim.api.nvim_buf_call(new_buf, force_save)
                 log.trace("Force saving renamed buffer with changes")
               else
                 vim.cmd("echohl WarningMsg")
@@ -72,10 +90,9 @@ local function rename_buffer(old_path, new_path)
                 vim.cmd("echohl NONE")
               end
             end)
-          else
-            vim.api.nvim_buf_call(buf, force_save)
           end
         end
+        vim.api.nvim_buf_delete(buf, { force = true })
       end
     end
   end
