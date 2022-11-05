@@ -492,7 +492,7 @@ M.open_file = function(state, path, open_cmd)
         local nt = require("neo-tree")
         local split_command = "vsplit "
         -- respect window position in user config when Neo-tree is the only window
-        if nt.config.window.position == "left" then 
+        if nt.config.window.position == "left" then
           split_command = "rightbelow vs "
         elseif nt.config.window.position == "right" then
           split_command = "leftabove vs "
