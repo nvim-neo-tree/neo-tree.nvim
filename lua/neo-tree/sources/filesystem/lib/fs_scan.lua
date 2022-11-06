@@ -219,34 +219,82 @@ local function async_scan(context, path)
   end
 end
 
-local function sync_scan(context, path_to_scan)
-  log.trace("sync_scan: ", path_to_scan)
-  local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
+local function create_node(context, child)
+  local success3, item = pcall(file_items.create_item, context, child.path, child.type)
+end
+
+local function process_node(context, path)
+  on_directory_loaded(context, path)
+end
+
+local function get_children(path)
+  local children = {}
+  local success, dir = pcall(vim.loop.fs_opendir, path, nil, 1000)
   if not success then
     log.error("Error opening dir:", dir)
   end
   local success2, stats = pcall(vim.loop.fs_readdir, dir)
   if success2 and stats then
     for _, stat in ipairs(stats) do
-      local path = utils.path_join(path_to_scan, stat.name)
-      local success3, item = pcall(file_items.create_item, context, path, stat.type)
-      if success3 then
-        if context.recursive and stat.type == "directory" then
-          table.insert(context.paths_to_load, path)
-        end
-      else
-        log.error("error creating item for ", path)
+      local child_path = utils.path_join(path, stat.name)
+      table.insert(children, { path = child_path, type = stat.type })
+    end
+  end
+  -- vim.loop.fs_closedir(dir)
+  return children
+end
+
+local function scan_dir(context, path)
+  process_node(context, path)
+  local child_nodes = get_children(path)
+  for _, child in ipairs(child_nodes) do
+    create_node(context, child)
+    if child.type == "directory" then
+      local grandchild_nodes = get_children(child.path)
+      if
+        grandchild_nodes == nil
+        or #grandchild_nodes == 0
+        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+      then
+        scan_dir(context, child.path)
       end
     end
   end
-  vim.loop.fs_closedir(dir)
+end
 
-  local next_path = dir_complete(context, path_to_scan)
-  if next_path then
-    sync_scan(context, next_path)
-  else
-    job_complete(context)
+local function sync_scan(context, path_to_scan)
+  scan_dir(context, path_to_scan)
+  for _, path in ipairs(context.paths_to_load) do
+    scan_dir(context, path)
   end
+  job_complete(context)
+  -- log.trace("sync_scan: ", path_to_scan)
+  -- local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
+  -- if not success then
+  --   log.error("Error opening dir:", dir)
+  -- end
+  -- local success2, stats = pcall(vim.loop.fs_readdir, dir)
+  -- if success2 and stats then
+  --   for _, stat in ipairs(stats) do
+  --     local path = utils.path_join(path_to_scan, stat.name)
+  --     local success3, item = pcall(file_items.create_item, context, path, stat.type)
+  --     if success3 then
+  --       if context.recursive and stat.type == "directory" then
+  --         table.insert(context.paths_to_load, path)
+  --       end
+  --     else
+  --       log.error("error creating item for ", path)
+  --     end
+  --   end
+  -- end
+  -- vim.loop.fs_closedir(dir)
+
+  -- local next_path = dir_complete(context, path_to_scan)
+  -- if next_path then
+  --   sync_scan(context, next_path)
+  -- else
+  --   job_complete(context)
+  -- end
 end
 
 M.get_items_sync = function(state, parent_id, path_to_reveal, callback)
