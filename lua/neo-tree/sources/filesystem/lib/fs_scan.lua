@@ -14,7 +14,6 @@ local async = require("plenary.async")
 
 local Path = require("plenary.path")
 local os_sep = Path.path.sep
-local scan_dir_async
 
 local M = {}
 
@@ -141,6 +140,83 @@ local job_complete = function(context)
   render_context(context)
 end
 
+
+local function create_node(context, node)
+  local success3, item = pcall(file_items.create_item, context, node.path, node.type)
+end
+
+local function process_node(context, path)
+  on_directory_loaded(context, path)
+end
+
+local function get_children_sync(path)
+  local children = {}
+  scan.scan_dir(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+    on_insert = function(entry, typ)
+      table.insert(children, { path = entry, type = typ })
+    end,
+  })
+  return children
+end
+
+local function get_children_async(path, callback)
+  local children = {}
+  scan.scan_dir_async(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+    on_insert = function(entry, typ)
+      table.insert(children, { path = entry, type = typ })
+    end,
+    on_exit = function(_)
+      callback(children)
+    end,
+  })
+end
+
+local function scan_dir_sync(context, path)
+  process_node(context, path)
+  local children = get_children_sync(path)
+  for _, child in ipairs(children) do
+    create_node(context, child)
+    if child.type == "directory" then
+      local grandchild_nodes = get_children_sync(child.path)
+      if
+        grandchild_nodes == nil
+        or #grandchild_nodes == 0
+        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+      then
+        scan_dir_sync(context, child.path)
+      end
+    end
+  end
+end
+
+local function scan_dir_async(context, path, callback)
+  process_node(context, path)
+  get_children_async(path, function(children)
+    for _, child in ipairs(children) do
+      create_node(context, child)
+      if child.type == "directory" then
+        local grandchild_nodes = get_children_sync(child.path)
+        if
+          grandchild_nodes == nil
+          or #grandchild_nodes == 0
+          or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+        then
+          scan_dir_sync(context, child.path)
+        end
+      end
+    end
+    callback(path)
+  end)
+end
+
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
 local function async_scan(context, path)
@@ -225,117 +301,6 @@ local function async_scan(context, path)
   --end
 end
 
-local function create_node(context, node)
-  local success3, item = pcall(file_items.create_item, context, node.path, node.type)
-end
-
-local function process_node(context, path)
-  on_directory_loaded(context, path)
-end
-
-local function get_children_old(path)
-  local children = {}
-  local success, dir = pcall(vim.loop.fs_opendir, path, nil, 1000)
-  if not success then
-    log.error("Error opening dir:", dir)
-  end
-  local success2, stats = pcall(vim.loop.fs_readdir, dir)
-  if success2 and stats then
-    for _, stat in ipairs(stats) do
-      local child_path = utils.path_join(path, stat.name)
-      table.insert(children, { path = child_path, type = stat.type })
-    end
-  end
-  -- vim.loop.fs_closedir(dir)
-  return children
-end
-
-local function get_children_sync(path)
-  local children = {}
-  scan.scan_dir(path, {
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-    on_insert = function(entry, typ)
-      table.insert(children, { path = entry, type = typ })
-    end,
-  })
-  return children
-end
-
-local function get_children_async(path, callback)
-  local children = {}
-  scan.scan_dir_async(path, {
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-    on_insert = function(entry, typ)
-      table.insert(children, { path = entry, type = typ })
-    end,
-    on_exit = function(_)
-      callback(children)
-    end,
-  })
-end
-
-local function scan_dir_sync(context, path)
-  process_node(context, path)
-  local children = get_children_sync(path)
-  for _, child in ipairs(children) do
-    create_node(context, child)
-    if child.type == "directory" then
-      local grandchild_nodes = get_children_sync(child.path)
-      if
-        grandchild_nodes == nil
-        or #grandchild_nodes == 0
-        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
-      then
-        scan_dir_sync(context, child.path)
-      end
-    end
-  end
-end
-
-function scan_dir_async(context, path, callback)
-  process_node(context, path)
-  get_children_async(path, function(children)
-    for _, child in ipairs(children) do
-      create_node(context, child)
-      if child.type == "directory" then
-        local grandchild_nodes = get_children_sync(child.path)
-        if
-          grandchild_nodes == nil
-          or #grandchild_nodes == 0
-          or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
-        then
-          scan_dir_sync(context, child.path)
-        end
-      end
-    end
-    callback(path)
-  end)
-end
-
-local function scan_dir(context, path, callback)
-  local async = callback ~= nil
-  process_node(context, path)
-  local child_nodes = get_children_old(path)
-  for _, child in ipairs(child_nodes) do
-    create_node(context, child)
-    if child.type == "directory" then
-      local grandchild_nodes = get_children_old(child.path)
-      if
-        grandchild_nodes == nil
-        or #grandchild_nodes == 0
-        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
-      then
-        scan_dir(context, child.path)
-      end
-    end
-  end
-end
 
 local function sync_scan(context, path_to_scan)
   for _, path in ipairs(context.paths_to_load) do
