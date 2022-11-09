@@ -9,9 +9,12 @@ local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 local events = require("neo-tree.events")
+local scan = require("plenary.scandir")
+local async = require("plenary.async")
 
 local Path = require("plenary.path")
 local os_sep = Path.path.sep
+local scan_dir_async
 
 local M = {}
 
@@ -141,93 +144,96 @@ end
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
 local function async_scan(context, path)
-  log.trace("async_scan: ", path)
-  -- prepend the root path
-  table.insert(context.paths_to_load, 1, path)
-
-  context.directories_scanned = 0
-  context.directories_to_scan = #context.paths_to_load
-
-  context.on_exit = vim.schedule_wrap(function()
-    job_complete(context)
-  end)
-
-  -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
-  local function read_dir(current_dir, ctx)
-    local function on_fs_opendir(err, dir)
-      if err then
-        log.error(current_dir, ": ", err)
-      else
-        local function on_fs_readdir(err, entries)
-          if err then
-            log.error(current_dir, ": ", err)
-          else
-            if entries then
-              for _, entry in ipairs(entries) do
-                local success, item = pcall(
-                  file_items.create_item,
-                  ctx,
-                  utils.path_join(current_dir, entry.name),
-                  entry.type
-                )
-                if success then
-                  if ctx.recursive and item.type == "directory" then
-                    ctx.directories_to_scan = ctx.directories_to_scan + 1
-                    table.insert(ctx.paths_to_load, item.path)
-                  end
-                else
-                  log.error("error creating item for ", path)
-                end
-              end
-
-              uv.fs_readdir(dir, on_fs_readdir)
-            else
-              uv.fs_closedir(dir)
-              on_directory_loaded(ctx, current_dir)
-              ctx.directories_scanned = ctx.directories_scanned + 1
-              if ctx.directories_scanned == #ctx.paths_to_load then
-                ctx.on_exit()
-              end
-            end
-          end
-
-          --local next_path = dir_complete(ctx, current_dir)
-          --if next_path then
-          --  local success, error = pcall(read_dir, next_path)
-          --  if not success then
-          --    log.error(next_path, ": ", error)
-          --  end
-          --else
-          --  on_exit()
-          --end
-        end
-
-        uv.fs_readdir(dir, on_fs_readdir)
-      end
-    end
-
-    uv.fs_opendir(current_dir, on_fs_opendir)
+  local scan_tasks = {}
+  for _, p in ipairs(context.paths_to_load) do
+    local scan_task = async.wrap(
+      function(callback)
+        scan_dir_async(context, p, callback)
+      end,
+      1
+    )
+    table.insert(scan_tasks, scan_task)
   end
 
-  --local first = table.remove(context.paths_to_load)
-  --local success, err = pcall(read_dir, first)
-  --if not success then
-  --  log.error(first, ": ", err)
+  async.util.run_all(
+    scan_tasks,
+    vim.schedule_wrap(function ()
+      job_complete(context)
+    end)
+  )
+  --log.trace("async_scan: ", path)
+  ---- prepend the root path
+  --table.insert(context.paths_to_load, 1, path)
+
+  --context.directories_scanned = 0
+  --context.directories_to_scan = #context.paths_to_load
+
+  --context.on_exit = vim.schedule_wrap(function()
+  --  job_complete(context)
+  --end)
+
+  ---- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
+  --local function read_dir(current_dir, ctx)
+  --  local on_fs_scandir = function(err, fd)
+  --    if err then
+  --      log.error(current_dir, ": ", err)
+  --    else
+  --      while true do
+  --        local name, typ = uv.fs_scandir_next(fd)
+  --        if name == nil then
+  --          break
+  --        end
+  --        local entry = utils.path_join(current_dir, name)
+  --        local success, item = pcall(file_items.create_item, ctx, entry, typ)
+  --        if success then
+  --          if ctx.recursive and item.type == "directory" then
+  --            ctx.directories_to_scan = ctx.directories_to_scan + 1
+  --            table.insert(ctx.paths_to_load, item.path)
+  --          end
+  --        else
+  --          log.error("error creating item for ", path)
+  --        end
+  --      end
+  --      on_directory_loaded(ctx, current_dir)
+  --      ctx.directories_scanned = ctx.directories_scanned + 1
+  --      if ctx.directories_scanned == #ctx.paths_to_load then
+  --        ctx.on_exit()
+  --      end
+
+  --      --local next_path = dir_complete(ctx, current_dir)
+  --      --if next_path then
+  --      --  local success, error = pcall(read_dir, next_path)
+  --      --  if not success then
+  --      --    log.error(next_path, ": ", error)
+  --      --  end
+  --      --else
+  --      --  on_exit()
+  --      --end
+  --    end
+  --  end
+
+  --  uv.fs_scandir(current_dir, on_fs_scandir)
   --end
-  for i = 1, context.directories_to_scan do
-    read_dir(context.paths_to_load[i], context)
-  end
+
+  ----local first = table.remove(context.paths_to_load)
+  ----local success, err = pcall(read_dir, first)
+  ----if not success then
+  ----  log.error(first, ": ", err)
+  ----end
+  --for i = 1, context.directories_to_scan do
+  --  read_dir(context.paths_to_load[i], context)
+  --end
 end
 
-local function create_node(context, child)
-  local success3, item = pcall(file_items.create_item, context, child.path, child.type)
+local function create_node(context, node)
+  local success3, item = pcall(file_items.create_item, context, node.path, node.type)
 end
 
 local function process_node(context, path)
   on_directory_loaded(context, path)
 end
 
-local function get_children(path)
+local function get_children_old(path)
   local children = {}
   local success, dir = pcall(vim.loop.fs_opendir, path, nil, 1000)
   if not success then
@@ -244,13 +250,82 @@ local function get_children(path)
   return children
 end
 
-local function scan_dir(context, path)
+local function get_children_sync(path)
+  local children = {}
+  scan.scan_dir(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+    on_insert = function(entry, typ)
+      table.insert(children, { path = entry, type = typ })
+    end,
+  })
+  return children
+end
+
+local function get_children_async(path, callback)
+  local children = {}
+  scan.scan_dir_async(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+    on_insert = function(entry, typ)
+      table.insert(children, { path = entry, type = typ })
+    end,
+    on_exit = function(_)
+      callback(children)
+    end,
+  })
+end
+
+local function scan_dir_sync(context, path)
   process_node(context, path)
-  local child_nodes = get_children(path)
+  local children = get_children_sync(path)
+  for _, child in ipairs(children) do
+    create_node(context, child)
+    if child.type == "directory" then
+      local grandchild_nodes = get_children_sync(child.path)
+      if
+        grandchild_nodes == nil
+        or #grandchild_nodes == 0
+        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+      then
+        scan_dir_sync(context, child.path)
+      end
+    end
+  end
+end
+
+function scan_dir_async(context, path, callback)
+  process_node(context, path)
+  get_children_async(path, function(children)
+    for _, child in ipairs(children) do
+      create_node(context, child)
+      if child.type == "directory" then
+        local grandchild_nodes = get_children_sync(child.path)
+        if
+          grandchild_nodes == nil
+          or #grandchild_nodes == 0
+          or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+        then
+          scan_dir_sync(context, child.path)
+        end
+      end
+    end
+    callback(path)
+  end)
+end
+
+local function scan_dir(context, path, callback)
+  local async = callback ~= nil
+  process_node(context, path)
+  local child_nodes = get_children_old(path)
   for _, child in ipairs(child_nodes) do
     create_node(context, child)
     if child.type == "directory" then
-      local grandchild_nodes = get_children(child.path)
+      local grandchild_nodes = get_children_old(child.path)
       if
         grandchild_nodes == nil
         or #grandchild_nodes == 0
@@ -263,9 +338,9 @@ local function scan_dir(context, path)
 end
 
 local function sync_scan(context, path_to_scan)
-  scan_dir(context, path_to_scan)
   for _, path in ipairs(context.paths_to_load) do
-    scan_dir(context, path)
+    scan_dir_sync(context, path)
+    -- scan_dir(context, path)
   end
   job_complete(context)
   -- log.trace("sync_scan: ", path_to_scan)
@@ -405,6 +480,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       end
       return false
     end
+    table.insert(context.paths_to_load, path)
     if async then
       async_scan(context, path)
     else
