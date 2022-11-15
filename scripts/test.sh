@@ -37,7 +37,7 @@ function setup_environment() {
 
   if [[ ! -d "${plugins_dir}/nvim-web-devicons" ]]; then
     echo "[plugins] nvim-web-devicons: installing..."
-    git clone https://github.com/kyazdani42/nvim-web-devicons "${plugins_dir}/nvim-web-devicons"
+    git clone https://github.com/nvim-tree/nvim-web-devicons "${plugins_dir}/nvim-web-devicons"
     echo "[plugins] nvim-web-devicons: installed"
     echo
   fi
