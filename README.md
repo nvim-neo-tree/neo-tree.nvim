@@ -53,7 +53,7 @@ use {
     branch = "v2.x",
     requires = { 
       "nvim-lua/plenary.nvim",
-      "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
     }
   }
@@ -77,7 +77,7 @@ use {
     branch = "v2.x",
     requires = { 
       "nvim-lua/plenary.nvim",
-      "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
       {
         -- only needed if you want to use the commands with "_with_window_picker" suffix
@@ -668,4 +668,4 @@ The design is heavily inspired by these excellent plugins:
 - [nvim-cokeline](https://github.com/noib3/nvim-cokeline)
 
 Everything I know about writing a tree control in lua, I learned from:
-- [nvim-tree.lua](https://github.com/kyazdani42/nvim-tree.lua)
+- [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua)
