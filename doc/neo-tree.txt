@@ -77,7 +77,7 @@ What to show. Can be one of:
 
     filesystem : Show a file browser. DEFAULT
     buffers    : Show a list of currently open buffers.
-    git_status : Show the ouput of `git status` in a tree layout.
+    git_status : Show the output of `git status` in a tree layout.
 
 position~
 Where to show it, can be one of:
@@ -128,7 +128,7 @@ automatically change the directory without prompting. This option implies
 DEPRECATED_COMMANDS
 
 The following commands from Neotree v1.x will remain until v3.0 for backwards
-compatability. You should not use them if you are a new user, and existing users
+compatibility. You should not use them if you are a new user, and existing users
 should change their mapping to the new |:Neotree| command specified above.
 
     :NeoTreeFocus         -> :Neotree
@@ -461,10 +461,10 @@ CUSTOM MAPPINGS WITH VISUAL MODE
 
 If you want to create a mapping that supports visual mode, the way to do that
 is to add a second command where the name is the same as the normal mode
-command, but with `_visual` added to the end. Any mapping for this commnd will
+command, but with `_visual` added to the end. Any mapping for this command will
 then work in either normal or visual mode.
 
-The `_visual` version of the command will be called with a second arguement
+The `_visual` version of the command will be called with a second argument
 which is a list of the nodes that were selected when the command was called.
 
 For example, this is how the built-in `delete` command is defined:
@@ -489,7 +489,7 @@ CUSTOM MAPPINGS WITH ARGUMENTS
 
 If you want to include options for your mappings, such as `nowait`, you can
 set this for all mappings using the `mapping_options` key, or on individual
-mappings by specifiying them as a table that consists of the command and any
+mappings by specifying them as a table that consists of the command and any
 options you want to use. If both are specified, the mapping merges with and
 overrides the global `mapping_options`
 
@@ -821,7 +821,7 @@ The `hide_by_name` option is a list of file/folder names that should be
 hidden. This is an exact match.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
-patterns. No gaurantees on how it handles advanced patterns.
+patterns. No guarantees on how it handles advanced patterns.
 
 The `always_show` option is a list of file/folder names that will always be 
 visible, even if other settings would normally hide it. This section takes
@@ -1128,7 +1128,7 @@ NeoTreeDimText            Greyed out text used in various places.
 NeoTreeDirectoryIcon      Directory icon.
 NeoTreeDirectoryName      Directory name.
 NeoTreeDotfile            Used for icons and names when dotfiles are filtered.
-NeoTreeFileIcon           File icon, when not overriden by devicons.
+NeoTreeFileIcon           File icon, when not overridden by devicons.
 NeoTreeFileName           File name, when not overwritten by another status.
 NeoTreeFileNameOpened     File name when the file is open. Not used yet.
 NeoTreeFilterTerm         The filter term, as displayed in the root node.
@@ -1244,7 +1244,7 @@ Fired after leaving a neo-tree popup buffer.
 Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
 The event argument for all window events is a table with the following keys:
-    `winid`    = the |winid| of the window being opned or closed.
+    `winid`    = the |winid| of the window being opened or closed.
     `tabnr`    = the tab number that the window is in.
     `source`   = the name of the source that is in the window, such as "filesystem".
     `position` = the position of the window, i.e. "left", "bottom", "right".
@@ -1304,7 +1304,7 @@ You can also define your own with:
 The setup function is run the first time the event is subscribed to. For an
 autocmd event, this would define the vim autocmd to connect it to fire_event().
 
-The `seed` function is run at the begining of every event firing. The diagnostics
+The `seed` function is run at the beginning of every event firing. The diagnostics
 event uses this to collect the diagnostic information and pass it to all
 subscribers.
 
@@ -1312,7 +1312,7 @@ The `teardown` function is used when the last subscriber unsubscribes, and clean
 up. This is like Dispose in other languages.
 
 `debounce_frequency` is the minimum number of milliseconds between each invocation
-of the event. The first event is gauranteed to fire, as well as the last one, but
+of the event. The first event is guaranteed to fire, as well as the last one, but
 in between events may be dropped if this is set to a number greater than zero.
 
 `once` means to only fire this event handler once then mark it as `cancelled`.
@@ -1325,7 +1325,7 @@ COMPONENTS AND RENDERERS                                   *neo-tree-renderers*
 
 A renderer is just a list of component configs, to be rendered in order to
 create a line in the tree. Each renderer is for a specific node type, such as
-`directory` or `file`.  To view the avilable built-in components and their
+`directory` or `file`.  To view the available built-in components and their
 configs for each source, look at the default config by pasting it with
 >
     :lua require("neo-tree").paste_default_config()
@@ -1335,7 +1335,7 @@ https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.l
 
 A default `renderers` config is specified at the root level and will be used
 by each source unless another renderer is defined. If you just want to
-reaarange or remove components, you can do so by changing these `renderers`
+rearrange or remove components, you can do so by changing these `renderers`
 configs.
 
                                                            *neo-tree-components*
@@ -1359,7 +1359,7 @@ A component is a function that returns a single text object:
         highlight = "Comment"
       },
       {
-        text = "I'm Sepcial!",
+        text = "I'm Special!",
         highlight = "SpecialChar"
       },
         text = "[",
@@ -1392,7 +1392,7 @@ The `"fit_content"` value means that it will be the width of the largest
 layer. See `zindex` for details about layers.
 
 If the current position is "current", meaning it is being displayed in a split
-instead of as a sidebar, the avilable width will be calculated as the longest
+instead of as a sidebar, the available width will be calculated as the longest
 node name + indent + 8 characters. This is to prevent right aligned components
 from being too far away from the node name.
 
@@ -1406,7 +1406,7 @@ This is a list of components that will be arranged by this container.
 Each component in the content list can use these additional properties:
 
   zindex~
-  All components with the same zindex will be renderered together in the same
+  All components with the same zindex will be rendered together in the same
   layer, one after the other. Higher zindex value are rendered on top of other
   layers, hiding whatever is beneath them. For example, if a component with a
   zindex of 10 produces this:
@@ -1423,7 +1423,7 @@ Each component in the content list can use these additional properties:
 <
   
   align~
-  If align is right, then it will be pushed to the rigth edge of the avilable
+  If align is right, then it will be pushed to the right edge of the available
   space. This makes the most sense when the container width is set to a number
   or `"100%"`. Components that are right aligned will automatically overlap left
   aligned components with the same zindex if there is not enough space.
@@ -1473,7 +1473,7 @@ Each component function is called with the following args:
   can be made to be configurable. This is useful if you want different behavior
   in a directory renderer vs a file renderer. The config is a combination of any
   options specified in the default_component_configs
-  (|neo-tree-default-component-configs|), which can be overriden by settings
+  (|neo-tree-default-component-configs|), which can be overridden by settings
   specified within each renderer config.
 
   `node` The NuiNode object for this node. The properties can vary by source, but
