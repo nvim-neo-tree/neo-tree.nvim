@@ -9,7 +9,6 @@ local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 local events = require("neo-tree.events")
-local scan = require("plenary.scandir")
 local async = require("plenary.async")
 
 local Path = require("plenary.path")
@@ -151,32 +150,43 @@ end
 
 local function get_children_sync(path)
   local children = {}
-  scan.scan_dir(path, {
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-    on_insert = function(entry, typ)
-      table.insert(children, { path = entry, type = typ })
-    end,
-  })
+  local success, dir = pcall(vim.loop.fs_opendir, path, nil, 1000)
+  if not success then
+    log.error("Error opening dir:", dir)
+  end
+  local success2, stats = pcall(vim.loop.fs_readdir, dir)
+  if success2 and stats then
+    for _, stat in ipairs(stats) do
+      local child_path = utils.path_join(path, stat.name)
+      table.insert(children, { path = child_path, type = stat.type})
+    end
+  end
+  vim.loop.fs_closedir(dir)
   return children
 end
 
 local function get_children_async(path, callback)
-  local children = {}
-  scan.scan_dir_async(path, {
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-    on_insert = function(entry, typ)
-      table.insert(children, { path = entry, type = typ })
+  uv.fs_opendir(
+    path,
+    function(_, dir)
+      print("Async cb of: " .. path)
+      uv.fs_readdir(
+        dir,
+        function(_, stats)
+          local children = {}
+          if stats then
+            for _, stat in ipairs(stats) do
+              local child_path = utils.path_join(path, stat.name)
+              table.insert(children, { path = child_path, type = stat.type})
+            end
+          end
+          uv.fs_closedir(dir)
+          callback(children)
+        end
+      )
     end,
-    on_exit = function(_)
-      callback(children)
-    end,
-  })
+    1000
+  )
 end
 
 local function scan_dir_sync(context, path)
