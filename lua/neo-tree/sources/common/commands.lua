@@ -146,7 +146,13 @@ M.toggle_auto_expand_width = function(state)
   end
   state.window.auto_expand_width = state.window.auto_expand_width == false
   if not state.window.auto_expand_width then
-    vim.api.nvim_win_set_width(0, state.window.width)
+    if (state.window.last_user_width or state.window.width) >= vim.api.nvim_win_get_width(0) then
+      state.window.last_user_width = state.window.width
+    end
+    vim.api.nvim_win_set_width(0, state.window.last_user_width)
+    state.win_width = state.window.last_user_width
+    state.longest_width_exact = 0
+    log.trace(string.format("Collapse auto_expand_width."))
   end
   renderer.redraw(state)
 end

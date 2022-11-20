@@ -15,7 +15,7 @@ local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
 local floating_windows = {}
-local draw, create_window, create_tree
+local draw, create_window, create_tree, render_tree
 
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
@@ -42,7 +42,7 @@ local start_resize_monitor = function()
         if current_size ~= state.win_width then
           log.trace("Window size changed, redrawing tree")
           state.win_width = current_size
-          state.tree:render()
+          render_tree(state)
           speed_up_loops = 21 -- move to fast timer for the next 1000 ms
         end
       end
@@ -335,12 +335,7 @@ local prepare_node = function(item, state)
         end
       end
     end
-    if state.window.auto_expand_width and state.window.position ~= "float" then
-      local str_length = vim.api.nvim_strwidth(line:content())
-      if str_length > vim.api.nvim_win_get_width(0) then
-        vim.api.nvim_win_set_width(0, str_length)
-      end
-    end
+    state.longest_width_exact = math.max(state.longest_width_exact, vim.api.nvim_strwidth(line:content()) + 1)
   end
 
   return line
@@ -560,7 +555,7 @@ M.position = {
 M.redraw = function(state)
   if state.tree and M.window_exists(state) then
     log.trace("Redrawing tree", state.name, state.id)
-    state.tree:render()
+    render_tree(state)
     log.trace("  Redrawing tree done", state.name, state.id)
   end
 end
@@ -919,6 +914,21 @@ M.window_exists = function(state)
   return window_exists
 end
 
+---Renders the given tree and expands window width if needed
+--@param state table The state containing tree to render. Almost same as state.tree:render()
+render_tree = function (state)
+  state.tree:render()
+  if state.window.auto_expand_width and state.window.position ~= "float" then
+    state.window.last_user_width = vim.api.nvim_win_get_width(0)
+    if state.longest_width_exact > state.window.last_user_width then
+      log.trace(string.format("`auto_expand_width: on. Expanding width to %s.", state.longest_width_exact))
+      vim.api.nvim_win_set_width(0, state.longest_width_exact)
+      state.win_width = state.longest_width_exact
+      render_tree(state)
+    end
+  end
+end
+
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
 --@param state table The current state of the source.
@@ -965,7 +975,7 @@ draw = function(nodes, state, parent_id)
   state.win_width = utils.get_inner_win_width(state.winid)
   start_resize_monitor()
 
-  state.tree:render()
+  render_tree(state)
 
   -- draw winbar / statusbar
   require("neo-tree.ui.selector").set_source_selector(state)
@@ -1004,6 +1014,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
   --utils.debounce(id, function()
   events.fire_event(events.BEFORE_RENDER, state)
+  state.longest_width_exact = 0
   local parent
   local level = 0
   if parentId ~= nil then
@@ -1081,7 +1092,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   else
     -- this was a force grouping of a lazy loaded folder
     state.win_width = utils.get_inner_win_width(state.winid)
-    state.tree:render()
+    render_tree(state)
   end
 
   vim.schedule(function()
