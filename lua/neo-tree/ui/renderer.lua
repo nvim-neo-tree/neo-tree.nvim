@@ -335,7 +335,10 @@ local prepare_node = function(item, state)
         end
       end
     end
-    state.longest_width_exact = math.max(state.longest_width_exact, vim.api.nvim_strwidth(line:content()) + 1)
+    state.longest_width_exact = math.max(
+      state.longest_width_exact,
+      vim.api.nvim_strwidth(line:content()) + 1
+    )
   end
 
   return line
@@ -916,12 +919,14 @@ end
 
 ---Renders the given tree and expands window width if needed
 --@param state table The state containing tree to render. Almost same as state.tree:render()
-render_tree = function (state)
+render_tree = function(state)
   state.tree:render()
   if state.window.auto_expand_width and state.window.position ~= "float" then
     state.window.last_user_width = vim.api.nvim_win_get_width(0)
     if state.longest_width_exact > state.window.last_user_width then
-      log.trace(string.format("`auto_expand_width: on. Expanding width to %s.", state.longest_width_exact))
+      log.trace(
+        string.format("`auto_expand_width: on. Expanding width to %s.", state.longest_width_exact)
+      )
       vim.api.nvim_win_set_width(0, state.longest_width_exact)
       state.win_width = state.longest_width_exact
       render_tree(state)
