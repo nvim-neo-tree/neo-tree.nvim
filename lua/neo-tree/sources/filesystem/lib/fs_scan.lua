@@ -167,7 +167,6 @@ end
 
 local function get_children_async(path, callback)
   uv.fs_opendir(path, function(_, dir)
-    print("Async cb of: " .. path)
     uv.fs_readdir(dir, function(_, stats)
       local children = {}
       if stats then
@@ -201,7 +200,6 @@ local function scan_dir_sync(context, path)
 end
 
 local function scan_dir_async(context, path, callback)
-  process_node(context, path)
   get_children_async(path, function(children)
     for _, child in ipairs(children) do
       create_node(context, child)
@@ -216,6 +214,7 @@ local function scan_dir_async(context, path, callback)
         end
       end
     end
+    process_node(context, path)
     callback(path)
   end)
 end
@@ -242,7 +241,7 @@ local function async_scan(context, path)
     )
   else -- scan_mode == "shallow"
     -- prepend the root path
-    table.insert(context.paths_to_load, 1, path)
+    -- table.insert(context.paths_to_load, 1, path)
 
     context.directories_scanned = 0
     context.directories_to_scan = #context.paths_to_load
