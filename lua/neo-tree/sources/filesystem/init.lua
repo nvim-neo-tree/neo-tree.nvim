@@ -404,7 +404,7 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     if path_to_reveal then
       renderer.focus_node(state, path_to_reveal)
     end
-  else
+  elseif require("neo-tree").config.filesystem.scan_mode == "deep" then
     node.empty_expanded = not node.empty_expanded
     renderer.redraw(state)
   end
