@@ -158,7 +158,7 @@ local function get_children_sync(path)
   if success2 and stats then
     for _, stat in ipairs(stats) do
       local child_path = utils.path_join(path, stat.name)
-      table.insert(children, { path = child_path, type = stat.type})
+      table.insert(children, { path = child_path, type = stat.type })
     end
   end
   vim.loop.fs_closedir(dir)
@@ -166,27 +166,20 @@ local function get_children_sync(path)
 end
 
 local function get_children_async(path, callback)
-  uv.fs_opendir(
-    path,
-    function(_, dir)
-      print("Async cb of: " .. path)
-      uv.fs_readdir(
-        dir,
-        function(_, stats)
-          local children = {}
-          if stats then
-            for _, stat in ipairs(stats) do
-              local child_path = utils.path_join(path, stat.name)
-              table.insert(children, { path = child_path, type = stat.type})
-            end
-          end
-          uv.fs_closedir(dir)
-          callback(children)
+  uv.fs_opendir(path, function(_, dir)
+    print("Async cb of: " .. path)
+    uv.fs_readdir(dir, function(_, stats)
+      local children = {}
+      if stats then
+        for _, stat in ipairs(stats) do
+          local child_path = utils.path_join(path, stat.name)
+          table.insert(children, { path = child_path, type = stat.type })
         end
-      )
-    end,
-    1000
-  )
+      end
+      uv.fs_closedir(dir)
+      callback(children)
+    end)
+  end, 1000)
 end
 
 local function scan_dir_sync(context, path)
@@ -235,20 +228,17 @@ local function async_scan(context, path)
   if scan_mode == "deep" then
     local scan_tasks = {}
     for _, p in ipairs(context.paths_to_load) do
-      local scan_task = async.wrap(
-      function(callback)
+      local scan_task = async.wrap(function(callback)
         scan_dir_async(context, p, callback)
-      end,
-      1
-      )
+      end, 1)
       table.insert(scan_tasks, scan_task)
     end
 
     async.util.run_all(
-    scan_tasks,
-    vim.schedule_wrap(function ()
-      job_complete(context)
-    end)
+      scan_tasks,
+      vim.schedule_wrap(function()
+        job_complete(context)
+      end)
     )
   else -- scan_mode == "shallow"
     -- prepend the root path
@@ -258,63 +248,62 @@ local function async_scan(context, path)
     context.directories_to_scan = #context.paths_to_load
 
     context.on_exit = vim.schedule_wrap(function()
-        job_complete(context)
-      end)
+      job_complete(context)
+    end)
 
-      -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
-      local function read_dir(current_dir, ctx)
-          local on_fs_scandir = function(err, fd)
-              if err then
-                log.error(current_dir, ": ", err)
-              else
-                while true do
-                  local name, typ = uv.fs_scandir_next(fd)
-                  if name == nil then
-                    break
-                  end
-                  local entry = utils.path_join(current_dir, name)
-                  local success, item = pcall(file_items.create_item, ctx, entry, typ)
-                  if success then
-                    if ctx.recursive and item.type == "directory" then
-                      ctx.directories_to_scan = ctx.directories_to_scan + 1
-                      table.insert(ctx.paths_to_load, item.path)
-                    end
-                  else
-                    log.error("error creating item for ", path)
-                  end
-                end
-                on_directory_loaded(ctx, current_dir)
-                ctx.directories_scanned = ctx.directories_scanned + 1
-                if ctx.directories_scanned == #ctx.paths_to_load then
-                  ctx.on_exit()
-                end
-
-                --local next_path = dir_complete(ctx, current_dir)
-                --if next_path then
-                --  local success, error = pcall(read_dir, next_path)
-                --  if not success then
-                --    log.error(next_path, ": ", error)
-                --  end
-                --else
-                --  on_exit()
-                --end
-              end
+    -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
+    local function read_dir(current_dir, ctx)
+      local on_fs_scandir = function(err, fd)
+        if err then
+          log.error(current_dir, ": ", err)
+        else
+          while true do
+            local name, typ = uv.fs_scandir_next(fd)
+            if name == nil then
+              break
             end
-
-            uv.fs_scandir(current_dir, on_fs_scandir)
+            local entry = utils.path_join(current_dir, name)
+            local success, item = pcall(file_items.create_item, ctx, entry, typ)
+            if success then
+              if ctx.recursive and item.type == "directory" then
+                ctx.directories_to_scan = ctx.directories_to_scan + 1
+                table.insert(ctx.paths_to_load, item.path)
+              end
+            else
+              log.error("error creating item for ", path)
+            end
+          end
+          on_directory_loaded(ctx, current_dir)
+          ctx.directories_scanned = ctx.directories_scanned + 1
+          if ctx.directories_scanned == #ctx.paths_to_load then
+            ctx.on_exit()
           end
 
-          --local first = table.remove(context.paths_to_load)
-          --local success, err = pcall(read_dir, first)
-          --if not success then
-          --  log.error(first, ": ", err)
+          --local next_path = dir_complete(ctx, current_dir)
+          --if next_path then
+          --  local success, error = pcall(read_dir, next_path)
+          --  if not success then
+          --    log.error(next_path, ": ", error)
+          --  end
+          --else
+          --  on_exit()
           --end
-          for i = 1, context.directories_to_scan do
-            read_dir(context.paths_to_load[i], context)
-          end
+        end
+      end
+
+      uv.fs_scandir(current_dir, on_fs_scandir)
+    end
+
+    --local first = table.remove(context.paths_to_load)
+    --local success, err = pcall(read_dir, first)
+    --if not success then
+    --  log.error(first, ": ", err)
+    --end
+    for i = 1, context.directories_to_scan do
+      read_dir(context.paths_to_load[i], context)
+    end
   end
 end
-
 
 local function sync_scan(context, path_to_scan)
   log.trace("sync_scan: ", path_to_scan)
@@ -352,7 +341,6 @@ local function sync_scan(context, path_to_scan)
     else
       job_complete(context)
     end
-
   end
 end
 
