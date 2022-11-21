@@ -187,7 +187,8 @@ local merge_content = function(context)
   -- * Repeat until all layers have been merged.
   -- * Join the left and right tables together and return.
   --
-  local remaining_width = context.container_width
+  local huge_number = 2000
+  local remaining_width = context.auto_expand_width and huge_number or context.container_width
   local left, right = {}, {}
   local left_width, right_width = 0, 0
 
@@ -253,6 +254,9 @@ local merge_content = function(context)
     end
   end
 
+  if context.auto_expand_width then
+    remaining_width = context.container_width + remaining_width - huge_number
+  end
   if remaining_width > 0 and #right > 0 then
     table.insert(left, { text = string.rep(" ", remaining_width) })
   end
@@ -271,6 +275,7 @@ M.render = function(config, node, state, available_width)
     left_padding = config.left_padding,
     right_padding = config.right_padding,
     enable_character_fade = config.enable_character_fade,
+    auto_expand_width = state.window.auto_expand_width and state.window.position ~= "float",
   }
 
   render_content(config, node, state, context)

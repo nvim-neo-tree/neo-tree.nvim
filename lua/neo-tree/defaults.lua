@@ -287,6 +287,7 @@ local config = {
     position = "left", -- left, right, top, bottom, float, current
     width = 40, -- applies to left and right positions
     height = 15, -- applies to top and bottom positions
+    auto_expand_width = false, -- expand the window when file exceeds the window width. does not work with position = "float"
     popup = { -- settings that apply to float position only
       size = {
         height = "80%",
@@ -338,6 +339,7 @@ local config = {
       ["p"] = "paste_from_clipboard",
       ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path option
       ["m"] = "move", -- takes text input for destination, also accepts the config.show_path option
+      ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
       ["<"] = "prev_source",
@@ -483,7 +485,7 @@ local config = {
     window = {
       mappings = {
         ["<cr>"] = "toggle_node",
-        ["e"] = "example_command",
+        ["<C-e>"] = "example_command",
         ["d"] = "show_debug_info",
       },
     },
