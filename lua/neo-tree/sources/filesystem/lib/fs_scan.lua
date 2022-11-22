@@ -240,9 +240,6 @@ local function async_scan(context, path)
       end)
     )
   else -- scan_mode == "shallow"
-    -- prepend the root path
-    -- table.insert(context.paths_to_load, 1, path)
-
     context.directories_scanned = 0
     context.directories_to_scan = #context.paths_to_load
 
@@ -252,45 +249,59 @@ local function async_scan(context, path)
 
     -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
     local function read_dir(current_dir, ctx)
-      local on_fs_scandir = function(err, fd)
+      local function on_fs_opendir(err, dir)
         if err then
           log.error(current_dir, ": ", err)
         else
-          while true do
-            local name, typ = uv.fs_scandir_next(fd)
-            if name == nil then
-              break
-            end
-            local entry = utils.path_join(current_dir, name)
-            local success, item = pcall(file_items.create_item, ctx, entry, typ)
-            if success then
-              if ctx.recursive and item.type == "directory" then
-                ctx.directories_to_scan = ctx.directories_to_scan + 1
-                table.insert(ctx.paths_to_load, item.path)
-              end
+          local function on_fs_readdir(err, entries)
+            if err then
+              log.error(current_dir, ": ", err)
             else
-              log.error("error creating item for ", path)
+              if entries then
+                for _, entry in ipairs(entries) do
+                  local success, item = pcall(
+                    file_items.create_item,
+                    ctx,
+                    utils.path_join(current_dir, entry.name),
+                    entry.type
+                  )
+                  if success then
+                    if ctx.recursive and item.type == "directory" then
+                      ctx.directories_to_scan = ctx.directories_to_scan + 1
+                      table.insert(ctx.paths_to_load, item.path)
+                    end
+                  else
+                    log.error("error creating item for ", path)
+                  end
+                end
+
+                uv.fs_readdir(dir, on_fs_readdir)
+              else
+                uv.fs_closedir(dir)
+                on_directory_loaded(ctx, current_dir)
+                ctx.directories_scanned = ctx.directories_scanned + 1
+                if ctx.directories_scanned == #ctx.paths_to_load then
+                  ctx.on_exit()
+                end
+              end
             end
-          end
-          on_directory_loaded(ctx, current_dir)
-          ctx.directories_scanned = ctx.directories_scanned + 1
-          if ctx.directories_scanned == #ctx.paths_to_load then
-            ctx.on_exit()
+
+            --local next_path = dir_complete(ctx, current_dir)
+            --if next_path then
+            --  local success, error = pcall(read_dir, next_path)
+            --  if not success then
+            --    log.error(next_path, ": ", error)
+            --  end
+            --else
+            --  on_exit()
+            --end
           end
 
-          --local next_path = dir_complete(ctx, current_dir)
-          --if next_path then
-          --  local success, error = pcall(read_dir, next_path)
-          --  if not success then
-          --    log.error(next_path, ": ", error)
-          --  end
-          --else
-          --  on_exit()
-          --end
+          uv.fs_readdir(dir, on_fs_readdir)
         end
       end
 
-      uv.fs_scandir(current_dir, on_fs_scandir)
+      uv.fs_opendir(current_dir, on_fs_opendir)
     end
 
     --local first = table.remove(context.paths_to_load)
