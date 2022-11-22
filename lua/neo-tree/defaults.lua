@@ -299,6 +299,9 @@ local config = {
       -- the global popup_border_style.
     },
     same_level = false, -- Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
+    insert_as = "child", -- Affects how nodes get inserted into the tree during creation/pasting/moving of files if the node under the cursor is a directory:
+                        -- "child":   Insert nodes as children of the directory under cursor.
+                        -- "sibling": Insert nodes  as siblings of the directory under cursor.
     -- Mappings for tree window. See `:h neo-tree-mappings` for a list of built-in commands.
     -- You can also create your own commands by providing a function instead of a string.
     mapping_options = {
@@ -331,17 +334,18 @@ local config = {
         "add",
         -- some commands may take optional config options, see `:h neo-tree-mappings` for details
         config = {
-          show_path = "none" -- "none", "relative", "absolute"
+          show_path = "none", -- "none", "relative", "absolute"
+          insert_as = "child" -- "child", "sibling" - Overrides the global `insert_as` config.
         }
       },
-      ["A"] = "add_directory", -- also accepts the config.show_path option.
+      ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
-      ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path option
-      ["m"] = "move", -- takes text input for destination, also accepts the config.show_path option
+      ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path and config.insert_as options
+      ["m"] = "move", -- takes text input for destination, also accepts the config.show_path and config.insert_as options
       ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
