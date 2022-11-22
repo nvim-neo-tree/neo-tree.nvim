@@ -20,15 +20,17 @@ local function get_folder_node(state, node)
   if not node then
     node = tree:get_node()
   end
-  local use_parent_local = state.config.same_level == "sibling"
-  local use_parent_global = require("neo-tree").config.window.insert_as == "sibling"
+
+  local insert_as_local = state.config.insert_as
+  local insert_as_global = require("neo-tree").config.window.insert_as
   local use_parent
-  local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
-  if not use_parent_global then
-    use_parent = use_parent_local
+  if insert_as_local then
+    use_parent = insert_as_local == "sibling"
   else
-    use_parent = use_parent_local ~= "child"
+    use_parent = insert_as_global == "sibling"
   end
+
+  local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
   if use_parent and not is_open_dir then
     return tree:get_node(node:get_parent_id())
   end
