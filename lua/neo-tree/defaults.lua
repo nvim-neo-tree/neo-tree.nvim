@@ -335,7 +335,6 @@ local config = {
         -- some commands may take optional config options, see `:h neo-tree-mappings` for details
         config = {
           show_path = "none", -- "none", "relative", "absolute"
-          insert_as = "child" -- "child", "sibling" - Overrides the global `insert_as` config.
         }
       },
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
