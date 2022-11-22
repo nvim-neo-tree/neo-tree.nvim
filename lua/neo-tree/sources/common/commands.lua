@@ -20,14 +20,14 @@ local function get_folder_node(state, node)
   if not node then
     node = tree:get_node()
   end
-  local use_parent_local = state.config.same_level
-  local use_parent_global = require("neo-tree").config.window.same_level
+  local use_parent_local = state.config.same_level == "sibling"
+  local use_parent_global = require("neo-tree").config.window.insert_as == "sibling"
   local use_parent
   local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
   if not use_parent_global then
     use_parent = use_parent_local
   else
-    use_parent = use_parent_local ~= false
+    use_parent = use_parent_local ~= "child"
   end
   if use_parent and not is_open_dir then
     return tree:get_node(node:get_parent_id())
@@ -396,9 +396,9 @@ M.paste_from_clipboard = function(state, callback)
 
     paste_complete = function(source, destination)
       if callback then
-        local same_level = require("neo-tree").config.window.same_level
+        local insert_as = require("neo-tree").config.window.insert_as
         -- open the folder so the user can see the new files
-        local node = same_level and state.tree:get_node() or state.tree:get_node(folder)
+        local node = insert_as == "sibling" and state.tree:get_node() or state.tree:get_node(folder)
         if not node then
           log.warn("Could not find node for " .. folder)
         end
