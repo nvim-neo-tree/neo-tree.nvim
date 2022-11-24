@@ -71,18 +71,10 @@ local dir_complete = function(context, dir_path)
   return next_path
 end
 
-local job_complete = function(context)
+local render_context = function(context)
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
-  if state.filtered_items.hide_gitignored or state.enable_git_status then
-    local git_ignored = git.mark_ignored(state, context.all_items)
-    if parent_id then
-      vim.list_extend(state.git_ignored, git_ignored)
-    else
-      state.git_ignored = git_ignored
-    end
-  end
 
   if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
     log.trace("Starting .git folder watcher")
@@ -109,6 +101,25 @@ local job_complete = function(context)
   context.root = nil
   context.parent_id = nil
   context = nil
+end
+
+local job_complete = function(context)
+  local state = context.state
+  local parent_id = context.parent_id
+  if state.filtered_items.hide_gitignored or state.enable_git_status then
+    git.mark_ignored(state, context.all_items, function(all_items)
+      if parent_id then
+        vim.list_extend(state.git_ignored, all_items)
+      else
+        state.git_ignored = all_items
+      end
+      vim.schedule(function()
+        render_context(context)
+      end)
+    end)
+  else
+    render_context(context)
+  end
 end
 
 -- async_scan scans all the directories in context.paths_to_load

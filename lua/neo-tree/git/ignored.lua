@@ -1,3 +1,5 @@
+local Job = require("plenary.job")
+
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local git_utils = require("neo-tree.git.utils")
@@ -38,10 +40,11 @@ local get_root_for_item = function(item)
   return root
 end
 
-M.mark_ignored = function(state, items)
+M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")
   log.trace("IGNORED: mark_ignore BEGIN...")
+
   for _, item in ipairs(items) do
     local folder = utils.split_path(item.path)
     if folder then
@@ -52,19 +55,7 @@ M.mark_ignored = function(state, items)
     end
   end
 
-  local all_results = {}
-  for folder, folder_items in pairs(folders) do
-    local cmd = { "git", "-C", folder, "check-ignore" }
-    for _, item in ipairs(folder_items) do
-      table.insert(cmd, item)
-    end
-    log.trace("IGNORED: Running cmd: ", cmd)
-    local result = vim.fn.systemlist(cmd)
-    if vim.v.shell_error == 128 then
-      log.debug("Failed to load ignored files for", state.path, ":", result)
-      result = {}
-    end
-
+  local function process_result(result)
     if utils.is_windows then
       --on Windows, git seems to return quotes and double backslash "path\\directory"
       result = vim.tbl_map(function(item)
@@ -83,26 +74,77 @@ M.mark_ignored = function(state, items)
         end
       end
     end
-
-    vim.list_extend(all_results, result)
+    return result
   end
 
-  local show_anyway = state.filtered_items and state.filtered_items.hide_gitignored == false
-  log.trace("IGNORED: Comparing results to mark items as ignored, show_anyway:", show_anyway)
-  local ignored, not_ignored = 0, 0
-  for _, item in ipairs(items) do
-    if M.is_ignored(all_results, item.path, item.type) then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.gitignored = true
-      item.filtered_by.show_anyway = show_anyway
-      ignored = ignored + 1
-    else
-      not_ignored = not_ignored + 1
+  local function finalize(all_results)
+    local show_anyway = state.filtered_items and state.filtered_items.hide_gitignored == false
+    log.trace("IGNORED: Comparing results to mark items as ignored, show_anyway:", show_anyway)
+    local ignored, not_ignored = 0, 0
+    for _, item in ipairs(items) do
+      if M.is_ignored(all_results, item.path, item.type) then
+        item.filtered_by = item.filtered_by or {}
+        item.filtered_by.gitignored = true
+        item.filtered_by.show_anyway = show_anyway
+        ignored = ignored + 1
+      else
+        not_ignored = not_ignored + 1
+      end
     end
+    log.trace("IGNORED: mark_ignored is complete, ignored:", ignored, ", not ignored:", not_ignored)
+    log.trace("================================================================================")
   end
-  log.trace("IGNORED: mark_ignored is complete, ignored:", ignored, ", not ignored:", not_ignored)
-  log.trace("================================================================================")
-  return all_results
+
+  local all_results = {}
+  if type(callback) == "function" then
+    local jobs = {}
+    local progress = 0
+    for folder, folder_items in pairs(folders) do
+      local args = { "-C", folder, "check-ignore", "--stdin" }
+      local job = Job:new({
+        command = "git",
+        args = args,
+        enabled_recording = true,
+        writer = folder_items,
+        on_start = function()
+          log.trace("IGNORED: Running async git with args: ", args)
+        end,
+        on_exit = function(self, code, _)
+          local result
+          if code ~= 0 then
+            log.debug("Failed to load ignored files for", state.path, ":", self:stderr_result())
+            result = {}
+          else
+            result = self:result()
+          end
+          vim.list_extend(all_results, process_result(result))
+          progress = progress + 1
+          if progress == #jobs then
+            finalize(all_results)
+            callback(all_results)
+          end
+        end,
+      })
+      table.insert(jobs, job)
+    end
+
+    for _, job in ipairs(jobs) do
+      job:start()
+    end
+  else
+    for folder, folder_items in pairs(folders) do
+      local cmd = { "git", "-C", folder, "check-ignore", unpack(folder_items) }
+      log.trace("IGNORED: Running cmd: ", cmd)
+      local result = vim.fn.systemlist(cmd)
+      if vim.v.shell_error == 128 then
+        log.debug("Failed to load ignored files for", state.path, ":", result)
+        result = {}
+      end
+      vim.list_extend(all_results, process_result(result))
+    end
+    finalize(all_results)
+    return all_results
+  end
 end
 
 return M
