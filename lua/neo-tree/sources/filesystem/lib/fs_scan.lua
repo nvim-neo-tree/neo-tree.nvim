@@ -107,19 +107,28 @@ local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
   if state.filtered_items.hide_gitignored or state.enable_git_status then
-    git.mark_ignored(state, context.all_items, function(all_items)
+    if require("neo-tree").config.git_status_async then
+      git.mark_ignored(state, context.all_items, function(all_items)
+        if parent_id then
+          vim.list_extend(state.git_ignored, all_items)
+        else
+          state.git_ignored = all_items
+        end
+        vim.schedule(function()
+          render_context(context)
+        end)
+      end)
+      return
+    else
+      local all_items = git.mark_ignored(state, context.all_items)
       if parent_id then
         vim.list_extend(state.git_ignored, all_items)
       else
         state.git_ignored = all_items
       end
-      vim.schedule(function()
-        render_context(context)
-      end)
-    end)
-  else
-    render_context(context)
+    end
   end
+  render_context(context)
 end
 
 -- async_scan scans all the directories in context.paths_to_load
