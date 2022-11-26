@@ -345,7 +345,7 @@ local prepare_node = function(item, state)
     end
     state.longest_width_exact = math.max(
       state.longest_width_exact,
-      vim.api.nvim_strwidth(line:content()) + 1
+      vim.api.nvim_strwidth(line:content())
     )
   end
 
