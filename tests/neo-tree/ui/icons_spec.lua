@@ -42,7 +42,7 @@ describe("ui/icons", function()
 
   describe("w/ default_config", function()
     before_each(function()
-      require("neo-tree").setup({})
+      require("neo-tree").setup({git_status_async=false})
     end)
 
     it("works w/o nvim-web-devicons", function()
