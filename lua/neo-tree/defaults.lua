@@ -19,7 +19,7 @@ local config = {
   enable_git_status = true,
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
-  git_status_async = true,
+  git_status_async = false,
   -- These options are for people with VERY large git repos
   git_status_async_options = {
     batch_size = 1000, -- how many lines of git status results to process at a time
