@@ -345,7 +345,7 @@ local prepare_node = function(item, state)
     end
     state.longest_width_exact = math.max(
       state.longest_width_exact,
-      vim.api.nvim_strwidth(line:content()) + 1
+      vim.api.nvim_strwidth(line:content())
     )
   end
 
@@ -934,9 +934,14 @@ render_tree = function(state)
     state.window.last_user_width = vim.api.nvim_win_get_width(0)
     if state.longest_width_exact > state.window.last_user_width then
       log.trace(
-        string.format("`auto_expand_width: on. Expanding width to %s.", state.longest_width_exact)
+        string.format("auto_expand_width: on. Expanding width to %s.", state.longest_width_exact)
       )
       vim.api.nvim_win_set_width(0, state.longest_width_exact)
+      if state.longest_width_exact > vim.api.nvim_win_get_width(0) then
+        log.error("Not enough width to expand. Aborting.")
+        state.longest_width_exact = vim.api.nvim_win_get_width(0)
+        return
+      end
       state.win_width = state.longest_width_exact
       render_tree(state)
     end

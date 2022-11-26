@@ -187,7 +187,7 @@ local merge_content = function(context)
   -- * Repeat until all layers have been merged.
   -- * Join the left and right tables together and return.
   --
-  local huge_number = 2000
+  local huge_number = vim.o.columns
   local remaining_width = context.auto_expand_width and huge_number or context.container_width
   local left, right = {}, {}
   local left_width, right_width = 0, 0
