@@ -227,11 +227,6 @@ create_nodes = function(source_items, state, level)
       is_last_child = is_last_child,
     }
     local indent = (state.renderers[item.type] or {}).indent_size or 4
-    local estimated_node_length = (#item.name or 0) + level * indent + 8
-    if level == 0 then
-      estimated_node_length = estimated_node_length + 16
-    end
-    state.longest_node = math.max(state.longest_node, estimated_node_length)
 
     local node_children = nil
     if item.children ~= nil then
@@ -289,7 +284,13 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data = pcall(component_func, component, item, state, remaining_width)
+    local success, component_data, wanted_width = pcall(
+      component_func,
+      component,
+      item,
+      state,
+      remaining_width
+    )
     if success then
       if component_data == nil then
         return { {} }
@@ -302,7 +303,7 @@ M.render_component = function(component, item, state, remaining_width)
       for _, data in ipairs(component_data) do
         data.text = one_line(data.text)
       end
-      return component_data
+      return component_data, wanted_width
     else
       local name = component[1] or "[missing_name]"
       local msg = string.format("Error rendering component %s: %s", name, component_data)
@@ -321,6 +322,23 @@ local prepare_node = function(item, state)
   if item.skip_node then
     return nil
   end
+  -- pre_render is used to calculate the longest node width
+  -- without actually rendering the node.
+  -- We'll try to reuse that work if possible.
+  local pre_render = state._in_pre_render
+  if item.line and not pre_render then
+    local line = item.line
+    -- Only use it once, we don't want to accidentally use stale data
+    item.line = nil
+    if
+      line
+      and item.wanted_width
+      and state.longest_node
+      and item.wanted_width <= state.longest_node
+    then
+      return line
+    end
+  end
   local line = NuiLine()
 
   local renderer = state.renderers[item.type]
@@ -329,24 +347,46 @@ local prepare_node = function(item, state)
     line:append(item.name)
   else
     local remaining_cols = state.win_width
+    if remaining_cols == nil then
+      if state.winid then
+        remaining_cols = vim.api.nvim_win_get_width(state.winid)
+      else
+        local default_width = utils.resolve_config_option(state, "window.width", 40)
+        remaining_cols = default_width
+      end
+    end
+    local wanted_width = 0
     if state.current_position == "current" then
-      remaining_cols = math.min(remaining_cols, state.longest_node)
+      local longest = state.longest_node or 0
+      remaining_cols = math.min(remaining_cols, longest + 4)
     end
     for _, component in ipairs(renderer) do
-      local component_data = M.render_component(component, item, state, remaining_cols)
+      local component_data, component_wanted_width = M.render_component(
+        component,
+        item,
+        state,
+        remaining_cols
+      )
+      local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
           if data.text then
+            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
             line:append(data.text, data.highlight)
             remaining_cols = remaining_cols - vim.fn.strchars(data.text)
           end
         end
       end
+      component_wanted_width = component_wanted_width or actual_width
+      wanted_width = wanted_width + component_wanted_width
     end
-    state.longest_width_exact = math.max(
-      state.longest_width_exact,
-      vim.api.nvim_strwidth(line:content())
-    )
+    line.wanted_width = wanted_width
+    if pre_render then
+      item.line = line
+      state.longest_node = math.max(state.longest_node, line.wanted_width)
+    else
+      item.line = nil
+    end
   end
 
   return line
@@ -389,7 +429,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
 
   if M.window_exists(state) then
     if not linenr then
-      M.expand_to_node(state.tree, node)
+      M.expand_to_node(state, node)
       node, linenr = tree:get_node(id)
       if not linenr then
         log.debug("focus_node cannot get linenr for node with id ", id)
@@ -511,7 +551,8 @@ M.collapse_all_nodes = function(tree)
   end
 end
 
-M.expand_to_node = function(tree, node)
+M.expand_to_node = function(state, node)
+  local tree = state.tree
   if type(node) == "string" then
     node = tree:get_node(node)
   end
@@ -521,7 +562,7 @@ M.expand_to_node = function(tree, node)
     parent:expand()
     parentId = parent:get_parent_id()
   end
-  tree:render()
+  render_tree(state)
 end
 
 ---Functions to save and restore the focused node.
@@ -929,23 +970,21 @@ end
 ---Renders the given tree and expands window width if needed
 --@param state table The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
-  state.tree:render()
-  if state.window.auto_expand_width and state.window.position ~= "float" then
-    state.window.last_user_width = vim.api.nvim_win_get_width(0)
-    if state.longest_width_exact > state.window.last_user_width then
-      log.trace(
-        string.format("auto_expand_width: on. Expanding width to %s.", state.longest_width_exact)
-      )
-      vim.api.nvim_win_set_width(0, state.longest_width_exact)
-      if state.longest_width_exact > vim.api.nvim_win_get_width(0) then
-        log.error("Not enough width to expand. Aborting.")
-        state.longest_width_exact = vim.api.nvim_win_get_width(0)
-        return
-      end
-      state.win_width = state.longest_width_exact
-      render_tree(state)
+  local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
+  local should_pre_render = should_auto_expand or state.current_position == "current"
+  if should_pre_render then
+    log.trace("pre-rendering tree")
+    state._in_pre_render = true
+    state.tree:render()
+    state._in_pre_render = false
+    state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
+    if should_auto_expand and state.longest_node > state.window.last_user_width then
+      log.trace(string.format("auto_expand_width: on. Expanding width to %s.", state.longest_node))
+      vim.api.nvim_win_set_width(state.winid, state.longest_node)
+      state.win_width = state.longest_node
     end
   end
+  state.tree:render()
 end
 
 ---Draws the given nodes on the screen.

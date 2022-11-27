@@ -187,19 +187,21 @@ local merge_content = function(context)
   -- * Repeat until all layers have been merged.
   -- * Join the left and right tables together and return.
   --
-  local huge_number = vim.o.columns
-  local remaining_width = context.auto_expand_width and huge_number or context.container_width
+  local remaining_width = context.container_width
   local left, right = {}, {}
   local left_width, right_width = 0, 0
+  local wanted_width = 0
 
   if context.left_padding and context.left_padding > 0 then
     table.insert(left, { text = string.rep(" ", context.left_padding) })
     remaining_width = remaining_width - context.left_padding
     left_width = left_width + context.left_padding
+    wanted_width = wanted_width + context.left_padding
   end
 
   if context.right_padding and context.right_padding > 0 then
     remaining_width = remaining_width - context.right_padding
+    wanted_width = wanted_width + context.right_padding
   end
 
   local keys = utils.get_keys(context.grouped_by_zindex, true)
@@ -212,51 +214,54 @@ local merge_content = function(context)
     local layer = context.grouped_by_zindex[key]
     i = i - 1
 
-    if remaining_width > 0 and utils.truthy(layer.right) then
-      context.has_right_content = true
+    if utils.truthy(layer.right) then
       local width = calc_rendered_width(layer.right)
-      if width > remaining_width then
-        local truncated = truncate_layer_keep_right(layer.right, right_width, remaining_width)
-        vim.list_extend(right, truncated)
-        remaining_width = 0
-      else
-        remaining_width = remaining_width - width
-        vim.list_extend(right, layer.right)
-        right_width = right_width + width
+      wanted_width = wanted_width + width
+      if remaining_width > 0 then
+        context.has_right_content = true
+        if width > remaining_width then
+          local truncated = truncate_layer_keep_right(layer.right, right_width, remaining_width)
+          vim.list_extend(right, truncated)
+          remaining_width = 0
+        else
+          remaining_width = remaining_width - width
+          vim.list_extend(right, layer.right)
+          right_width = right_width + width
+        end
       end
     end
 
-    if remaining_width > 0 and utils.truthy(layer.left) then
+    if utils.truthy(layer.left) then
       local width = calc_rendered_width(layer.left)
-      if width > remaining_width then
-        local truncated = truncate_layer_keep_left(layer.left, left_width, remaining_width)
-        if context.enable_character_fade then
-          try_fade_content(truncated, 3)
-        end
-        vim.list_extend(left, truncated)
-        remaining_width = 0
-      else
-        remaining_width = remaining_width - width
-        if context.enable_character_fade then
-          local fade_chars = 3 - remaining_width
-          if fade_chars > 0 then
-            try_fade_content(layer.left, fade_chars)
+      wanted_width = wanted_width + width
+      if remaining_width > 0 then
+        if width > remaining_width then
+          local truncated = truncate_layer_keep_left(layer.left, left_width, remaining_width)
+          if context.enable_character_fade then
+            try_fade_content(truncated, 3)
           end
+          vim.list_extend(left, truncated)
+          remaining_width = 0
+        else
+          remaining_width = remaining_width - width
+          if context.enable_character_fade and not context.auto_expand_width then
+            local fade_chars = 3 - remaining_width
+            if fade_chars > 0 then
+              try_fade_content(layer.left, fade_chars)
+            end
+          end
+          vim.list_extend(left, layer.left)
+          left_width = left_width + width
         end
-        vim.list_extend(left, layer.left)
-        left_width = left_width + width
       end
     end
 
-    if remaining_width == 0 then
+    if remaining_width == 0 and not context.auto_expand_width then
       i = 0
       break
     end
   end
 
-  if context.auto_expand_width then
-    remaining_width = context.container_width + remaining_width - huge_number
-  end
   if remaining_width > 0 and #right > 0 then
     table.insert(left, { text = string.rep(" ", remaining_width) })
   end
@@ -265,10 +270,13 @@ local merge_content = function(context)
   vim.list_extend(result, left)
   vim.list_extend(result, right)
   context.merged_content = result
+  log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
+  context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 
 M.render = function(config, node, state, available_width)
   local context = {
+    wanted_width = 0,
     max_width = 0,
     grouped_by_zindex = {},
     available_width = available_width,
@@ -285,7 +293,7 @@ M.render = function(config, node, state, available_width)
   if context.has_right_content then
     state.has_right_content = true
   end
-  return context.merged_content
+  return context.merged_content, context.wanted_width
 end
 
 return M
