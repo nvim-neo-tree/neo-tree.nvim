@@ -289,7 +289,7 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data = pcall(component_func, component, item, state, remaining_width)
+    local success, component_data, wanted_width = pcall(component_func, component, item, state, remaining_width)
     if success then
       if component_data == nil then
         return { {} }
@@ -302,7 +302,7 @@ M.render_component = function(component, item, state, remaining_width)
       for _, data in ipairs(component_data) do
         data.text = one_line(data.text)
       end
-      return component_data
+      return component_data, wanted_width
     else
       local name = component[1] or "[missing_name]"
       local msg = string.format("Error rendering component %s: %s", name, component_data)
@@ -329,23 +329,28 @@ local prepare_node = function(item, state)
     line:append(item.name)
   else
     local remaining_cols = state.win_width
+    local wanted_width = 0
     if state.current_position == "current" then
       remaining_cols = math.min(remaining_cols, state.longest_node)
     end
     for _, component in ipairs(renderer) do
-      local component_data = M.render_component(component, item, state, remaining_cols)
+      local component_data, component_wanted_width = M.render_component(component, item, state, remaining_cols)
+      local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
           if data.text then
+            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
             line:append(data.text, data.highlight)
             remaining_cols = remaining_cols - vim.fn.strchars(data.text)
           end
         end
       end
+      component_wanted_width = component_wanted_width or actual_width
+      wanted_width = wanted_width + component_wanted_width
     end
-    state.longest_width_exact = math.max(
-      state.longest_width_exact,
-      vim.api.nvim_strwidth(line:content())
+    state.wanted_width = math.max(
+      state.wanted_width or 0,
+      wanted_width
     )
   end
 
@@ -929,21 +934,18 @@ end
 ---Renders the given tree and expands window width if needed
 --@param state table The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
+  state.wanted_width = 0
   state.tree:render()
   if state.window.auto_expand_width and state.window.position ~= "float" then
-    state.window.last_user_width = vim.api.nvim_win_get_width(0)
-    if state.longest_width_exact > state.window.last_user_width then
+    log.trace("auto expand wants width: ", state.wanted_width)
+    state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
+    if state.wanted_width > state.window.last_user_width then
       log.trace(
-        string.format("auto_expand_width: on. Expanding width to %s.", state.longest_width_exact)
+        string.format("auto_expand_width: on. Expanding width to %s.", state.wanted_width)
       )
-      vim.api.nvim_win_set_width(0, state.longest_width_exact)
-      if state.longest_width_exact > vim.api.nvim_win_get_width(0) then
-        log.error("Not enough width to expand. Aborting.")
-        state.longest_width_exact = vim.api.nvim_win_get_width(0)
-        return
-      end
-      state.win_width = state.longest_width_exact
-      render_tree(state)
+      vim.api.nvim_win_set_width(state.winid, state.wanted_width)
+      state.win_width = state.wanted_width
+      state.tree:render()
     end
   end
 end
