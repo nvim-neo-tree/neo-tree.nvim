@@ -284,7 +284,13 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data, wanted_width = pcall(component_func, component, item, state, remaining_width)
+    local success, component_data, wanted_width = pcall(
+      component_func,
+      component,
+      item,
+      state,
+      remaining_width
+    )
     if success then
       if component_data == nil then
         return { {} }
@@ -324,7 +330,12 @@ local prepare_node = function(item, state)
     local line = item.line
     -- Only use it once, we don't want to accidentally use stale data
     item.line = nil
-    if line and item.wanted_width and state.longest_node and item.wanted_width <= state.longest_node then
+    if
+      line
+      and item.wanted_width
+      and state.longest_node
+      and item.wanted_width <= state.longest_node
+    then
       return line
     end
   end
@@ -350,7 +361,12 @@ local prepare_node = function(item, state)
       remaining_cols = math.min(remaining_cols, longest + 4)
     end
     for _, component in ipairs(renderer) do
-      local component_data, component_wanted_width = M.render_component(component, item, state, remaining_cols)
+      local component_data, component_wanted_width = M.render_component(
+        component,
+        item,
+        state,
+        remaining_cols
+      )
       local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
@@ -963,9 +979,7 @@ render_tree = function(state)
     state._in_pre_render = false
     state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
     if should_auto_expand and state.longest_node > state.window.last_user_width then
-      log.trace(
-        string.format("auto_expand_width: on. Expanding width to %s.", state.longest_node)
-      )
+      log.trace(string.format("auto_expand_width: on. Expanding width to %s.", state.longest_node))
       vim.api.nvim_win_set_width(state.winid, state.longest_node)
       state.win_width = state.longest_node
     end
