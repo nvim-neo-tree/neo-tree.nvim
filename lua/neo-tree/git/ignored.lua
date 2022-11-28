@@ -100,6 +100,7 @@ M.mark_ignored = function(state, items, callback)
     local jobs = {}
     local progress = 0
     for folder, folder_items in pairs(folders) do
+      local i = #jobs + 1
       local args = { "-C", folder, "check-ignore", "--stdin" }
       local job = Job:new({
         command = "git",
@@ -117,7 +118,8 @@ M.mark_ignored = function(state, items, callback)
           else
             result = self:result()
           end
-          vim.list_extend(all_results, process_result(result))
+          -- vim.list_extend(all_results, process_result(result))
+          all_results[i] = process_result(result)
           progress = progress + 1
           if progress == #jobs then
             finalize(all_results)
@@ -127,6 +129,7 @@ M.mark_ignored = function(state, items, callback)
       })
       table.insert(jobs, job)
     end
+
 
     for _, job in ipairs(jobs) do
       job:start()
