@@ -68,6 +68,8 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
+            
+      vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
         string.format("  %s", fs_tree.abspath):sub(1, 42),
@@ -105,6 +107,8 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
+            
+      vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
@@ -166,6 +170,8 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
+            
+      vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
         string.format(" o %s", fs_tree.abspath):sub(1, 40),
@@ -203,6 +209,8 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
+            
+      vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
