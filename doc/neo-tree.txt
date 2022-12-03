@@ -413,7 +413,7 @@ You probably want #2:
      filesystem = {
        window = {
          mappings = {
-           ["?"] = functions(state)
+           ["?"] = function(state)
              local node = state.tree:get_node()
              print(node.name)
            end
