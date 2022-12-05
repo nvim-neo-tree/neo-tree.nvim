@@ -14,16 +14,30 @@ local flags = {
 
 local watched = {}
 
-local get_dot_git_folder = function(path)
-  local git_root = git.get_repository_root(path)
-  if git_root then
-    local git_folder = utils.path_join(git_root, ".git")
-    local stat = vim.loop.fs_stat(git_folder)
-    if stat and stat.type == "directory" then
-      return git_folder, git_root
+local get_dot_git_folder = function(path, callback)
+  if type(callback) == "function" then
+    git.get_repository_root(path, function(git_root)
+      if git_root then
+        local git_folder = utils.path_join(git_root, ".git")
+        local stat = vim.loop.fs_stat(git_folder)
+        if stat and stat.type == "directory" then
+          callback(git_folder, git_root)
+        end
+      else
+        callback(nil, nil)
+      end
+    end)
+  else
+    local git_root = git.get_repository_root(path)
+    if git_root then
+      local git_folder = utils.path_join(git_root, ".git")
+      local stat = vim.loop.fs_stat(git_folder)
+      if stat and stat.type == "directory" then
+        return git_folder, git_root
+      end
     end
+    return nil, nil
   end
-  return nil, nil
 end
 
 M.show_watched = function()
@@ -76,25 +90,32 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
   h.references = h.references + 1
 end
 
-M.watch_git_index = function(path)
-  local git_folder, git_root = get_dot_git_folder(path)
-  if git_folder then
-    local git_event_callback = vim.schedule_wrap(function(err, fname)
-      if fname and fname:match("^.+%.lock$") then
-        return
-      end
-      if fname and fname:match("^%._null-ls_.+") then
-        -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
-        return
-      end
-      if err then
-        log.error("git_event_callback: ", err)
-        return
-      end
-      events.fire_event(events.GIT_EVENT, { path = fname, repository = git_root })
-    end)
+M.watch_git_index = function(path, async)
+  local function watch_git_folder(git_folder, git_root)
+    if git_folder then
+      local git_event_callback = vim.schedule_wrap(function(err, fname)
+        if fname and fname:match("^.+%.lock$") then
+          return
+        end
+        if fname and fname:match("^%._null-ls_.+") then
+          -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
+          return
+        end
+        if err then
+          log.error("git_event_callback: ", err)
+          return
+        end
+        events.fire_event(events.GIT_EVENT, { path = fname, repository = git_root })
+      end)
 
-    M.watch_folder(git_folder, git_event_callback, true)
+      M.watch_folder(git_folder, git_event_callback, true)
+    end
+  end
+
+  if async then
+    get_dot_git_folder(path, watch_git_folder)
+  else
+    watch_git_folder(get_dot_git_folder(path))
   end
 end
 
@@ -129,10 +150,17 @@ M.unwatch_folder = function(path, callback_id)
   end
 end
 
-M.unwatch_git_index = function(path)
-  local git_folder = get_dot_git_folder(path)
-  if git_folder then
-    M.unwatch_folder(git_folder)
+M.unwatch_git_index = function(path, async)
+  local function unwatch_git_folder(git_folder, _)
+    if git_folder then
+      M.unwatch_folder(git_folder)
+    end
+  end
+
+  if async then
+    get_dot_git_folder(path, unwatch_git_folder)
+  else
+    unwatch_git_folder(get_dot_git_folder(path))
   end
 end
 
