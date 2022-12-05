@@ -424,7 +424,7 @@ You probably want #2:
 <
 ..or
 >
-   local print_me = functions(state)
+   local print_me = function(state)
      local node = state.tree:get_node()
      print(node.name)
    end
@@ -445,7 +445,7 @@ You probably want #2:
    require("neo-tree").setup({
      filesystem = {
        commands = {
-         print_me = functions(state)
+         print_me = function(state)
            local node = state.tree:get_node()
            print(node.name)
          end
