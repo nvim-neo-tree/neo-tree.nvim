@@ -45,7 +45,7 @@ end
 ---@param new_buf number
 local function replace_buffer_in_windows(old_buf, new_buf)
   for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == old_buf then
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == old_buf then
       vim.api.nvim_win_set_buf(win, new_buf)
     end
   end
