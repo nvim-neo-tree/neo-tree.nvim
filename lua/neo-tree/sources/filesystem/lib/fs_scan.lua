@@ -82,7 +82,7 @@ local render_context = function(context)
     if root.is_link then
       path = root.link_to
     end
-    fs_watch.watch_git_index(path)
+    fs_watch.watch_git_index(path, require("neo-tree").config.git_status_async)
   end
   fs_watch.updated_watched()
 
@@ -365,7 +365,7 @@ M.stop_watchers = function(state)
     local loaded_folders = renderer.select_nodes(state.tree, function(node)
       return node.type == "directory" and node.loaded
     end)
-    fs_watch.unwatch_git_index(state.path)
+    fs_watch.unwatch_git_index(state.path, require("neo-tree").config.git_status_async)
     for _, folder in ipairs(loaded_folders) do
       log.trace("Unwatching folder ", folder.path)
       if folder.is_link then
