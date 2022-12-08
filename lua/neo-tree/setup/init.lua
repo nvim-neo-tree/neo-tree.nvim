@@ -123,7 +123,7 @@ M.buffer_enter_event = function()
   end
   if vim.bo.filetype == "neo-tree-popup" then
     vim.cmd([[
-    setlocal winhighlight=Normal:NeoTreeNormal,FloatBorder:NeoTreeFloatBorder
+    setlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
     setlocal nolist nospell nonumber norelativenumber
     ]])
     events.fire_event(events.NEO_TREE_POPUP_BUFFER_ENTER)

@@ -68,6 +68,10 @@ local function create_floating_preview_window(state)
     },
     win_options = {
       number = true,
+      winhighlight = "Normal:"
+        .. highlights.FLOAT_NORMAL
+        .. ",FloatBorder:"
+        .. highlights.FLOAT_BORDER,
     },
   })
   options.zindex = 40
