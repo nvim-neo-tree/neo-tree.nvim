@@ -138,40 +138,38 @@ M.find_files = function(opts)
   end
   local item_count = 0
   local over_limit = false
-  Job
-    :new({
-      command = cmd,
-      cwd = path,
-      args = args,
-      enable_recording = false,
-      on_stdout = function(err, line)
-        if not over_limit then
-          if opts.on_insert then
-            opts.on_insert(err, line)
+  Job:new({
+    command = cmd,
+    cwd = path,
+    args = args,
+    enable_recording = false,
+    on_stdout = function(err, line)
+      if not over_limit then
+        if opts.on_insert then
+          opts.on_insert(err, line)
+        end
+        item_count = item_count + 1
+        over_limit = maximum_results and item_count > maximum_results
+      end
+    end,
+    on_stderr = function(err, line)
+      if not over_limit then
+        if opts.on_insert then
+          if not err then
+            err = line
           end
-          item_count = item_count + 1
-          over_limit = maximum_results and item_count > maximum_results
+          opts.on_insert(err, line)
         end
-      end,
-      on_stderr = function(err, line)
-        if not over_limit then
-          if opts.on_insert then
-            if not err then
-              err = line
-            end
-            opts.on_insert(err, line)
-          end
-          item_count = item_count + 1
-          over_limit = maximum_results and item_count > maximum_results
-        end
-      end,
-      on_exit = function(_, return_val)
-        if opts.on_exit then
-          opts.on_exit(return_val)
-        end
-      end,
-    })
-    :start()
+        item_count = item_count + 1
+        over_limit = maximum_results and item_count > maximum_results
+      end
+    end,
+    on_exit = function(_, return_val)
+      if opts.on_exit then
+        opts.on_exit(return_val)
+      end
+    end,
+  }):start()
 end
 
 return M
