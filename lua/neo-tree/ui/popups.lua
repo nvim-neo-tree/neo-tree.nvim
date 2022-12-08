@@ -36,7 +36,10 @@ M.popup_options = function(title, min_width, override_options)
       highlight = highlights.FLOAT_BORDER,
     },
     win_options = {
-      winhighlight = "Normal:Normal,FloatBorder:" .. highlights.FLOAT_BORDER,
+      winhighlight = "Normal:"
+        .. highlights.FLOAT_NORMAL
+        .. ",FloatBorder:"
+        .. highlights.FLOAT_BORDER,
     },
     buf_options = {
       bufhidden = "delete",

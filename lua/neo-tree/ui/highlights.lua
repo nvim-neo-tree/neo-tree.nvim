@@ -19,6 +19,7 @@ M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
+M.FLOAT_NORMAL = "NeoTreeFloatNormal"
 M.FLOAT_TITLE = "NeoTreeFloatTitle"
 M.GIT_ADDED = "NeoTreeGitAdded"
 M.GIT_CONFLICT = "NeoTreeGitConflict"
@@ -218,6 +219,8 @@ M.setup = function()
 
   local float_border_hl =
     M.create_highlight_group(M.FLOAT_BORDER, { "FloatBorder" }, normalnc_hl.background, "444444")
+
+  M.create_highlight_group(M.FLOAT_NORMAL, { "NormalFloat", M.NORMAL })
 
   M.create_highlight_group(M.FLOAT_TITLE, {}, float_border_hl.background, normal_hl.foreground)
 
