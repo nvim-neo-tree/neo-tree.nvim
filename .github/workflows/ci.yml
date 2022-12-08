@@ -5,6 +5,7 @@ on:
     - main
     - v1.x
     - v2.x
+    - v3.x
   pull_request:
     branches:
     - main
@@ -16,11 +17,11 @@ jobs:
     - uses: actions/checkout@v1
 
     - name: Check formatting
-      uses: JohnnyMorganz/stylua-action@1.0.0
+      uses: JohnnyMorganz/stylua-action@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        version: v0.13.1
-        args: --color always --check lua/
+        version: v0.15.2
+        args: --color always --check -g '!**/defaults.lua' lua/
 
   plenary-tests:
     runs-on: ubuntu-20.04
@@ -54,6 +55,7 @@ jobs:
         with:
           path: ~/.local/share/luver
           key: ${{ steps.luver-cache-key.outputs.value }}
+
       - name: Setup Lua
         uses: MunifTanjim/luver-action@v1
         with:
