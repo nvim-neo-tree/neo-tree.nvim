@@ -227,11 +227,8 @@ M.get = function()
     return
   else
     local config = require("neo-tree").config
-    local scrolled_off = utils.resolve_config_option(
-      config,
-      "source_selector.show_scrolled_off_parent_node",
-      false
-    )
+    local scrolled_off =
+      utils.resolve_config_option(config, "source_selector.show_scrolled_off_parent_node", false)
     if scrolled_off then
       local node_text = M.get_scrolled_off_node_text(state)
       if node_text ~= nil then

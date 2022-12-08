@@ -284,13 +284,8 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data, wanted_width = pcall(
-      component_func,
-      component,
-      item,
-      state,
-      remaining_width
-    )
+    local success, component_data, wanted_width =
+      pcall(component_func, component, item, state, remaining_width)
     if success then
       if component_data == nil then
         return { {} }
@@ -361,12 +356,8 @@ local prepare_node = function(item, state)
       remaining_cols = math.min(remaining_cols, longest + 4)
     end
     for _, component in ipairs(renderer) do
-      local component_data, component_wanted_width = M.render_component(
-        component,
-        item,
-        state,
-        remaining_cols
-      )
+      local component_data, component_wanted_width =
+        M.render_component(component, item, state, remaining_cols)
       local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
