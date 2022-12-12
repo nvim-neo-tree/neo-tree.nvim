@@ -70,11 +70,25 @@ end
 function Queue:for_each(func)
   local node = self._list.head
   while node ~= nil do
-    local remove_node = func(node.value)
-    if remove_node then
-      local node_to_remove = node
+    local result = func(node.value)
+    if result then
+      if type(result) == "boolean" then
+        local node_to_remove = node
+        node = node.next
+        self._list:remove_node(node_to_remove)
+      elseif type(result) == "table" then
+        if type(result.handled) == "boolean" and result.handled == true then
+          log.trace(
+            "Handler ",
+            node.value.id,
+            " for "
+            .. node.value.event
+            .. " returned handled = true, skipping the rest of the queue."
+          )
+          return result
+        end
+      end
       node = node.next
-      self._list:remove_node(node_to_remove)
     else
       node = node.next
     end
@@ -176,34 +190,22 @@ local fire_event_internal = function(event, args)
     end
   end
 
-  queue:for_each(function(event_handler)
+  return queue:for_each(function(event_handler)
     local remove_node = event_handler == nil or event_handler.cancelled
     if not remove_node then
       local success, result = pcall(event_handler.handler, args)
       local id = event_handler.id or event_handler
       if success then
         log.trace("Handler ", id, " for " .. event .. " called successfully.")
-        if
-          type(result) == "table"
-          and type(result.handled) == "boolean"
-          and result.handled == true
-        then
-          log.trace(
-            "Handler ",
-            id,
-            " for " .. event .. " returned handled = true, skipping the rest of the queue."
-          )
-          return result
-        end
       else
         log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
       end
       if event_handler.once then
         event_handler.cancelled = true
-        remove_node = true
+        return true
       end
+      return result
     end
-    return remove_node
   end)
 end
 
