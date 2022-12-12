@@ -36,7 +36,7 @@ local start_resize_monitor = function()
   check_window_size = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
-      if state.win_width and M.window_exists(state) then
+      if state.win_width and M.tree_is_visible(state) then
         windows_exist = true
         local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
@@ -245,10 +245,10 @@ create_nodes = function(source_items, state, level)
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
         name = "(forced to show "
-          .. #hidden
-          .. " hidden "
-          .. (#hidden > 1 and "items" or "item")
-          .. ")",
+            .. #hidden
+            .. " hidden "
+            .. (#hidden > 1 and "items" or "item")
+            .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -285,7 +285,7 @@ M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
     local success, component_data, wanted_width =
-      pcall(component_func, component, item, state, remaining_width)
+    pcall(component_func, component, item, state, remaining_width)
     if success then
       if component_data == nil then
         return { {} }
@@ -325,11 +325,10 @@ local prepare_node = function(item, state)
     local line = item.line
     -- Only use it once, we don't want to accidentally use stale data
     item.line = nil
-    if
-      line
-      and item.wanted_width
-      and state.longest_node
-      and item.wanted_width <= state.longest_node
+    if line
+        and item.wanted_width
+        and state.longest_node
+        and item.wanted_width <= state.longest_node
     then
       return line
     end
@@ -357,7 +356,7 @@ local prepare_node = function(item, state)
     end
     for _, component in ipairs(renderer) do
       local component_data, component_wanted_width =
-        M.render_component(component, item, state, remaining_cols)
+      M.render_component(component, item, state, remaining_cols)
       local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
@@ -543,6 +542,9 @@ M.collapse_all_nodes = function(tree)
 end
 
 M.expand_to_node = function(state, node)
+  if not M.tree_is_visible(state) then
+    return
+  end
   local tree = state.tree
   if type(node) == "string" then
     node = tree:get_node(node)
@@ -596,7 +598,7 @@ M.position = {
 ---Redraw the tree without relaoding from the source.
 ---@param state table State of the tree.
 M.redraw = function(state)
-  if state.tree and M.window_exists(state) then
+  if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
     render_tree(state)
     log.trace("  Redrawing tree done", state.name, state.id)
@@ -937,8 +939,8 @@ M.window_exists = function(state)
     window_exists = false
   elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
-      and vim.api.nvim_buf_is_valid(bufnr)
-      and vim.api.nvim_win_get_buf(winid) == bufnr
+        and vim.api.nvim_buf_is_valid(bufnr)
+        and vim.api.nvim_win_get_buf(winid) == bufnr
   else
     local isvalid = M.is_window_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
@@ -958,12 +960,19 @@ M.window_exists = function(state)
   return window_exists
 end
 
+---Determines if a specific tree is open.
+---@param state table The current state of the plugin.
+---@return boolean
+M.tree_is_visible = function(state)
+  return M.window_exists(state) and vim.api.nvim_win_get_buf(state.winid) == state.bufnr
+end
+
 ---Renders the given tree and expands window width if needed
 --@param state table The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
-  if should_pre_render then
+  if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
     state._in_pre_render = true
     state.tree:render()
@@ -975,7 +984,9 @@ render_tree = function(state)
       state.win_width = state.longest_node
     end
   end
-  state.tree:render()
+  if M.tree_is_visible(state) then
+    state.tree:render()
+  end
 end
 
 ---Draws the given nodes on the screen.
