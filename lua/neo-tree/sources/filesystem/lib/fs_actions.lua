@@ -24,7 +24,7 @@ local function clear_buffer(path)
   local alt = vim.fn.bufnr("#")
   -- Check all windows to see if they are using the buffer
   for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
       -- if there is no alternate buffer yet, create a blank one now
       if alt < 1 or alt == buf then
         alt = vim.api.nvim_create_buf(true, false)
