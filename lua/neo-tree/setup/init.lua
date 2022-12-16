@@ -105,6 +105,7 @@ M.buffer_enter_event = function()
     end
     vim.cmd([[
     setlocal cursorline
+    setlocal cursorlineopt=line
     setlocal nowrap
     setlocal nolist nospell nonumber norelativenumber
     ]])
