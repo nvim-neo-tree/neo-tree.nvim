@@ -157,25 +157,36 @@ M.move_node = function(source, destination, callback, using_root_directory)
   )
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
-    create_all_parents(dest)
-    loop.fs_rename(source, dest, function(err)
-      if err then
-        log.error("Could not move the files from", source, "to", dest, ":", err)
-        return
-      end
-      vim.schedule(function()
-        rename_buffer(source, dest)
-      end)
-      vim.schedule(function()
-        events.fire_event(events.FILE_MOVED, {
-          source = source,
-          destination = dest,
-        })
-        if callback then
-          callback(source, dest)
+    local function move_file()
+      create_all_parents(dest)
+      loop.fs_rename(source, dest, function(err)
+        if err then
+          log.error("Could not move the files from", source, "to", dest, ":", err)
+          return
         end
+        vim.schedule(function()
+          rename_buffer(source, dest)
+        end)
+        vim.schedule(function()
+          events.fire_event(events.FILE_MOVED, {
+            source = source,
+            destination = dest,
+          })
+          if callback then
+            callback(source, dest)
+          end
+        end)
       end)
-    end)
+    end
+    local event_result = events.fire_event(events.BEFORE_FILE_MOVE, {
+      source = source,
+      destination = dest,
+      callback = move_file,
+    }) or {}
+    if event_result.handled then
+      return
+    end
+    move_file()
   end, 'Move "' .. name .. '" to:')
 end
 
@@ -530,14 +541,26 @@ M.rename_node = function(path, callback)
       log.info("Renamed " .. new_name .. " successfully")
     end)
 
-    loop.fs_rename(path, destination, function(err)
-      if err then
-        log.warn("Could not rename the files")
-        return
-      else
-        complete()
-      end
-    end)
+    local function fs_rename()
+      loop.fs_rename(path, destination, function(err)
+        if err then
+          log.warn("Could not rename the files")
+          return
+        else
+          complete()
+        end
+      end)
+    end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_RENAME, {
+      source = path,
+      destination = destination,
+      callback = fs_rename,
+    }) or {}
+    if event_result.handled then
+      return
+    end
+    fs_rename()
   end)
 end
 
