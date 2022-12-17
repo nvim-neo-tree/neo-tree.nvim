@@ -276,31 +276,33 @@ M.create_directory = function(in_directory, callback, using_root_directory)
     using_root_directory = false
   end
 
-  inputs.input("Enter name for new directory:", base, function(destination)
-    if not destination or destination == base then
-      return
-    end
-
-    if using_root_directory then
-      destination = utils.path_join(using_root_directory, destination)
-    else
-      destination = vim.fn.fnamemodify(destination, ":p")
-    end
-
-    if loop.fs_stat(destination) then
-      log.warn("Directory already exists")
-      return
-    end
-
-    create_all_parents(destination)
-    loop.fs_mkdir(destination, 493)
-
-    vim.schedule(function()
-      events.fire_event(events.FILE_ADDED, destination)
-      if callback then
-        callback(destination)
+  inputs.input("Enter name for new directory:", base, function(destinations)
+    for _, destination in ipairs(utils.brace_expand(destinations)) do
+      if not destination or destination == base then
+        return
       end
-    end)
+
+      if using_root_directory then
+        destination = utils.path_join(using_root_directory, destination)
+      else
+        destination = vim.fn.fnamemodify(destination, ":p")
+      end
+
+      if loop.fs_stat(destination) then
+        log.warn("Directory already exists")
+        return
+      end
+
+      create_all_parents(destination)
+      loop.fs_mkdir(destination, 493)
+
+      vim.schedule(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
+    end
   end)
 end
 
@@ -323,43 +325,45 @@ M.create_node = function(in_directory, callback, using_root_directory)
   inputs.input(
     'Enter name for new file or directory (dirs end with a "/"):',
     base,
-    function(destination)
-      if not destination or destination == base then
-        return
-      end
-      local is_dir = vim.endswith(destination, "/")
-
-      if using_root_directory then
-        destination = utils.path_join(using_root_directory, destination)
-      else
-        destination = vim.fn.fnamemodify(destination, ":p")
-      end
-
-      if loop.fs_stat(destination) then
-        log.warn("File already exists")
-        return
-      end
-
-      create_all_parents(destination)
-      if is_dir then
-        loop.fs_mkdir(destination, 493)
-      else
-        local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
-        local fd = loop.fs_open(destination, "w", open_mode)
-        if not fd then
-          api.nvim_err_writeln("Could not create file " .. destination)
+    function(destinations)
+      for _, destination in ipairs(utils.brace_expand(destinations)) do
+        if not destination or destination == base then
           return
         end
-        loop.fs_chmod(destination, 420)
-        loop.fs_close(fd)
-      end
+        local is_dir = vim.endswith(destination, "/")
 
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
+        if using_root_directory then
+          destination = utils.path_join(using_root_directory, destination)
+        else
+          destination = vim.fn.fnamemodify(destination, ":p")
         end
-      end)
+
+        if loop.fs_stat(destination) then
+          log.warn("File already exists")
+          return
+        end
+
+        create_all_parents(destination)
+        if is_dir then
+          loop.fs_mkdir(destination, 493)
+        else
+          local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
+          local fd = loop.fs_open(destination, "w", open_mode)
+          if not fd then
+            api.nvim_err_writeln("Could not create file " .. destination)
+            return
+          end
+          loop.fs_chmod(destination, 420)
+          loop.fs_close(fd)
+        end
+
+        vim.schedule(function()
+          events.fire_event(events.FILE_ADDED, destination)
+          if callback then
+            callback(destination)
+          end
+        end)
+      end
     end
   )
 end
