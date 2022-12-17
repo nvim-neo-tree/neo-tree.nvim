@@ -414,4 +414,15 @@ M.indent = function(config, node, state)
   return indent
 end
 
+M.symlink_target = function(config, node, state)
+  if node.is_link then
+    return {
+      text = string.format(" ➛ %s", node.link_to),
+      highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
+    }
+  else
+    return {}
+  end
+end
+
 return M
