@@ -111,7 +111,7 @@ M.buffer_enter_event = function()
     ]])
 
     local winhighlight =
-      "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
+    "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
     if vim.version().minor >= 7 then
       vim.cmd("setlocal winhighlight=" .. winhighlight .. ",WinSeparator:NeoTreeWinSeparator")
     else
@@ -208,7 +208,7 @@ M.win_enter_event = function()
   end
 
   -- if the new win is not a floating window, make sure all neo-tree floats are closed
-  require("neo-tree").close_all("float")
+  manager.close_all("float")
 
   if M.config.close_if_last_window then
     local tabnr = vim.api.nvim_get_current_tabpage()
@@ -487,10 +487,10 @@ M.merge_config = function(user_config, is_auto_config)
   for source_name, mod_root in pairs(all_sources) do
     local module = require(mod_root)
     default_config[source_name] = default_config[source_name]
-      or {
-        renderers = {},
-        components = {},
-      }
+        or {
+          renderers = {},
+          components = {},
+        }
     local source_default_config = default_config[source_name]
     source_default_config.components = module.components or require(mod_root .. ".components")
     source_default_config.commands = module.commands or require(mod_root .. ".commands")
