@@ -243,9 +243,21 @@ a    = add:                  Create a new file OR directory. Add a `/` to the
                              `"absolute"`: is the full path to the current
                                          directory.
 
+                             The file path also supports BASH style brace
+                             expansion. sequence style ("{00..05..2}") as well
+                             as nested braces. Here are some examples how this
+                             expansion works.
+
+                             "x{a..e..2}"           : "xa", "xc", "xe"
+                             "file.txt{,.bak}"      : "file.txt", "file.txt.bak"
+                             "./{a,b}/{00..02}.lua" : "./a/00.lua", "./a/01.lua",
+                                                      "./a/02.lua", "./b/00.lua",
+                                                      "./b/01.lua", "./b/02.lua"
+
 A    = add_directory:        Create a new directory, in this mode it does not
-                             need to end with a `/`. Also accepts
-                             `config.show_path` options
+                             need to end with a `/`. The path also supports
+                             BASH style brace expansion as explained in `add`
+                             command. Also accepts `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
