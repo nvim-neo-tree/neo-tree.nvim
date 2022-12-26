@@ -823,4 +823,161 @@ M.unique = function(list)
   return result
 end
 
+---Splits string by sep on first occurrence. brace_expand_split("a,b,c", ",") -> { "a", "b,c" }. nil if separator not found.
+---@param s string: input string
+---@param separator string: separator
+---@return string, string | nil
+local brace_expand_split = function(s, separator)
+  local pos = 1
+  local depth = 0
+  while pos <= s:len() do
+    local c = s:sub(pos, pos)
+    if c == '\\' then
+      pos = pos + 1
+    elseif c == separator and depth == 0 then
+      return s:sub(1, pos - 1), s:sub(pos + 1)
+    elseif c == '{' then
+      depth = depth + 1
+    elseif c == '}' then
+      if depth > 0 then
+        depth = depth - 1
+      end
+    end
+    pos = pos + 1
+  end
+  return s, nil
+end
+
+---Perform brace expansion on a string and return the sequence of the results
+---@param s string?: input string which is inside braces, if nil return { "" }
+---@return string[] | nil: list of strings each representing the individual expanded strings
+local brace_expand_contents = function(s)
+  if s == nil then -- no closing brace "}"
+    return { "" }
+  elseif s == "" then -- brace with no content "{}"
+    return { "{}" }
+  end
+
+  ---Generate a sequence from from..to..step and apply `func`
+  ---@param from string | number: initial value
+  ---@param to string | number: end value
+  ---@param step string | number: step value
+  ---@param func fun(i: number): string | nil function(string | number) -> string | nil: function applied to all values in sequence. if return is nil, the value will be ignored.
+  ---@return string[]: generated string list
+  ---@private
+  local function resolve_sequence(from, to, step, func)
+    local f, t = tonumber(from), tonumber(to)
+    local st = (t < f and -1 or 1) * math.abs(tonumber(step) or 1) -- reverse (negative) step if t < f
+    ---@type string[]
+    local items = {}
+    for i = f, t, st do
+      local r = func(i)
+      if r ~= nil then
+        table.insert(items, r)
+      end
+    end
+    return items
+  end
+
+  ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
+  ---@param pattern string: regex to match on `s`
+  ---@param resolve_func fun(from: string, to: string, step: string): string[]
+  ---@return string[] | nil: expanded sequence or nil if failed
+  local function try_sequence_on_pattern(pattern, resolve_func)
+    local from, to, step = string.match(s, pattern)
+    if from then
+      return resolve_func(from, to, step)
+    end
+    return nil
+  end
+
+  ---Process numeric sequence expression. e.g. {0..2} -> {0,1,2}, {01..05..2} -> {01,03,05}
+  local resolve_sequence_num = function(from, to, step)
+    local format = '%d'
+    -- Pad strings in the presence of a leading zero
+    local pattern = '^-?0%d'
+    if from:match(pattern) or to:match(pattern) then
+      format = '%0' .. math.max(#from, #to) .. 'd'
+    end
+    return resolve_sequence(from, to, step, function(i)
+      return string.format(format, i)
+    end)
+  end
+
+  ---Process alphabet sequence expression. e.g. {a..c} -> {a,b,c}, {a..e..2} -> {a,c,e}
+  local resolve_sequence_char = function(from, to, step)
+    return resolve_sequence(from:byte(), to:byte(), step, function(i)
+      return i ~= 92 and string.char(i) or nil -- 92 == '\\' is ignored in bash
+    end)
+  end
+
+  local check_list = {
+    { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
+    { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
+    { [=[^(%a)%.%.(%a)%.%.(-?%d+)$]=], resolve_sequence_char },
+    { [=[^(%a)%.%.(%a)$]=], resolve_sequence_char },
+  }
+  for _, list in ipairs(check_list) do
+    local regex, func = table.unpack(list)
+    local sequence = try_sequence_on_pattern(regex, func)
+    if sequence then
+      return sequence
+    end
+  end
+
+  -- Regular `,` separated expression. x{a,b,c} -> {xa,xb,xc}
+  local items, tmp_s = {}, nil
+  tmp_s = s
+  while tmp_s ~= nil do
+    items[#items + 1], tmp_s = brace_expand_split(tmp_s, ",")
+  end
+  if #items == 1 then -- Only one expansion found. Abort.
+    return nil
+  end
+  return vim.tbl_flatten(items)
+end
+
+---brace_expand:
+-- Perform a BASH style brace expansion to generate arbitrary strings.
+-- Especially useful for specifying structured file / dir names.
+-- USAGE:
+--   - `require("neo-tree.utils").brace_expand("x{a..e..2}")` -> `{ "xa", "xc", "xe" }`
+--   - `require("neo-tree.utils").brace_expand("file.txt{,.bak}")` -> `{ "file.txt", "file.txt.bak" }`
+--   - `require("neo-tree.utils").brace_expand("./{a,b}/{00..02}.lua")` -> `{ "./a/00.lua", "./a/01.lua", "./a/02.lua", "./b/00.lua", "./b/01.lua", "./b/02.lua" }`
+-- More examples for BASH style brace expansion can be found here: https://facelessuser.github.io/bracex/
+---@param s string: input string. e.g. {a..e..2} -> {a,c,e}, {00..05..2} -> {00,03,05}
+---@return string[]: result of expansion, array with at least one string (one means it failed to expand and the raw string is returned)
+M.brace_expand = function(s)
+  local preamble, postamble = brace_expand_split(s, '{')
+  if postamble == nil then
+    return { s }
+  end
+
+  local expr, postscript, contents = nil, nil, nil
+  postscript = postamble
+  while contents == nil do
+    local old_expr = expr
+    expr, postscript = brace_expand_split(postscript, '}')
+    if old_expr then
+      expr = old_expr .. '}' .. expr
+    end
+    if postscript == nil then -- No closing brace found, so we put back the unmatched '{'
+      preamble = preamble .. '{'
+      expr, postscript = nil, postamble
+    end
+    contents = brace_expand_contents(expr)
+  end
+
+  -- Concat everything. Pass postscript recursively.
+  ---@type string[]
+  local result = {}
+  for _, item in ipairs(contents) do
+    for _, suffix in ipairs(M.brace_expand(postscript)) do
+      result[#result + 1] = table.concat({ preamble, item, suffix })
+    end
+  end
+  return result
+end
+
+
 return M
