@@ -19,12 +19,20 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   local winid = vim.api.nvim_get_current_win()
   local height = vim.api.nvim_win_get_height(winid)
   local scroll_padding = 3
+  local popup_msg = "Search:"
+  if search_as_you_type then
+    if fuzzy_finder_mode == "directory" then
+      popup_msg = "Filter Directories:"
+    else
+      popup_msg = "Filter:"
+    end
+  end
   if state.current_position == "float" then
     scroll_padding = 0
     local width = vim.fn.winwidth(winid)
     local row = height - 2
     vim.api.nvim_win_set_height(winid, row)
-    popup_options = popups.popup_options("Enter Filter Pattern:", width, {
+    popup_options = popups.popup_options(popup_msg, width, {
       relative = "win",
       winid = winid,
       position = {
@@ -36,7 +44,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   else
     local width = vim.fn.winwidth(0) - 2
     local row = height - 3
-    popup_options = popups.popup_options("Enter Filter Pattern:", width, {
+    popup_options = popups.popup_options(popup_msg, width, {
       relative = "win",
       winid = winid,
       position = {
