@@ -393,7 +393,7 @@ Preview.toggle = function(state)
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
-        if not toggle_state then
+        if not toggle_state or vim.api.nvim_get_current_win() == instance.winid then
           return
         end
         if vim.api.nvim_get_current_win() == winid then
@@ -407,6 +407,12 @@ Preview.toggle = function(state)
       id = "preview-event",
     }
     instance:subscribe(source_name, preview_event)
+  end
+end
+
+Preview.focus = function()
+  if Preview.is_active() then
+    vim.fn.win_gotoid(instance.winid)
   end
 end
 

@@ -195,6 +195,8 @@ z         = close_all_nodes: Close all nodes in the tree.
 
 P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
 
+gp         = focus_preview: Focuses active preview window
+
 <esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
                              any preview windows to what was being shown before
                              preview mode began.
