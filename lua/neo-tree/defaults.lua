@@ -312,7 +312,7 @@ local config = {
       ["<cr>"] = "open",
       ["<esc>"] = "revert_preview",
       ["P"] = { "toggle_preview", config = { use_float = true } },
-      ["gp"] = "focus_preview",
+      ["l"] = "focus_preview",
       ["S"] = "open_split",
       -- ["S"] = "split_with_window_picker",
       ["s"] = "open_vsplit",
