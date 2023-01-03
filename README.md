@@ -546,7 +546,7 @@ You can enable a clickable source selector in either the winbar (requires neovim
 To do so, set one of these options to `true`:
 
 ```lua
-    requires("neo-tree").setup({
+    require("neo-tree").setup({
         source_selector = {
             winbar = false,
             statusline = false
