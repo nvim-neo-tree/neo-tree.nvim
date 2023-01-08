@@ -487,6 +487,10 @@ M.toggle_preview = function(state)
   Preview.toggle(state)
 end
 
+M.focus_preview = function()
+  Preview.focus()
+end
+
 ---Open file or directory
 ---@param state table The state of the source
 ---@param open_cmd string The vim command to use to open the file
