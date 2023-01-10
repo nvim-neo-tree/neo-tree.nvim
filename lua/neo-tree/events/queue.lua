@@ -71,10 +71,12 @@ function Queue:for_each(func)
   local node = self._list.head
   while node ~= nil do
     local result = func(node.value)
+    local node_is_next = false
     if result then
       if type(result) == "boolean" then
         local node_to_remove = node
         node = node.next
+        node_is_next = true
         self._list:remove_node(node_to_remove)
       elseif type(result) == "table" then
         if type(result.handled) == "boolean" and result.handled == true then
@@ -88,8 +90,8 @@ function Queue:for_each(func)
           return result
         end
       end
-      node = node.next
-    else
+    end
+    if not node_is_next then
       node = node.next
     end
   end
