@@ -1074,6 +1074,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
   --utils.debounce(id, function()
   events.fire_event(events.BEFORE_RENDER, state)
+  local is_empty_with_hidden_root = false
   state.longest_width_exact = 0
   local parent
   local level = 0
@@ -1092,6 +1093,11 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   if config.hide_root_node then
     if not parentId then
       sourceItems[1].skip_node = true
+      if sourceItems[1].children and #sourceItems[1].children > 0 then
+        is_empty_with_hidden_root = false
+      else
+        is_empty_with_hidden_root = true
+      end
     end
     if not config.retain_hidden_root_indent then
       level = level - 1
@@ -1150,6 +1156,17 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   if sourceItems then
     -- normal path
     local nodes = create_nodes(sourceItems, state, level)
+    if is_empty_with_hidden_root then
+      local nodeData = {
+        id = state.path .. "_empty_message",
+        name = "(empty folder)",
+        type = "message",
+        level = 0,
+        is_last_child = true,
+      }
+      local node = NuiTree.Node(nodeData, {})
+      table.insert(nodes, node)
+    end
     draw(nodes, state, parentId)
   else
     -- this was a force grouping of a lazy loaded folder
