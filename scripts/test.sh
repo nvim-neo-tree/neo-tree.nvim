@@ -78,8 +78,8 @@ function luacov_end() {
 
 setup_environment
 
-luacov_start
+#luacov_start
 
 make test
 
-luacov_end
+#luacov_end
