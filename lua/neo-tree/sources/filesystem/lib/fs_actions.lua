@@ -277,6 +277,10 @@ M.create_directory = function(in_directory, callback, using_root_directory)
   end
 
   inputs.input("Enter name for new directory:", base, function(destinations)
+    if not destinations then
+      return
+    end
+
     for _, destination in ipairs(utils.brace_expand(destinations)) do
       if not destination or destination == base then
         return
@@ -326,6 +330,10 @@ M.create_node = function(in_directory, callback, using_root_directory)
     'Enter name for new file or directory (dirs end with a "/"):',
     base,
     function(destinations)
+      if not destinations then
+        return
+      end
+
       for _, destination in ipairs(utils.brace_expand(destinations)) do
         if not destination or destination == base then
           return
