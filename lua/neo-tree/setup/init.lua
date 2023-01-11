@@ -95,6 +95,30 @@ local define_events = function()
   })
 end
 
+local prior_window_options = {}
+
+--- Store the current window options so we can restore them when we close the tree.
+--- @param winid number | nil The window id to store the options for, defaults to current window
+local store_local_window_settings = function(winid)
+  winid = winid or vim.api.nvim_get_current_win()
+  local neo_tree_settings_applied, _ =
+  pcall(vim.api.nvim_win_get_var, winid, "neo_tree_settings_applied")
+  if neo_tree_settings_applied then
+    -- don't store our own window settings
+    return
+  end
+  prior_window_options[tostring(winid)] = {
+    cursorline = vim.wo.cursorline,
+    cursorlineopt = vim.wo.cursorlineopt,
+    wrap = vim.wo.wrap,
+    list = vim.wo.list,
+    spell = vim.wo.spell,
+    number = vim.wo.number,
+    relativenumber = vim.wo.relativenumber,
+    winhighlight = vim.wo.winhighlight,
+  }
+end
+
 local last_buffer_enter_filetype = nil
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
@@ -102,6 +126,8 @@ M.buffer_enter_event = function()
     if last_buffer_enter_filetype == "neo-tree" then
       -- we've switched to another neo-tree window
       events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
+    else
+      store_local_window_settings()
     end
     vim.cmd([[
     setlocal cursorline
@@ -120,8 +146,10 @@ M.buffer_enter_event = function()
 
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
     last_buffer_enter_filetype = vim.bo.filetype
+    vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", true)
     return
   end
+
   if vim.bo.filetype == "neo-tree-popup" then
     vim.cmd([[
     setlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
@@ -156,15 +184,12 @@ M.buffer_enter_event = function()
   if prior_buf < 1 then
     return
   end
+  local winid = vim.api.nvim_get_current_win()
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
     local success, position = pcall(vim.api.nvim_buf_get_var, prior_buf, "neo_tree_position")
     if not success then
       -- just bail out now, the rest of these lookups will probably fail too.
-      return
-    end
-    if position == "current" then
-      -- nothing to do here, files are supposed to open in same window
       return
     end
 
@@ -178,6 +203,24 @@ M.buffer_enter_event = function()
     local current_winid = vim.api.nvim_get_current_win()
     if neo_tree_winid ~= current_winid then
       -- This is not the neo-tree window, so the alternate being neo-tree doesn't matter.
+      return
+    end
+
+    if position == "current" then
+      -- return local window settings to their prior values
+      local wo = prior_window_options[tostring(winid)]
+      if wo then
+        vim.wo.cursorline = wo.cursorline
+        vim.wo.cursorlineopt = wo.cursorlineopt
+        vim.wo.wrap = wo.wrap
+        vim.wo.list = wo.list
+        vim.wo.spell = wo.spell
+        vim.wo.number = wo.number
+        vim.wo.relativenumber = wo.relativenumber
+        vim.wo.winhighlight = wo.winhighlight
+        vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
+      end
+      -- nothing to do here, files are supposed to open in same window
       return
     end
 
