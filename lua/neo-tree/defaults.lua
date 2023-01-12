@@ -196,6 +196,7 @@ local config = {
       folder_closed = "",
       folder_open = "",
       folder_empty = "ﰊ",
+      folder_empty_open = "ﰊ",
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
       default = "*",
@@ -365,6 +366,8 @@ local config = {
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
                                    -- "always" means directory scans are always async.
                                    -- "never"  means directory scans are never async.
+    scan_mode = "shallow", -- "shallow": Don't scan into directories to detect possible empty directory a priori
+                           -- "deep": Scan into directories to detect empty or grouped empty directories a priori.
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
     cwd_target = {
       sidebar = "tab",   -- sidebar is when position = left or right
