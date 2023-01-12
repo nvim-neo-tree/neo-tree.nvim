@@ -15,14 +15,30 @@ local Preview = require("neo-tree.sources.common.preview")
 ---@param tree table to look for nodes
 ---@param node table to look for folder parent
 ---@return table table
-local function get_folder_node(tree, node)
+local function get_folder_node(state, node)
+  local tree = state.tree
   if not node then
     node = tree:get_node()
   end
+
+  local insert_as_local = state.config.insert_as
+  local insert_as_global = require("neo-tree").config.window.insert_as
+  local use_parent
+  if insert_as_local then
+    use_parent = insert_as_local == "sibling"
+  else
+    use_parent = insert_as_global == "sibling"
+  end
+
+  local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
+  if use_parent and not is_open_dir then
+    return tree:get_node(node:get_parent_id())
+  end
+
   if node.type == "directory" then
     return node
   end
-  return get_folder_node(tree, tree:get_node(node:get_parent_id()))
+  return get_folder_node(state, tree:get_node(node:get_parent_id()))
 end
 
 ---The using_root_directory is used to decide what part of the filename to show
@@ -31,7 +47,7 @@ end
 ---@return string The root path from which the relative source path should be taken
 local function get_using_root_directory(state)
   -- default to showing only the basename of the path
-  local using_root_directory = get_folder_node(state.tree):get_id()
+  local using_root_directory = get_folder_node(state):get_id()
   local show_path = state.config.show_path
   if show_path == "absolute" then
     using_root_directory = ""
@@ -65,8 +81,7 @@ end
 ---@param state table The state of the source
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add = function(state, callback)
-  local tree = state.tree
-  local node = get_folder_node(tree)
+  local node = get_folder_node(state)
   local in_directory = node:get_id()
   local using_root_directory = get_using_root_directory(state)
   fs_actions.create_node(in_directory, callback, using_root_directory)
@@ -76,8 +91,7 @@ end
 ---@param state table The state of the source
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add_directory = function(state, callback)
-  local tree = state.tree
-  local node = get_folder_node(tree)
+  local node = get_folder_node(state)
   local in_directory = node:get_id()
   local using_root_directory = get_using_root_directory(state)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
@@ -373,7 +387,7 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
   if state.clipboard then
-    local folder = get_folder_node(state.tree):get_id()
+    local folder = get_folder_node(state):get_id()
     -- Convert to list so to make it easier to pop items from the stack.
     local clipboard_list = {}
     for _, item in pairs(state.clipboard) do
@@ -384,8 +398,9 @@ M.paste_from_clipboard = function(state, callback)
 
     paste_complete = function(source, destination)
       if callback then
+        local insert_as = require("neo-tree").config.window.insert_as
         -- open the folder so the user can see the new files
-        local node = state.tree:get_node(folder)
+        local node = insert_as == "sibling" and state.tree:get_node() or state.tree:get_node(folder)
         if not node then
           log.warn("Could not find node for " .. folder)
         end
