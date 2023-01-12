@@ -119,6 +119,28 @@ local store_local_window_settings = function(winid)
   }
 end
 
+--- Restore the window options for the current window
+--- @param winid number | nil The window id to restore the options for, defaults to current window
+local restore_local_window_settings = function (winid)
+  winid = winid or vim.api.nvim_get_current_win()
+  -- return local window settings to their prior values
+  local wo = prior_window_options[tostring(winid)]
+  if wo then
+    vim.wo.cursorline = wo.cursorline
+    vim.wo.cursorlineopt = wo.cursorlineopt
+    vim.wo.wrap = wo.wrap
+    vim.wo.list = wo.list
+    vim.wo.spell = wo.spell
+    vim.wo.number = wo.number
+    vim.wo.relativenumber = wo.relativenumber
+    vim.wo.winhighlight = wo.winhighlight
+    log.info("Window settings restored")
+    vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
+  else
+    log.info("No window settings to restore")
+  end
+end
+
 local last_buffer_enter_filetype = nil
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
@@ -193,6 +215,11 @@ M.buffer_enter_event = function()
       return
     end
 
+    if position == "current" then
+      -- nothing to do here, files are supposed to open in same window
+      return
+    end
+
     local current_tabnr = vim.api.nvim_get_current_tabpage()
     local neo_tree_tabnr = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabnr")
     if neo_tree_tabnr ~= current_tabnr then
@@ -203,24 +230,6 @@ M.buffer_enter_event = function()
     local current_winid = vim.api.nvim_get_current_win()
     if neo_tree_winid ~= current_winid then
       -- This is not the neo-tree window, so the alternate being neo-tree doesn't matter.
-      return
-    end
-
-    if position == "current" then
-      -- return local window settings to their prior values
-      local wo = prior_window_options[tostring(winid)]
-      if wo then
-        vim.wo.cursorline = wo.cursorline
-        vim.wo.cursorlineopt = wo.cursorlineopt
-        vim.wo.wrap = wo.wrap
-        vim.wo.list = wo.list
-        vim.wo.spell = wo.spell
-        vim.wo.number = wo.number
-        vim.wo.relativenumber = wo.relativenumber
-        vim.wo.winhighlight = wo.winhighlight
-        vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
-      end
-      -- nothing to do here, files are supposed to open in same window
       return
     end
 
@@ -476,6 +485,24 @@ M.merge_config = function(user_config, is_auto_config)
   events.subscribe({
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
+  })
+
+  -- Setup autocmd for neo-tree BufLeave, to restore window settings.
+  -- This is set to happen just before leaving the window.
+  -- The patterns used should ensure it only runs in neo-tree windows where position = "current"
+  local augroup = vim.api.nvim_create_augroup("NeoTree_BufLeave", { clear = true })
+  local bufleave = function(data)
+    -- Vim patterns in autocmds are not quite precise enough
+    -- so we are doing a second stage filter in lua
+    local pattern = "neo%-tree [^ ]+ %[1%d%d%d%]"
+    if string.match(data.file, pattern) then
+      restore_local_window_settings()
+    end
+  end
+  vim.api.nvim_create_autocmd({"BufWinLeave"}, {
+    group = augroup,
+    pattern = "neo-tree *",
+    callback = bufleave,
   })
 
   if user_config.event_handlers ~= nil then
