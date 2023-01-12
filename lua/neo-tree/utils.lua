@@ -441,9 +441,13 @@ M.get_appropriate_window = function(state)
     end
   end
   local attempts = 0
-  while attempts < 5 and vim.bo.filetype == "neo-tree" do
-    attempts = attempts + 1
-    vim.cmd("wincmd w")
+  while attempts < 5 and not suitable_window_found do
+    if vim.bo.filetype == "neo-tree" or M.is_floating() then
+      attempts = attempts + 1
+      vim.cmd("wincmd w")
+    else
+      suitable_window_found = true
+    end
   end
 
   local winid = vim.api.nvim_get_current_win()
