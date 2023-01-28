@@ -55,6 +55,31 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     })
   end
 
+  local sort_by_score = function()
+    local config = require("neo-tree").config
+    state.normal_sort_function = config.sort_function
+    if config.sort_function ~= nil then
+      log.error(vim.inspect(debug.getinfo(config.sort_function)))
+    end
+    config.sort_function = function(a, b)
+      -- `state.fzy_sort_result_scores` should be defined in
+      -- `sources.filesystem.lib.filter_external.fzy_sort_files`
+      local result_scores = state.fzy_sort_result_scores or { foo = 0, baz = 0 }
+      local a_score = result_scores[a.path]
+      local b_score = result_scores[b.path]
+      if a_score == nil or b_score == nil then
+        log.error(string.format(
+          [[%s: %s, %s: %s]],
+          a.path, a_score,
+          b.path, b_score
+        ))
+        return nil
+      end
+      return a_score > b_score
+    end
+  end
+  sort_by_score()
+
   local select_first_file = function()
     local is_file = function(node)
       return node.type == "file"

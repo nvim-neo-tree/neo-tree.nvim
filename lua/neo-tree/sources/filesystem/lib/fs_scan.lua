@@ -391,27 +391,46 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
   state.default_expanded_nodes = state.force_open_folders or { state.path }
 
   if state.search_pattern then
-    -- Use the external command because the plenary search is slow
-    filter_external.find_files({
-      filtered_items = state.filtered_items,
-      find_command = state.find_command,
-      limit = state.search_limit or 50,
-      path = root.path,
-      term = state.search_pattern,
-      find_args = state.find_args,
-      find_by_full_path_words = state.find_by_full_path_words,
-      fuzzy_finder_mode = state.fuzzy_finder_mode,
-      on_insert = function(err, path)
-        if err then
-          log.debug(err)
-        else
-          file_items.create_item(context, path)
-        end
-      end,
-      on_exit = vim.schedule_wrap(function()
-        job_complete(context)
-      end),
-    })
+    if state.find_command == "fzy-lua" then
+      filter_external.fzy_sort_files({
+        path = root.path,
+        limit = state.search_limit or 50,
+        filtered_items = state.filtered_items,
+        term = state.search_pattern,
+        on_insert = function(err, path)
+          if err then
+            log.debug(err)
+          else
+            file_items.create_item(context, path)
+          end
+        end,
+        on_exit = vim.schedule_wrap(function()
+          job_complete(context)
+        end),
+      }, state)
+    else
+      -- Use the external command because the plenary search is slow
+      filter_external.find_files({
+        filtered_items = state.filtered_items,
+        find_command = state.find_command,
+        limit = state.search_limit or 50,
+        path = root.path,
+        term = state.search_pattern,
+        find_args = state.find_args,
+        find_by_full_path_words = state.find_by_full_path_words,
+        fuzzy_finder_mode = state.fuzzy_finder_mode,
+        on_insert = function(err, path)
+          if err then
+            log.debug(err)
+          else
+            file_items.create_item(context, path)
+          end
+        end,
+        on_exit = vim.schedule_wrap(function()
+          job_complete(context)
+        end),
+      })
+    end
   else
     -- In the case of a refresh or navigating up, we need to make sure that all
     -- open folders are loaded.

@@ -43,9 +43,63 @@ local get_find_command = function(state)
   return state.find_command
 end
 
-M.find_files = function(opts)
+M.fzy_sort_files = function(opts, state)
+  state = state or {}
   local filters = opts.filtered_items
   local limit = opts.limit or 200
+  local pwd = opts.path
+
+  require('plenary.scandir').scan_dir_async(pwd, {
+    hidden = filters.visible or not filters.hide_dotfiles,
+    respect_gitignore = filters.visible or not filters.hide_gitignored,
+    on_exit = function(results)
+      local terms = vim.tbl_filter(function(s)
+        return string.len(s) > 0
+      end, vim.split(opts.term, " ", { trimempty = true }))
+      local fzy = require("neo-tree.sources.filesystem.lib.filter_fzy")
+      local result_scores, result_counter = { foo = 0, baz = 0 }, 0
+      for _, path in ipairs(results) do
+        local total_score = 0
+        for _, term in ipairs(terms) do -- spaces in `opts.term` are treated as `and`
+          local score = fzy.score(term, path)
+          if score == fzy.get_score_min() then -- if any not found, end searching
+            total_score = 0
+            break
+          end
+          total_score = total_score + score
+        end
+        if total_score > 0 then
+          result_scores[path] = total_score
+          result_counter = result_counter + 1
+          local parent, _ = utils.split_path(path)
+          while parent ~= nil do -- back propagate the score to its ancesters
+            if total_score > (result_scores[parent] or 0) then
+              result_scores[parent] = total_score
+              parent, _ = utils.split_path(parent)
+            else
+              break
+            end
+          end
+          opts.on_insert(nil, path)
+        end
+        if result_counter >= limit then
+          break
+        end
+      end
+
+      if result_counter > 0 then
+        state.fzy_sort_result_scores = result_scores
+        log.debug("Fzy Sort: " .. vim.inspect(result_scores))
+      end
+
+      if opts.on_exit then
+        opts.on_exit(0)
+      end
+    end,
+  })
+end
+
+M.find_files = function(opts)
   local cmd = get_find_command(opts)
   local path = opts.path
   local full_path_words = opts.find_by_full_path_words
