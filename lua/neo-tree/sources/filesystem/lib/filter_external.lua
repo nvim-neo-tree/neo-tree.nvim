@@ -100,6 +100,8 @@ M.fzy_sort_files = function(opts, state)
 end
 
 M.find_files = function(opts)
+  local filters = opts.filtered_items
+  local limit = opts.limit or 200
   local cmd = get_find_command(opts)
   local path = opts.path
   local full_path_words = opts.find_by_full_path_words
