@@ -11,15 +11,16 @@ local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
 
----Gets the node parent folder recursively
+---Gets the node parent folder
 ---@param state table to look for nodes
 ---@return table table
 local function get_folder_node(state)
   local tree = state.tree
   local node = tree:get_node()
+  local last_id = node:get_id()
 
   -- arbitrary number to avoid infinite loop
-  for _ = 1, 256 do
+  while true do
     local insert_as_local = state.config.insert_as
     local insert_as_global = require("neo-tree").config.window.insert_as
     local use_parent
@@ -38,10 +39,14 @@ local function get_folder_node(state)
       return node
     end
 
-    node = tree:get_node(node:get_parent_id())
+    local parent_id = node:get_parent_id()
+    if parent_id or parent_id == last_id then
+      return node
+    else
+      last_id = parent_id
+      node = tree:get_node(parent_id)
+    end
   end
-
-  return node
 end
 
 ---The using_root_directory is used to decide what part of the filename to show
