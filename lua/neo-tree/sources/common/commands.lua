@@ -19,7 +19,6 @@ local function get_folder_node(state)
   local node = tree:get_node()
   local last_id = node:get_id()
 
-  -- arbitrary number to avoid infinite loop
   while true do
     local insert_as_local = state.config.insert_as
     local insert_as_global = require("neo-tree").config.window.insert_as
