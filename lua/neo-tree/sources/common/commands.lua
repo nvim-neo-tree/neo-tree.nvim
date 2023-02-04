@@ -13,13 +13,13 @@ local Preview = require("neo-tree.sources.common.preview")
 
 ---Gets the node parent folder
 ---@param state table to look for nodes
----@return table table
+---@return table? node
 local function get_folder_node(state)
   local tree = state.tree
   local node = tree:get_node()
   local last_id = node:get_id()
 
-  while true do
+  while node do
     local insert_as_local = state.config.insert_as
     local insert_as_global = require("neo-tree").config.window.insert_as
     local use_parent
