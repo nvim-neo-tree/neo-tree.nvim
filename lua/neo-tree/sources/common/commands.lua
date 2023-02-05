@@ -11,34 +11,41 @@ local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
 
----Gets the node parent folder recursively
----@param tree table to look for nodes
----@param node table to look for folder parent
----@return table table
-local function get_folder_node(state, node)
+---Gets the node parent folder
+---@param state table to look for nodes
+---@return table? node
+local function get_folder_node(state)
   local tree = state.tree
-  if not node then
-    node = tree:get_node()
-  end
+  local node = tree:get_node()
+  local last_id = node:get_id()
 
-  local insert_as_local = state.config.insert_as
-  local insert_as_global = require("neo-tree").config.window.insert_as
-  local use_parent
-  if insert_as_local then
-    use_parent = insert_as_local == "sibling"
-  else
-    use_parent = insert_as_global == "sibling"
-  end
+  while node do
+    local insert_as_local = state.config.insert_as
+    local insert_as_global = require("neo-tree").config.window.insert_as
+    local use_parent
+    if insert_as_local then
+      use_parent = insert_as_local == "sibling"
+    else
+      use_parent = insert_as_global == "sibling"
+    end
 
-  local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
-  if use_parent and not is_open_dir then
-    return tree:get_node(node:get_parent_id())
-  end
+    local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
+    if use_parent and not is_open_dir then
+      return tree:get_node(node:get_parent_id())
+    end
 
-  if node.type == "directory" then
-    return node
+    if node.type == "directory" then
+      return node
+    end
+
+    local parent_id = node:get_parent_id()
+    if parent_id or parent_id == last_id then
+      return node
+    else
+      last_id = parent_id
+      node = tree:get_node(parent_id)
+    end
   end
-  return get_folder_node(state, tree:get_node(node:get_parent_id()))
 end
 
 ---The using_root_directory is used to decide what part of the filename to show
