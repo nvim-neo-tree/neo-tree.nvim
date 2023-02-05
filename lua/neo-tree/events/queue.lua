@@ -84,8 +84,8 @@ function Queue:for_each(func)
             "Handler ",
             node.value.id,
             " for "
-            .. node.value.event
-            .. " returned handled = true, skipping the rest of the queue."
+              .. node.value.event
+              .. " returned handled = true, skipping the rest of the queue."
           )
           return result
         end

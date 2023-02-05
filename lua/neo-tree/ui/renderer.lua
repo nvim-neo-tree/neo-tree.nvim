@@ -246,10 +246,10 @@ create_nodes = function(source_items, state, level)
       local nodeData = {
         id = hidden[#hidden].id .. "_hidden_message",
         name = "(forced to show "
-            .. #hidden
-            .. " hidden "
-            .. (#hidden > 1 and "items" or "item")
-            .. ")",
+          .. #hidden
+          .. " hidden "
+          .. (#hidden > 1 and "items" or "item")
+          .. ")",
         type = "message",
         level = level,
         is_last_child = show_indent_marker_for_message,
@@ -286,7 +286,7 @@ M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
     local success, component_data, wanted_width =
-    pcall(component_func, component, item, state, remaining_width)
+      pcall(component_func, component, item, state, remaining_width)
     if success then
       if component_data == nil then
         return { {} }
@@ -332,10 +332,11 @@ local prepare_node = function(item, state)
     local line = item.line
     -- Only use it once, we don't want to accidentally use stale data
     item.line = nil
-    if line
-        and item.wanted_width
-        and state.longest_node
-        and item.wanted_width <= state.longest_node
+    if
+      line
+      and item.wanted_width
+      and state.longest_node
+      and item.wanted_width <= state.longest_node
     then
       return line
     end
@@ -363,7 +364,7 @@ local prepare_node = function(item, state)
     end
     for _, component in ipairs(renderer) do
       local component_data, component_wanted_width =
-      M.render_component(component, item, state, remaining_cols)
+        M.render_component(component, item, state, remaining_cols)
       local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
@@ -946,8 +947,8 @@ M.window_exists = function(state)
     window_exists = false
   elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
-        and vim.api.nvim_buf_is_valid(bufnr)
-        and vim.api.nvim_win_get_buf(winid) == bufnr
+      and vim.api.nvim_buf_is_valid(bufnr)
+      and vim.api.nvim_win_get_buf(winid) == bufnr
   else
     local isvalid = M.is_window_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)

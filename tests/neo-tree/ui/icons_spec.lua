@@ -68,7 +68,7 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-            
+
       vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
@@ -107,7 +107,7 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-            
+
       vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
@@ -170,7 +170,7 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-            
+
       vim.wait(100)
 
       u.assert_buf_lines(bufnr, {
@@ -209,7 +209,7 @@ describe("ui/icons", function()
 
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-            
+
       vim.wait(100)
 
       u.assert_buf_lines(bufnr, {

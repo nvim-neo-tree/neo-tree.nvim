@@ -836,13 +836,13 @@ local brace_expand_split = function(s, separator)
   local depth = 0
   while pos <= s:len() do
     local c = s:sub(pos, pos)
-    if c == '\\' then
+    if c == "\\" then
       pos = pos + 1
     elseif c == separator and depth == 0 then
       return s:sub(1, pos - 1), s:sub(pos + 1)
-    elseif c == '{' then
+    elseif c == "{" then
       depth = depth + 1
-    elseif c == '}' then
+    elseif c == "}" then
       if depth > 0 then
         depth = depth - 1
       end
@@ -897,11 +897,11 @@ local brace_expand_contents = function(s)
 
   ---Process numeric sequence expression. e.g. {0..2} -> {0,1,2}, {01..05..2} -> {01,03,05}
   local resolve_sequence_num = function(from, to, step)
-    local format = '%d'
+    local format = "%d"
     -- Pad strings in the presence of a leading zero
-    local pattern = '^-?0%d'
+    local pattern = "^-?0%d"
     if from:match(pattern) or to:match(pattern) then
-      format = '%0' .. math.max(#from, #to) .. 'd'
+      format = "%0" .. math.max(#from, #to) .. "d"
     end
     return resolve_sequence(from, to, step, function(i)
       return string.format(format, i)
@@ -952,7 +952,7 @@ end
 ---@param s string: input string. e.g. {a..e..2} -> {a,c,e}, {00..05..2} -> {00,03,05}
 ---@return string[]: result of expansion, array with at least one string (one means it failed to expand and the raw string is returned)
 M.brace_expand = function(s)
-  local preamble, postamble = brace_expand_split(s, '{')
+  local preamble, postamble = brace_expand_split(s, "{")
   if postamble == nil then
     return { s }
   end
@@ -961,12 +961,12 @@ M.brace_expand = function(s)
   postscript = postamble
   while contents == nil do
     local old_expr = expr
-    expr, postscript = brace_expand_split(postscript, '}')
+    expr, postscript = brace_expand_split(postscript, "}")
     if old_expr then
-      expr = old_expr .. '}' .. expr
+      expr = old_expr .. "}" .. expr
     end
     if postscript == nil then -- No closing brace found, so we put back the unmatched '{'
-      preamble = preamble .. '{'
+      preamble = preamble .. "{"
       expr, postscript = nil, postamble
     end
     contents = brace_expand_contents(expr)
@@ -982,6 +982,5 @@ M.brace_expand = function(s)
   end
   return result
 end
-
 
 return M
