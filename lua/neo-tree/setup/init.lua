@@ -102,7 +102,7 @@ local prior_window_options = {}
 local store_local_window_settings = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   local neo_tree_settings_applied, _ =
-  pcall(vim.api.nvim_win_get_var, winid, "neo_tree_settings_applied")
+    pcall(vim.api.nvim_win_get_var, winid, "neo_tree_settings_applied")
   if neo_tree_settings_applied then
     -- don't store our own window settings
     return
@@ -121,7 +121,7 @@ end
 
 --- Restore the window options for the current window
 --- @param winid number | nil The window id to restore the options for, defaults to current window
-local restore_local_window_settings = function (winid)
+local restore_local_window_settings = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   -- return local window settings to their prior values
   local wo = prior_window_options[tostring(winid)]
@@ -159,7 +159,7 @@ M.buffer_enter_event = function()
     ]])
 
     local winhighlight =
-    "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
+      "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
     if vim.version().minor >= 7 then
       vim.cmd("setlocal winhighlight=" .. winhighlight .. ",WinSeparator:NeoTreeWinSeparator")
     else
@@ -499,7 +499,7 @@ M.merge_config = function(user_config, is_auto_config)
       restore_local_window_settings()
     end
   end
-  vim.api.nvim_create_autocmd({"BufWinLeave"}, {
+  vim.api.nvim_create_autocmd({ "BufWinLeave" }, {
     group = augroup,
     pattern = "neo-tree *",
     callback = bufleave,
@@ -557,10 +557,10 @@ M.merge_config = function(user_config, is_auto_config)
   for source_name, mod_root in pairs(all_sources) do
     local module = require(mod_root)
     default_config[source_name] = default_config[source_name]
-        or {
-          renderers = {},
-          components = {},
-        }
+      or {
+        renderers = {},
+        components = {},
+      }
     local source_default_config = default_config[source_name]
     source_default_config.components = module.components or require(mod_root .. ".components")
     source_default_config.commands = module.commands or require(mod_root .. ".commands")

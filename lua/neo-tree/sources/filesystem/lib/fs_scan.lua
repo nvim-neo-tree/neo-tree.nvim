@@ -139,7 +139,6 @@ local job_complete = function(context)
   render_context(context)
 end
 
-
 local function create_node(context, node)
   local success3, item = pcall(file_items.create_item, context, node.path, node.type)
 end

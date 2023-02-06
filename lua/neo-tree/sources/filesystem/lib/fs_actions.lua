@@ -355,7 +355,9 @@ M.create_node = function(in_directory, callback, using_root_directory)
         if is_dir then
           loop.fs_mkdir(destination, 493)
         else
-          local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
+          local open_mode = loop.constants.O_CREAT
+            + loop.constants.O_WRONLY
+            + loop.constants.O_TRUNC
           local fd = loop.fs_open(destination, "w", open_mode)
           if not fd then
             api.nvim_err_writeln("Could not create file " .. destination)
