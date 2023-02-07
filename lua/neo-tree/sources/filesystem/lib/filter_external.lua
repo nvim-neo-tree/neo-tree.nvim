@@ -299,7 +299,7 @@ M.fzy_sort_files = function(opts, state)
     end
 
     local function on_exit(_)
-      vim.notify(string.format([[fzy_sort_files: cached_everything: %s, len: %s]], cached_everything,
+      log.debug(string.format([[fzy_sort_files: cached_everything: %s, len: %s]], cached_everything,
         #state.fzy_sort_file_list_cache))
       if not cached_everything then
         state.fzy_sort_file_list_cache = {}
