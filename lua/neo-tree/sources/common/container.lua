@@ -270,10 +270,8 @@ local merge_content = function(context)
   vim.list_extend(result, left)
   vim.list_extend(result, right)
   context.merged_content = result
-  if wanted_width > context.container_width then
-    log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
-    context.container_width = wanted_width
-  end
+  log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
+  context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 
 M.render = function(config, node, state, available_width)
