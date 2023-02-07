@@ -325,6 +325,14 @@ D = fuzzy_finder_directory: Like fuzzy_finder above, but only shows directories.
                             search and set the focus on that directory.
                             Requires `fd` or `find` to be installed~
 
+# = fuzzy_sorter:           Sort the tree recursively based on fzy algorithm,
+                            showing top score files. Space separated keywords
+                            are treated as `and` which will be useful to narrow
+                            down as you type. The file list is taken from fd
+                            and other programs mentioned in `fuzzy_finder`.
+                            `fuzzy_sorter_directory` can be used to show list
+                            of directories instead.
+
 f = filter_on_submit:       Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
                             Also useful if you want to leave the tree
