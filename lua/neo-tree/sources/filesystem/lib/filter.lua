@@ -14,7 +14,7 @@ local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
-M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
+M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local popup_options
   local winid = vim.api.nvim_get_current_win()
   local height = vim.api.nvim_win_get_height(winid)
@@ -65,8 +65,8 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
       local a_score = result_scores[a.path]
       local b_score = result_scores[b.path]
       if a_score == nil or b_score == nil then
-        log.error(string.format(
-          [[%s: %s, %s: %s]],
+        log.debug(string.format(
+          [[Fzy: failed to compare %s: %s, %s: %s]],
           a.path, a_score,
           b.path, b_score
         ))
@@ -75,7 +75,10 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
       return a_score > b_score
     end
   end
-  sort_by_score()
+  if use_fzy then
+    sort_by_score()
+    state.use_fzy = true
+  end
 
   local select_first_file = function()
     local is_file = function(node)

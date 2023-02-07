@@ -94,6 +94,16 @@ M.fuzzy_finder_directory = function(state)
   filter.show_filter(state, true, "directory")
 end
 
+---Shows the filter input in fuzzy sorter
+M.fuzzy_sorter = function(state)
+  filter.show_filter(state, true, true, true)
+end
+
+---Shows the filter input in fuzzy sorter with only directories
+M.fuzzy_sorter_directory = function(state)
+  filter.show_filter(state, true, "directory", true)
+end
+
 ---Navigate up one level.
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)

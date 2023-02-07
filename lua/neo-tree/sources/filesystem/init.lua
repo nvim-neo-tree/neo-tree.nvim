@@ -185,6 +185,7 @@ end
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
   state.fuzzy_finder_mode = nil
+  state.use_fzy = nil
   state.fzy_sort_result_scores = nil
   state.fzy_sort_file_list_cache = nil
   require("neo-tree").config.sort_function = state.normal_sort_function

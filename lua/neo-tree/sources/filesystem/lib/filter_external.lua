@@ -43,79 +43,6 @@ local get_find_command = function(state)
   return state.find_command
 end
 
-local function fzy_sort_on_results(terms, results, limit, state, on_insert, on_exit)
-  local fzy = require("neo-tree.sources.filesystem.lib.filter_fzy")
-  local result_scores, result_counter = { foo = 0, baz = 0 }, 0
-  for _, path in ipairs(results) do
-    local total_score = 0
-    for _, term in ipairs(terms) do -- spaces in `opts.term` are treated as `and`
-      local score = fzy.score(term, path)
-      if score == fzy.get_score_min() then -- if any not found, end searching
-        total_score = 0
-        break
-      end
-      total_score = total_score + score
-    end
-    if total_score > 0 then
-      result_scores[path] = total_score
-      result_counter = result_counter + 1
-      local parent, _ = utils.split_path(path)
-      while parent ~= nil do -- back propagate the score to its ancesters
-        if total_score > (result_scores[parent] or 0) then
-          result_scores[parent] = total_score
-          parent, _ = utils.split_path(parent)
-        else
-          break
-        end
-      end
-      on_insert(nil, path)
-    end
-    if result_counter >= limit then
-      break
-    end
-  end
-
-  if result_counter > 0 then
-    state.fzy_sort_result_scores = vim.tbl_extend("force", state.fzy_sort_result_scores or {}, result_scores)
-  end
-
-  if on_exit then
-    on_exit(0)
-  end
-end
-
-M.fzy_sort_files = function(opts, state)
-  state = state or {}
-  local filters = opts.filtered_items
-  local limit = opts.limit or 200
-  local terms = vim.tbl_filter(function(s)
-    return string.len(s) > 0
-  end, vim.split(opts.term, " ", { trimempty = true }))
-
-  if state.fzy_sort_file_list_cache ~= nil and #state.fzy_sort_file_list_cache > 0 then
-    fzy_sort_on_results(terms, state.fzy_sort_file_list_cache, limit, state, opts.on_insert, opts.on_exit)
-  else
-    state.fzy_sort_file_list_cache = {}
-    local function on_insert(err, line)
-      if not err then
-        state.fzy_sort_file_list_cache[#state.fzy_sort_file_list_cache + 1] = line
-      end
-    end
-
-    local function on_exit(_)
-      fzy_sort_on_results(terms, state.fzy_sort_file_list_cache, limit, state, opts.on_insert, opts.on_exit)
-    end
-
-    state.fzy_sort_file_list_cache = { "foo", "bar" }
-
-    M.filter_files_external(get_find_command(opts), opts.path, nil, nil,
-      { file = true },
-      { dotfiles = not filters.visible and filters.hide_dotfiles,
-        gitignore = not filters.visible and filters.hide_gitignored },
-      nil, opts.find_args, on_insert, on_exit)
-  end
-end
-
 ---@class FileTypes
 ---@field file boolean
 ---@field directory boolean
@@ -133,13 +60,14 @@ end
 ---@param path string Base directory to start the search.
 ---@param glob string | nil If not nil, do glob search. Take precedence on `regex`
 ---@param regex string | nil If not nil, do regex search if command supports. if glob ~= nil, ignored
+---@param full_path boolean If true, search agaist the absolute path
 ---@param types FileTypes | nil Return only true filetypes. If nil, all are returned.
 ---@param ignore { dotfiles: boolean?, gitignore: boolean? } If true, ignored from result. Default: false
 ---@param limit? integer | nil Maximim number of results. nil will return everything.
 ---@param find_args? string[] | table<string, string[]> Any additional options passed to command if any.
 ---@param on_insert? fun(err: string, line: string): any Executed for each line of stdout and stderr.
 ---@param on_exit? fun(return_val: table): any Executed at the end.
-M.filter_files_external = function(cmd, path, glob, regex, types, ignore, limit, find_args, on_insert, on_exit)
+M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ignore, limit, find_args, on_insert, on_exit)
   if glob ~= nil and regex ~= nil then
     local log_msg = string.format([[glob: %s, regex: %s]], glob, regex)
     log.warning("both glob and regex are set. glob will take precedence. " .. log_msg)
@@ -184,8 +112,16 @@ M.filter_files_external = function(cmd, path, glob, regex, types, ignore, limit,
         append("--type", k)
       end
     end
+    if full_path then
+      append("--full-path")
+      if glob ~= nil then
+        local words = utils.split(glob, " ")
+        regex = ".*" .. table.concat(words, ".*") .. ".*"
+        glob = nil
+      end
+    end
     if glob ~= nil then
-      append("--glob", glob)
+      append("--glob")
     end
     append("--", glob or regex or "")
     append(path)
@@ -209,8 +145,12 @@ M.filter_files_external = function(cmd, path, glob, regex, types, ignore, limit,
     if not ignore.dotfiles then
       append("-not", "-path", "*/.*")
     end
-    if glob ~= nil then
+    if glob ~= nil and not full_path then
       append("-iname", glob)
+    elseif glob ~= nil and full_path then
+      local words = utils.split(glob, " ")
+      regex = ".*" .. table.concat(words, ".*") .. ".*"
+      append("-regextype", "sed", "-regex", regex)
     elseif regex ~= nil then
       append("-regextype", "sed", "-regex", regex)
     end
@@ -267,31 +207,129 @@ M.filter_files_external = function(cmd, path, glob, regex, types, ignore, limit,
   }):start()
 end
 
+local function fzy_sort_get_total_score(terms, path)
+  local fzy = require("neo-tree.sources.filesystem.lib.filter_fzy")
+  local total_score = 0
+  for _, term in ipairs(terms) do -- spaces in `opts.term` are treated as `and`
+    local score = fzy.score(term, path)
+    if score == fzy.get_score_min() then -- if any not found, end searching
+      return 0
+    end
+    total_score = total_score + score
+  end
+  return total_score
+end
+
+local function modify_parent_scores(result_scores, path, score)
+  local parent, _ = utils.split_path(path)
+  while parent ~= nil do -- back propagate the score to its ancesters
+    if score > (result_scores[parent] or 0) then
+      result_scores[parent] = score
+      parent, _ = utils.split_path(parent)
+    else
+      break
+    end
+  end
+end
+
+M.fzy_sort_files = function(opts, state)
+  state = state or {}
+  local filters = opts.filtered_items
+  local limit = opts.limit or 100
+  local full_path_words = opts.find_by_full_path_words
+  local fuzzy_finder_mode = opts.fuzzy_finder_mode
+  local pwd = opts.path
+  if pwd:sub(-1) ~= "/" then
+    pwd = pwd .. "/"
+  end
+  local pwd_length = #pwd
+  local terms = {}
+  for term in string.gmatch(opts.term, "[^%s]+") do -- space split opts.term
+    terms[#terms + 1] = term
+  end
+  local result_counter = 0
+
+  if state.fzy_sort_file_list_cache ~= nil and #state.fzy_sort_file_list_cache > 0 then
+    -- list of files are already cached
+    for _, relative_path in ipairs(state.fzy_sort_file_list_cache) do
+      -- if full_path_words, contents of state.fzy_sort_file_list_cache is absolute path
+      local path = full_path_words and relative_path or pwd .. relative_path
+      local score = fzy_sort_get_total_score(terms, relative_path)
+      if score > 0 then
+        state.fzy_sort_result_scores[path] = score
+        result_counter = result_counter + 1
+        modify_parent_scores(state.fzy_sort_result_scores, path, score)
+        opts.on_insert(nil, path)
+        if result_counter >= limit then
+          break
+        end
+      end
+    end
+
+    if opts.on_exit then
+      opts.on_exit(0)
+    end
+  else
+    -- fetch file list for the first time and calculate scores along the way
+    state.fzy_sort_file_list_cache = {}
+    local index = 1
+    local cached_everything = true
+    state.fzy_sort_result_scores = { foo = 0, baz = 0 }
+    local function on_insert(err, path)
+      if not err then
+        if result_counter >= limit then
+          cached_everything = false
+          return
+        end
+        local relative_path = path
+        if not full_path_words and #path > pwd_length and path:sub(1, pwd_length) == pwd then
+          relative_path = "./" .. path:sub(pwd_length + 1)
+        end
+        state.fzy_sort_file_list_cache[index] = relative_path
+        index = index + 1
+        state.fzy_sort_result_scores[path] = 0
+        local score = fzy_sort_get_total_score(terms, relative_path)
+        if score > 0 then
+          state.fzy_sort_result_scores[path] = score
+          result_counter = result_counter + 1
+          modify_parent_scores(state.fzy_sort_result_scores, path, score)
+          opts.on_insert(nil, path)
+        end
+      end
+    end
+
+    local function on_exit(_)
+      vim.notify(string.format([[fzy_sort_files: cached_everything: %s, len: %s]], cached_everything,
+        #state.fzy_sort_file_list_cache))
+      if not cached_everything then
+        state.fzy_sort_file_list_cache = {}
+      end
+      opts.on_exit(0)
+    end
+
+    M.filter_files_external("fd", pwd, nil, nil, true,
+      { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
+      { dotfiles = not filters.visible and filters.hide_dotfiles,
+        gitignore = not filters.visible and filters.hide_gitignored },
+      nil, opts.find_args, on_insert, on_exit)
+  end
+end
+
 M.find_files = function(opts)
   local filters = opts.filtered_items
   local full_path_words = opts.find_by_full_path_words
   local regex, glob = nil, nil
   local fuzzy_finder_mode = opts.fuzzy_finder_mode
 
-  if full_path_words then
-    local words = utils.split(opts.term, " ")
-    regex = ".*" .. table.concat(words, ".*") .. ".*"
-    if opts.find_args == nil then
-      opts.find_args = { "--full-path" }
-    else
-      opts.find_args[#opts.find_args + 1] = "--full-path"
-    end
-  else
-    glob = opts.term
-    if glob:sub(1) ~= "*" then
-      glob = "*" .. glob
-    end
-    if glob:sub(-1) ~= "*" then
-      glob = glob .. "*"
-    end
+  glob = opts.term
+  if glob:sub(1) ~= "*" then
+    glob = "*" .. glob
+  end
+  if glob:sub(-1) ~= "*" then
+    glob = glob .. "*"
   end
 
-  M.filter_files_external(get_find_command(opts), opts.path, glob, regex,
+  M.filter_files_external(get_find_command(opts), opts.path, glob, regex, full_path_words,
     { directory = fuzzy_finder_mode == "directory" },
     { dotfiles = not filters.visible and filters.hide_dotfiles,
       gitignore = not filters.visible and filters.hide_gitignored },
