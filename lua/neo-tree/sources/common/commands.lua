@@ -39,7 +39,7 @@ local function get_folder_node(state)
     end
 
     local parent_id = node:get_parent_id()
-    if parent_id or parent_id == last_id then
+    if not parent_id or parent_id == last_id then
       return node
     else
       last_id = parent_id
