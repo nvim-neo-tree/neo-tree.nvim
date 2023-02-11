@@ -59,7 +59,6 @@ M.mark_ignored = function(state, items, callback)
     if utils.is_windows then
       --on Windows, git seems to return quotes and double backslash "path\\directory"
       result = vim.tbl_map(function(item)
-        item = item:gsub('"', "")
         item = item:gsub("\\\\", "\\")
         return item
       end, result)
@@ -74,6 +73,13 @@ M.mark_ignored = function(state, items, callback)
         end
       end
     end
+    result = vim.tbl_map(function(item)
+      -- remove leading and trailing " from git output
+      item = item:gsub('^"', ""):gsub('"$', "")
+      -- convert octal encoded lines to utf-8
+      item = git_utils.octal_to_utf8(item)
+      return item
+    end, result)
     return result
   end
 

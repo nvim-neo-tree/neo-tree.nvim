@@ -73,8 +73,11 @@ local parse_git_status_line = function(context, line)
     relative_path = line_parts[3]
   end
 
-  -- remove any " due to whitespace in the path
-  relative_path = relative_path:gsub('^"', ""):gsub('$"', "")
+  -- remove any " due to whitespace or utf-8 in the path
+  relative_path = relative_path:gsub('^"', ""):gsub('"$', "")
+  -- convert octal encoded lines to utf-8
+  relative_path = git_utils.octal_to_utf8(relative_path)
+
   if utils.is_windows == true then
     relative_path = utils.windowize_path(relative_path)
   end
