@@ -48,4 +48,12 @@ M.get_repository_root = function(path, callback)
   end
 end
 
+M.octal_to_utf8 = function(text)
+  -- git uses octal encoding for utf-8 filepaths, convert octal back to utf-8
+  text = text:gsub("\\([0-7][0-7][0-7])", function(octal)
+    return string.char(tonumber(octal, 8))
+  end)
+  return text
+end
+
 return M
