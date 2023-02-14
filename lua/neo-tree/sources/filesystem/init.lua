@@ -188,7 +188,7 @@ M.reset_search = function(state, refresh, open_current_node)
   state.use_fzy = nil
   state.fzy_sort_result_scores = nil
   state.fzy_sort_file_list_cache = nil
-  require("neo-tree").config.sort_function = state.normal_sort_function
+  state.sort_function_override = nil
   if refresh == nil then
     refresh = true
   end

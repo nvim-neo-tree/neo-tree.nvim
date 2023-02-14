@@ -55,28 +55,26 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     })
   end
 
-  local sort_by_score = function()
-    local config = require("neo-tree").config
-    state.normal_sort_function = config.sort_function
-    config.sort_function = function(a, b)
+  local set_sort_by_score = function()
+    state.sort_function_override = function(a, b)
       -- `state.fzy_sort_result_scores` should be defined in
       -- `sources.filesystem.lib.filter_external.fzy_sort_files`
       local result_scores = state.fzy_sort_result_scores or { foo = 0, baz = 0 }
       local a_score = result_scores[a.path]
       local b_score = result_scores[b.path]
       if a_score == nil or b_score == nil then
-        log.debug(string.format(
-          [[Fzy: failed to compare %s: %s, %s: %s]],
-          a.path, a_score,
-          b.path, b_score
-        ))
+        log.debug(string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score))
+        local config = require("neo-tree").config
+        if config.sort_function ~= nil then
+          return config.sort_function(a, b)
+        end
         return nil
       end
       return a_score > b_score
     end
   end
   if use_fzy then
-    sort_by_score()
+    set_sort_by_score()
     state.use_fzy = true
   end
 
