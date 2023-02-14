@@ -17,6 +17,27 @@ local default_popup_size = { width = 60, height = "80%" }
 local floating_windows = {}
 local draw, create_window, create_tree, render_tree
 
+-- clean up neotree buffers created by :mksession
+local cleaned_up = false
+local clean_neotree_buffers = function()
+  if cleaned_up then
+    return
+  end
+  local clean_buffer_with_prefix = function(prefix)
+    for bufnr = 1, vim.fn.bufnr("$") do
+      local bufname = vim.fn.bufname(bufnr)
+      if string.sub(bufname, 1, #prefix) == prefix then
+        vim.api.nvim_buf_delete(bufnr, { force = true })
+      end
+    end
+  end
+  local sources = { "filesystem", "buffers", "git_status" }
+  for _, source in ipairs(sources) do
+    clean_buffer_with_prefix("neo-tree " .. source)
+  end
+  cleaned_up = true
+end
+
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
   local interval = M.resize_timer_interval or -1
@@ -805,6 +826,7 @@ create_window = function(state)
     tabnr = state.tabnr,
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+  clean_neotree_buffers()
 
   if state.current_position == "float" then
     state.force_float = nil
