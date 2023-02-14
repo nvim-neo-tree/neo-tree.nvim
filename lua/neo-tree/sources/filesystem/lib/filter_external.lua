@@ -307,7 +307,7 @@ M.fzy_sort_files = function(opts, state)
       opts.on_exit(0)
     end
 
-    M.filter_files_external("fd", pwd, nil, nil, true,
+    M.filter_files_external(get_find_command(state), pwd, nil, nil, true,
       { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
       { dotfiles = not filters.visible and filters.hide_dotfiles,
         gitignore = not filters.visible and filters.hide_gitignored },
