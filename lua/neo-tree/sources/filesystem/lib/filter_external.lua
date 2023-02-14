@@ -29,10 +29,10 @@ local get_find_command = function(state)
     return state.find_command
   end
 
-  if 1 == vim.fn.executable("fd") then
-    state.find_command = "fd"
-  elseif 1 == vim.fn.executable("fdfind") then
+  if 1 == vim.fn.executable("fdfind") then
     state.find_command = "fdfind"
+  elseif 1 == vim.fn.executable("fd") then
+    state.find_command = "fd"
   elseif 1 == vim.fn.executable("find") and vim.fn.has("win32") == 0 then
     state.find_command = "find"
   elseif 1 == vim.fn.executable("where") then
