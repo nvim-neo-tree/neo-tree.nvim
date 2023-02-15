@@ -171,12 +171,35 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   end
 end
 
+---create_dummy_window
+---@param state table: Readonly state. Will not change anything except for `state.current_position` but only if it is nil. See `ui.renderer.create_window(state, is_dummy=true)` for more info.
+---@return integer? winid of created window. nil if failed.
+local function create_dummy_window(state)
+  vim.pretty_print(state.current_position)
+  if state.current_position == "float" or state.current_position == "current" then
+    return nil
+  end
+  if not utils.resolve_config_option(state, "show_split_window_immediately", false) then
+    return nil
+  end
+  local win = require("neo-tree.ui.renderer").create_window(state, true)
+  if win ~= nil and win.winid ~= nil then
+    log.trace(string.format([[created dummy window: %s]], win.winid))
+    vim.api.nvim_set_current_win(win.winid)
+    return win.winid
+  else
+    log.warn(string.format([[failed to create dummy window]]))
+  end
+  return nil
+end
+
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
+  state.close_dummy_window = create_dummy_window(state)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)

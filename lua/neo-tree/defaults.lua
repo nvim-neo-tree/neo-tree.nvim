@@ -367,6 +367,9 @@ local config = {
         ["]g"] = "next_git_modified",
       }
     },
+    show_split_window_immediately = false, -- true creates a window right away, before starting async_directory_scan.
+    --                                     -- ONLY WORKS WITH SPLIT WINDOWS. (i.e. does not affect opening in float or current)
+    --                                     -- this should prevent flickering of windows on switching sources.
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
                                    -- "always" means directory scans are always async.
                                    -- "never"  means directory scans are never async.

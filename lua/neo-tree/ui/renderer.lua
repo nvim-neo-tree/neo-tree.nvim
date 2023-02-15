@@ -15,7 +15,7 @@ local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
 local floating_windows = {}
-local draw, create_window, create_tree, render_tree
+local draw, create_tree, render_tree
 
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
@@ -776,7 +776,11 @@ local set_window_mappings = function(state)
   state.resolved_mappings = resolved_mappings
 end
 
-create_window = function(state)
+---create_window: Create window based on config and state
+---@param state table The state.
+---@param is_dummy? boolean whether to create a dummy window. Does not work with `state.current_position == "current", "float"`. If true, events are not triggered, and `state` is not modified except `state.current_position` to its new position only if value was nil
+---@return table?: NuiPopup | NuiSplit | ni: Try its best to create new window of some kind
+M.create_window = function(state, is_dummy)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
@@ -812,9 +816,15 @@ create_window = function(state)
     source = state.name,
     tabnr = state.tabnr,
   }
-  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+  if not is_dummy then
+    events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+  end
 
   if state.current_position == "float" then
+    if is_dummy then
+      log.warn("`create_window` does not work with `state.current_position` == float")
+      return nil
+    end
     state.force_float = nil
     -- First get the default options for floating windows.
     local sourceTitle = state.name:gsub("^%l", string.upper)
@@ -853,6 +863,10 @@ create_window = function(state)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   elseif state.current_position == "current" then
+    if is_dummy then
+      log.warn("`create_window` does not work with `state.current_position` == current")
+      return nil
+    end
     local winid = vim.api.nvim_get_current_win()
     local bufnr = vim.fn.bufnr(bufname)
     if bufnr < 1 then
@@ -870,6 +884,11 @@ create_window = function(state)
   else
     win = NuiSplit(win_options)
     win:mount()
+    if is_dummy then
+      log.trace(string.format("Created dummy split window: %s", vim.inspect(win_options)))
+      return win
+    end
+
     state.winid = win.winid
     state.bufnr = win.bufnr
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
@@ -1018,9 +1037,14 @@ draw = function(nodes, state, parent_id)
     end
   end
 
+  -- Check for dummy windows and destroy them
+  if state.close_dummy_window ~= nil then
+    vim.api.nvim_win_close(state.close_dummy_window, true)
+    state.close_dummy_window = nil
+  end
   -- Create the tree if it doesn't exist.
   if not parent_id and not M.window_exists(state) then
-    create_window(state)
+    M.create_window(state)
     create_tree(state)
   end
 
