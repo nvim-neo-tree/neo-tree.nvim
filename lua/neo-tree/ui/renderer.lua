@@ -23,17 +23,12 @@ local clean_neotree_buffers = function()
   if cleaned_up then
     return
   end
-  local clean_buffer_with_prefix = function(prefix)
-    for bufnr = 1, vim.fn.bufnr("$") do
-      local bufname = vim.fn.bufname(bufnr)
-      if string.sub(bufname, 1, #prefix) == prefix then
-        vim.api.nvim_buf_delete(bufnr, { force = true })
-      end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local bufname = vim.fn.bufname(buf)
+    if string.match(bufname, "neo%-tree [^ ]+ %[%d+]") then
+      vim.api.nvim_buf_delete(buf, { force = true })
     end
-  end
-  local sources = { "filesystem", "buffers", "git_status" }
-  for _, source in ipairs(sources) do
-    clean_buffer_with_prefix("neo-tree " .. source)
   end
   cleaned_up = true
 end
