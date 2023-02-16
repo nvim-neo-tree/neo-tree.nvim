@@ -182,10 +182,11 @@ local function create_dummy_window(state)
   if not utils.resolve_config_option(state, "show_split_window_immediately", false) then
     return nil
   end
+  local current_win = vim.api.nvim_get_current_win()
   local win = require("neo-tree.ui.renderer").create_window(state, true)
+  vim.api.nvim_set_current_win(current_win)
   if win ~= nil and win.winid ~= nil then
     log.trace(string.format([[created dummy window: %s]], win.winid))
-    vim.api.nvim_set_current_win(win.winid)
     return win.winid
   else
     log.warn(string.format([[failed to create dummy window]]))
