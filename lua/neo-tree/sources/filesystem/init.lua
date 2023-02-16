@@ -175,7 +175,6 @@ end
 ---@param state table: Readonly state. Will not change anything except for `state.current_position` but only if it is nil. See `ui.renderer.create_window(state, is_dummy=true)` for more info.
 ---@return integer? winid of created window. nil if failed.
 local function create_dummy_window(state)
-  vim.pretty_print(state.current_position)
   if state.current_position == "float" or state.current_position == "current" then
     return nil
   end
