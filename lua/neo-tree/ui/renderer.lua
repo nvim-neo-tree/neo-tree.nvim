@@ -816,6 +816,9 @@ M.create_window = function(state, is_dummy)
     source = state.name,
     tabnr = state.tabnr,
   }
+  if is_dummy then
+    win_options.enter = false
+  end
   if not is_dummy then
     events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
   end
