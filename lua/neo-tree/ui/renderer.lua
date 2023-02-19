@@ -908,17 +908,6 @@ create_window = function(state)
   return win
 end
 
-M.update_floating_window_layouts = function()
-  for _, win in ipairs(floating_windows) do
-    local opt = {
-      relative = "win",
-    }
-    opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
-    opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
-    win:update_layout(opt)
-  end
-end
-
 ---Determines is the givin winid is valid and the window still exists.
 ---@param winid any
 ---@return boolean
@@ -930,6 +919,22 @@ M.is_window_valid = function(winid)
     return vim.api.nvim_win_is_valid(winid)
   else
     return false
+  end
+end
+
+M.update_floating_window_layouts = function()
+  for i, win in ipairs(floating_windows) do
+    --first remove any invalid windows
+    if M.is_window_valid(win.winid) == false then
+      table.remove(floating_windows, i)
+    else
+      local opt = {
+        relative = "win",
+      }
+      opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
+      opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
+      win:update_layout(opt)
+    end
   end
 end
 
