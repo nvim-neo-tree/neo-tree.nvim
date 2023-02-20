@@ -16,6 +16,7 @@ local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
 local draw, create_window, create_tree, render_tree
 
+
 local floating_windows = {}
 local update_floating_windows = function()
   local valid_windows = {}
@@ -25,6 +26,21 @@ local update_floating_windows = function()
     end
   end
   floating_windows = valid_windows
+
+-- clean up neotree buffers created by :mksession
+local cleaned_up = false
+local clean_neotree_buffers = function()
+  if cleaned_up then
+    return
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local bufname = vim.fn.bufname(buf)
+    if string.match(bufname, "neo%-tree [^ ]+ %[%d+]") then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+  cleaned_up = true
 end
 
 local resize_monitor_timer = nil
@@ -823,6 +839,7 @@ create_window = function(state)
     tabnr = state.tabnr,
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+  clean_neotree_buffers()
 
   if state.current_position == "float" then
     state.force_float = nil
