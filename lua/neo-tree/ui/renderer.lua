@@ -14,8 +14,18 @@ local log = require("neo-tree.log")
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
-local floating_windows = {}
 local draw, create_window, create_tree, render_tree
+
+local floating_windows = {}
+local update_floating_windows = function()
+  local valid_windows = {}
+  for _, win in ipairs(floating_windows) do
+    if M.is_window_valid(win.winid) then
+      table.insert(valid_windows, win)
+    end
+  end
+  floating_windows = valid_windows
+end
 
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
@@ -923,18 +933,14 @@ M.is_window_valid = function(winid)
 end
 
 M.update_floating_window_layouts = function()
-  for i, win in ipairs(floating_windows) do
-    --first remove any invalid windows
-    if M.is_window_valid(win.winid) == false then
-      table.remove(floating_windows, i)
-    else
-      local opt = {
-        relative = "win",
-      }
-      opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
-      opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
-      win:update_layout(opt)
-    end
+  update_floating_windows()
+  for _, win in ipairs(floating_windows) do
+    local opt = {
+      relative = "win",
+    }
+    opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
+    opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
+    win:update_layout(opt)
   end
 end
 
