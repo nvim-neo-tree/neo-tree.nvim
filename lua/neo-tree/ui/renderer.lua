@@ -14,8 +14,18 @@ local log = require("neo-tree.log")
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
-local floating_windows = {}
 local draw, create_window, create_tree, render_tree
+
+local floating_windows = {}
+local update_floating_windows = function()
+  local valid_windows = {}
+  for _, win in ipairs(floating_windows) do
+    if M.is_window_valid(win.winid) then
+      table.insert(valid_windows, win)
+    end
+  end
+  floating_windows = valid_windows
+end
 
 -- clean up neotree buffers created by :mksession
 local cleaned_up = false
@@ -926,6 +936,7 @@ create_window = function(state)
 end
 
 M.update_floating_window_layouts = function()
+  update_floating_windows()
   for _, win in ipairs(floating_windows) do
     local opt = {
       relative = "win",
