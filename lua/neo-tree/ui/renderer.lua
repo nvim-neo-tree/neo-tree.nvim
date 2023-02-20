@@ -16,7 +16,6 @@ local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
 local draw, create_window, create_tree, render_tree
 
-
 local floating_windows = {}
 local update_floating_windows = function()
   local valid_windows = {}
@@ -26,6 +25,7 @@ local update_floating_windows = function()
     end
   end
   floating_windows = valid_windows
+end
 
 -- clean up neotree buffers created by :mksession
 local cleaned_up = false
@@ -935,6 +935,18 @@ create_window = function(state)
   return win
 end
 
+M.update_floating_window_layouts = function()
+  update_floating_windows()
+  for _, win in ipairs(floating_windows) do
+    local opt = {
+      relative = "win",
+    }
+    opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
+    opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
+    win:update_layout(opt)
+  end
+end
+
 ---Determines is the givin winid is valid and the window still exists.
 ---@param winid any
 ---@return boolean
@@ -946,18 +958,6 @@ M.is_window_valid = function(winid)
     return vim.api.nvim_win_is_valid(winid)
   else
     return false
-  end
-end
-
-M.update_floating_window_layouts = function()
-  update_floating_windows()
-  for _, win in ipairs(floating_windows) do
-    local opt = {
-      relative = "win",
-    }
-    opt.size = utils.resolve_config_option(win.original_options, "popup.size", default_popup_size)
-    opt.position = utils.resolve_config_option(win.original_options, "popup.position", "50%")
-    win:update_layout(opt)
   end
 end
 
