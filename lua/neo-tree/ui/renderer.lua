@@ -27,10 +27,11 @@ local update_floating_windows = function()
   floating_windows = valid_windows
 end
 
--- clean up neotree buffers created by :mksession
 local cleaned_up = false
-local clean_neotree_buffers = function()
-  if cleaned_up then
+---Clean up invalid neotree buffers (e.g after a session restore)
+---@param force boolean if true, force cleanup. Otherwise only cleanup once
+M.clean_invalid_neotree_buffers = function(force)
+  if cleaned_up and not force then
     return
   end
 
@@ -839,7 +840,7 @@ create_window = function(state)
     tabnr = state.tabnr,
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
-  clean_neotree_buffers()
+  M.clean_invalid_neotree_buffers(false)
 
   if state.current_position == "float" then
     state.force_float = nil

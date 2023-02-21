@@ -41,6 +41,7 @@ local M = {
   VIM_LEAVE = "vim_leave",
   VIM_RESIZED = "vim_resized",
   VIM_CURSOR_MOVED = "vim_cursor_moved",
+  VIM_AFTER_SESSION_LOAD = "vim_after_session_load",
 }
 
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)

@@ -76,6 +76,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
+  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
@@ -91,6 +92,13 @@ local define_events = function()
     event = events.VIM_RESIZED,
     handler = function()
       require("neo-tree.ui.renderer").update_floating_window_layouts()
+    end,
+  })
+
+  events.subscribe({
+    event = events.VIM_AFTER_SESSION_LOAD,
+    handler = function()
+      require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
     end,
   })
 end
