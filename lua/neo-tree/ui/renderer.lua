@@ -536,14 +536,13 @@ M.get_expanded_nodes = function(tree, root_node_id)
   local node_ids = {}
 
   local function process(node)
+    local id = node:get_id()
     if node:is_expanded() then
-      local id = node:get_id()
       table.insert(node_ids, id)
-
-      if node:has_children() then
-        for _, child in ipairs(tree:get_nodes(id)) do
-          process(child)
-        end
+    end
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(id)) do
+        process(child)
       end
     end
   end
@@ -561,8 +560,8 @@ M.get_expanded_nodes = function(tree, root_node_id)
   return node_ids
 end
 
-M.collapse_all_nodes = function(tree)
-  local expanded = M.get_expanded_nodes(tree)
+M.collapse_all_nodes = function(tree, root_node_id)
+  local expanded = M.get_expanded_nodes(tree, root_node_id)
   for _, id in ipairs(expanded) do
     local node = tree:get_node(id)
     if utils.is_expandable(node) then

@@ -191,11 +191,14 @@ C             = close_node:  Close node if it is open, else close it's parent.
 
 z         = close_all_nodes: Close all nodes in the tree.
 
+         close_all_subnodes: Same as "close_node", but also recursively collapse
+                             all subnodes, similar to "close_all_nodes"
+
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
 P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
 
-l          = focus_preview: Focus the active preview window
+l           = focus_preview: Focus the active preview window
 
 <esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
                              any preview windows to what was being shown before

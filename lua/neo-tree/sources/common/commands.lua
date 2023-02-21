@@ -104,11 +104,6 @@ M.add_directory = function(state, callback)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
 end
 
-M.close_all_nodes = function(state)
-  renderer.collapse_all_nodes(state.tree)
-  renderer.redraw(state)
-end
-
 M.expand_all_nodes = function(state, toggle_directory)
   if toggle_directory == nil then
     toggle_directory = function(_, node)
@@ -157,6 +152,28 @@ M.close_node = function(state, callback)
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
   end
+end
+
+M.close_all_subnodes = function(state)
+  local tree = state.tree
+  local node = tree:get_node()
+  local parent_node = tree:get_node(node:get_parent_id())
+  local target_node
+
+  if node:has_children() and node:is_expanded() then
+    target_node = node
+  else
+    target_node = parent_node
+  end
+
+  renderer.collapse_all_nodes(tree, target_node:get_id())
+  renderer.redraw(state)
+  renderer.focus_node(state, target_node:get_id())
+end
+
+M.close_all_nodes = function(state)
+  renderer.collapse_all_nodes(state.tree)
+  renderer.redraw(state)
 end
 
 M.close_window = function(state)
