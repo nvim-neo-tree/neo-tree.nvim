@@ -152,7 +152,10 @@ M.close_node = function(state, callback)
     target_node = parent_node
   end
 
-  if target_node and target_node:has_children() then
+  local root = tree:get_nodes()[1]
+  local is_root = target_node:get_id() == root:get_id()
+
+  if target_node and target_node:has_children() and not is_root then
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
