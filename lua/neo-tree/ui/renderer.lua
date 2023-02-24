@@ -37,7 +37,9 @@ M.clean_invalid_neotree_buffers = function(force)
 
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     local bufname = vim.fn.bufname(buf)
-    if string.match(bufname, "neo%-tree [^ ]+ %[%d+]") then
+    local is_neotree_buffer = string.match(bufname, "neo%-tree [^ ]+ %[%d+]")
+    local is_valid_neotree, _ = pcall(vim.api.nvim_buf_get_var, buf, "neo_tree_source")
+    if is_neotree_buffer and not is_valid_neotree then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
   end
