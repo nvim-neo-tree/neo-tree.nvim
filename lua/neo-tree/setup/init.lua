@@ -94,13 +94,6 @@ local define_events = function()
       require("neo-tree.ui.renderer").update_floating_window_layouts()
     end,
   })
-
-  events.subscribe({
-    event = events.VIM_AFTER_SESSION_LOAD,
-    handler = function()
-      require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
-    end,
-  })
 end
 
 local prior_window_options = {}
@@ -624,6 +617,16 @@ M.merge_config = function(user_config, is_auto_config)
     local module = require(mod_root)
     manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
+  end
+
+  if M.config.auto_clean_after_session_restore then
+    require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(false)
+    events.subscribe({
+      event = events.VIM_AFTER_SESSION_LOAD,
+      handler = function()
+        require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
+      end,
+    })
   end
 
   events.subscribe({
