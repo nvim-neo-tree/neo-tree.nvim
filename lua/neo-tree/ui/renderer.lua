@@ -841,7 +841,6 @@ create_window = function(state)
     tabnr = state.tabnr,
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
-  M.clean_invalid_neotree_buffers(false)
 
   if state.current_position == "float" then
     state.force_float = nil
