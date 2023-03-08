@@ -495,7 +495,28 @@ M.open_file = function(state, path, open_cmd)
       -- TODO: make this configurable, see issue #43
       if is_neo_tree_window then
         -- Neo-tree must be the only window, restore it's status as a sidebar
-        local width = M.get_value(state, "window.width", 40, false)
+        local default_width = 40
+        local width = M.get_value(state, "window.width", default_width, false)
+        local available_width = vim.api.nvim_win_get_width(0)
+        if type(width) == "string" then
+          if string.sub(width, -1) == "%" then
+            width = tonumber(string.sub(width, 1, #width - 1)) / 100
+          else
+            width = tonumber(width)
+          end
+          width = math.floor(available_width * width)
+        elseif type(width) == "function" then
+          width = width()
+          if type(width) ~= "number" then
+            width = default_width
+          else
+            width = math.floor(width)
+          end
+        elseif type(width) == "number" then
+          width = math.floor(width)
+        else
+          width = default_width
+        end
         local nt = require("neo-tree")
         local split_command = "vsplit "
         -- respect window position in user config when Neo-tree is the only window
