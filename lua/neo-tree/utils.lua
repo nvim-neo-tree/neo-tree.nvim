@@ -145,12 +145,25 @@ end
 
 --- Returns true if the contents of two tables are equal.
 M.tbl_equals = function (table1, table2)
+  -- same object
   if table1 == table2 then
     return true
-  end -- same object
+  end
+
+  -- not the same type
   if type(table1) ~= "table" or type(table2) ~= "table" then
     return false
-  end -- not the same type
+  end
+
+  -- If tables are lists, check if they have the same values in the same order
+  if #table1 ~= #table2 then
+    return false
+  end
+  for i, v in ipairs(table1) do
+    if table2[i] ~= v then
+      return false
+    end
+  end
 
   -- Check if the tables have the same key/value pairs
   for k, v in pairs(table1) do
@@ -160,18 +173,6 @@ M.tbl_equals = function (table1, table2)
   end
   for k, v in pairs(table2) do
     if table1[k] ~= v then
-      return false
-    end
-  end
-
-  -- If tables are lists, check if they have the same values in the same order
-  for i, v in ipairs(table1) do
-    if table2[i] ~= v then
-      return false
-    end
-  end
-  for i, v in ipairs(table2) do
-    if table1[i] ~= v then
       return false
     end
   end
