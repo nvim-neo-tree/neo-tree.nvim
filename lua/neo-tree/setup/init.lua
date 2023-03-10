@@ -52,14 +52,8 @@ local define_events = function()
     { "BufModifiedSet" },
     0,
     function(args)
-      if utils.is_real_file(args.afile) then
-        -- we could use args.afile to update the sigle file that changed, but it seems like we miss
-        -- buffers when `:wa` is used.
-        args.modified_buffers = utils.get_modified_buffers()
-        return args
-      else
-        return false
-      end
+      args.modified_buffers = utils.get_modified_buffers()
+      return args
     end
   )
 

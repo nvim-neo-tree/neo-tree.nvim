@@ -419,10 +419,16 @@ M.modified_buffers_changed = function(source_name, args)
   if not type(args) == "table" then
     error("modified_buffers_changed: args must be a table")
   end
-  M._for_each_state(source_name, function(state)
-    state.modified_buffers = args.modified_buffers
-    renderer.redraw(state)
-  end)
+  if type(args.modified_buffers) == "table" then
+    M._for_each_state(source_name, function(state)
+      if utils.tbl_equals(args.modified_buffers, state.modified_buffers) then
+        -- no changes, no need to redraw
+        return
+      end
+      state.modified_buffers = args.modified_buffers
+      renderer.redraw(state)
+    end)
+  end
 end
 
 ---Navigate to the given path.
