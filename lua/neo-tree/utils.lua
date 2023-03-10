@@ -143,6 +143,44 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   end
 end
 
+--- Returns true if the contents of two tables are equal.
+M.tbl_equals = function (table1, table2)
+  -- same object
+  if table1 == table2 then
+    return true
+  end
+
+  -- not the same type
+  if type(table1) ~= "table" or type(table2) ~= "table" then
+    return false
+  end
+
+  -- If tables are lists, check if they have the same values in the same order
+  if #table1 ~= #table2 then
+    return false
+  end
+  for i, v in ipairs(table1) do
+    if table2[i] ~= v then
+      return false
+    end
+  end
+
+  -- Check if the tables have the same key/value pairs
+  for k, v in pairs(table1) do
+    if table2[k] ~= v then
+      return false
+    end
+  end
+  for k, v in pairs(table2) do
+    if table1[k] ~= v then
+      return false
+    end
+  end
+
+  -- No differences found, tables are equal
+  return true
+end
+
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 
