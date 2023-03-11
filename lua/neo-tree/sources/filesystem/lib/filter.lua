@@ -20,6 +20,14 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local height = vim.api.nvim_win_get_height(winid)
   local scroll_padding = 3
   local popup_msg = "Search:"
+
+  -- reset state that may be left over from previous search
+  state.fuzzy_finder_mode = nil
+  state.use_fzy = nil
+  state.fzy_sort_result_scores = nil
+  state.fzy_sort_file_list_cache = nil
+  state.sort_function_override = nil
+
   if search_as_you_type then
     if fuzzy_finder_mode == "directory" then
       popup_msg = "Filter Directories:"
