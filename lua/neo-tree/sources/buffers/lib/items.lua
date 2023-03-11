@@ -23,6 +23,27 @@ M.get_open_buffers = function(state)
   context.folders[root.path] = root
   local terminals = {}
 
+  local function add_buffer(bufnr, path)
+    local is_loaded = vim.api.nvim_buf_is_loaded(bufnr)
+    if is_loaded or state.show_unloaded then
+      local is_listed = vim.fn.buflisted(bufnr)
+      if is_listed == 1 then
+        if path == "" then
+          path = "[No Name]"
+        end
+        local success, item = pcall(file_items.create_item, context, path, "file", bufnr)
+        if success then
+          item.extra = {
+            bufnr = bufnr,
+            is_listed = is_listed,
+          }
+        else
+          log.error("Error creating item for " .. path .. ": " .. item)
+        end
+      end
+    end
+  end
+
   local bufs = vim.api.nvim_list_bufs()
   for _, b in ipairs(bufs) do
     local path = vim.api.nvim_buf_get_name(b)
@@ -45,25 +66,17 @@ M.get_open_buffers = function(state)
       if utils.is_subpath(state.path, abs_path) then
         table.insert(terminals, item)
       end
+    elseif path == "" then
+      add_buffer(b, path)
     else
-      local rootsub = path:sub(1, #state.path)
-      -- make sure this is within the root path
-      if rootsub == state.path then
-        local is_loaded = vim.api.nvim_buf_is_loaded(b)
-        if is_loaded or state.show_unloaded then
-          local is_listed = vim.fn.buflisted(b)
-          if is_listed == 1 then
-            local success, item = pcall(file_items.create_item, context, path, "file")
-            if success then
-              item.extra = {
-                bufnr = b,
-                is_listed = is_listed,
-              }
-            else
-              log.error("Error creating item for " .. path .. ": " .. item)
-            end
-          end
+      if #state.path > 1 then
+        local rootsub = path:sub(1, #state.path)
+        -- make sure this is within the root path
+        if rootsub == state.path then
+          add_buffer(b, path)
         end
+      else
+        add_buffer(b, path)
       end
     end
   end
