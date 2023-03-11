@@ -43,6 +43,22 @@ local get_find_command = function(state)
   return state.find_command
 end
 
+local running_jobs = {}
+M.cancel = function()
+  while #running_jobs > 0 do
+    local job = table.remove(running_jobs, 1)
+    local pid = job.pid
+    job:shutdown()
+    if pid ~= nil then
+      if utils.is_windows then
+        vim.fn.system("taskkill /F /T /PID " .. pid)
+      else
+        vim.fn.system("kill -9 " .. pid)
+      end
+    end
+  end
+end
+
 ---@class FileTypes
 ---@field file boolean
 ---@field directory boolean
@@ -68,9 +84,12 @@ end
 ---@param on_insert? fun(err: string, line: string): any Executed for each line of stdout and stderr.
 ---@param on_exit? fun(return_val: table): any Executed at the end.
 M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ignore, limit, find_args, on_insert, on_exit)
+  -- First cancel the last job if it is still running
+  M.cancel()
+
   if glob ~= nil and regex ~= nil then
     local log_msg = string.format([[glob: %s, regex: %s]], glob, regex)
-    log.warning("both glob and regex are set. glob will take precedence. " .. log_msg)
+    log.warn("both glob and regex are set. glob will take precedence. " .. log_msg)
   end
   ignore = ignore or {}
   types = types or {}
@@ -182,7 +201,7 @@ M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ign
     limit = math.huge -- `fd` manages limit on its own
   end
   local item_count = 0
-  Job:new({
+  local job = Job:new({
     command = cmd,
     cwd = path,
     args = args,
@@ -204,7 +223,10 @@ M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ign
         on_exit(return_val)
       end
     end,
-  }):start()
+  })
+  M.cancel()
+  job:start()
+  table.insert(running_jobs, job)
 end
 
 local function fzy_sort_get_total_score(terms, path)
@@ -247,11 +269,24 @@ M.fzy_sort_files = function(opts, state)
   for term in string.gmatch(opts.term, "[^%s]+") do -- space split opts.term
     terms[#terms + 1] = term
   end
+
+  -- The base search is anything that contains the characters in the term
+  -- The fzy score is then used to sort the results
+  local chars = {}
+  local regex = ".*"
+  for _, term in ipairs(terms) do
+    for c in term:gmatch(".") do
+      if not chars[c] then
+        regex = regex .. c .. "+.*"
+      end
+      chars[c] = true
+    end
+  end
+
   local result_counter = 0
 
-  -- fetch file list for the first time and calculate scores along the way
   local index = 1
-  state.fzy_sort_result_scores = { foo = 0, baz = 0 }
+  state.fzy_sort_result_scores = {}
   local function on_insert(err, path)
     if not err then
       if result_counter >= limit then
@@ -262,6 +297,9 @@ M.fzy_sort_files = function(opts, state)
         relative_path = "./" .. path:sub(pwd_length + 1)
       end
       index = index + 1
+      if state.fzy_sort_result_scores == nil then
+        state.fzy_sort_result_scores = {}
+      end
       state.fzy_sort_result_scores[path] = 0
       local score = fzy_sort_get_total_score(terms, relative_path)
       if score > 0 then
@@ -273,11 +311,11 @@ M.fzy_sort_files = function(opts, state)
     end
   end
 
-  M.filter_files_external(get_find_command(state), pwd, nil, nil, true,
+  M.filter_files_external(get_find_command(state), pwd, nil, regex, true,
     { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
     { dotfiles = not filters.visible and filters.hide_dotfiles,
       gitignore = not filters.visible and filters.hide_gitignored },
-    nil, opts.find_args, on_insert, opts.on_exit)
+    limit * 10, opts.find_args, on_insert, opts.on_exit)
 end
 
 M.find_files = function(opts)
