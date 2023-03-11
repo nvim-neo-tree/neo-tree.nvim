@@ -196,7 +196,7 @@ M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ign
     on_stderr = function(err, line)
       if item_count < limit and on_insert then
         on_insert(err or line, line)
-        item_count = item_count + 1
+        -- item_count = item_count + 1
       end
     end,
     on_exit = function(_, return_val)
@@ -249,70 +249,35 @@ M.fzy_sort_files = function(opts, state)
   end
   local result_counter = 0
 
-  if state.fzy_sort_file_list_cache ~= nil and #state.fzy_sort_file_list_cache > 0 then
-    -- list of files are already cached
-    for _, relative_path in ipairs(state.fzy_sort_file_list_cache) do
-      -- if full_path_words, contents of state.fzy_sort_file_list_cache is absolute path
-      local path = full_path_words and relative_path or pwd .. relative_path
+  -- fetch file list for the first time and calculate scores along the way
+  local index = 1
+  state.fzy_sort_result_scores = { foo = 0, baz = 0 }
+  local function on_insert(err, path)
+    if not err then
+      if result_counter >= limit then
+        return
+      end
+      local relative_path = path
+      if not full_path_words and #path > pwd_length and path:sub(1, pwd_length) == pwd then
+        relative_path = "./" .. path:sub(pwd_length + 1)
+      end
+      index = index + 1
+      state.fzy_sort_result_scores[path] = 0
       local score = fzy_sort_get_total_score(terms, relative_path)
       if score > 0 then
         state.fzy_sort_result_scores[path] = score
         result_counter = result_counter + 1
         modify_parent_scores(state.fzy_sort_result_scores, path, score)
         opts.on_insert(nil, path)
-        if result_counter >= limit then
-          break
-        end
       end
     end
-
-    if opts.on_exit then
-      opts.on_exit(0)
-    end
-  else
-    -- fetch file list for the first time and calculate scores along the way
-    state.fzy_sort_file_list_cache = {}
-    local index = 1
-    local cached_everything = true
-    state.fzy_sort_result_scores = { foo = 0, baz = 0 }
-    local function on_insert(err, path)
-      if not err then
-        if result_counter >= limit then
-          cached_everything = false
-          return
-        end
-        local relative_path = path
-        if not full_path_words and #path > pwd_length and path:sub(1, pwd_length) == pwd then
-          relative_path = "./" .. path:sub(pwd_length + 1)
-        end
-        state.fzy_sort_file_list_cache[index] = relative_path
-        index = index + 1
-        state.fzy_sort_result_scores[path] = 0
-        local score = fzy_sort_get_total_score(terms, relative_path)
-        if score > 0 then
-          state.fzy_sort_result_scores[path] = score
-          result_counter = result_counter + 1
-          modify_parent_scores(state.fzy_sort_result_scores, path, score)
-          opts.on_insert(nil, path)
-        end
-      end
-    end
-
-    local function on_exit(_)
-      log.debug(string.format([[fzy_sort_files: cached_everything: %s, len: %s]], cached_everything,
-        #state.fzy_sort_file_list_cache))
-      if not cached_everything then
-        state.fzy_sort_file_list_cache = {}
-      end
-      opts.on_exit(0)
-    end
-
-    M.filter_files_external(get_find_command(state), pwd, nil, nil, true,
-      { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
-      { dotfiles = not filters.visible and filters.hide_dotfiles,
-        gitignore = not filters.visible and filters.hide_gitignored },
-      nil, opts.find_args, on_insert, on_exit)
   end
+
+  M.filter_files_external(get_find_command(state), pwd, nil, nil, true,
+    { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
+    { dotfiles = not filters.visible and filters.hide_dotfiles,
+      gitignore = not filters.visible and filters.hide_gitignored },
+    nil, opts.find_args, on_insert, opts.on_exit)
 end
 
 M.find_files = function(opts)

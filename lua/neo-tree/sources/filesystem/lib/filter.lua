@@ -20,6 +20,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local height = vim.api.nvim_win_get_height(winid)
   local scroll_padding = 3
   local popup_msg = "Search:"
+
   if search_as_you_type then
     if fuzzy_finder_mode == "directory" then
       popup_msg = "Filter Directories:"
@@ -55,27 +56,21 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     })
   end
 
-  local set_sort_by_score = function()
-    state.sort_function_override = function(a, b)
-      -- `state.fzy_sort_result_scores` should be defined in
-      -- `sources.filesystem.lib.filter_external.fzy_sort_files`
-      local result_scores = state.fzy_sort_result_scores or { foo = 0, baz = 0 }
-      local a_score = result_scores[a.path]
-      local b_score = result_scores[b.path]
-      if a_score == nil or b_score == nil then
-        log.debug(string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score))
-        local config = require("neo-tree").config
-        if config.sort_function ~= nil then
-          return config.sort_function(a, b)
-        end
-        return nil
+  local sort_by_score = function(a, b)
+    -- `state.fzy_sort_result_scores` should be defined in
+    -- `sources.filesystem.lib.filter_external.fzy_sort_files`
+    local result_scores = state.fzy_sort_result_scores or { foo = 0, baz = 0 }
+    local a_score = result_scores[a.path]
+    local b_score = result_scores[b.path]
+    if a_score == nil or b_score == nil then
+      log.debug(string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score))
+      local config = require("neo-tree").config
+      if config.sort_function ~= nil then
+        return config.sort_function(a, b)
       end
-      return a_score > b_score
+      return nil
     end
-  end
-  if use_fzy then
-    set_sort_by_score()
-    state.use_fzy = true
+    return a_score > b_score
   end
 
   local select_first_file = function()
@@ -151,6 +146,10 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
         log.trace("Setting search in on_change to: " .. value)
         state.search_pattern = value
         state.fuzzy_finder_mode = fuzzy_finder_mode
+        if use_fzy then
+          state.sort_function_override = sort_by_score
+          state.use_fzy = true
+        end
         local callback = select_first_file
         if fuzzy_finder_mode == "directory" then
           callback = nil
