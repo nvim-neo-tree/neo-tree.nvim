@@ -224,6 +224,11 @@ end
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(_destination or source, using_root_directory, function(destination)
+    local parent_path, _ = utils.split_path(destination)
+    if source == parent_path then
+      log.warn("Cannot copy a file/folder to itself")
+      return
+    end
     local source_path = Path:new(source)
     if source_path:is_file() then
       -- When the source is a file, then Path.copy() currently doesn't create
