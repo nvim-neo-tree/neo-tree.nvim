@@ -23,10 +23,8 @@ local follow_internal = function()
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return
   end
-  local path_to_reveal = manager.get_path_to_reveal(true)
-  if not utils.truthy(path_to_reveal) then
-    return false
-  end
+  local bufnr = vim.api.nvim_get_current_buf()
+  local path_to_reveal = manager.get_path_to_reveal(true) or tostring(bufnr)
 
   local state = get_state()
   if state.current_position == "float" then
@@ -145,7 +143,7 @@ M.setup = function(config, global_config)
     manager.subscribe(M.name, {
       event = e,
       handler = function(args)
-        if utils.is_real_file(args.afile) then
+        if args.afile == "" or utils.is_real_file(args.afile) then
           M.buffers_changed()
         end
       end,

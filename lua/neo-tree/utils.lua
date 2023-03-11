@@ -501,18 +501,21 @@ end
 ---@param state table The state of the source
 ---@param path string The file to open
 ---@param open_cmd string The vimcommand to use to open the file
-M.open_file = function(state, path, open_cmd)
+---@param bufnr number|nil The buffer number to open
+M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
   if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
-    local bufnr = M.find_buffer_by_name(path)
-    if bufnr > 0 then
+    bufnr = bufnr or M.find_buffer_by_name(path)
+    if bufnr <= 0 then
+      bufnr = nil
+    else
       open_cmd = "b"
     end
   end
 
   if M.truthy(path) then
-    local escaped_path = vim.fn.fnameescape(path)
+    local escaped_path = bufnr or vim.fn.fnameescape(path)
     local events = require("neo-tree.events")
     local result = true
     local err = nil
@@ -520,6 +523,7 @@ M.open_file = function(state, path, open_cmd)
       state = state,
       path = path,
       open_cmd = open_cmd,
+      bufnr = bufnr,
     }) or {}
     if event_result.handled then
       events.fire_event(events.FILE_OPENED, path)

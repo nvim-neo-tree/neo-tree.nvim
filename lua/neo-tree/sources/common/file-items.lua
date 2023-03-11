@@ -60,20 +60,26 @@ end
 
 local create_item, set_parents
 
-function create_item(context, path, _type)
-  -- avoid creating duplicate items
-  if context.folders[path] or context.nesting[path] then
-    return context.folders[path] or context.nesting[path]
-  end
-
+function create_item(context, path, _type, bufnr)
   local parent_path, name = utils.split_path(path)
+  local id = path
+  if path == "[No Name]" and bufnr then
+    parent_path = context.state.path
+    name = "[No Name]"
+    id = tostring(bufnr)
+  else
+    -- avoid creating duplicate items
+    if context.folders[path] or context.nesting[path] then
+      return context.folders[path] or context.nesting[path]
+    end
+  end
 
   if _type == nil then
     local stat = vim.loop.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
   local item = {
-    id = path,
+    id = id,
     name = name,
     parent_path = parent_path,
     path = path,

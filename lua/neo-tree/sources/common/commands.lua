@@ -552,13 +552,14 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   local function open()
     M.revert_preview()
     local path = node.path or node:get_id()
+    local bufnr = node.extra and node.extra.bufnr
     if node.type == "terminal" then
       path = node:get_id()
     end
     if type(open_file) == "function" then
-      open_file(state, path, open_cmd)
+      open_file(state, path, open_cmd, bufnr)
     else
-      utils.open_file(state, path, open_cmd)
+      utils.open_file(state, path, open_cmd, bufnr)
     end
     local extra = node.extra or {}
     local pos = extra.position or extra.end_position
