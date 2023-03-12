@@ -461,7 +461,7 @@ M.get_appropriate_window = function(state)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
-  local ignore_ft = nt.config.open_files_do_not_replace_filetypes
+  local ignore_ft = nt.config.open_files_do_not_replace_types
   local ignore = M.list_to_dict(ignore_ft)
   ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
