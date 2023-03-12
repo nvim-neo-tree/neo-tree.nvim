@@ -483,7 +483,8 @@ M.get_appropriate_window = function(state)
   end
   local attempts = 0
   while attempts < 5 and not suitable_window_found do
-    if ignore[vim.bo.filetype] or M.is_floating() then
+    local bt = vim.bo.buftype or "normal"
+    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() then
       attempts = attempts + 1
       vim.cmd("wincmd w")
     else

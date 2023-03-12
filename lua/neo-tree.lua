@@ -178,7 +178,8 @@ M.get_prior_window = function(ignore_filetypes)
       if success and is_valid then
         local buf = vim.api.nvim_win_get_buf(last_win)
         local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-        if ignore[ft] ~= true then
+        local bt = vim.api.nvim_buf_get_option(buf, "buftype") or "normal"
+        if ignore[ft] ~= true and ignore[bt] ~= true then
           return last_win
         end
       end
