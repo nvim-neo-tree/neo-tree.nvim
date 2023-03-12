@@ -461,8 +461,11 @@ M.get_appropriate_window = function(state)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
+  local ignore_ft = nt.config.open_files_do_not_replace_filetypes
+  local ignore = M.list_to_dict(ignore_ft)
+  ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
-    local prior_window = nt.get_prior_window()
+    local prior_window = nt.get_prior_window(ignore)
     if prior_window > 0 then
       local success = pcall(vim.api.nvim_set_current_win, prior_window)
       if success then
@@ -480,12 +483,16 @@ M.get_appropriate_window = function(state)
   end
   local attempts = 0
   while attempts < 5 and not suitable_window_found do
-    if vim.bo.filetype == "neo-tree" or M.is_floating() then
+    if ignore[vim.bo.filetype] or M.is_floating() then
       attempts = attempts + 1
       vim.cmd("wincmd w")
     else
       suitable_window_found = true
     end
+  end
+  if not suitable_window_found then
+    -- go back to the neotree window, this will forve it to open a new split
+    vim.api.nvim_set_current_win(current_window)
   end
 
   local winid = vim.api.nvim_get_current_win()
@@ -515,7 +522,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = bufnr or vim.fn.fnameescape(path)
+    local escaped_path = vim.fn.fnameescape(path)
+    local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
     local err = nil
@@ -530,47 +538,58 @@ M.open_file = function(state, path, open_cmd, bufnr)
       return
     end
     if state.current_position == "current" then
-      result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+      result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
       vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
       if is_neo_tree_window then
-        -- Neo-tree must be the only window, restore it's status as a sidebar
-        local default_width = 40
-        local width = M.get_value(state, "window.width", default_width, false)
-        local available_width = vim.api.nvim_win_get_width(0)
-        if type(width) == "string" then
-          if string.sub(width, -1) == "%" then
-            width = tonumber(string.sub(width, 1, #width - 1)) / 100
-          else
-            width = tonumber(width)
-          end
-          width = math.floor(available_width * width)
-        elseif type(width) == "function" then
-          width = width()
-          if type(width) ~= "number" then
-            width = default_width
-          else
+        local width = vim.api.nvim_win_get_width(0)
+        if width == vim.o.columns then
+          -- Neo-tree must be the only window, restore it's status as a sidebar
+          local default_width = 40
+          width = M.get_value(state, "window.width", default_width, false)
+          local available_width = vim.api.nvim_win_get_width(0)
+          if type(width) == "string" then
+            if string.sub(width, -1) == "%" then
+              width = tonumber(string.sub(width, 1, #width - 1)) / 100
+            else
+              width = tonumber(width)
+            end
+            width = math.floor(available_width * width)
+          elseif type(width) == "function" then
+            width = width()
+            if type(width) ~= "number" then
+              width = default_width
+            else
+              width = math.floor(width)
+            end
+          elseif type(width) == "number" then
             width = math.floor(width)
+          else
+            width = default_width
           end
-        elseif type(width) == "number" then
-          width = math.floor(width)
-        else
-          width = default_width
         end
-        local nt = require("neo-tree")
-        local split_command = "vsplit "
+
+        local split_command = "vsplit"
         -- respect window position in user config when Neo-tree is the only window
-        if nt.config.window.position == "left" then
-          split_command = "rightbelow vs "
-        elseif nt.config.window.position == "right" then
-          split_command = "leftabove vs "
+        if state.current_position == "left" then
+          split_command = "rightbelow vs"
+        elseif state.current_position == "right" then
+          split_command = "leftabove vs"
         end
-        result, err = pcall(vim.cmd, split_command .. escaped_path)
+        if path == "[No Name]" then
+          result, err = pcall(vim.cmd, split_command)
+          if result then
+            vim.cmd("b" .. bufnr)
+          end
+        else
+          result, err = pcall(vim.cmd, split_command .. escaped_path)
+        end
+
         vim.api.nvim_win_set_width(winid, width)
       else
-        result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+        result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
