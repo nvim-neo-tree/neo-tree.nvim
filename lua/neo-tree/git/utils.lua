@@ -54,7 +54,7 @@ end
 
 M.octal_to_utf8 = function(text)
   -- git uses octal encoding for utf-8 filepaths, convert octal back to utf-8
-  local converted, success = pcall(string.gsub, text, "\\([0-7][0-7][0-7])", convert_octal_char)
+  local success, converted = pcall(string.gsub, text, "\\([0-7][0-7][0-7])", convert_octal_char)
   if success then
     return converted
   else
