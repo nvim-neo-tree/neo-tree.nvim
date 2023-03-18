@@ -881,7 +881,13 @@ create_window = function(state)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   elseif state.current_position == "current" then
-    local winid = vim.api.nvim_get_current_win()
+    -- state.id is always the window id or tabnr that this state was created for 
+    -- in the case of a position = current state object, it will be the window id
+    local winid = state.id
+    if not vim.api.nvim_win_is_valid(winid) then
+      log.warn("Window ", winid, "  is no longer valid!")
+      return
+    end
     local bufnr = vim.fn.bufnr(bufname)
     if bufnr < 1 then
       bufnr = vim.api.nvim_create_buf(false, false)
