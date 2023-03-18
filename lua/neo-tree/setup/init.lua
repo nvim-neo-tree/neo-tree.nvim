@@ -129,10 +129,10 @@ local restore_local_window_settings = function(winid)
     vim.wo.number = wo.number
     vim.wo.relativenumber = wo.relativenumber
     vim.wo.winhighlight = wo.winhighlight
-    log.info("Window settings restored")
+    log.debug("Window settings restored")
     vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
   else
-    log.info("No window settings to restore")
+    log.debug("No window settings to restore")
   end
 end
 
