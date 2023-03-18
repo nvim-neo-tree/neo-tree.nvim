@@ -1,3 +1,5 @@
+local log = require("neo-tree.log")
+
 Node = {}
 function Node:new(value)
   local props = { prev = nil, next = nil, value = value }
