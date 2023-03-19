@@ -4,15 +4,30 @@ local vim = vim
 local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")
-local inputs = require("neo-tree.ui.inputs")
 local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
-local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
+
+local cmds = {
+  move_cursor_down = function(state, scroll_padding)
+    renderer.focus_node(state, nil, true, 1, scroll_padding)
+  end,
+
+  move_cursor_up = function(state, scroll_padding)
+    renderer.focus_node(state, nil, true, -1, scroll_padding)
+    vim.cmd("redraw!")
+  end,
+}
+
+local function create_input_mapping_handle(cmd, state, scroll_padding)
+  return function()
+    cmd(state, scroll_padding)
+  end
+end
 
 M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local popup_options
@@ -203,17 +218,15 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   end, { once = true })
 
   if fuzzy_finder_mode then
-    local move_cursor_down = function()
-      renderer.focus_node(state, nil, true, 1, scroll_padding)
+    local config = require("neo-tree").config
+    for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
+      local cmd = cmds[cmd_name]
+      if cmd then
+        input:map("i", lhs, create_input_mapping_handle(cmd, state, scroll_padding), { noremap = true })
+      else
+        log.warn(string.format('Invalid command in fuzzy_finder_mappings: %s = %s', lhs, cmd_name))
+      end
     end
-    local move_cursor_up = function()
-      renderer.focus_node(state, nil, true, -1, scroll_padding)
-      vim.cmd("redraw!")
-    end
-    input:map("i", "<down>", move_cursor_down, { noremap = true })
-    input:map("i", "<C-n>", move_cursor_down, { noremap = true })
-    input:map("i", "<up>", move_cursor_up, { noremap = true })
-    input:map("i", "<C-p>", move_cursor_up, { noremap = true })
   end
 end
 
