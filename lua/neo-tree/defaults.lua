@@ -369,7 +369,13 @@ local config = {
         ["."] = "set_root",
         ["[g"] = "prev_git_modified",
         ["]g"] = "next_git_modified",
-      }
+      },
+      fuzzy_finder_mappings = { -- define keymaps for filter popup window in fuzzy_finder_mode
+        ["<down>"] = "move_cursor_down",
+        ["<C-n>"] = "move_cursor_down",
+        ["<up>"] = "move_cursor_up",
+        ["<C-p>"] = "move_cursor_up",
+      },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
                                    -- "always" means directory scans are always async.
