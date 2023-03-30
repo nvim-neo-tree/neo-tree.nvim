@@ -19,6 +19,7 @@ local config = {
   enable_diagnostics = true,
   enable_git_status = true,
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
+  enable_open_files_highlights = true,
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   git_status_async = true,
   -- These options are for people with VERY large git repos
@@ -29,6 +30,7 @@ local config = {
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   hide_root_node = false, -- Hide the root node.
+  highlight_open_files = false, -- highlight open files, also need to turn on this option in the `name` component
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
@@ -210,6 +212,7 @@ local config = {
     },
     name = {
       trailing_slash = false,
+      highlight_open_files = false,
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
     },

@@ -369,6 +369,17 @@ M.setup = function(config, global_config)
     })
   end
 
+  if global_config.highlight_open_files then
+    for _, event in ipairs({ events.VIM_BUFFER_ADDED, events.VIM_BUFFER_DELETED }) do
+      manager.subscribe(M.name, {
+        event = event,
+        handler = function()
+          manager.refresh(M.name)
+        end,
+      })
+    end
+  end
+
   -- Configure event handler for follow_current_file option
   if config.follow_current_file then
     manager.subscribe(M.name, {
