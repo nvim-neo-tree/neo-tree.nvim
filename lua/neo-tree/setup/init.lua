@@ -47,18 +47,19 @@ local define_events = function()
 
   events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
 
+  local modified_changed = function(args)
+    args.modified_buffers = utils.get_modified_buffers()
+    return args
+  end
   events.define_autocmd_event(
     events.VIM_BUFFER_MODIFIED_SET,
     { "BufModifiedSet" },
     0,
-    function(args)
-      args.modified_buffers = utils.get_modified_buffers()
-      return args
-    end
+    modified_changed
   )
 
-  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
-  events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
+  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, modified_changed)
+  events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200, modified_changed)
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
 
   events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)

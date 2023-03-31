@@ -328,14 +328,9 @@ M.name = function(config, node, state)
   end
 
   if config.highlight_open_files then
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if
-        vim.api.nvim_buf_is_loaded(buf)
-        and vim.fn.buflisted(buf)
-        and vim.api.nvim_buf_get_name(buf) == node.path
-      then
-        highlight = highlights.FILE_NAME_OPENED
-      end
+    local modified_buffers = state.modified_buffers or {}
+    if modified_buffers[node.path] ~= nil then
+      highlight = highlights.FILE_NAME_OPENED
     end
   end
 
