@@ -246,11 +246,13 @@ end
 M.get_modified_buffers = function()
   local modified_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    local buffer_name = vim.api.nvim_buf_get_name(buffer)
-    if buffer_name == nil or buffer_name == "" then
-      buffer_name = "[No Name]#" .. buffer
+    if vim.api.nvim_buf_is_loaded(buffer) and vim.fn.buflisted(buffer) then
+      local buffer_name = vim.api.nvim_buf_get_name(buffer)
+      if buffer_name == nil or buffer_name == "" then
+        buffer_name = "[No Name]#" .. buffer
+      end
+      modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
     end
-    modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
   end
   return modified_buffers
 end
