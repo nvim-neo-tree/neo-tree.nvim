@@ -302,6 +302,8 @@ local get_params_for_cwd = function(state)
       return winid, tabnr
     elseif target == "global" then
       return -1, -1
+    elseif target == "none" then
+      return nil, nil
     else -- default to tab
       return -1, tabnr
     end
@@ -312,7 +314,10 @@ end
 
 M.get_cwd = function(state)
   local winid, tabnr = get_params_for_cwd(state)
-  local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  local success, cwd = false, ""
+  if winid or tabnr then
+    success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  end
   if success then
     return cwd
   else
@@ -331,6 +336,11 @@ M.set_cwd = function(state)
   end
 
   local winid, tabnr = get_params_for_cwd(state)
+
+  if winid == nil and tabnr == nil then
+    return
+  end
+
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
     if winid > 0 then
