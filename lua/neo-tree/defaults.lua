@@ -55,6 +55,7 @@ local config = {
       buffers =    "  Buffers ",
       git_status = "  Git ",
       diagnostics = " 裂Diagnostics ",
+      document_symbols = "  Symbols ",
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
     --                start  : |/ 裡 bufname     \/...
@@ -503,6 +504,12 @@ local config = {
         {"indent"},
         {"icon", default="C" },
         {"name"},
+      },
+    },
+    window = {
+      mappings = {
+        ["<cr>"] = "toggle_node",
+        ["o"] = 'jump_to_symbol'
       },
     },
   },
