@@ -7,6 +7,7 @@ local config = {
     "filesystem",
     "buffers",
     "git_status",
+    "document_symbols",
   },
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
@@ -488,6 +489,20 @@ local config = {
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
+      },
+    },
+  },
+  document_symbols = {
+    renderers = {
+      directory = {
+        {"indent"},
+        {"icon", default="C" },
+        {"name"},
+      },
+      file = {
+        {"indent"},
+        {"icon", default="C" },
+        {"name"},
       },
     },
   },
