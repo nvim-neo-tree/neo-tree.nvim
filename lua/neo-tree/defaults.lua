@@ -498,18 +498,28 @@ local config = {
       directory = {
         {"indent"},
         {"icon", default="C" },
-        {"name"},
+        {"container",
+        content = {
+          {"name", zindex = 10},
+          {"kind", zindex = 20, align = "right"},
+          }
+        }
       },
       file = {
         {"indent"},
         {"icon", default="C" },
-        {"name"},
+        {"container",
+        content = {
+          {"name", zindex = 10},
+          {"kind", zindex = 20, align = "right"},
+          }
+        }
       },
     },
     window = {
       mappings = {
         ["<cr>"] = "toggle_node",
-        ["o"] = 'jump_to_symbol'
+        ["o"] = "jump_to_symbol",
       },
     },
   },

@@ -16,34 +16,43 @@ local kind = require("neo-tree.sources.document_symbols.lib.kind")
 
 local M = {}
 
-M.custom = function(config, node, state)
-  local text = node.extra.custom_text or ""
-  local highlight = highlights.DIM_TEXT
+M.icon = function(config, node, state)
+  local padding = config.padding or " "
+  local has_children_icon = " "
+  if node:has_children() then
+    has_children_icon = node:is_expanded() and "" or ""
+  end
+
+  local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_ICON
+
   return {
-    text = text .. " ",
+    text = has_children_icon .. padding,
     highlight = highlight,
   }
 end
 
-M.icon = function(config, node, state)
-  local icon = config.default or " "
+M.kind = function(config, node, state)
   local padding = config.padding or " "
-  local highlight = config.highlight or highlights.FILE_ICON
+  local kind = node.extra.kind
 
-  icon = string.sub(node.extra.kind, 1, 1)
+  local text = config.align == "right" and kind.name .. padding .. kind.icon .. padding
+    or padding .. kind.icon .. padding .. kind.name
+  if node:get_depth() == 1 then
+    text = ""
+  end
 
   return {
-    text = icon .. padding,
-    highlight = highlight,
+    text = text,
+    highlight = kind.hl,
   }
 end
 
 M.name = function(config, node, state)
-  local highlight = config.highlight or highlights.FILE_NAME
+  local padding = config.padding or " "
+  local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_NAME
   local text = node.name
   if node:get_depth() == 1 then
     text = "SYMBOLS in " .. node.name
-    highlight = highlights.ROOT_NAME
   end
   return {
     text = text,
