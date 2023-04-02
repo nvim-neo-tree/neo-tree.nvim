@@ -572,8 +572,8 @@ M.merge_config = function(user_config, is_auto_config)
     source_default_config.window = vim.tbl_deep_extend(
       "force",
       default_config.window or {},
-      source_default_config.window or {},
-      user_config.window or {}
+      user_config.window or {},
+      source_default_config.window or {}
     )
 
     merge_renderers(default_config, source_default_config, user_config)
