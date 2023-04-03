@@ -12,7 +12,6 @@
 
 local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
-local kind = require("neo-tree.sources.document_symbols.lib.kind")
 
 local M = {}
 
