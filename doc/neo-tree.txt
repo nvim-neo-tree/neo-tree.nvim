@@ -29,6 +29,7 @@ Configuration ............... |neo-tree-configuration|
 Other Sources ............... |neo-tree-sources|
   Buffers ................... |neo-tree-buffers|
   Git Status ................ |neo-tree-git-status-source|
+  Document Symbols .......... |neo-tree-document-symbols|
 
 
 INTRODUCTION                                             *neo-tree-introduction*
@@ -1640,5 +1641,48 @@ specific commands:
       ["gc"] = "git_commit"
       ["gp"] = "git_push",
       ["gg"] = "git_commit_and_push",
+
+
+DOCUMENT SYMBOLS                                     *neo-tree-document-symbols*
+
+The document_symbols source lists the symbols in the current document obtained
+by the LSP request "textDocument/documentSymbols". 
+
+Its configuration includes the following options:
+
+kind~
+A table containing how LSP kinds should be rendered. Each entry should map the
+LSP kind (an integer), to a value for example 
+  `{ name = "Class", icon = "", hl = "Include"}`
+
+For the list of kinds, please refer to 
+https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentSymbol
+
+server_filter~
+This option could be used to set which LSP server is used to obtain the document
+symbols. This accepts one of the following values
+  
+  `"first"`: use the first LSP server that provides the feature
+  `"all"`: use all LSP server that provides the feature
+  `{ fn = function(name), white_list = table, black_list = table }` where
+      `fn`: a function that returns `true` if the server `name` should be used
+      `white_list`: use only servers from this list
+      `black_list`: exclude all servers from this list
+      NOTE: `fn` preceeds `white_list` preceeds `black_list`
+
+For example: (NOTE: here only `fn` will be taken into account)
+>
+  { 
+    fn = function(name) return name ~= "null-ls" end,
+    white_list = { "clangd", "lua_ls" },
+    black_list = { "pyright" },
+  }
+<
+Currently, this source supports the following commands:
+    
+    ["o"] = "jump_to_symbol",
+    ["r"] = "rename",
+    ["P"] = "preview", (and related commands)
+    ["s"] = "split", (and related commands)
 
 vim:tw=80:ts=2:et:ft=help:

@@ -7,7 +7,7 @@ local config = {
     "filesystem",
     "buffers",
     "git_status",
-    "document_symbols",
+    -- "document_symbols",
   },
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
@@ -495,12 +495,12 @@ local config = {
   },
   document_symbols = {
     renderers = {
-      directory = {
+      root = {
         {"indent"},
         {"icon", default="C" },
         {"name", zindex = 10},
       },
-      file = {
+      symbol = {
         {"indent"},
         {"icon", default="C" },
         {"container",
@@ -518,6 +518,7 @@ local config = {
         ["o"] = "jump_to_symbol",
       },
     },
+    server_filter = "first",
     kinds = {
       [1] = { name = "File", icon = "", hl = "Tag" },
       [2] = { name = "Module", icon = "", hl = "Exception" },

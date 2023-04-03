@@ -56,7 +56,7 @@ local function dfs(resp_node, id, state)
   local symb_node = {
     id = id,
     name = resp_node.name,
-    type = "file",
+    type = "symbol",
     path = state.path,
     children = children,
     extra = {
@@ -97,7 +97,7 @@ local on_lsp_resp = function(resp, state)
       id = "" .. id,
       name = string.format("(%s) in %s", client_name, filename),
       path = state.path,
-      type = "directory",
+      type = "root",
       children = symbol_list,
       extra = { kind = { name = "Root", icon = "", hl = highlights.ROOT_NAME } },
     })
