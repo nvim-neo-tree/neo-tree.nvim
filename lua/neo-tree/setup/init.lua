@@ -51,7 +51,7 @@ local define_events = function()
     args.opened_buffers = utils.get_opened_buffers()
     return args
   end
-  
+
   events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
   events.define_autocmd_event(
@@ -225,9 +225,9 @@ M.buffer_enter_event = function()
       return
     end
 
-    local current_tabnr = vim.api.nvim_get_current_tabpage()
-    local neo_tree_tabnr = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabnr")
-    if neo_tree_tabnr ~= current_tabnr then
+    local current_tabid = vim.api.nvim_get_current_tabpage()
+    local neo_tree_tabid = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabid")
+    if neo_tree_tabid ~= current_tabid then
       -- This a new tab, so the alternate being neo-tree doesn't matter.
       return
     end
@@ -268,12 +268,12 @@ M.win_enter_event = function()
   manager.close_all("float")
 
   if M.config.close_if_last_window then
-    local tabnr = vim.api.nvim_get_current_tabpage()
-    local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
+    local tabid = vim.api.nvim_get_current_tabpage()
+    local wins = utils.get_value(M, "config.prior_windows", {})[tabid]
     local prior_exists = utils.truthy(wins)
     local non_floating_wins = vim.tbl_filter(function(win)
       return not utils.is_floating(win)
-    end, vim.api.nvim_tabpage_list_wins(tabnr))
+    end, vim.api.nvim_tabpage_list_wins(tabid))
     local win_count = #non_floating_wins
     log.trace("checking if last window")
     log.trace("prior window exists = ", prior_exists)
@@ -350,11 +350,11 @@ M.win_enter_event = function()
 
   M.config.prior_windows = M.config.prior_windows or {}
 
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  local tab_windows = M.config.prior_windows[tabnr]
+  local tabid = vim.api.nvim_get_current_tabpage()
+  local tab_windows = M.config.prior_windows[tabid]
   if tab_windows == nil then
     tab_windows = {}
-    M.config.prior_windows[tabnr] = tab_windows
+    M.config.prior_windows[tabid] = tab_windows
   end
   table.insert(tab_windows, win_id)
 
@@ -365,7 +365,7 @@ M.win_enter_event = function()
     for i = 80, win_count do
       table.insert(new_array, tab_windows[i])
     end
-    M.config.prior_windows[tabnr] = new_array
+    M.config.prior_windows[tabid] = new_array
   end
 end
 
@@ -708,8 +708,11 @@ M.merge_config = function(user_config, is_auto_config)
     event = events.VIM_TAB_CLOSED,
     handler = function(args)
       local tabnr = tonumber(args.afile)
-      log.debug("VIM_TAB_CLOSED: disposing state for tab", tabnr)
-      manager.dispose_tab(tabnr)
+      log.debug("VIM_TAB_CLOSED: disposing state for tabnr", tabnr)
+      -- Internally we use tabids to track state but <afile> is tabnr of a tab that has already been
+      -- closed so there is no way to get its tabid. Instead dispose all tabs that are no longer valid.
+      -- Must be scheduled because nvim_tabpage_is_valid does not work inside TabClosed event callback.
+      vim.schedule_wrap(manager.dispose_invalid_tabs)()
     end,
   })
 
