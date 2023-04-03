@@ -139,7 +139,7 @@ M.setup = function(config, global_config)
     return config.kinds[kind_id] or { name = "Unknown", icon = "?", hl = "" }
   end
   manager.subscribe(M.name, {
-    event = events.VIM_LSP_REQUEST,
+    event = events.VIM_LSP_UPDATE,
     handler = function(args)
       manager.refresh(M.name)
     end,
