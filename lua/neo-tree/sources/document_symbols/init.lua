@@ -6,12 +6,14 @@ local renderer = require("neo-tree.ui.renderer")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local utils = require("neo-tree.utils")
-local kind = require("neo-tree.sources.document_symbols.lib.kind")
 local highlights = require("neo-tree.ui.highlights")
 local filters = require("neo-tree.sources.document_symbols.lib.server_filters")
 
 local M = { name = "document_symbols" }
 M.server_filter = filters.parse_server_filter()
+M.get_kind = function()
+  return { name = "", icon = " ", hl = "" }
+end
 
 local get_state = function()
   return manager.get_state(M.name)
@@ -59,7 +61,7 @@ local function dfs(resp_node, id, state)
     children = children,
     extra = {
       bufnr = state.lsp_bufnr,
-      kind = kind.get_kind(resp_node.kind),
+      kind = M.get_kind(resp_node.kind),
       range = parse_range(resp_node.range, 1, 0),
       selection_range = parse_range(resp_node.selectionRange, 1, 0),
       detail = resp_node.detail,
@@ -133,6 +135,9 @@ end
 ---wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   M.server_filter = filters.parse_server_filter(config.server_filter)
+  M.get_kind = function(kind_id)
+    return config.kinds[kind_id] or { name = "Unknown", icon = "?", hl = "" }
+  end
   manager.subscribe(M.name, {
     event = events.VIM_LSP_REQUEST,
     handler = function(args)
