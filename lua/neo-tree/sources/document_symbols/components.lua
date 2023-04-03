@@ -31,25 +31,39 @@ M.icon = function(config, node, state)
   }
 end
 
-M.kind = function(config, node, state)
+M.kind_icon = function(config, node, state)
   local padding = config.padding or " "
-  local kind = node.extra.kind
+  local icon = node.extra.kind.icon
 
-  local text = config.align == "right" and kind.name .. padding .. kind.icon .. padding
-    or padding .. kind.icon .. padding .. kind.name
+  icon = config.align == "right" and icon .. padding or padding .. icon
   if node:get_depth() == 1 then
-    text = ""
+    icon = ""
   end
 
   return {
-    text = text,
-    highlight = kind.hl,
+    text = icon,
+    highlight = node.extra.kind.hl,
+  }
+end
+
+M.kind_name = function(config, node, state)
+  local padding = config.padding or " "
+  local name = node.extra.kind.name
+
+  name = config.align == "right" and name .. padding or padding .. name
+  if node:get_depth() == 1 then
+    name = ""
+  end
+
+  return {
+    text = name,
+    highlight = node.extra.kind.hl,
   }
 end
 
 M.name = function(config, node, state)
   local padding = config.padding or " "
-  local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_NAME
+  local highlight = node.extra.kind.hl or highlights.FILE_NAME
   local text = node.name
   if node:get_depth() == 1 then
     text = "SYMBOLS in " .. node.name

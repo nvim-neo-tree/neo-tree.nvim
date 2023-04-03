@@ -55,13 +55,6 @@ M.rename = function(state)
 end
 
 M.open = M.jump_to_symbol
--- M.open_split = M.open
--- M.open_vsplit = M.open
--- M.open_tabnew = M.open
-
--- M.split_with_window_picker = M.open
--- M.vsplit_with_window_picker = M.open
--- M.open_with_window_picker = M.open
 
 -- mask away default commands
 M.add = function() end

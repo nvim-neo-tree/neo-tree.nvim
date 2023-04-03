@@ -15,6 +15,11 @@ local get_state = function()
   return manager.get_state(M.name)
 end
 
+---Parse the LspRange
+---@param range table the LspRange object to parse
+---@param row_offset integer the offset for line (e.g for nvim_set_cursor() this is 1)
+---@param col_offset integer the offset for column
+---@return table range the parsed range
 local parse_range = function(range, row_offset, col_offset)
   row_offset = row_offset or 0
   col_offset = col_offset or 0
@@ -30,12 +35,21 @@ local parse_range = function(range, row_offset, col_offset)
   }
 end
 
+---Parse the LSP response into a tree
+---@param resp_node table the LSP response node
+---@param id string the id of the current node
+---@param bufnr integer the buffer number of the file
+---@param path string the path to the file
+---@return table symb_node the parsed tree
 local function dfs(resp_node, id, bufnr, path)
+  -- parse all children
   local children = {}
   for i, child in ipairs(resp_node.children or {}) do
     local child_node = dfs(child, id .. "." .. i, bufnr, path)
     table.insert(children, child_node)
   end
+
+  -- parse current node
   local preview_range = parse_range(resp_node.range)
   local symb_node = {
     id = id,
@@ -56,12 +70,17 @@ local function dfs(resp_node, id, bufnr, path)
   return symb_node
 end
 
+---Callback function for lsp request
+---@param resp table the response of the lsp server
+---@param bufname string the buffer name TODO: we don't really need this
+---@param state table the state of the source
 local on_lsp_resp = function(resp, bufname, state)
   if resp == nil or type(resp) ~= "table" then
     return
   end
 
   local symbol_list = {}
+  -- search until a lsp client returns a non-empty result
   for _, client_result in pairs(resp) do
     client_result = client_result.result
     if client_result ~= nil then
@@ -92,7 +111,7 @@ M.navigate = function(state)
   local bufname = vim.api.nvim_buf_get_name(buf)
   state.lsp_winid = winid
   state.lsp_buf = buf
-  state.path = bufname -- so that M.refresh() works
+  state.path = bufname
 
   vim.lsp.buf_request_all(
     buf,
@@ -106,7 +125,7 @@ end
 
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user
---wants to change from the defaults. May be empty to accept default values.
+---wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   manager.subscribe(M.name, {
     event = events.VIM_LSP_REQUEST,

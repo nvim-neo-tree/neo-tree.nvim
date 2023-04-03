@@ -498,12 +498,7 @@ local config = {
       directory = {
         {"indent"},
         {"icon", default="C" },
-        {"container",
-        content = {
-          {"name", zindex = 10},
-          {"kind", zindex = 20, align = "right"},
-          }
-        }
+        {"name", zindex = 10},
       },
       file = {
         {"indent"},
@@ -511,7 +506,8 @@ local config = {
         {"container",
         content = {
           {"name", zindex = 10},
-          {"kind", zindex = 20, align = "right"},
+          {"kind_name", zindex = 20, align = "right"},
+          {"kind_icon", zindex = 20, align = "right"},
           }
         }
       },
