@@ -285,6 +285,21 @@ local config = {
     }
   },
   nesting_rules = {},
+  -- Global custom commands that will be available in all sources (if not overridden in `opts[source_name].commands`)
+  --
+  -- You can then reference the custom command by adding a mapping to it:
+  --    globally    -> `opts.window.mappings`
+  --    locally     -> `opt[source_name].window.mappings` to make it source specific.
+  --
+  -- commands = {              |  window {                 |  filesystem {
+  --   hello = function()      |    mappings = {           |    commands = {
+  --     print("Hello world")  |      ["<C-c>"] = "hello"  |      hello = function()
+  --   end                     |    }                      |        print("Hello world in filesystem")
+  -- }                         |  }                        |      end
+  --
+  -- see `:h neo-tree-global-custom-commands`
+  commands = {}, -- A list of functions
+
   window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
              -- possible options. These can also be functions that return these options.
     position = "left", -- left, right, top, bottom, float, current

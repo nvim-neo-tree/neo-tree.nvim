@@ -185,6 +185,11 @@ use {
             }
           },
         },
+        -- A list of functions, each representing a global custom command
+        -- that will be available in all sources (if not overridden in `opts[source_name].commands`)
+        -- see `:h neo-tree-global-custom-commands`
+        commands = {}
+
         window = {
           position = "left",
           width = 40,
@@ -299,7 +304,9 @@ use {
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
             },
-          }
+          },
+
+          commands = {} -- Add a custom command or override a global one using the same function name
         },
         buffers = {
           follow_current_file = true, -- This will find and focus the file in the active buffer every
