@@ -328,7 +328,7 @@ M.name = function(config, node, state)
     end
   end
 
-  if config.highlight_open_files then
+  if config.highlight_opened_files then
     local opened_buffers = state.opened_buffers or {}
     if opened_buffers[node.path] ~= nil then
       highlight = highlights.FILE_NAME_OPENED

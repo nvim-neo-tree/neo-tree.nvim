@@ -251,9 +251,9 @@ M.get_opened_buffers = function()
       if buffer_name == nil or buffer_name == "" then
         buffer_name = "[No Name]#" .. buffer
       end
-      opened_buffers[buffer_name]({
+      opened_buffers[buffer_name] = {
         ["modified"] = vim.api.nvim_buf_get_option(buffer, "modified"),
-      })
+      }
     end
   end
   return opened_buffers

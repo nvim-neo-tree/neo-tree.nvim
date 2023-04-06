@@ -369,7 +369,7 @@ M.setup = function(config, global_config)
     })
   end
 
-  if global_config.default_component_configs.name.highlight_open_files then
+  if global_config.enable_opened_markers then
     for _, event in ipairs({ events.VIM_BUFFER_ADDED, events.VIM_BUFFER_DELETED }) do
       manager.subscribe(M.name, {
         event = event,
