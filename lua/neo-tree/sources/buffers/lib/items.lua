@@ -8,7 +8,7 @@ local M = {}
 
 ---Get a table of all open buffers, along with all parent paths of those buffers.
 ---The paths are the keys of the table, and all the values are 'true'.
-M.get_open_buffers = function(state)
+M.get_opened_buffers = function(state)
   if state.loading then
     return
   end

@@ -47,19 +47,24 @@ local define_events = function()
 
   events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
 
-  local modified_changed = function(args)
-    args.modified_buffers = utils.get_modified_buffers()
+  local update_opened_buffers = function(args)
+    args.opened_buffers = utils.get_opened_buffers()
     return args
   end
   events.define_autocmd_event(
     events.VIM_BUFFER_MODIFIED_SET,
     { "BufModifiedSet" },
     0,
-    modified_changed
+    update_opened_buffers
   )
 
-  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, modified_changed)
-  events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200, modified_changed)
+  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
+  events.define_autocmd_event(
+    events.VIM_BUFFER_DELETED,
+    { "BufDelete" },
+    200,
+    update_opened_buffers
+  )
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
 
   events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
@@ -279,10 +284,10 @@ M.win_enter_event = function()
         if state == nil then
           return
         end
-        local mod = utils.get_modified_buffers()
+        local mod = utils.get_opened_buffers()
         log.debug("close_if_last_window, modified files found: ", vim.inspect(mod))
-        for filename, is_modified in pairs(mod) do
-          if is_modified then
+        for filename, buf_info in pairs(mod) do
+          if buf_info.modified then
             if vim.startswith(filename, "[No Name]#") then
               bufnr = string.sub(filename, 11)
               log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
