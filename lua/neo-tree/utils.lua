@@ -144,7 +144,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
 end
 
 --- Returns true if the contents of two tables are equal.
-M.tbl_equals = function (table1, table2)
+M.tbl_equals = function(table1, table2)
   -- same object
   if table1 == table2 then
     return true
@@ -241,18 +241,33 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
+--- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table
+---@return table opened_buffers { [buffer_name] = bool }
 M.get_modified_buffers = function()
-  local modified_buffers = {}
-  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    local buffer_name = vim.api.nvim_buf_get_name(buffer)
-    if buffer_name == nil or buffer_name == "" then
-      buffer_name = "[No Name]#" .. buffer
-    end
-    modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
+  local opened_buffers = M.get_opened_buffers()
+  for bufname, bufinfo in pairs(opened_buffers) do
+    opened_buffers[bufname] = bufinfo.modified
   end
-  return modified_buffers
+  return opened_buffers
+end
+
+---Gets a lookup of all open buffers keyed by path with additional information
+---@return table opened_buffers { [buffer_name] = { modified = bool } }
+M.get_opened_buffers = function()
+  local opened_buffers = {}
+  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buffer) and vim.fn.buflisted(buffer) then
+      local buffer_name = vim.api.nvim_buf_get_name(buffer)
+      if buffer_name == nil or buffer_name == "" then
+        buffer_name = "[No Name]#" .. buffer
+      end
+      opened_buffers[buffer_name] = {
+        ["modified"] = vim.api.nvim_buf_get_option(buffer, "modified"),
+      }
+    end
+  end
+  return opened_buffers
 end
 
 ---Resolves some variable to a string. The object can be either a string or a

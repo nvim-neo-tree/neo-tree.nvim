@@ -292,9 +292,10 @@ M.icon = function(config, node, state)
 end
 
 M.modified = function(config, node, state)
-  local modified_buffers = state.modified_buffers or {}
+  local opened_buffers = state.opened_buffers or {}
+  local buf_info = opened_buffers[node.path]
 
-  if modified_buffers[node.path] then
+  if buf_info and buf_info.modified then
     return {
       text = (make_two_char(config.symbol) or "[+] "),
       highlight = config.highlight or highlights.MODIFIED,
@@ -324,6 +325,13 @@ M.name = function(config, node, state)
       if git_status and git_status.highlight then
         highlight = git_status.highlight
       end
+    end
+  end
+
+  if config.highlight_opened_files then
+    local opened_buffers = state.opened_buffers or {}
+    if opened_buffers[node.path] ~= nil then
+      highlight = highlights.FILE_NAME_OPENED
     end
   end
 

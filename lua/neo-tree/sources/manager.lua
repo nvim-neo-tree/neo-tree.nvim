@@ -425,17 +425,17 @@ M.focus = function(source_name, path_to_reveal, callback)
 end
 
 ---Redraws the tree with updated modified markers without scanning the filesystem again.
-M.modified_buffers_changed = function(source_name, args)
+M.opened_buffers_changed = function(source_name, args)
   if not type(args) == "table" then
-    error("modified_buffers_changed: args must be a table")
+    error("opened_buffers_changed: args must be a table")
   end
-  if type(args.modified_buffers) == "table" then
+  if type(args.opened_buffers) == "table" then
     M._for_each_state(source_name, function(state)
-      if utils.tbl_equals(args.modified_buffers, state.modified_buffers) then
+      if utils.tbl_equals(args.opened_buffers, state.opened_buffers) then
         -- no changes, no need to redraw
         return
       end
-      state.modified_buffers = args.modified_buffers
+      state.opened_buffers = args.opened_buffers
       renderer.redraw(state)
     end)
   end
