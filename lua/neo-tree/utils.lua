@@ -241,8 +241,19 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
+--- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table
+---@return table opened_buffers { [buffer_name] = bool }
+M.get_modified_buffers = function()
+  local opened_buffers = M.get_opened_buffers()
+  for bufname, bufinfo in pairs(opened_buffers) do
+    opened_buffers[bufname] = bufinfo.modified
+  end
+  return opened_buffers
+end
+
+---Gets a lookup of all open buffers keyed by path with additional information
+---@return table opened_buffers { [buffer_name] = { modified = bool } }
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
