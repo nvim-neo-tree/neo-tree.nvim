@@ -585,7 +585,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
             vim.cmd("b" .. bufnr)
           end
         else
-          result, err = pcall(vim.cmd, split_command .. escaped_path)
+          result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
         end
 
         vim.api.nvim_win_set_width(winid, width)
