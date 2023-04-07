@@ -15,26 +15,26 @@ local common = require("neo-tree.sources.common.components")
 
 local M = {}
 
+-- M.icon = function(config, node, state)
+--   local padding = config.padding or " "
+--   local has_children_icon = " "
+--   if node:has_children() then
+--     has_children_icon = node:is_expanded() and "" or ""
+--   end
+
+--   local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_ICON
+
+--   return {
+--     text = has_children_icon .. padding,
+--     highlight = highlight,
+--   }
+-- end
+
 M.icon = function(config, node, state)
-  local padding = config.padding or " "
-  local has_children_icon = " "
-  if node:has_children() then
-    has_children_icon = node:is_expanded() and "" or ""
-  end
-
-  local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_ICON
-
-  return {
-    text = has_children_icon .. padding,
-    highlight = highlight,
-  }
-end
-
-M.kind_icon = function(config, node, state)
   local padding = config.padding or " "
   local icon = node.extra.kind.icon
 
-  icon = config.align == "right" and icon .. padding or padding .. icon
+  icon = config.align == "right" and padding .. icon or icon .. padding
   if node:get_depth() == 1 then
     icon = ""
   end
@@ -45,11 +45,13 @@ M.kind_icon = function(config, node, state)
   }
 end
 
+M.kind_icon = M.icon
+
 M.kind_name = function(config, node, state)
   local padding = config.padding or " "
   local name = node.extra.kind.name
 
-  name = config.align == "right" and name .. padding or padding .. name
+  name = config.align == "right" and padding .. name or name .. padding
   if node:get_depth() == 1 then
     name = ""
   end

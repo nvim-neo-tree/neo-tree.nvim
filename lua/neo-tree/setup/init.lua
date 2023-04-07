@@ -72,7 +72,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
   events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(
-    events.VIM_LSP_UPDATE,
+    events.NEO_TREE_LSP_UPDATE,
     { "InsertLeave", "WinEnter", "BufEnter", "BufWinEnter", "TabEnter", "BufWritePost" },
     200
   )

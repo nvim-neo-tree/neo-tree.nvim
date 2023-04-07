@@ -15,6 +15,10 @@ M.get_kind = function()
   return { name = "", icon = " ", hl = "" }
 end
 
+local wrap = function(func)
+  return utils.wrap(func, M.name)
+end
+
 local get_state = function()
   return manager.get_state(M.name)
 end
@@ -90,8 +94,8 @@ local on_lsp_resp = function(resp, state)
       table.insert(symbol_list, dfs(resp_node, id .. "." .. i, state))
     end
 
-    local filename = vim.split(state.path, "/")
-    filename = filename[#filename]
+    local splits = vim.split(state.path, "/")
+    local filename = splits[#splits]
 
     table.insert(items, {
       id = "" .. id,
@@ -138,8 +142,22 @@ M.setup = function(config, global_config)
   M.get_kind = function(kind_id)
     return config.kinds[kind_id] or { name = "Unknown", icon = "?", hl = "" }
   end
+
+  if config.before_render then
+    --convert to new event system
+    manager.subscribe(M.name, {
+      event = events.BEFORE_RENDER,
+      handler = function(state)
+        local this_state = get_state()
+        if state == this_state then
+          config.before_render(this_state)
+        end
+      end,
+    })
+  end
+
   manager.subscribe(M.name, {
-    event = events.VIM_LSP_UPDATE,
+    event = events.NEO_TREE_LSP_UPDATE,
     handler = function(args)
       manager.refresh(M.name)
     end,

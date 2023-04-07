@@ -501,13 +501,12 @@ local config = {
         {"name", zindex = 10},
       },
       symbol = {
-        {"indent"},
-        {"icon", default="C" },
+        {"indent", with_expanders = true},
+        {"kind_icon", default="?" },
         {"container",
         content = {
           {"name", zindex = 10},
           {"kind_name", zindex = 20, align = "right"},
-          {"kind_icon", zindex = 20, align = "right"},
           }
         }
       },
@@ -516,6 +515,15 @@ local config = {
       mappings = {
         ["<cr>"] = "jump_to_symbol",
         ["o"] = "jump_to_symbol",
+        ["A"] = "noop", -- also accepts the config.show_path and config.insert_as options.
+        ["d"] = "noop",
+        ["r"] = "rename",
+        ["y"] = "noop",
+        ["x"] = "noop",
+        ["p"] = "noop",
+        ["c"] = "noop",
+        ["m"] = "noop",
+        ["a"] = "noop",
       },
     },
     server_filter = "first",
