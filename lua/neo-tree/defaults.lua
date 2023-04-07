@@ -514,7 +514,7 @@ local config = {
     },
     window = {
       mappings = {
-        ["<cr>"] = "toggle_node",
+        ["<cr>"] = "jump_to_symbol",
         ["o"] = "jump_to_symbol",
       },
     },

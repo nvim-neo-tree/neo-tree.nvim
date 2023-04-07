@@ -13,14 +13,6 @@ local SOURCE_NAME = "document_symbols"
 M.refresh = utils.wrap(manager.refresh, SOURCE_NAME)
 M.redraw = utils.wrap(manager.redraw, SOURCE_NAME)
 
-M.example_command = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-  local id = node:get_id()
-  local name = node.name
-  print(vim.inspect(node.extra))
-end
-
 M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
@@ -56,16 +48,14 @@ end
 
 M.open = M.jump_to_symbol
 
--- mask away default commands
-M.add = function() end
-M.add_directory = M.add
-M.copy = M.add
-M.delete = M.add
-M.delete_visual = M.add
-M.move = M.add
-M.paste_from_clipboard = M.add
-M.cut_to_clipboard = M.add
-M.copy_to_clipboard = M.add
+cc._add_common_commands(M, "node") -- common tree commands
+cc._add_common_commands(M, "^open") -- open commands
+cc._add_common_commands(M, "^close_window$")
+cc._add_common_commands(M, "source$") -- source navigation
+cc._add_common_commands(M, "preview") -- preview
+cc._add_common_commands(M, "^cancel$") -- cancel
+cc._add_common_commands(M, "help") -- help commands
+cc._add_common_commands(M, "with_window_picker$") -- open using window picker
+cc._add_common_commands(M, "^toggle_auto_expand_width$")
 
-cc._add_common_commands(M)
 return M
