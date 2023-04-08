@@ -59,7 +59,7 @@ local function dfs(resp_node, id, state)
     extra = {
       bufnr = state.lsp_bufnr,
       kind = kinds.get_kind(resp_node.kind),
-      range = parse_range(resp_node.range, 1, 0),
+      -- range = parse_range(resp_node.range, 1, 0),
       selection_range = parse_range(resp_node.selectionRange, 1, 0),
       detail = resp_node.detail,
       position = preview_range.start,
@@ -130,6 +130,7 @@ M.navigate = function(state)
     return
   end
 
+  -- client found
   state.lsp_winid = winid
   state.lsp_bufnr = bufnr
   state.path = vim.api.nvim_buf_get_name(bufnr)

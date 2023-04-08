@@ -3,8 +3,6 @@ local cc = require("neo-tree.sources.common.commands")
 local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 local inputs = require("neo-tree.ui.inputs")
-local popups = require("neo-tree.ui.popups")
-local log = require("neo-tree.log")
 
 local vim = vim
 

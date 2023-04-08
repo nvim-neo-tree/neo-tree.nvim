@@ -48,7 +48,6 @@ M.kind_name = function(config, node, state)
 end
 
 M.name = function(config, node, state)
-  local padding = config.padding or " "
   local highlight = node.extra.kind.hl or highlights.FILE_NAME
   local text = node.name
   return {
