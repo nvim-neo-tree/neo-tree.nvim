@@ -337,19 +337,23 @@ M.get_selector = function(state, width)
         .. text_with_hl("", hl_background)
     end
   else -- config.source_selector.tab_labels == "start", "end", "center"
-    local tmp = ""
     for _, tab in ipairs(tabs) do
-      tmp = tmp
+      if width == 0 then
+        break
+      end
+      local text_length = width < tab.text_length and width or tab.text_length
+      width = width - text_length
+      return_string = return_string
         .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
-          tab.text,
+          text_layout(tab.text, tabs_layout, text_length, trunc_char),
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
+        .. text_with_hl("", hl_background)
     end
-    return_string = return_string .. text_layout(tmp, tabs_layout, width, trunc_char)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
