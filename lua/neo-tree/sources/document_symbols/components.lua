@@ -51,9 +51,6 @@ M.name = function(config, node, state)
   local padding = config.padding or " "
   local highlight = node.extra.kind.hl or highlights.FILE_NAME
   local text = node.name
-  if node:get_depth() == 1 then
-    text = "SYMBOLS " .. node.name
-  end
   return {
     text = text,
     highlight = highlight,

@@ -91,7 +91,7 @@ local on_lsp_resp = function(resp, state)
 
     table.insert(items, {
       id = "" .. #items,
-      name = string.format("(%s) in %s", client_name, filename),
+      name = string.format("SYMBOLS (%s) in %s", client_name, filename),
       path = state.path,
       type = "root",
       children = symbol_list,
@@ -99,17 +99,13 @@ local on_lsp_resp = function(resp, state)
     })
   end
   renderer.show_nodes(items, state)
-  state.loading = false
 end
 
 ---Navigate to the given path.
 M.navigate = function(state)
-  if state.loading then
-    return
-  end
-  state.loading = true
   local winid, _ = utils.get_appropriate_window(state)
   local bufnr = vim.api.nvim_win_get_buf(winid)
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
 
   -- if no client found, terminate
   local client_found = false
@@ -120,6 +116,17 @@ M.navigate = function(state)
     end
   end
   if not client_found then
+    local splits = vim.split(bufname, "/")
+    renderer.show_nodes({
+      {
+        id = "0",
+        name = "No client found for " .. splits[#splits],
+        path = bufname,
+        type = "root",
+        children = {},
+        extra = { kind = { name = "Root", icon = "!", hl = highlights.ROOT_NAME } },
+      },
+    }, state)
     return
   end
 
