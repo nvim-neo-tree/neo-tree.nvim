@@ -71,11 +71,13 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
   events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
-  events.define_autocmd_event(
-    events.NEO_TREE_LSP_UPDATE,
-    { "InsertLeave", "WinEnter", "BufEnter", "BufWinEnter", "TabEnter", "BufWritePost" },
-    200
-  )
+  -- events.define_autocmd_event(
+  --   events.NEO_TREE_LSP_UPDATE,
+  --   { "InsertLeave", "WinEnter", "BufEnter", "BufWinEnter", "TabEnter", "BufWritePost" },
+  --   200
+  -- )
+  events.define_autocmd_event(events.VIM_LSP_REQUEST, { "User LspRequest" }, 200)
+
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true

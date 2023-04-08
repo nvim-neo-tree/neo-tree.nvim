@@ -38,6 +38,7 @@ local M = {
   VIM_DIAGNOSTIC_CHANGED = "vim_diagnostic_changed",
   VIM_DIR_CHANGED = "vim_dir_changed",
   VIM_LEAVE = "vim_leave",
+  VIM_LSP_REQUEST = "vim_lsp_request",
   VIM_RESIZED = "vim_resized",
   VIM_TAB_CLOSED = "vim_tab_closed",
   VIM_TERMINAL_ENTER = "vim_terminal_enter",

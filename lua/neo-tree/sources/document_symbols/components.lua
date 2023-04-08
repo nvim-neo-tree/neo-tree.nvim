@@ -15,21 +15,6 @@ local common = require("neo-tree.sources.common.components")
 
 local M = {}
 
--- M.icon = function(config, node, state)
---   local padding = config.padding or " "
---   local has_children_icon = " "
---   if node:has_children() then
---     has_children_icon = node:is_expanded() and "" or ""
---   end
-
---   local highlight = node.extra.kind.hl or config.highlight or highlights.FILE_ICON
-
---   return {
---     text = has_children_icon .. padding,
---     highlight = highlight,
---   }
--- end
-
 M.icon = function(config, node, state)
   local padding = config.padding or " "
   local icon = node.extra.kind.icon

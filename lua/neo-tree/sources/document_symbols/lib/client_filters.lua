@@ -1,8 +1,12 @@
 local utils = require("neo-tree.utils")
 
-local M = {}
+local M = {
+  filter_resp = function()
+    return {}
+  end,
+}
 
-local filter = function(filter_type, filter_fn, resp)
+local filter_clients = function(filter_type, filter_fn, resp)
   if resp == nil or type(resp) ~= "table" then
     return {}
   end
@@ -35,7 +39,7 @@ local black_list = function(black_list)
   end
 end
 
-M.parse_server_filter = function(cfg_flt)
+M.setup = function(cfg_flt)
   local filter_type = "first"
   local filter_fn = nil
 
@@ -55,8 +59,8 @@ M.parse_server_filter = function(cfg_flt)
     filter_type = "all"
   end
 
-  return function(resp)
-    return filter(filter_type, filter_fn, resp)
+  M.filter_resp = function(resp)
+    return filter_clients(filter_type, filter_fn, resp)
   end
 end
 

@@ -1650,12 +1650,17 @@ by the LSP request "textDocument/documentSymbols".
 
 Its configuration includes the following options:
 
-kind~
-A table containing how LSP kinds should be rendered. Each entry should map the
-LSP kind (an integer), to a value for example 
-  `{ name = "Class", icon = "", hl = "Include"}`
+kinds~
+A table specifying how LSP kinds should be rendered. Each entry should map the
+LSP kind name to an icon and a highlight group, for example 
+  `Class = { icon = "", hl = "Include" }`
 
-For the list of kinds, please refer to 
+custom_kinds~
+A table mapping the LSP kind id (an integer) to the LSP kind name that is used
+for `kinds`, for example 
+  `[252] = 'TypeAlias'`
+
+For the list of kinds (id and name), please refer to 
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentSymbol
 
 server_filter~

@@ -7,17 +7,10 @@ local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
-local filters = require("neo-tree.sources.document_symbols.lib.server_filters")
+local filters = require("neo-tree.sources.document_symbols.lib.client_filters")
+local kinds = require("neo-tree.sources.document_symbols.lib.kinds")
 
 local M = { name = "document_symbols" }
-M.server_filter = filters.parse_server_filter()
-M.get_kind = function()
-  return { name = "", icon = " ", hl = "" }
-end
-
-local wrap = function(func)
-  return utils.wrap(func, M.name)
-end
 
 local get_state = function()
   return manager.get_state(M.name)
@@ -65,7 +58,7 @@ local function dfs(resp_node, id, state)
     children = children,
     extra = {
       bufnr = state.lsp_bufnr,
-      kind = M.get_kind(resp_node.kind),
+      kind = kinds.get_kind(resp_node.kind),
       range = parse_range(resp_node.range, 1, 0),
       selection_range = parse_range(resp_node.selectionRange, 1, 0),
       detail = resp_node.detail,
@@ -77,35 +70,33 @@ local function dfs(resp_node, id, state)
 end
 
 ---Callback function for lsp request
----@param resp table the response of the lsp server
+---@param resp table the response of the lsp client
 ---@param state table the state of the source
 local on_lsp_resp = function(resp, state)
   if resp == nil or type(resp) ~= "table" then
     return
   end
 
-  resp = M.server_filter(resp)
+  resp = filters.filter_resp(resp)
 
-  local symbol_list = {}
   local items = {}
-  local id = 0
   for client_name, client_result in pairs(resp) do
+    local symbol_list = {}
     for i, resp_node in ipairs(client_result) do
-      table.insert(symbol_list, dfs(resp_node, id .. "." .. i, state))
+      table.insert(symbol_list, dfs(resp_node, #items .. "." .. i, state))
     end
 
     local splits = vim.split(state.path, "/")
     local filename = splits[#splits]
 
     table.insert(items, {
-      id = "" .. id,
+      id = "" .. #items,
       name = string.format("(%s) in %s", client_name, filename),
       path = state.path,
       type = "root",
       children = symbol_list,
       extra = { kind = { name = "Root", icon = "", hl = highlights.ROOT_NAME } },
     })
-    id = id + 1
   end
   renderer.show_nodes(items, state)
   state.loading = false
@@ -117,12 +108,24 @@ M.navigate = function(state)
     return
   end
   state.loading = true
-  local winid, is_neo_tree = utils.get_appropriate_window(state)
+  local winid, _ = utils.get_appropriate_window(state)
   local bufnr = vim.api.nvim_win_get_buf(winid)
-  local bufname = vim.api.nvim_buf_get_name(bufnr)
+
+  -- if no client found, terminate
+  local client_found = false
+  for _, client in pairs(vim.lsp.get_active_clients({ bufnr = bufnr })) do
+    if client.server_capabilities.documentSymbolProvider then
+      client_found = true
+      break
+    end
+  end
+  if not client_found then
+    return
+  end
+
   state.lsp_winid = winid
   state.lsp_bufnr = bufnr
-  state.path = bufname
+  state.path = vim.api.nvim_buf_get_name(bufnr)
 
   vim.lsp.buf_request_all(
     bufnr,
@@ -138,10 +141,8 @@ end
 ---@param config table Configuration table containing any keys that the user
 ---wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
-  M.server_filter = filters.parse_server_filter(config.server_filter)
-  M.get_kind = function(kind_id)
-    return config.kinds[kind_id] or { name = "Unknown", icon = "?", hl = "" }
-  end
+  filters.setup(config.client_filters)
+  kinds.setup(config.custom_kinds, config.kinds)
 
   if config.before_render then
     --convert to new event system
@@ -157,8 +158,8 @@ M.setup = function(config, global_config)
   end
 
   manager.subscribe(M.name, {
-    event = events.NEO_TREE_LSP_UPDATE,
-    handler = function(args)
+    event = events.VIM_LSP_REQUEST,
+    handler = function()
       manager.refresh(M.name)
     end,
   })
