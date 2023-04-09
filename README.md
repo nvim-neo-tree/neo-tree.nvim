@@ -72,7 +72,7 @@ Press `?` in the Neo-tree window to view the list of mappings.
 #### Longer Example for Packer:
 <details>
   <summary>
-    Click to view
+    Click to view longer example for Packer.nvim
   </summary>
   
 ```lua
