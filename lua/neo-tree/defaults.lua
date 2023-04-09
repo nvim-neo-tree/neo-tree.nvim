@@ -211,7 +211,8 @@ local config = {
     },
     name = {
       trailing_slash = false,
-      highlight_opened_files = false, -- Requires `enable_opened_markers = true`
+      highlight_opened_files = false, -- Requires `enable_opened_markers = true`. 
+                                      -- Take values in { false (no highlight), true (only loaded), "all" (both loaded and unloaded)}
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
     },
@@ -472,6 +473,7 @@ local config = {
     follow_current_file = true, -- This will find and focus the file in the active buffer every time
                                 -- the current file is changed while the tree is open.
     group_empty_dirs = true, -- when true, empty directories will be grouped together
+    show_unloaded = false,
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",
