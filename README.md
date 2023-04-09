@@ -70,6 +70,10 @@ Press `?` in the Neo-tree window to view the list of mappings.
 ## Quickstart
 
 #### Longer Example for Packer:
+<details>
+  <summary>
+    Click to view
+  </summary>
   
 ```lua
 use {
@@ -334,7 +338,8 @@ use {
     end
 }
 ```
-
+</details>
+  
 _The above configuration is not everything that can be changed, it's just the
 parts you might want to change first._
 
