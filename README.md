@@ -552,6 +552,7 @@ possible to unstage / revert a file that is already committed.
 
 ### document_symbols
 
+![Neo-tree document_symbols](https://github.com/nvim-neo-tree/resources/raw/main/images/neo-tree-document-symbols.png)
 The document_symbols source lists the symbols in the current document obtained
 by the LSP request "textDocument/documentSymbols". It currently supports the
 following features:
@@ -570,6 +571,12 @@ following features:
    - [x] LSP Support
    - [x] LSP server selection (blacklist, use first, use all, etc.)
 - [ ] CoC Support
+
+This source is currently experimental, so in order to use it, you need to first 
+add `"document_symbols"` to `config.sources` and open it with the command
+```
+:Neotree document_symbols
+```
 
 
 
