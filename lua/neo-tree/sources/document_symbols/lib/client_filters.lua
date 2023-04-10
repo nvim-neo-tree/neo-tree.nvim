@@ -1,3 +1,4 @@
+---Filter lsp clients response
 local utils = require("neo-tree.utils")
 
 local M = {

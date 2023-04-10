@@ -535,6 +535,8 @@ local config = {
       -- [255] = 'Macro',
     },
     kinds = {
+      Unknown = { icon = "?", hl = "" },
+      Root = { icon = "", hl = "NeoTreeRootName" },
       File = { icon = "", hl = "Tag" },
       Module = { icon = "", hl = "Exception" },
       Namespace = { icon = "", hl = "Include" },

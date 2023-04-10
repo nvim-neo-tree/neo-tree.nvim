@@ -397,7 +397,7 @@ end
 ---Evaluates the value of <afile>, which comes from an autocmd event, and determines if it
 ---is a valid file or some sort of utility buffer like quickfix or neo-tree itself.
 ---@param afile string The path or relative path to the file.
----@param true_for_terminals boolean Whether to return true for terminals, normally it would be false.
+---@param true_for_terminals boolean? Whether to return true for terminals, normally it would be false.
 ---@return boolean boolean Whether the buffer is a real file.
 M.is_real_file = function(afile, true_for_terminals)
   if type(afile) ~= "string" or afile == "" or afile == "quickfix" then

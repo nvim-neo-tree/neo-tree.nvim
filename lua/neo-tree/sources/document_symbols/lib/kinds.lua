@@ -1,6 +1,8 @@
+---Functions to render symbols' kinds
 local M = {}
 
 local kinds_id_to_name = {
+  [0] = "Root",
   [1] = "File",
   [2] = "Module",
   [3] = "Namespace",
@@ -33,14 +35,11 @@ local kinds_map = {}
 
 M.get_kind = function(kind_id)
   local kind_name = kinds_id_to_name[kind_id]
-  if kind_name then
-    return vim.tbl_extend(
-      "force",
-      { name = kind_name, icon = "?", hl = "" },
-      kinds_map[kind_name] or {}
-    )
-  end
-  return { name = "Unknown: " .. kind_id, icon = "?", hl = "" }
+  return vim.tbl_extend(
+    "force",
+    { name = kind_name or ("Unknown: " .. kind_id), icon = "?", hl = "" },
+    kind_name and (kinds_map[kind_name] or {}) or kinds_map["Unknown"]
+  )
 end
 
 M.setup = function(custom_kinds, kinds)
