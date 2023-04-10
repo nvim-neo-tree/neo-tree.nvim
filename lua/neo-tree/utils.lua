@@ -257,7 +257,7 @@ end
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.fn.buflisted(buffer) then
+    if vim.fn.buflisted(buffer) ~= 0 then
       local buffer_name = vim.api.nvim_buf_get_name(buffer)
       if buffer_name == nil or buffer_name == "" then
         buffer_name = "[No Name]#" .. buffer
