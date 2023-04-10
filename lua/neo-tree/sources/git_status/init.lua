@@ -78,7 +78,7 @@ M.setup = function(config, global_config)
   if global_config.enable_modified_markers then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_MODIFIED_SET,
-      handler = wrap(manager.modified_buffers_changed),
+      handler = wrap(manager.opened_buffers_changed),
     })
   end
 

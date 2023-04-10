@@ -788,7 +788,8 @@ These defaults can be changed by setting the following options:
 <
 
 In addition to `"tab"` and `"window"`, you can also set the target to `"global"`
-for either option, which is the same as using the |cd| command.
+for either option, which is the same as using the |cd| command. Setting the target
+to `"none"` will prevent neo-tree from setting vim's cwd for that position.
         
 
 FILTERED ITEMS                                         *neo-tree-filtered-items*

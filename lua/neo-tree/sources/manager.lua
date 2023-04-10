@@ -302,6 +302,8 @@ local get_params_for_cwd = function(state)
       return winid, tabnr
     elseif target == "global" then
       return -1, -1
+    elseif target == "none" then
+      return nil, nil
     else -- default to tab
       return -1, tabnr
     end
@@ -312,7 +314,10 @@ end
 
 M.get_cwd = function(state)
   local winid, tabnr = get_params_for_cwd(state)
-  local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  local success, cwd = false, ""
+  if winid or tabnr then
+    success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  end
   if success then
     return cwd
   else
@@ -331,6 +336,11 @@ M.set_cwd = function(state)
   end
 
   local winid, tabnr = get_params_for_cwd(state)
+
+  if winid == nil and tabnr == nil then
+    return
+  end
+
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
     if winid > 0 then
@@ -415,17 +425,17 @@ M.focus = function(source_name, path_to_reveal, callback)
 end
 
 ---Redraws the tree with updated modified markers without scanning the filesystem again.
-M.modified_buffers_changed = function(source_name, args)
+M.opened_buffers_changed = function(source_name, args)
   if not type(args) == "table" then
-    error("modified_buffers_changed: args must be a table")
+    error("opened_buffers_changed: args must be a table")
   end
-  if type(args.modified_buffers) == "table" then
+  if type(args.opened_buffers) == "table" then
     M._for_each_state(source_name, function(state)
-      if utils.tbl_equals(args.modified_buffers, state.modified_buffers) then
+      if utils.tbl_equals(args.opened_buffers, state.opened_buffers) then
         -- no changes, no need to redraw
         return
       end
-      state.modified_buffers = args.modified_buffers
+      state.opened_buffers = args.opened_buffers
       renderer.redraw(state)
     end)
   end

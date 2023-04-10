@@ -59,7 +59,7 @@ local buffers_changed_internal = function()
   for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
     local state = manager.get_state(M.name, tabnr)
     if state.path and renderer.window_exists(state) then
-      items.get_open_buffers(state)
+      items.get_opened_buffers(state)
       if state.follow_current_file then
         follow_internal()
       end
@@ -93,7 +93,7 @@ M.navigate = function(state, path, path_to_reveal)
     renderer.position.set(state, path_to_reveal)
   end
 
-  items.get_open_buffers(state)
+  items.get_opened_buffers(state)
 
   if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
@@ -168,7 +168,7 @@ M.setup = function(config, global_config)
   if global_config.enable_modified_markers then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_MODIFIED_SET,
-      handler = wrap(manager.modified_buffers_changed),
+      handler = wrap(manager.opened_buffers_changed),
     })
   end
 
