@@ -212,7 +212,9 @@ local config = {
     name = {
       trailing_slash = false,
       highlight_opened_files = false, -- Requires `enable_opened_markers = true`. 
-                                      -- Take values in { false (no highlight), true (only loaded), "all" (both loaded and unloaded)}
+                                      -- Take values in { false (no highlight), true (only loaded), 
+                                      -- "all" (both loaded and unloaded)}. For more information,
+                                      -- see the `show_unloaded` config of the `buffers` source.
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
     },
@@ -472,8 +474,9 @@ local config = {
     bind_to_cwd = true,
     follow_current_file = true, -- This will find and focus the file in the active buffer every time
                                 -- the current file is changed while the tree is open.
-    group_empty_dirs = true, -- when true, empty directories will be grouped together
-    show_unloaded = false,
+    group_empty_dirs = true,  -- when true, empty directories will be grouped together
+    show_unloaded = false,    -- When working with sessions, for example, restored but unfocused buffers
+                              -- are mark as "unloaded". Turn this on to view these unloaded buffer.
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",
