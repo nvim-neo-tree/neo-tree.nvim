@@ -166,7 +166,19 @@ M.setup = function(config, global_config)
   end
 
   manager.subscribe(M.name, {
-    event = events.VIM_LSP_REQUEST,
+    event = events.VIM_BUFFER_ENTER,
+    handler = function()
+      manager.refresh(M.name)
+    end,
+  })
+  manager.subscribe(M.name, {
+    event = events.VIM_INSERT_LEAVE,
+    handler = function()
+      manager.refresh(M.name)
+    end,
+  })
+  manager.subscribe(M.name, {
+    event = events.VIM_TEXT_CHANGED_NORMAL,
     handler = function()
       manager.refresh(M.name)
     end,

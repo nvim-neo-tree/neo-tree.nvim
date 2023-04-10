@@ -144,7 +144,7 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
 end
 
 --- Returns true if the contents of two tables are equal.
-M.tbl_equals = function (table1, table2)
+M.tbl_equals = function(table1, table2)
   -- same object
   if table1 == table2 then
     return true

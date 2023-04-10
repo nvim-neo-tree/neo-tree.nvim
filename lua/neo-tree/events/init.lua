@@ -37,11 +37,13 @@ local M = {
   VIM_CURSOR_MOVED = "vim_cursor_moved",
   VIM_DIAGNOSTIC_CHANGED = "vim_diagnostic_changed",
   VIM_DIR_CHANGED = "vim_dir_changed",
+  VIM_INSERT_LEAVE = "vim_insert_leave",
   VIM_LEAVE = "vim_leave",
   VIM_LSP_REQUEST = "vim_lsp_request",
   VIM_RESIZED = "vim_resized",
   VIM_TAB_CLOSED = "vim_tab_closed",
   VIM_TERMINAL_ENTER = "vim_terminal_enter",
+  VIM_TEXT_CHANGED_NORMAL = "vim_text_changed_normal",
   VIM_WIN_CLOSED = "vim_win_closed",
   VIM_WIN_ENTER = "vim_win_enter",
 }
