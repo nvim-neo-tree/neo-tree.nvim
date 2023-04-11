@@ -33,7 +33,7 @@ M.name = function(config, node, state)
     else
       highlight = highlights.FILE_NAME
     end
-  else
+  elseif config.use_git_status_colors then
     local git_status = state.components.git_status({}, node, state)
     if git_status and git_status.highlight then
       highlight = git_status.highlight
