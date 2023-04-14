@@ -550,6 +550,36 @@ possible to unstage / revert a file that is already committed.
 :Neotree float git_status git_base=main
 ```
 
+### document_symbols
+
+![Neo-tree document_symbols](https://github.com/nvim-neo-tree/resources/raw/main/images/neo-tree-document-symbols.png)
+The document_symbols source lists the symbols in the current document obtained
+by the LSP request "textDocument/documentSymbols". It currently supports the
+following features:
+- [x] UI:
+	- [x] Display all symbols in the current file with symbol kinds
+	- [x] Symbols nesting
+	- [x] Configurable kinds' name and icon
+	- [x] Auto-refresh symbol list
+- [ ] Commands
+	- [x] Jump to symbols, open symbol in split,... (`open_split` and friends)
+	- [x] Rename symbols (`rename`)
+	- [x] Preview symbol (`preview` and friends)
+	- [ ] Hover docs
+	- [ ] Call hierarchy 
+- [x] LSP
+   - [x] LSP Support
+   - [x] LSP server selection (blacklist, use first, use all, etc.)
+- [ ] CoC Support
+
+This source is currently experimental, so in order to use it, you need to first 
+add `"document_symbols"` to `config.sources` and open it with the command
+```
+:Neotree document_symbols
+```
+
+
+
 ### Source Selector
 ![Neo-tree source selector](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-source-selector.png)
 

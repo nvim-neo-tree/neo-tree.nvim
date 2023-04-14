@@ -7,6 +7,7 @@ local config = {
     "filesystem",
     "buffers",
     "git_status",
+    -- "document_symbols",
   },
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
@@ -55,6 +56,7 @@ local config = {
       buffers =    "  Buffers ",
       git_status = "  Git ",
       diagnostics = " 裂Diagnostics ",
+      document_symbols = "  Symbols ",
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
     --                start  : |/ 裡 bufname     \/...
@@ -492,6 +494,84 @@ local config = {
         ["gg"] = "git_commit_and_push",
       },
     },
+  },
+  document_symbols = {
+    client_filters = "first",
+    renderers = {
+      root = {
+        {"indent"},
+        {"icon", default="C" },
+        {"name", zindex = 10},
+      },
+      symbol = {
+        {"indent", with_expanders = true},
+        {"kind_icon", default="?" },
+        {"container",
+        content = {
+          {"name", zindex = 10},
+          {"kind_name", zindex = 20, align = "right"},
+          }
+        }
+      },
+    },
+    window = {
+      mappings = {
+        ["<cr>"] = "jump_to_symbol",
+        ["o"] = "jump_to_symbol",
+        ["A"] = "noop", -- also accepts the config.show_path and config.insert_as options.
+        ["d"] = "noop",
+        ["y"] = "noop",
+        ["x"] = "noop",
+        ["p"] = "noop",
+        ["c"] = "noop",
+        ["m"] = "noop",
+        ["a"] = "noop",
+      },
+    },
+    custom_kinds = {
+      -- define custom kinds here (also remember to add icon and hl group to kinds)
+      -- ccls
+      -- [252] = 'TypeAlias',
+      -- [253] = 'Parameter',
+      -- [254] = 'StaticMethod',
+      -- [255] = 'Macro',
+    },
+    kinds = {
+      Unknown = { icon = "?", hl = "" },
+      Root = { icon = "", hl = "NeoTreeRootName" },
+      File = { icon = "", hl = "Tag" },
+      Module = { icon = "", hl = "Exception" },
+      Namespace = { icon = "", hl = "Include" },
+      Package = { icon = "", hl = "Label" },
+      Class = { icon = "", hl = "Include" },
+      Method = { icon = "", hl = "Function" },
+      Property = { icon = "", hl = "@property" },
+      Field = { icon = "", hl = "@field" },
+      Constructor = { icon = "", hl = "@constructor" },
+      Enum = { icon = "了", hl = "@number" },
+      Interface = { icon = "", hl = "Type" },
+      Function = { icon = "", hl = "Function" },
+      Variable = { icon = "", hl = "@variable" },
+      Constant = { icon = "", hl = "Constant" },
+      String = { icon = "", hl = "String" },
+      Number = { icon = "", hl = "Number" },
+      Boolean = { icon = "", hl = "Boolean" },
+      Array = { icon = "", hl = "Type" },
+      Object = { icon = "", hl = "Type" },
+      Key = { icon = "", hl = "" },
+      Null = { icon = "", hl = "Constant" },
+      EnumMember = { icon = "", hl = "Number" },
+      Struct = { icon = "", hl = "Type" },
+      Event = { icon = "", hl = "Constant" },
+      Operator = { icon = "", hl = "Operator" },
+      TypeParameter = { icon = "", hl = "Type" },
+
+      -- ccls
+      -- TypeAlias = { icon = ' ', hl = 'Type' },
+      -- Parameter = { icon = ' ', hl = '@parameter' },
+      -- StaticMethod = { icon = 'ﴂ ', hl = 'Function' },
+      -- Macro = { icon = ' ', hl = 'Macro' },
+    }
   },
   example = {
     renderers = {

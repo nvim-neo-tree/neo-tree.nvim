@@ -73,13 +73,17 @@ end
 local M = {}
 
 ---Adds all missing common commands to the given module
----@param to_source_command_module table The commands modeul for a source
-M._add_common_commands = function(to_source_command_module)
+---@param to_source_command_module table The commands module for a source
+---@param pattern string? A pattern specifying which commands to add, nil to add all
+M._add_common_commands = function(to_source_command_module, pattern)
   for name, func in pairs(M) do
-    if type(name) == "string" and not name:match("^_") then
-      if not to_source_command_module[name] then
-        to_source_command_module[name] = func
-      end
+    if
+      type(name) == "string"
+      and not to_source_command_module[name]
+      and (not pattern or name:find(pattern))
+      and not name:find("^_")
+    then
+      to_source_command_module[name] = func
     end
   end
 end

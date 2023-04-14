@@ -45,19 +45,14 @@ local define_events = function()
     return args
   end)
 
-  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
+
 
   local update_opened_buffers = function(args)
     args.opened_buffers = utils.get_opened_buffers()
     return args
   end
-  events.define_autocmd_event(
-    events.VIM_BUFFER_MODIFIED_SET,
-    { "BufModifiedSet" },
-    0,
-    update_opened_buffers
-  )
-
+  
+  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
   events.define_autocmd_event(
     events.VIM_BUFFER_DELETED,
@@ -66,17 +61,24 @@ local define_events = function()
     update_opened_buffers
   )
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
-
-  events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
-  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
-  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
-  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
-  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
-  events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
-  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
+  events.define_autocmd_event(
+    events.VIM_BUFFER_MODIFIED_SET,
+    { "BufModifiedSet" },
+    0,
+    update_opened_buffers
+  )
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
-  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
+  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
+  events.define_autocmd_event(events.VIM_INSERT_LEAVE, { "InsertLeave" }, 200)
+  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
+  events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
+  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+  events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
+  events.define_autocmd_event(events.VIM_TEXT_CHANGED_NORMAL, { "TextChanged" }, 200)
+  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
+  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
+
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
