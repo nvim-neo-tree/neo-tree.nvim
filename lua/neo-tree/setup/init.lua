@@ -113,6 +113,7 @@ local store_local_window_settings = function(winid)
   prior_window_options[tostring(winid)] = {
     cursorline = vim.wo.cursorline,
     cursorlineopt = vim.wo.cursorlineopt,
+    foldcolumn = vim.wo.foldcolumn,
     wrap = vim.wo.wrap,
     list = vim.wo.list,
     spell = vim.wo.spell,
@@ -131,6 +132,7 @@ local restore_local_window_settings = function(winid)
   if wo then
     vim.wo.cursorline = wo.cursorline
     vim.wo.cursorlineopt = wo.cursorlineopt
+    vim.wo.foldcolumn = wo.foldcolumn
     vim.wo.wrap = wo.wrap
     vim.wo.list = wo.list
     vim.wo.spell = wo.spell
