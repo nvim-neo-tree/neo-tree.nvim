@@ -9,6 +9,7 @@ Mappings .................... |neo-tree-mappings|
   View Changes .............. |neo-tree-view-changes|
   File Actions .............. |neo-tree-file-actions|
   Filter .................... |neo-tree-filter|
+  Global custom commands .... |neo-tree-custom-commands-global|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
@@ -482,6 +483,38 @@ You probably want #2:
      }
    })
 <
+
+GLOBAL CUSTOM COMMANDS                       *neo-tree-custom-commands-global*
+
+You can also have global custom commands that will be added to all available
+sources. If you need it you can then override it in a specific source.
+>lua
+   require("neo-tree").setup({
+     commands = {
+       hello = function()            -- define a global "hello world" function
+         print("Hello world")
+       end
+     },
+
+     window = {
+       mappings = {
+         ["<C-c>"] = "hello"
+                    -- define a global mapping to call 'hello' in every source
+       }
+     },
+
+     filesystem = {
+       commands = {
+         -- override implementation of the 'hello' action in filesystem source
+         hello = function()
+           print("Hello inside filesystem")
+         end
+       }
+     }
+   })
+<
+Now when pressing `<C-c>` in 'buffers' or 'git_status' it will print "Hello world",
+but in 'filesystem' it will print "Hello inside filesystem".
 
 CUSTOM MAPPINGS WITH VISUAL MODE
 
