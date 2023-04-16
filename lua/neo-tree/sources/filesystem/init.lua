@@ -11,7 +11,10 @@ local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
-local M = { name = "filesystem" }
+local M = {
+  name = "filesystem",
+  display_name = "  Files "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)

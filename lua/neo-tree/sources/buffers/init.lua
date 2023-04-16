@@ -9,7 +9,10 @@ local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 
-local M = { name = "buffers" }
+local M = {
+  name = "buffers",
+  display_name = "  Buffers "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)
