@@ -34,12 +34,12 @@ M.migrate = function(config)
   migrations = {}
 
   local moved = function(old, new, converter)
-    local exising = utils.get_value(config, old)
-    if type(exising) ~= "nil" then
+    local existing = utils.get_value(config, old)
+    if type(existing) ~= "nil" then
       if type(converter) == "function" then
-        exising = converter(exising)
+        existing = converter(existing)
       end
-      utils.set_value(config, new, exising)
+      utils.set_value(config, new, existing)
       config[old] = nil
       migrations[#migrations + 1] =
         string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
