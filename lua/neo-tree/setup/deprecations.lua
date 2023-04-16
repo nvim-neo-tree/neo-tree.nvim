@@ -67,10 +67,19 @@ M.migrate = function(config)
     return not value
   end
 
+  local tab_to_source_migrator = function(labels)
+    local converted_sources = {}
+    for entry, label in pairs(labels) do
+      table.insert(converted_sources, { source = entry, display_name = label })
+    end
+    return converted_sources
+  end
+
   moved("filesystem.filters", "filesystem.filtered_items")
   moved("filesystem.filters.show_hidden", "filesystem.filtered_items.hide_dotfiles", opposite)
   moved("filesystem.filters.respect_gitignore", "filesystem.filtered_items.hide_gitignored")
   moved("open_files_do_not_replace_filetypes", "open_files_do_not_replace_types")
+  moved("source_selector.tab_labels", "source_selector.sources", tab_to_source_migrator)
   removed("filesystem.filters.gitignore_source")
   removed("filesystem.filter_items.gitignore_source")
   renamed_value("filesystem.hijack_netrw_behavior", "open_split", "open_current")
