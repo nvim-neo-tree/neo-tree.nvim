@@ -729,12 +729,6 @@ type notations.
                     display_name = "  Git "                          -- string | nil
                 },
             },
-            tab_labels = {                                            -- table
-                filesystem = "  Files ",                             -- string | nil
-                buffers =    "  Buffers ",                           -- string | nil
-                git_status = "  Git ",                               -- string | nil
-                diagnostics = " 裂Diagnostics " ,                     -- string | nil
-            },
             content_layout = "start",                                 -- string
             tabs_layout = "equal",                                    -- string
             truncation_character = "…",                               -- string
