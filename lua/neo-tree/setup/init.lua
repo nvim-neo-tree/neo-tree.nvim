@@ -596,8 +596,17 @@ M.merge_config = function(user_config, is_auto_config)
   end
   --print(vim.inspect(default_config.filesystem))
 
+  -- Moving user_config.sources to user_config.orig_sources
+  user_config.orig_sources = user_config.sources and user_config.sources or {}
+
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, user_config)
+
+  -- RE: 873, fixes issue with invalid source checking by overriding
+  -- source table with name table
+  -- Setting new "sources" to be the parsed names of the sources
+  M.config.sources = all_source_names
+
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end
