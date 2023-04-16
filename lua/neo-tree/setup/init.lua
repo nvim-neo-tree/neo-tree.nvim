@@ -648,7 +648,7 @@ M.merge_config = function(user_config, is_auto_config)
   end
 
   -- Validate that the source_selector.sources are all available and if any
-  -- aren't remove, remove them
+  -- aren't, remove them
   local source_selector_sources = {}
   for _, ss_source in ipairs(M.config.source_selector.sources or {}) do
     local source_match = false
