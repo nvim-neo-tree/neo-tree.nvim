@@ -99,7 +99,7 @@ local get_selector_tab_info = function(source_name, source_index, is_active, sep
   local config = require("neo-tree").config
   local separator_config = utils.resolve_config_option(config, "source_selector", nil)
   if separator_config == nil then
-    log.warn("Cannot find source_selector config. `create_selector` abort.")
+    log.warn("Cannot find source_selector config. `get_selector` abort.")
     return {}
   end
   local source_config = config[source_name] or {}
@@ -248,7 +248,7 @@ end
 M.get_selector = function(state, width)
   local config = require("neo-tree").config
   if config == nil then
-    log.warn("Cannot find config. `create_selector` abort.")
+    log.warn("Cannot find config. `get_selector` abort.")
     return nil
   end
   local winid = state.winid or vim.api.nvim_get_current_win()
