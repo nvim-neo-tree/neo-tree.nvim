@@ -24,7 +24,7 @@ local function clear_buffer(path)
   local alt = vim.fn.bufnr("#")
   -- Check all windows to see if they are using the buffer
   for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
       -- if there is no alternate buffer yet, create a blank one now
       if alt < 1 or alt == buf then
         alt = vim.api.nvim_create_buf(true, false)
@@ -36,6 +36,18 @@ local function clear_buffer(path)
   local success, msg = pcall(vim.api.nvim_buf_delete, buf, { force = true })
   if not success then
     log.error("Could not clear buffer: ", msg)
+  end
+end
+
+---Opens new_buf in each window that has old_buf currently open.
+---Useful during file rename.
+---@param old_buf number
+---@param new_buf number
+local function replace_buffer_in_windows(old_buf, new_buf)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == old_buf then
+      vim.api.nvim_win_set_buf(win, new_buf)
+    end
   end
 end
 
@@ -54,15 +66,21 @@ local function rename_buffer(old_path, new_path)
         new_buf_name = new_path .. buf_name:sub(#old_path + 1)
       end
       if utils.truthy(new_buf_name) then
-        vim.api.nvim_buf_set_name(buf, new_buf_name)
-        -- Force write to avoid E13 error
+        local new_buf = vim.fn.bufadd(new_buf_name)
+        vim.fn.bufload(new_buf)
+        vim.api.nvim_buf_set_option(new_buf, "buflisted", true)
+        replace_buffer_in_windows(buf, new_buf)
+
         if vim.api.nvim_buf_get_option(buf, "buftype") == "" then
           local modified = vim.api.nvim_buf_get_option(buf, "modified")
           if modified then
+            local old_buffer_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, old_buffer_lines)
+
             local msg = buf_name .. " has been modified. Save under new name? (y/n) "
             inputs.confirm(msg, function(confirmed)
               if confirmed then
-                vim.api.nvim_buf_call(buf, force_save)
+                vim.api.nvim_buf_call(new_buf, force_save)
                 log.trace("Force saving renamed buffer with changes")
               else
                 vim.cmd("echohl WarningMsg")
@@ -72,10 +90,9 @@ local function rename_buffer(old_path, new_path)
                 vim.cmd("echohl NONE")
               end
             end)
-          else
-            vim.api.nvim_buf_call(buf, force_save)
           end
         end
+        vim.api.nvim_buf_delete(buf, { force = true })
       end
     end
   end
@@ -140,25 +157,36 @@ M.move_node = function(source, destination, callback, using_root_directory)
   )
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
-    create_all_parents(dest)
-    loop.fs_rename(source, dest, function(err)
-      if err then
-        log.error("Could not move the files from", source, "to", dest, ":", err)
-        return
-      end
-      vim.schedule(function()
-        rename_buffer(source, dest)
-      end)
-      vim.schedule(function()
-        events.fire_event(events.FILE_MOVED, {
-          source = source,
-          destination = dest,
-        })
-        if callback then
-          callback(source, dest)
+    local function move_file()
+      create_all_parents(dest)
+      loop.fs_rename(source, dest, function(err)
+        if err then
+          log.error("Could not move the files from", source, "to", dest, ":", err)
+          return
         end
+        vim.schedule(function()
+          rename_buffer(source, dest)
+        end)
+        vim.schedule(function()
+          events.fire_event(events.FILE_MOVED, {
+            source = source,
+            destination = dest,
+          })
+          if callback then
+            callback(source, dest)
+          end
+        end)
       end)
-    end)
+    end
+    local event_result = events.fire_event(events.BEFORE_FILE_MOVE, {
+      source = source,
+      destination = dest,
+      callback = move_file,
+    }) or {}
+    if event_result.handled then
+      return
+    end
+    move_file()
   end, 'Move "' .. name .. '" to:')
 end
 
@@ -196,6 +224,11 @@ end
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(_destination or source, using_root_directory, function(destination)
+    local parent_path, _ = utils.split_path(destination)
+    if source == parent_path then
+      log.warn("Cannot copy a file/folder to itself")
+      return
+    end
     local source_path = Path:new(source)
     if source_path:is_file() then
       -- When the source is a file, then Path.copy() currently doesn't create
@@ -248,31 +281,37 @@ M.create_directory = function(in_directory, callback, using_root_directory)
     using_root_directory = false
   end
 
-  inputs.input("Enter name for new directory:", base, function(destination)
-    if not destination or destination == base then
+  inputs.input("Enter name for new directory:", base, function(destinations)
+    if not destinations then
       return
     end
 
-    if using_root_directory then
-      destination = utils.path_join(using_root_directory, destination)
-    else
-      destination = vim.fn.fnamemodify(destination, ":p")
-    end
-
-    if loop.fs_stat(destination) then
-      log.warn("Directory already exists")
-      return
-    end
-
-    create_all_parents(destination)
-    loop.fs_mkdir(destination, 493)
-
-    vim.schedule(function()
-      events.fire_event(events.FILE_ADDED, destination)
-      if callback then
-        callback(destination)
+    for _, destination in ipairs(utils.brace_expand(destinations)) do
+      if not destination or destination == base then
+        return
       end
-    end)
+
+      if using_root_directory then
+        destination = utils.path_join(using_root_directory, destination)
+      else
+        destination = vim.fn.fnamemodify(destination, ":p")
+      end
+
+      if loop.fs_stat(destination) then
+        log.warn("Directory already exists")
+        return
+      end
+
+      create_all_parents(destination)
+      loop.fs_mkdir(destination, 493)
+
+      vim.schedule(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
+    end
   end)
 end
 
@@ -295,43 +334,51 @@ M.create_node = function(in_directory, callback, using_root_directory)
   inputs.input(
     'Enter name for new file or directory (dirs end with a "/"):',
     base,
-    function(destination)
-      if not destination or destination == base then
-        return
-      end
-      local is_dir = vim.endswith(destination, "/")
-
-      if using_root_directory then
-        destination = utils.path_join(using_root_directory, destination)
-      else
-        destination = vim.fn.fnamemodify(destination, ":p")
-      end
-
-      if loop.fs_stat(destination) then
-        log.warn("File already exists")
+    function(destinations)
+      if not destinations then
         return
       end
 
-      create_all_parents(destination)
-      if is_dir then
-        loop.fs_mkdir(destination, 493)
-      else
-        local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
-        local fd = loop.fs_open(destination, "w", open_mode)
-        if not fd then
-          api.nvim_err_writeln("Could not create file " .. destination)
+      for _, destination in ipairs(utils.brace_expand(destinations)) do
+        if not destination or destination == base then
           return
         end
-        loop.fs_chmod(destination, 420)
-        loop.fs_close(fd)
-      end
+        local is_dir = vim.endswith(destination, "/")
 
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
+        if using_root_directory then
+          destination = utils.path_join(using_root_directory, destination)
+        else
+          destination = vim.fn.fnamemodify(destination, ":p")
         end
-      end)
+
+        if loop.fs_stat(destination) then
+          log.warn("File already exists")
+          return
+        end
+
+        create_all_parents(destination)
+        if is_dir then
+          loop.fs_mkdir(destination, 493)
+        else
+          local open_mode = loop.constants.O_CREAT
+            + loop.constants.O_WRONLY
+            + loop.constants.O_TRUNC
+          local fd = loop.fs_open(destination, "w", open_mode)
+          if not fd then
+            api.nvim_err_writeln("Could not create file " .. destination)
+            return
+          end
+          loop.fs_chmod(destination, 420)
+          loop.fs_close(fd)
+        end
+
+        vim.schedule(function()
+          events.fire_event(events.FILE_ADDED, destination)
+          if callback then
+            callback(destination)
+          end
+        end)
+      end
     end
   )
 end
@@ -513,14 +560,26 @@ M.rename_node = function(path, callback)
       log.info("Renamed " .. new_name .. " successfully")
     end)
 
-    loop.fs_rename(path, destination, function(err)
-      if err then
-        log.warn("Could not rename the files")
-        return
-      else
-        complete()
-      end
-    end)
+    local function fs_rename()
+      loop.fs_rename(path, destination, function(err)
+        if err then
+          log.warn("Could not rename the files")
+          return
+        else
+          complete()
+        end
+      end)
+    end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_RENAME, {
+      source = path,
+      destination = destination,
+      callback = fs_rename,
+    }) or {}
+    if event_result.handled then
+      return
+    end
+    fs_rename()
   end)
 end
 

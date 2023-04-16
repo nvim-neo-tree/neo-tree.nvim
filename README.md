@@ -53,7 +53,7 @@ use {
     branch = "v2.x",
     requires = { 
       "nvim-lua/plenary.nvim",
-      "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
     }
   }
@@ -77,7 +77,7 @@ use {
     branch = "v2.x",
     requires = { 
       "nvim-lua/plenary.nvim",
-      "kyazdani42/nvim-web-devicons", -- not strictly required, but recommended
+      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
       {
         -- only needed if you want to use the commands with "_with_window_picker" suffix
@@ -91,10 +91,10 @@ use {
               -- filter using buffer options
               bo = {
                 -- if the file type is one of following, the window will be ignored
-                filetype = { 'neo-tree', "neo-tree-popup", "notify", "quickfix" },
+                filetype = { 'neo-tree', "neo-tree-popup", "notify" },
 
                 -- if the buffer type is one of following, the window will be ignored
-                buftype = { 'terminal' },
+                buftype = { 'terminal', "quickfix" },
               },
             },
             other_win_hl_color = '#e35e4f',
@@ -123,6 +123,7 @@ use {
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
+        open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
         sort_function = nil , -- use a custom function for sorting files and directories in the tree 
         -- sort_function = function (a,b)
@@ -200,6 +201,7 @@ use {
             ["<cr>"] = "open",
             ["<esc>"] = "revert_preview",
             ["P"] = { "toggle_preview", config = { use_float = true } },
+            ["l"] = "focus_preview",
             ["S"] = "open_split",
             ["s"] = "open_vsplit",
             -- ["S"] = "split_with_window_picker",
@@ -210,16 +212,18 @@ use {
             ["w"] = "open_with_window_picker",
             --["P"] = "toggle_preview", -- enter preview mode, which shows the current node without focusing
             ["C"] = "close_node",
+            -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
             ["a"] = { 
               "add",
+              -- this command supports BASH style brace expansion ("x{a,b,c}" -> xa,xb,xc). see `:h neo-tree-file-actions` for details
               -- some commands may take optional config options, see `:h neo-tree-mappings` for details
               config = {
                 show_path = "none" -- "none", "relative", "absolute"
               }
             },
-            ["A"] = "add_directory", -- also accepts the optional config.show_path option like "add".
+            ["A"] = "add_directory", -- also accepts the optional config.show_path option like "add". this also supports BASH style brace expansion.
             ["d"] = "delete",
             ["r"] = "rename",
             ["y"] = "copy_to_clipboard",
@@ -261,6 +265,9 @@ use {
               --".DS_Store",
               --"thumbs.db"
             },
+            never_show_by_pattern = { -- uses glob style patterns
+              --".null-ls_*",
+            },
           },
           follow_current_file = false, -- This will find and focus the file in the active buffer every
                                        -- time the current file is changed while the tree is open.
@@ -279,11 +286,19 @@ use {
               ["H"] = "toggle_hidden",
               ["/"] = "fuzzy_finder",
               ["D"] = "fuzzy_finder_directory",
+              ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
+              -- ["D"] = "fuzzy_sorter_directory",
               ["f"] = "filter_on_submit",
               ["<c-x>"] = "clear_filter",
               ["[g"] = "prev_git_modified",
               ["]g"] = "next_git_modified",
-            }
+            },
+            fuzzy_finder_mappings = { -- define keymaps for filter popup window in fuzzy_finder_mode
+              ["<down>"] = "move_cursor_down",
+              ["<C-n>"] = "move_cursor_down",
+              ["<up>"] = "move_cursor_up",
+              ["<C-p>"] = "move_cursor_up",
+            },
           }
         },
         buffers = {
@@ -398,14 +413,14 @@ What to show. Can be one of:
 #### `position`
 Where to show it, can be one of:
 
-| Option | Description |
-|--------|-------------|
-| left    | Open as left hand sidebar. DEFAULT |
-| right   | Open as right hand sidebar. |
-| top     | Open as top window. |
-| botom   | Open as bottom window. |
-| float   | Open as floating window. |
-| current | Open within the current window, like netrw or vinegar would. |
+| Option  | Description |
+|---------|-------------|
+| left     | Open as left hand sidebar. DEFAULT |
+| right    | Open as right hand sidebar. |
+| top      | Open as top window. |
+| bottom   | Open as bottom window. |
+| float    | Open as floating window. |
+| current  | Open within the current window, like netrw or vinegar would. |
 
 #### `toggle`
 This is a boolean flag. Adding this means that the window will be closed if it
@@ -542,7 +557,7 @@ You can enable a clickable source selector in either the winbar (requires neovim
 To do so, set one of these options to `true`:
 
 ```lua
-    requires("neo-tree").setup({
+    require("neo-tree").setup({
         source_selector = {
             winbar = false,
             statusline = false
@@ -665,4 +680,4 @@ The design is heavily inspired by these excellent plugins:
 - [nvim-cokeline](https://github.com/noib3/nvim-cokeline)
 
 Everything I know about writing a tree control in lua, I learned from:
-- [nvim-tree.lua](https://github.com/kyazdani42/nvim-tree.lua)
+- [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua)

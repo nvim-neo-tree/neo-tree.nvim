@@ -41,11 +41,8 @@ M.migrate = function(config)
       end
       utils.set_value(config, new, exising)
       config[old] = nil
-      migrations[#migrations + 1] = string.format(
-        "The `%s` option has been deprecated, please use `%s` instead.",
-        old,
-        new
-      )
+      migrations[#migrations + 1] =
+        string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
     end
   end
 
@@ -61,12 +58,8 @@ M.migrate = function(config)
     local value = utils.get_value(config, key)
     if value == old_value then
       utils.set_value(config, key, new_value)
-      migrations[#migrations + 1] = string.format(
-        "The `%s=%s` option has been renamed to `%s`.",
-        key,
-        old_value,
-        new_value
-      )
+      migrations[#migrations + 1] =
+        string.format("The `%s=%s` option has been renamed to `%s`.", key, old_value, new_value)
     end
   end
 
@@ -77,6 +70,7 @@ M.migrate = function(config)
   moved("filesystem.filters", "filesystem.filtered_items")
   moved("filesystem.filters.show_hidden", "filesystem.filtered_items.hide_dotfiles", opposite)
   moved("filesystem.filters.respect_gitignore", "filesystem.filtered_items.hide_gitignored")
+  moved("open_files_do_not_replace_filetypes", "open_files_do_not_replace_types")
   removed("filesystem.filters.gitignore_source")
   removed("filesystem.filter_items.gitignore_source")
   renamed_value("filesystem.hijack_netrw_behavior", "open_split", "open_current")

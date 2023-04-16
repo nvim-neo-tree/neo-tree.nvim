@@ -1,110 +1,6 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
-
-Node = {}
-function Node:new(value)
-  local props = { prev = nil, next = nil, value = value }
-  setmetatable(props, self)
-  self.__index = self
-  return props
-end
-
-LinkedList = {}
-function LinkedList:new()
-  local props = { head = nil, tail = nil, size = 0 }
-  setmetatable(props, self)
-  self.__index = self
-  return props
-end
-
-function LinkedList:add_node(node)
-  if self.head == nil then
-    self.head = node
-    self.tail = node
-  else
-    self.tail.next = node
-    node.prev = self.tail
-    self.tail = node
-  end
-  self.size = self.size + 1
-  return node
-end
-
-function LinkedList:remove_node(node)
-  if node.prev ~= nil then
-    node.prev.next = node.next
-  end
-  if node.next ~= nil then
-    node.next.prev = node.prev
-  end
-  if self.head == node then
-    self.head = node.next
-  end
-  if self.tail == node then
-    self.tail = node.prev
-  end
-  self.size = self.size - 1
-  node.prev = nil
-  node.next = nil
-  node.value = nil
-end
-
--- First in Last Out
-Queue = {}
-function Queue:new()
-  local props = { _list = LinkedList:new() }
-  setmetatable(props, self)
-  self.__index = self
-  return props
-end
-
----Add an element to the end of the queue.
----@param value any The value to add.
-function Queue:add(value)
-  self._list:add_node(Node:new(value))
-end
-
----Iterates over the entire list, running func(value) on each element.
----If func returns true, the element is removed from the list.
----@param func function The function to run on each element.
-function Queue:for_each(func)
-  local node = self._list.head
-  while node ~= nil do
-    local remove_node = func(node.value)
-    if remove_node then
-      local node_to_remove = node
-      node = node.next
-      self._list:remove_node(node_to_remove)
-    else
-      node = node.next
-    end
-  end
-end
-
-function Queue:is_empty()
-  return self._list.size == 0
-end
-
-function Queue:remove_by_id(id)
-  local current = self._list.head
-  while current ~= nil do
-    local is_match = false
-    local item = current.value
-    if item ~= nil then
-      local item_id = item.id or item
-      if item_id == id then
-        is_match = true
-      end
-    end
-    if is_match then
-      local next = current.next
-      self._list:remove_node(current)
-      current = next
-    else
-      current = current.next
-    end
-  end
-end
+local Queue = require("neo-tree.collections").Queue
 
 local event_queues = {}
 local event_definitions = {}
@@ -176,34 +72,22 @@ local fire_event_internal = function(event, args)
     end
   end
 
-  queue:for_each(function(event_handler)
+  return queue:for_each(function(event_handler)
     local remove_node = event_handler == nil or event_handler.cancelled
     if not remove_node then
       local success, result = pcall(event_handler.handler, args)
       local id = event_handler.id or event_handler
       if success then
         log.trace("Handler ", id, " for " .. event .. " called successfully.")
-        if
-          type(result) == "table"
-          and type(result.handled) == "boolean"
-          and result.handled == true
-        then
-          log.trace(
-            "Handler ",
-            id,
-            " for " .. event .. " returned handled = true, skipping the rest of the queue."
-          )
-          return result
-        end
       else
         log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
       end
       if event_handler.once then
         event_handler.cancelled = true
-        remove_node = true
+        return true
       end
+      return result
     end
-    return remove_node
   end)
 end
 

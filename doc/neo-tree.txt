@@ -77,7 +77,7 @@ What to show. Can be one of:
 
     filesystem : Show a file browser. DEFAULT
     buffers    : Show a list of currently open buffers.
-    git_status : Show the ouput of `git status` in a tree layout.
+    git_status : Show the output of `git status` in a tree layout.
 
 position~
 Where to show it, can be one of:
@@ -128,7 +128,7 @@ automatically change the directory without prompting. This option implies
 DEPRECATED_COMMANDS
 
 The following commands from Neotree v1.x will remain until v3.0 for backwards
-compatability. You should not use them if you are a new user, and existing users
+compatibility. You should not use them if you are a new user, and existing users
 should change their mapping to the new |:Neotree| command specified above.
 
     :NeoTreeFocus         -> :Neotree
@@ -191,9 +191,14 @@ C             = close_node:  Close node if it is open, else close it's parent.
 
 z         = close_all_nodes: Close all nodes in the tree.
 
+         close_all_subnodes: Same as "close_node", but also recursively collapse
+                             all subnodes, similar to "close_all_nodes"
+
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
 P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
+
+l           = focus_preview: Focus the active preview window
 
 <esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
                              any preview windows to what was being shown before
@@ -243,9 +248,21 @@ a    = add:                  Create a new file OR directory. Add a `/` to the
                              `"absolute"`: is the full path to the current
                                          directory.
 
+                             The file path also supports BASH style brace
+                             expansion. sequence style ("{00..05..2}") as well
+                             as nested braces. Here are some examples how this
+                             expansion works.
+
+                             "x{a..e..2}"           : "xa", "xc", "xe"
+                             "file.txt{,.bak}"      : "file.txt", "file.txt.bak"
+                             "./{a,b}/{00..02}.lua" : "./a/00.lua", "./a/01.lua",
+                                                      "./a/02.lua", "./b/00.lua",
+                                                      "./b/01.lua", "./b/02.lua"
+
 A    = add_directory:        Create a new directory, in this mode it does not
-                             need to end with a `/`. Also accepts
-                             `config.show_path` options
+                             need to end with a `/`. The path also supports
+                             BASH style brace expansion as explained in `add`
+                             command. Also accepts `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
@@ -311,6 +328,14 @@ D = fuzzy_finder_directory: Like fuzzy_finder above, but only shows directories.
                             search and set the focus on that directory.
                             Requires `fd` or `find` to be installed~
 
+# = fuzzy_sorter:           Sort the tree recursively based on fzy algorithm,
+                            showing top score files. Space separated keywords
+                            are treated as `and` which will be useful to narrow
+                            down as you type. The file list is taken from fd
+                            and other programs mentioned in `fuzzy_finder`.
+                            `fuzzy_sorter_directory` can be used to show list
+                            of directories instead.
+
 f = filter_on_submit:       Same as above, but does not search until you hit
                             enter. Useful if filter_as_you_type is too slow.
                             Also useful if you want to leave the tree
@@ -374,8 +399,26 @@ For example:
 The above config will map `A` to command_a for all sources except for
 filesystem, which will use command_b instead.
 
-If you don't want to use any default mappings, you can set
+If you don't want to use *any* default mappings, you can set
 `use_default_mappings = false` in your config.
+
+If you want to remove one or more particular default mappings, you can map
+the sequence to `none` or `noop`. For example, if you don’t wish to use
+fuzzy finder (default mapping `/`), but instead rely on Neovim’s built-in
+search functionality, you can do that like so this:
+
+>
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mappings = {
+           -- disable fuzzy finder
+           ["/"] = "noop"
+         }
+       }
+     }
+   })
+<
 
 NOTE: Not all commands work for all sources. If it is defined in the source
 section in the default config instead of at the root level, that means it is
@@ -395,7 +438,7 @@ You probably want #2:
      filesystem = {
        window = {
          mappings = {
-           ["?"] = functions(state)
+           ["?"] = function(state)
              local node = state.tree:get_node()
              print(node.name)
            end
@@ -406,7 +449,7 @@ You probably want #2:
 <
 ..or
 >
-   local print_me = functions(state)
+   local print_me = function(state)
      local node = state.tree:get_node()
      print(node.name)
    end
@@ -427,7 +470,7 @@ You probably want #2:
    require("neo-tree").setup({
      filesystem = {
        commands = {
-         print_me = functions(state)
+         print_me = function(state)
            local node = state.tree:get_node()
            print(node.name)
          end
@@ -443,10 +486,10 @@ CUSTOM MAPPINGS WITH VISUAL MODE
 
 If you want to create a mapping that supports visual mode, the way to do that
 is to add a second command where the name is the same as the normal mode
-command, but with `_visual` added to the end. Any mapping for this commnd will
+command, but with `_visual` added to the end. Any mapping for this command will
 then work in either normal or visual mode.
 
-The `_visual` version of the command will be called with a second arguement
+The `_visual` version of the command will be called with a second argument
 which is a list of the nodes that were selected when the command was called.
 
 For example, this is how the built-in `delete` command is defined:
@@ -471,7 +514,7 @@ CUSTOM MAPPINGS WITH ARGUMENTS
 
 If you want to include options for your mappings, such as `nowait`, you can
 set this for all mappings using the `mapping_options` key, or on individual
-mappings by specifiying them as a table that consists of the command and any
+mappings by specifying them as a table that consists of the command and any
 options you want to use. If both are specified, the mapping merges with and
 overrides the global `mapping_options`
 
@@ -744,7 +787,8 @@ These defaults can be changed by setting the following options:
 <
 
 In addition to `"tab"` and `"window"`, you can also set the target to `"global"`
-for either option, which is the same as using the |cd| command.
+for either option, which is the same as using the |cd| command. Setting the target
+to `"none"` will prevent neo-tree from setting vim's cwd for that position.
         
 
 FILTERED ITEMS                                         *neo-tree-filtered-items*
@@ -780,6 +824,9 @@ highlight group which will be applied when they are visible, see
             --".DS_Store",
             --"thumbs.db",
           },
+          never_show_by_pattern = { -- uses glob style patterns
+              --".null-ls_*",
+          },
         },
       }
     })
@@ -800,7 +847,7 @@ The `hide_by_name` option is a list of file/folder names that should be
 hidden. This is an exact match.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
-patterns. No gaurantees on how it handles advanced patterns.
+patterns. No guarantees on how it handles advanced patterns.
 
 The `always_show` option is a list of file/folder names that will always be 
 visible, even if other settings would normally hide it. This section takes
@@ -809,6 +856,10 @@ precedence over all other options except for `never_show`.
 The `never_show` option is the same as `hide_by_name`, except that those items
 will remain hidden even if you toggle `visible` to true. This section takes
 precedence over the others.
+
+The `never_show_by_pattern` option is the same as `hide_by_pattern`, except that
+those items will remain hidden even if you toggle `visible` to true. This
+section takes precedence over the others.
 
 
 NETRW HIJACK BEHAVIOR                                    *neo-tree-netrw-hijack*
@@ -1103,7 +1154,7 @@ NeoTreeDimText            Greyed out text used in various places.
 NeoTreeDirectoryIcon      Directory icon.
 NeoTreeDirectoryName      Directory name.
 NeoTreeDotfile            Used for icons and names when dotfiles are filtered.
-NeoTreeFileIcon           File icon, when not overriden by devicons.
+NeoTreeFileIcon           File icon, when not overridden by devicons.
 NeoTreeFileName           File name, when not overwritten by another status.
 NeoTreeFileNameOpened     File name when the file is open. Not used yet.
 NeoTreeFilterTerm         The filter term, as displayed in the root node.
@@ -1219,7 +1270,7 @@ Fired after leaving a neo-tree popup buffer.
 Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
 The event argument for all window events is a table with the following keys:
-    `winid`    = the |winid| of the window being opned or closed.
+    `winid`    = the |winid| of the window being opened or closed.
     `tabnr`    = the tab number that the window is in.
     `source`   = the name of the source that is in the window, such as "filesystem".
     `position` = the position of the window, i.e. "left", "bottom", "right".
@@ -1279,7 +1330,7 @@ You can also define your own with:
 The setup function is run the first time the event is subscribed to. For an
 autocmd event, this would define the vim autocmd to connect it to fire_event().
 
-The `seed` function is run at the begining of every event firing. The diagnostics
+The `seed` function is run at the beginning of every event firing. The diagnostics
 event uses this to collect the diagnostic information and pass it to all
 subscribers.
 
@@ -1287,7 +1338,7 @@ The `teardown` function is used when the last subscriber unsubscribes, and clean
 up. This is like Dispose in other languages.
 
 `debounce_frequency` is the minimum number of milliseconds between each invocation
-of the event. The first event is gauranteed to fire, as well as the last one, but
+of the event. The first event is guaranteed to fire, as well as the last one, but
 in between events may be dropped if this is set to a number greater than zero.
 
 `once` means to only fire this event handler once then mark it as `cancelled`.
@@ -1300,7 +1351,7 @@ COMPONENTS AND RENDERERS                                   *neo-tree-renderers*
 
 A renderer is just a list of component configs, to be rendered in order to
 create a line in the tree. Each renderer is for a specific node type, such as
-`directory` or `file`.  To view the avilable built-in components and their
+`directory` or `file`.  To view the available built-in components and their
 configs for each source, look at the default config by pasting it with
 >
     :lua require("neo-tree").paste_default_config()
@@ -1310,7 +1361,7 @@ https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.l
 
 A default `renderers` config is specified at the root level and will be used
 by each source unless another renderer is defined. If you just want to
-reaarange or remove components, you can do so by changing these `renderers`
+rearrange or remove components, you can do so by changing these `renderers`
 configs.
 
                                                            *neo-tree-components*
@@ -1334,7 +1385,7 @@ A component is a function that returns a single text object:
         highlight = "Comment"
       },
       {
-        text = "I'm Sepcial!",
+        text = "I'm Special!",
         highlight = "SpecialChar"
       },
         text = "[",
@@ -1367,7 +1418,7 @@ The `"fit_content"` value means that it will be the width of the largest
 layer. See `zindex` for details about layers.
 
 If the current position is "current", meaning it is being displayed in a split
-instead of as a sidebar, the avilable width will be calculated as the longest
+instead of as a sidebar, the available width will be calculated as the longest
 node name + indent + 8 characters. This is to prevent right aligned components
 from being too far away from the node name.
 
@@ -1381,7 +1432,7 @@ This is a list of components that will be arranged by this container.
 Each component in the content list can use these additional properties:
 
   zindex~
-  All components with the same zindex will be renderered together in the same
+  All components with the same zindex will be rendered together in the same
   layer, one after the other. Higher zindex value are rendered on top of other
   layers, hiding whatever is beneath them. For example, if a component with a
   zindex of 10 produces this:
@@ -1398,7 +1449,7 @@ Each component in the content list can use these additional properties:
 <
   
   align~
-  If align is right, then it will be pushed to the rigth edge of the avilable
+  If align is right, then it will be pushed to the right edge of the available
   space. This makes the most sense when the container width is set to a number
   or `"100%"`. Components that are right aligned will automatically overlap left
   aligned components with the same zindex if there is not enough space.
@@ -1448,7 +1499,7 @@ Each component function is called with the following args:
   can be made to be configurable. This is useful if you want different behavior
   in a directory renderer vs a file renderer. The config is a combination of any
   options specified in the default_component_configs
-  (|neo-tree-default-component-configs|), which can be overriden by settings
+  (|neo-tree-default-component-configs|), which can be overridden by settings
   specified within each renderer config.
 
   `node` The NuiNode object for this node. The properties can vary by source, but

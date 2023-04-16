@@ -146,7 +146,9 @@ do_show_or_focus = function(args, state, force_navigate)
     if not window_exists then
       -- Clear the space in case another source is already open
       local target_position = args.position or state.current_position or state.window.position
-      manager.close_all(target_position)
+      if target_position ~= "current" then
+        manager.close_all(target_position)
+      end
     end
   end
 

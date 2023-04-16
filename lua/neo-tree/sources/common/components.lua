@@ -77,6 +77,9 @@ end
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
+  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
+    return {}
+  end
   if not diag_state then
     return {}
   end
@@ -123,6 +126,9 @@ end
 
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
+  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
+    return {}
+  end
   if not git_status_lookup then
     return {}
   end
@@ -140,7 +146,7 @@ M.git_status = function(config, node, state)
   local change_highlt = highlights.FILE_NAME
   local status_symbol = symbols.staged
   local status_highlt = highlights.GIT_STAGED
-  if git_status:len() == 1 then
+  if node.type == "directory" and git_status:len() == 1 then
     status_symbol = nil
   end
 
@@ -262,7 +268,7 @@ M.icon = function(config, node, state)
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_ICON
     if node.loaded and not node:has_children() then
-      icon = config.folder_empty or config.folder_open or "-"
+      icon = not node.empty_expanded and config.folder_empty or config.folder_empty_open
     elseif node:is_expanded() then
       icon = config.folder_open or "-"
     else
@@ -308,7 +314,7 @@ M.name = function(config, node, state)
     end
   end
 
-  if node:get_depth() == 1 then
+  if node:get_depth() == 1 and node.type ~= "message" then
     highlight = highlights.ROOT_NAME
   else
     local filtered_by = M.filtered_by(config, node, state)
@@ -406,6 +412,17 @@ M.indent = function(config, node, state)
   end
 
   return indent
+end
+
+M.symlink_target = function(config, node, state)
+  if node.is_link then
+    return {
+      text = string.format(" ➛ %s", node.link_to),
+      highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
+    }
+  else
+    return {}
+  end
 end
 
 return M

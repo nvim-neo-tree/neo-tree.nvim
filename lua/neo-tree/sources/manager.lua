@@ -122,9 +122,9 @@ end
 M.get_state_for_window = function(winid)
   local winid = winid or vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_win_get_buf(winid)
-  local _, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
-  local _, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
-  if not source_name or not position then
+  local source_status, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
+  local position_status, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
+  if not source_status or not position_status then
     return nil
   end
 
@@ -302,6 +302,8 @@ local get_params_for_cwd = function(state)
       return winid, tabnr
     elseif target == "global" then
       return -1, -1
+    elseif target == "none" then
+      return nil, nil
     else -- default to tab
       return -1, tabnr
     end
@@ -312,7 +314,10 @@ end
 
 M.get_cwd = function(state)
   local winid, tabnr = get_params_for_cwd(state)
-  local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  local success, cwd = false, ""
+  if winid or tabnr then
+    success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  end
   if success then
     return cwd
   else
@@ -331,6 +336,11 @@ M.set_cwd = function(state)
   end
 
   local winid, tabnr = get_params_for_cwd(state)
+
+  if winid == nil and tabnr == nil then
+    return
+  end
+
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
     if winid > 0 then
@@ -419,10 +429,16 @@ M.modified_buffers_changed = function(source_name, args)
   if not type(args) == "table" then
     error("modified_buffers_changed: args must be a table")
   end
-  M._for_each_state(source_name, function(state)
-    state.modified_buffers = args.modified_buffers
-    renderer.redraw(state)
-  end)
+  if type(args.modified_buffers) == "table" then
+    M._for_each_state(source_name, function(state)
+      if utils.tbl_equals(args.modified_buffers, state.modified_buffers) then
+        -- no changes, no need to redraw
+        return
+      end
+      state.modified_buffers = args.modified_buffers
+      renderer.redraw(state)
+    end)
+  end
 end
 
 ---Navigate to the given path.

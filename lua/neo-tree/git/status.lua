@@ -73,8 +73,11 @@ local parse_git_status_line = function(context, line)
     relative_path = line_parts[3]
   end
 
-  -- remove any " due to whitespace in the path
-  relative_path = relative_path:gsub('^"', ""):gsub('$"', "")
+  -- remove any " due to whitespace or utf-8 in the path
+  relative_path = relative_path:gsub('^"', ""):gsub('"$', "")
+  -- convert octal encoded lines to utf-8
+  relative_path = git_utils.octal_to_utf8(relative_path)
+
   if utils.is_windows == true then
     relative_path = utils.windowize_path(relative_path)
   end
@@ -201,129 +204,136 @@ local function parse_lines_batch(context, job_complete_callback)
 end
 
 M.status_async = function(path, base, opts)
-  local git_root = git_utils.get_repository_root(path)
-  if utils.truthy(git_root) then
-    log.trace("git.status.status_async called")
-  else
-    log.trace("status_async: not a git folder: ", path)
-    return false
-  end
-
-  local event_id = "git_status_" .. git_root
-  local context = {
-    git_root = git_root,
-    git_status = {},
-    exclude_directories = false,
-    lines = {},
-    lines_parsed = 0,
-    batch_size = opts.batch_size or 1000,
-    batch_delay = opts.batch_delay or 10,
-    max_lines = opts.max_lines or 100000,
-  }
-
-  local should_process = function(err, line, job, err_msg)
-    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-      job:shutdown()
-      return false
-    end
-    if err and err > 0 then
-      log.error(err_msg, err, line)
-      return false
-    end
-    return true
-  end
-
-  local job_complete_callback = function()
-    utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
-    vim.schedule(function()
-      events.fire_event(events.GIT_STATUS_CHANGED, {
-        git_root = context.git_root,
-        git_status = context.git_status,
-      })
-    end)
-  end
-
-  local parse_lines = vim.schedule_wrap(function()
-    parse_lines_batch(context, job_complete_callback)
-  end)
-
-  utils.debounce(event_id, function()
-    local staged_job = Job:new({
-      command = "git",
-      args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
-      enable_recording = false,
-      maximium_results = context.max_lines,
-      on_stdout = vim.schedule_wrap(function(err, line, job)
-        if should_process(err, line, job, "status_async staged error:") then
-          table.insert(context.lines, line)
-        end
-      end),
-      on_stderr = function(err, line)
-        if err and err > 0 then
-          log.error("status_async staged error: ", err, line)
-        end
-      end,
-    })
-
-    local unstaged_job = Job:new({
-      command = "git",
-      args = { "-C", git_root, "diff", "--name-status" },
-      enable_recording = false,
-      maximium_results = context.max_lines,
-      on_stdout = vim.schedule_wrap(function(err, line, job)
-        if should_process(err, line, job, "status_async unstaged error:") then
-          if line then
-            line = " " .. line
-          end
-          table.insert(context.lines, line)
-        end
-      end),
-      on_stderr = function(err, line)
-        if err and err > 0 then
-          log.error("status_async unstaged error: ", err, line)
-        end
-      end,
-    })
-
-    local untracked_job = Job:new({
-      command = "git",
-      args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
-      enable_recording = false,
-      maximium_results = context.max_lines,
-      on_stdout = vim.schedule_wrap(function(err, line, job)
-        if should_process(err, line, job, "status_async untracked error:") then
-          if line then
-            line = "?	" .. line
-          end
-          table.insert(context.lines, line)
-        end
-      end),
-      on_stderr = function(err, line)
-        if err and err > 0 then
-          log.error("status_async untracked error: ", err, line)
-        end
-      end,
-    })
-
-    local showUntracked = vim.fn.systemlist({
-      "git",
-      "-C",
-      git_root,
-      "config",
-      "--get",
-      "status.showUntrackedFiles",
-    })
-    log.debug("git status.showUntrackedFiles =", showUntracked[1])
-    if showUntracked[1] == "no" then
-      unstaged_job:after(parse_lines)
-      Job.chain(staged_job, unstaged_job)
+  git_utils.get_repository_root(path, function(git_root)
+    if utils.truthy(git_root) then
+      log.trace("git.status.status_async called")
     else
-      untracked_job:after(parse_lines)
-      Job.chain(staged_job, unstaged_job, untracked_job)
+      log.trace("status_async: not a git folder: ", path)
+      return false
     end
-  end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
-  return true
+    local event_id = "git_status_" .. git_root
+    local context = {
+      git_root = git_root,
+      git_status = {},
+      exclude_directories = false,
+      lines = {},
+      lines_parsed = 0,
+      batch_size = opts.batch_size or 1000,
+      batch_delay = opts.batch_delay or 10,
+      max_lines = opts.max_lines or 100000,
+    }
+
+    local should_process = function(err, line, job, err_msg)
+      if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+        job:shutdown()
+        return false
+      end
+      if err and err > 0 then
+        log.error(err_msg, err, line)
+        return false
+      end
+      return true
+    end
+
+    local job_complete_callback = function()
+      utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
+      vim.schedule(function()
+        events.fire_event(events.GIT_STATUS_CHANGED, {
+          git_root = context.git_root,
+          git_status = context.git_status,
+        })
+      end)
+    end
+
+    local parse_lines = vim.schedule_wrap(function()
+      parse_lines_batch(context, job_complete_callback)
+    end)
+
+    utils.debounce(event_id, function()
+      local staged_job = Job:new({
+        command = "git",
+        args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
+        enable_recording = false,
+        maximium_results = context.max_lines,
+        on_stdout = vim.schedule_wrap(function(err, line, job)
+          if should_process(err, line, job, "status_async staged error:") then
+            table.insert(context.lines, line)
+          end
+        end),
+        on_stderr = function(err, line)
+          if err and err > 0 then
+            log.error("status_async staged error: ", err, line)
+          end
+        end,
+      })
+
+      local unstaged_job = Job:new({
+        command = "git",
+        args = { "-C", git_root, "diff", "--name-status" },
+        enable_recording = false,
+        maximium_results = context.max_lines,
+        on_stdout = vim.schedule_wrap(function(err, line, job)
+          if should_process(err, line, job, "status_async unstaged error:") then
+            if line then
+              line = " " .. line
+            end
+            table.insert(context.lines, line)
+          end
+        end),
+        on_stderr = function(err, line)
+          if err and err > 0 then
+            log.error("status_async unstaged error: ", err, line)
+          end
+        end,
+      })
+
+      local untracked_job = Job:new({
+        command = "git",
+        args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
+        enable_recording = false,
+        maximium_results = context.max_lines,
+        on_stdout = vim.schedule_wrap(function(err, line, job)
+          if should_process(err, line, job, "status_async untracked error:") then
+            if line then
+              line = "?	" .. line
+            end
+            table.insert(context.lines, line)
+          end
+        end),
+        on_stderr = function(err, line)
+          if err and err > 0 then
+            log.error("status_async untracked error: ", err, line)
+          end
+        end,
+      })
+
+      Job:new({
+        command = "git",
+        args = {
+          "-C",
+          git_root,
+          "config",
+          "--get",
+          "status.showUntrackedFiles",
+        },
+        enabled_recording = true,
+        on_exit = function(self, _, _)
+          local result = self:result()
+          log.debug("git status.showUntrackedFiles =", result[1])
+          if result[1] == "no" then
+            unstaged_job:after(parse_lines)
+            Job.chain(staged_job, unstaged_job)
+          else
+            untracked_job:after(parse_lines)
+            Job.chain(staged_job, unstaged_job, untracked_job)
+          end
+        end,
+      }):start()
+    end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
+
+    return true
+  end)
 end
 
 return M

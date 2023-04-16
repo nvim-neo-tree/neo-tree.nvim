@@ -9,6 +9,7 @@ local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
+local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = { name = "filesystem" }
 
@@ -183,7 +184,15 @@ end
 
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
+  -- Cancel any pending search
+  require("neo-tree.sources.filesystem.lib.filter_external").cancel()
+  -- reset search state
   state.fuzzy_finder_mode = nil
+  state.use_fzy = nil
+  state.fzy_sort_result_scores = nil
+  state.fzy_sort_file_list_cache = nil
+  state.sort_function_override = nil
+
   if refresh == nil then
     refresh = true
   end
@@ -257,12 +266,12 @@ M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
   config.enable_git_status = global_config.enable_git_status
 
-  local hide_by_pattern = config.filtered_items.hide_by_pattern
-  if hide_by_pattern then
-    local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
-    for i, pattern in ipairs(hide_by_pattern) do
-      hide_by_pattern[i] = glob.globtopattern(pattern)
-      log.trace("hide_by_pattern: ", pattern, " -> ", hide_by_pattern[i])
+  for _, key in ipairs({ "hide_by_pattern", "never_show_by_pattern" }) do
+    local list = config.filtered_items[key]
+    if type(list) == "table" then
+      for i, pattern in ipairs(list) do
+        list[i] = glob.globtopattern(pattern)
+      end
     end
   end
 
@@ -403,6 +412,9 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     if path_to_reveal then
       renderer.focus_node(state, path_to_reveal)
     end
+  elseif require("neo-tree").config.filesystem.scan_mode == "deep" then
+    node.empty_expanded = not node.empty_expanded
+    renderer.redraw(state)
   end
 end
 

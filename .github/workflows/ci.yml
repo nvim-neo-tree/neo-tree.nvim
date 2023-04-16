@@ -2,25 +2,24 @@ name: CI
 on:
   push:
     branches:
-    - main
-    - v1.x
-    - v2.x
+      - main
+      - v1.x
+      - v2.x
+      - v3.x
   pull_request:
-    branches:
-    - main
 
 jobs:
   stylua-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+      - uses: actions/checkout@v1
 
-    - name: Check formatting
-      uses: JohnnyMorganz/stylua-action@1.0.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        version: v0.13.1
-        args: --color always --check lua/
+      - name: Check formatting
+        uses: JohnnyMorganz/stylua-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v0.16.0
+          args: --color always --check -g '!**/defaults.lua' lua/
 
   plenary-tests:
     runs-on: ubuntu-20.04
@@ -42,32 +41,33 @@ jobs:
             mv nvim.appimage ./build/nvim
           }
 
-      - name: Get Luver Cache Key
-        id: luver-cache-key
-        env:
-          CI_RUNNER_OS: ${{ runner.os }}
-        run: |
-          echo "::set-output name=value::${CI_RUNNER_OS}-luver-v1-$(date -u +%Y-%m-%d)"
-        shell: bash
-      - name: Setup Luver Cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.local/share/luver
-          key: ${{ steps.luver-cache-key.outputs.value }}
-      - name: Setup Lua
-        uses: MunifTanjim/luver-action@v1
-        with:
-          default: 5.1.5
-          lua_versions: 5.1.5
-          luarocks_versions: 5.1.5:3.8.0
-      - name: Setup luacov
-        run: |
-          luarocks install luacov
+      # - name: Get Luver Cache Key
+      #   id: luver-cache-key
+      #   env:
+      #     CI_RUNNER_OS: ${{ runner.os }}
+      #   run: |
+      #     echo "::set-output name=value::${CI_RUNNER_OS}-luver-v1-$(date -u +%Y-%m-%d)"
+      #   shell: bash
+      # - name: Setup Luver Cache
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ~/.local/share/luver
+      #     key: ${{ steps.luver-cache-key.outputs.value }}
+
+      # - name: Setup Lua
+      #   uses: MunifTanjim/luver-action@v1
+      #   with:
+      #     default: 5.1.5
+      #     lua_versions: 5.1.5
+      #     luarocks_versions: 5.1.5:3.8.0
+      # - name: Setup luacov
+      #   run: |
+      #     luarocks install luacov
 
       - name: Run tests
         run: |
-            export PATH="${PWD}/build/:${PATH}"
-            ./scripts/test.sh
+          export PATH="${PWD}/build/:${PATH}"
+          ./scripts/test.sh
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v2

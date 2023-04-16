@@ -160,9 +160,13 @@ M.show_in_split = function(source_name, toggle_if_open)
   manager.show_in_split(source_name)
 end
 
-M.get_prior_window = function()
+M.get_prior_window = function(ignore_filetypes)
+  ignore_filetypes = ignore_filetypes or {}
+  local ignore = utils.list_to_dict(ignore_filetypes)
+  ignore["neo-tree"] = true
+
   local tabnr = vim.api.nvim_get_current_tabpage()
-  local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
+  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabnr]
   if wins == nil then
     return -1
   end
@@ -174,7 +178,8 @@ M.get_prior_window = function()
       if success and is_valid then
         local buf = vim.api.nvim_win_get_buf(last_win)
         local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-        if ft ~= "neo-tree" then
+        local bt = vim.api.nvim_buf_get_option(buf, "buftype") or "normal"
+        if ignore[ft] ~= true and ignore[bt] ~= true then
           return last_win
         end
       end

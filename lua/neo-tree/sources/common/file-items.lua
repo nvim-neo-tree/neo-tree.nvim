@@ -60,20 +60,26 @@ end
 
 local create_item, set_parents
 
-function create_item(context, path, _type)
-  -- avoid creating duplicate items
-  if context.folders[path] or context.nesting[path] then
-    return context.folders[path] or context.nesting[path]
-  end
-
+function create_item(context, path, _type, bufnr)
   local parent_path, name = utils.split_path(path)
+  local id = path
+  if path == "[No Name]" and bufnr then
+    parent_path = context.state.path
+    name = "[No Name]"
+    id = tostring(bufnr)
+  else
+    -- avoid creating duplicate items
+    if context.folders[path] or context.nesting[path] then
+      return context.folders[path] or context.nesting[path]
+    end
+  end
 
   if _type == nil then
     local stat = vim.loop.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
   local item = {
-    id = path,
+    id = id,
     name = name,
     parent_path = parent_path,
     path = path,
@@ -112,6 +118,11 @@ function create_item(context, path, _type)
     if f.never_show[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.never_show = true
+    else
+      if utils.is_filtered_by_pattern(f.never_show_by_pattern, path, name) then
+        item.filtered_by = item.filtered_by or {}
+        item.filtered_by.never_show = true
+      end
     end
     if f.always_show[name] then
       item.filtered_by = item.filtered_by or {}
@@ -121,15 +132,9 @@ function create_item(context, path, _type)
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.name = true
     end
-    if f.hide_by_pattern then
-      for _, p in ipairs(f.hide_by_pattern) do
-        local separator_pattern = utils.is_windows and "\\" or "/"
-        local match = string.find(p, separator_pattern) and path or name
-        if string.find(match, p) then
-          item.filtered_by = item.filtered_by or {}
-          item.filtered_by.pattern = true
-        end
-      end
+    if utils.is_filtered_by_pattern(f.hide_by_pattern, path, name) then
+      item.filtered_by = item.filtered_by or {}
+      item.filtered_by.pattern = true
     end
     if f.hide_dotfiles and string.sub(name, 1, 1) == "." then
       item.filtered_by = item.filtered_by or {}

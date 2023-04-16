@@ -143,6 +143,44 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   end
 end
 
+--- Returns true if the contents of two tables are equal.
+M.tbl_equals = function (table1, table2)
+  -- same object
+  if table1 == table2 then
+    return true
+  end
+
+  -- not the same type
+  if type(table1) ~= "table" or type(table2) ~= "table" then
+    return false
+  end
+
+  -- If tables are lists, check if they have the same values in the same order
+  if #table1 ~= #table2 then
+    return false
+  end
+  for i, v in ipairs(table1) do
+    if table2[i] ~= v then
+      return false
+    end
+  end
+
+  -- Check if the tables have the same key/value pairs
+  for k, v in pairs(table1) do
+    if table2[k] ~= v then
+      return false
+    end
+  end
+  for k, v in pairs(table2) do
+    if table1[k] ~= v then
+      return false
+    end
+  end
+
+  -- No differences found, tables are equal
+  return true
+end
+
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 
@@ -209,6 +247,9 @@ M.get_modified_buffers = function()
   local modified_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
     local buffer_name = vim.api.nvim_buf_get_name(buffer)
+    if buffer_name == nil or buffer_name == "" then
+      buffer_name = "[No Name]#" .. buffer
+    end
     modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
   end
   return modified_buffers
@@ -322,6 +363,28 @@ M.group_by = function(array, key)
   return result
 end
 
+---Determines if a file should be filtered by a given list of glob patterns.
+---@param pattern_list table The list of glob patterns to filter by.
+---@param path string The full path to the file.
+---@param name string|nil The name of the file.
+---@return boolean
+M.is_filtered_by_pattern = function(pattern_list, path, name)
+  if pattern_list == nil then
+    return false
+  end
+  if name == nil then
+    _, name = M.split_path(path)
+  end
+  for _, p in ipairs(pattern_list) do
+    local separator_pattern = M.is_windows and "\\" or "/"
+    local filename = string.find(p, separator_pattern) and path or name
+    if string.find(filename, p) then
+      return true
+    end
+  end
+  return false
+end
+
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
@@ -398,8 +461,11 @@ M.get_appropriate_window = function(state)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
+  local ignore_ft = nt.config.open_files_do_not_replace_types
+  local ignore = M.list_to_dict(ignore_ft)
+  ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
-    local prior_window = nt.get_prior_window()
+    local prior_window = nt.get_prior_window(ignore)
     if prior_window > 0 then
       local success = pcall(vim.api.nvim_set_current_win, prior_window)
       if success then
@@ -416,9 +482,18 @@ M.get_appropriate_window = function(state)
     end
   end
   local attempts = 0
-  while attempts < 5 and vim.bo.filetype == "neo-tree" do
-    attempts = attempts + 1
-    vim.cmd("wincmd w")
+  while attempts < 5 and not suitable_window_found do
+    local bt = vim.bo.buftype or "normal"
+    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() then
+      attempts = attempts + 1
+      vim.cmd("wincmd w")
+    else
+      suitable_window_found = true
+    end
+  end
+  if not suitable_window_found then
+    -- go back to the neotree window, this will forve it to open a new split
+    vim.api.nvim_set_current_win(current_window)
   end
 
   local winid = vim.api.nvim_get_current_win()
@@ -434,18 +509,22 @@ end
 ---@param state table The state of the source
 ---@param path string The file to open
 ---@param open_cmd string The vimcommand to use to open the file
-M.open_file = function(state, path, open_cmd)
+---@param bufnr number|nil The buffer number to open
+M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
   if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
-    local bufnr = M.find_buffer_by_name(path)
-    if bufnr > 0 then
+    bufnr = bufnr or M.find_buffer_by_name(path)
+    if bufnr <= 0 then
+      bufnr = nil
+    else
       open_cmd = "b"
     end
   end
 
   if M.truthy(path) then
     local escaped_path = vim.fn.fnameescape(path)
+    local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
     local err = nil
@@ -453,24 +532,65 @@ M.open_file = function(state, path, open_cmd)
       state = state,
       path = path,
       open_cmd = open_cmd,
+      bufnr = bufnr,
     }) or {}
     if event_result.handled then
       events.fire_event(events.FILE_OPENED, path)
       return
     end
     if state.current_position == "current" then
-      result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+      result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
       vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
       if is_neo_tree_window then
-        -- Neo-tree must be the only window, restore it's status as a sidebar
-        local width = M.get_value(state, "window.width", 40, false)
-        result, err = pcall(vim.cmd, "vsplit " .. escaped_path)
+        local width = vim.api.nvim_win_get_width(0)
+        if width == vim.o.columns then
+          -- Neo-tree must be the only window, restore it's status as a sidebar
+          local default_width = 40
+          width = M.get_value(state, "window.width", default_width, false)
+          local available_width = vim.api.nvim_win_get_width(0)
+          if type(width) == "string" then
+            if string.sub(width, -1) == "%" then
+              width = tonumber(string.sub(width, 1, #width - 1)) / 100
+            else
+              width = tonumber(width)
+            end
+            width = math.floor(available_width * width)
+          elseif type(width) == "function" then
+            width = width()
+            if type(width) ~= "number" then
+              width = default_width
+            else
+              width = math.floor(width)
+            end
+          elseif type(width) == "number" then
+            width = math.floor(width)
+          else
+            width = default_width
+          end
+        end
+
+        local split_command = "vsplit"
+        -- respect window position in user config when Neo-tree is the only window
+        if state.current_position == "left" then
+          split_command = "rightbelow vs"
+        elseif state.current_position == "right" then
+          split_command = "leftabove vs"
+        end
+        if path == "[No Name]" then
+          result, err = pcall(vim.cmd, split_command)
+          if result then
+            vim.cmd("b" .. bufnr)
+          end
+        else
+          result, err = pcall(vim.cmd, split_command .. escaped_path)
+        end
+
         vim.api.nvim_win_set_width(winid, width)
       else
-        result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+        result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
@@ -785,6 +905,162 @@ M.unique = function(list)
     if not seen[item] then
       table.insert(result, item)
       seen[item] = true
+    end
+  end
+  return result
+end
+
+---Splits string by sep on first occurrence. brace_expand_split("a,b,c", ",") -> { "a", "b,c" }. nil if separator not found.
+---@param s string: input string
+---@param separator string: separator
+---@return string, string | nil
+local brace_expand_split = function(s, separator)
+  local pos = 1
+  local depth = 0
+  while pos <= s:len() do
+    local c = s:sub(pos, pos)
+    if c == "\\" then
+      pos = pos + 1
+    elseif c == separator and depth == 0 then
+      return s:sub(1, pos - 1), s:sub(pos + 1)
+    elseif c == "{" then
+      depth = depth + 1
+    elseif c == "}" then
+      if depth > 0 then
+        depth = depth - 1
+      end
+    end
+    pos = pos + 1
+  end
+  return s, nil
+end
+
+---Perform brace expansion on a string and return the sequence of the results
+---@param s string?: input string which is inside braces, if nil return { "" }
+---@return string[] | nil: list of strings each representing the individual expanded strings
+local brace_expand_contents = function(s)
+  if s == nil then -- no closing brace "}"
+    return { "" }
+  elseif s == "" then -- brace with no content "{}"
+    return { "{}" }
+  end
+
+  ---Generate a sequence from from..to..step and apply `func`
+  ---@param from string | number: initial value
+  ---@param to string | number: end value
+  ---@param step string | number: step value
+  ---@param func fun(i: number): string | nil function(string | number) -> string | nil: function applied to all values in sequence. if return is nil, the value will be ignored.
+  ---@return string[]: generated string list
+  ---@private
+  local function resolve_sequence(from, to, step, func)
+    local f, t = tonumber(from), tonumber(to)
+    local st = (t < f and -1 or 1) * math.abs(tonumber(step) or 1) -- reverse (negative) step if t < f
+    ---@type string[]
+    local items = {}
+    for i = f, t, st do
+      local r = func(i)
+      if r ~= nil then
+        table.insert(items, r)
+      end
+    end
+    return items
+  end
+
+  ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
+  ---@param pattern string: regex to match on `s`
+  ---@param resolve_func fun(from: string, to: string, step: string): string[]
+  ---@return string[] | nil: expanded sequence or nil if failed
+  local function try_sequence_on_pattern(pattern, resolve_func)
+    local from, to, step = string.match(s, pattern)
+    if from then
+      return resolve_func(from, to, step)
+    end
+    return nil
+  end
+
+  ---Process numeric sequence expression. e.g. {0..2} -> {0,1,2}, {01..05..2} -> {01,03,05}
+  local resolve_sequence_num = function(from, to, step)
+    local format = "%d"
+    -- Pad strings in the presence of a leading zero
+    local pattern = "^-?0%d"
+    if from:match(pattern) or to:match(pattern) then
+      format = "%0" .. math.max(#from, #to) .. "d"
+    end
+    return resolve_sequence(from, to, step, function(i)
+      return string.format(format, i)
+    end)
+  end
+
+  ---Process alphabet sequence expression. e.g. {a..c} -> {a,b,c}, {a..e..2} -> {a,c,e}
+  local resolve_sequence_char = function(from, to, step)
+    return resolve_sequence(from:byte(), to:byte(), step, function(i)
+      return i ~= 92 and string.char(i) or nil -- 92 == '\\' is ignored in bash
+    end)
+  end
+
+  local check_list = {
+    { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
+    { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
+    { [=[^(%a)%.%.(%a)%.%.(-?%d+)$]=], resolve_sequence_char },
+    { [=[^(%a)%.%.(%a)$]=], resolve_sequence_char },
+  }
+  for _, list in ipairs(check_list) do
+    local regex, func = table.unpack(list)
+    local sequence = try_sequence_on_pattern(regex, func)
+    if sequence then
+      return sequence
+    end
+  end
+
+  -- Regular `,` separated expression. x{a,b,c} -> {xa,xb,xc}
+  local items, tmp_s = {}, nil
+  tmp_s = s
+  while tmp_s ~= nil do
+    items[#items + 1], tmp_s = brace_expand_split(tmp_s, ",")
+  end
+  if #items == 1 then -- Only one expansion found. Abort.
+    return nil
+  end
+  return vim.tbl_flatten(items)
+end
+
+---brace_expand:
+-- Perform a BASH style brace expansion to generate arbitrary strings.
+-- Especially useful for specifying structured file / dir names.
+-- USAGE:
+--   - `require("neo-tree.utils").brace_expand("x{a..e..2}")` -> `{ "xa", "xc", "xe" }`
+--   - `require("neo-tree.utils").brace_expand("file.txt{,.bak}")` -> `{ "file.txt", "file.txt.bak" }`
+--   - `require("neo-tree.utils").brace_expand("./{a,b}/{00..02}.lua")` -> `{ "./a/00.lua", "./a/01.lua", "./a/02.lua", "./b/00.lua", "./b/01.lua", "./b/02.lua" }`
+-- More examples for BASH style brace expansion can be found here: https://facelessuser.github.io/bracex/
+---@param s string: input string. e.g. {a..e..2} -> {a,c,e}, {00..05..2} -> {00,03,05}
+---@return string[]: result of expansion, array with at least one string (one means it failed to expand and the raw string is returned)
+M.brace_expand = function(s)
+  local preamble, postamble = brace_expand_split(s, "{")
+  if postamble == nil then
+    return { s }
+  end
+
+  local expr, postscript, contents = nil, nil, nil
+  postscript = postamble
+  while contents == nil do
+    local old_expr = expr
+    expr, postscript = brace_expand_split(postscript, "}")
+    if old_expr then
+      expr = old_expr .. "}" .. expr
+    end
+    if postscript == nil then -- No closing brace found, so we put back the unmatched '{'
+      preamble = preamble .. "{"
+      expr, postscript = nil, postamble
+    end
+    contents = brace_expand_contents(expr)
+  end
+
+  -- Concat everything. Pass postscript recursively.
+  ---@type string[]
+  local result = {}
+  for _, item in ipairs(contents) do
+    for _, suffix in ipairs(M.brace_expand(postscript)) do
+      result[#result + 1] = table.concat({ preamble, item, suffix })
     end
   end
   return result

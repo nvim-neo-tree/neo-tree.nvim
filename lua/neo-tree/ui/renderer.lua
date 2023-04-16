@@ -14,8 +14,37 @@ local log = require("neo-tree.log")
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
+local draw, create_window, create_tree, render_tree
+
 local floating_windows = {}
-local draw, create_window, create_tree
+local update_floating_windows = function()
+  local valid_windows = {}
+  for _, win in ipairs(floating_windows) do
+    if M.is_window_valid(win.winid) then
+      table.insert(valid_windows, win)
+    end
+  end
+  floating_windows = valid_windows
+end
+
+local cleaned_up = false
+---Clean up invalid neotree buffers (e.g after a session restore)
+---@param force boolean if true, force cleanup. Otherwise only cleanup once
+M.clean_invalid_neotree_buffers = function(force)
+  if cleaned_up and not force then
+    return
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local bufname = vim.fn.bufname(buf)
+    local is_neotree_buffer = string.match(bufname, "neo%-tree [^ ]+ %[%d+]")
+    local is_valid_neotree, _ = pcall(vim.api.nvim_buf_get_var, buf, "neo_tree_source")
+    if is_neotree_buffer and not is_valid_neotree then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+  cleaned_up = true
+end
 
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
@@ -36,13 +65,13 @@ local start_resize_monitor = function()
   check_window_size = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
-      if state.win_width and M.window_exists(state) then
+      if state.win_width and M.tree_is_visible(state) then
         windows_exist = true
         local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
           log.trace("Window size changed, redrawing tree")
           state.win_width = current_size
-          state.tree:render()
+          render_tree(state)
           speed_up_loops = 21 -- move to fast timer for the next 1000 ms
         end
       end
@@ -74,7 +103,6 @@ M.close = function(state)
   local window_existed = false
   if state and state.winid then
     if M.window_exists(state) then
-      Preview.dispose(state)
       local bufnr = vim.api.nvim_win_get_buf(state.winid)
       -- if bufnr is different then we expect,  then it was taken over by
       -- another buffer, so we can't delete it now
@@ -217,6 +245,7 @@ create_nodes = function(source_items, state, level)
       extra = item.extra,
       is_nested = item.is_nested,
       skip_node = item.skip_node,
+      is_empty_with_hidden_root = item.is_empty_with_hidden_root,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,
@@ -228,11 +257,6 @@ create_nodes = function(source_items, state, level)
       is_last_child = is_last_child,
     }
     local indent = (state.renderers[item.type] or {}).indent_size or 4
-    local estimated_node_length = (#item.name or 0) + level * indent + 8
-    if level == 0 then
-      estimated_node_length = estimated_node_length + 16
-    end
-    state.longest_node = math.max(state.longest_node, estimated_node_length)
 
     local node_children = nil
     if item.children ~= nil then
@@ -290,7 +314,8 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data = pcall(component_func, component, item, state, remaining_width)
+    local success, component_data, wanted_width =
+      pcall(component_func, component, item, state, remaining_width)
     if success then
       if component_data == nil then
         return { {} }
@@ -303,7 +328,7 @@ M.render_component = function(component, item, state, remaining_width)
       for _, data in ipairs(component_data) do
         data.text = one_line(data.text)
       end
-      return component_data
+      return component_data, wanted_width
     else
       local name = component[1] or "[missing_name]"
       local msg = string.format("Error rendering component %s: %s", name, component_data)
@@ -320,7 +345,30 @@ end
 
 local prepare_node = function(item, state)
   if item.skip_node then
-    return nil
+    if item.is_empty_with_hidden_root then
+      local line = NuiLine()
+      line:append("(empty folder)", highlights.MESSAGE)
+      return line
+    else
+      return nil
+    end
+  end
+  -- pre_render is used to calculate the longest node width
+  -- without actually rendering the node.
+  -- We'll try to reuse that work if possible.
+  local pre_render = state._in_pre_render
+  if item.line and not pre_render then
+    local line = item.line
+    -- Only use it once, we don't want to accidentally use stale data
+    item.line = nil
+    if
+      line
+      and item.wanted_width
+      and state.longest_node
+      and item.wanted_width <= state.longest_node
+    then
+      return line
+    end
   end
   local line = NuiLine()
 
@@ -330,19 +378,41 @@ local prepare_node = function(item, state)
     line:append(item.name)
   else
     local remaining_cols = state.win_width
+    if remaining_cols == nil then
+      if state.winid then
+        remaining_cols = vim.api.nvim_win_get_width(state.winid)
+      else
+        local default_width = utils.resolve_config_option(state, "window.width", 40)
+        remaining_cols = default_width
+      end
+    end
+    local wanted_width = 0
     if state.current_position == "current" then
-      remaining_cols = math.min(remaining_cols, state.longest_node)
+      local longest = state.longest_node or 0
+      remaining_cols = math.min(remaining_cols, longest + 4)
     end
     for _, component in ipairs(renderer) do
-      local component_data = M.render_component(component, item, state, remaining_cols)
+      local component_data, component_wanted_width =
+        M.render_component(component, item, state, remaining_cols)
+      local actual_width = 0
       if component_data then
         for _, data in ipairs(component_data) do
           if data.text then
+            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
             line:append(data.text, data.highlight)
             remaining_cols = remaining_cols - vim.fn.strchars(data.text)
           end
         end
       end
+      component_wanted_width = component_wanted_width or actual_width
+      wanted_width = wanted_width + component_wanted_width
+    end
+    line.wanted_width = wanted_width
+    if pre_render then
+      item.line = line
+      state.longest_node = math.max(state.longest_node, line.wanted_width)
+    else
+      item.line = nil
     end
   end
 
@@ -386,7 +456,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
 
   if M.window_exists(state) then
     if not linenr then
-      M.expand_to_node(state.tree, node)
+      M.expand_to_node(state, node)
       node, linenr = tree:get_node(id)
       if not linenr then
         log.debug("focus_node cannot get linenr for node with id ", id)
@@ -468,14 +538,13 @@ M.get_expanded_nodes = function(tree, root_node_id)
   local node_ids = {}
 
   local function process(node)
+    local id = node:get_id()
     if node:is_expanded() then
-      local id = node:get_id()
       table.insert(node_ids, id)
-
-      if node:has_children() then
-        for _, child in ipairs(tree:get_nodes(id)) do
-          process(child)
-        end
+    end
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(id)) do
+        process(child)
       end
     end
   end
@@ -493,8 +562,8 @@ M.get_expanded_nodes = function(tree, root_node_id)
   return node_ids
 end
 
-M.collapse_all_nodes = function(tree)
-  local expanded = M.get_expanded_nodes(tree)
+M.collapse_all_nodes = function(tree, root_node_id)
+  local expanded = M.get_expanded_nodes(tree, root_node_id)
   for _, id in ipairs(expanded) do
     local node = tree:get_node(id)
     if utils.is_expandable(node) then
@@ -508,7 +577,11 @@ M.collapse_all_nodes = function(tree)
   end
 end
 
-M.expand_to_node = function(tree, node)
+M.expand_to_node = function(state, node)
+  if not M.tree_is_visible(state) then
+    return
+  end
+  local tree = state.tree
   if type(node) == "string" then
     node = tree:get_node(node)
   end
@@ -518,7 +591,7 @@ M.expand_to_node = function(tree, node)
     parent:expand()
     parentId = parent:get_parent_id()
   end
-  tree:render()
+  render_tree(state)
 end
 
 ---Functions to save and restore the focused node.
@@ -561,9 +634,9 @@ M.position = {
 ---Redraw the tree without relaoding from the source.
 ---@param state table State of the tree.
 M.redraw = function(state)
-  if state.tree and M.window_exists(state) then
+  if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
-    state.tree:render()
+    render_tree(state)
     log.trace("  Redrawing tree done", state.name, state.id)
   end
 end
@@ -733,6 +806,7 @@ end
 
 create_window = function(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
+  local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
 
   local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
@@ -746,7 +820,7 @@ create_window = function(state)
     ns_id = highlights.ns_id,
     size = utils.resolve_config_option(state, size_opt, default_size),
     position = state.current_position,
-    relative = "editor",
+    relative = relative,
     buf_options = {
       buftype = "nofile",
       modifiable = false,
@@ -807,7 +881,13 @@ create_window = function(state)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   elseif state.current_position == "current" then
-    local winid = vim.api.nvim_get_current_win()
+    -- state.id is always the window id or tabnr that this state was created for 
+    -- in the case of a position = current state object, it will be the window id
+    local winid = state.id
+    if not vim.api.nvim_win_is_valid(winid) then
+      log.warn("Window ", winid, "  is no longer valid!")
+      return
+    end
     local bufnr = vim.fn.bufnr(bufname)
     if bufnr < 1 then
       bufnr = vim.api.nvim_create_buf(false, false)
@@ -863,6 +943,7 @@ create_window = function(state)
 end
 
 M.update_floating_window_layouts = function()
+  update_floating_windows()
   for _, win in ipairs(floating_windows) do
     local opt = {
       relative = "win",
@@ -922,6 +1003,35 @@ M.window_exists = function(state)
   return window_exists
 end
 
+---Determines if a specific tree is open.
+---@param state table The current state of the plugin.
+---@return boolean
+M.tree_is_visible = function(state)
+  return M.window_exists(state) and vim.api.nvim_win_get_buf(state.winid) == state.bufnr
+end
+
+---Renders the given tree and expands window width if needed
+--@param state table The state containing tree to render. Almost same as state.tree:render()
+render_tree = function(state)
+  local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
+  local should_pre_render = should_auto_expand or state.current_position == "current"
+  if should_pre_render and M.tree_is_visible(state) then
+    log.trace("pre-rendering tree")
+    state._in_pre_render = true
+    state.tree:render()
+    state._in_pre_render = false
+    state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
+    if should_auto_expand and state.longest_node > state.window.last_user_width then
+      log.trace(string.format("auto_expand_width: on. Expanding width to %s.", state.longest_node))
+      vim.api.nvim_win_set_width(state.winid, state.longest_node)
+      state.win_width = state.longest_node
+    end
+  end
+  if M.tree_is_visible(state) then
+    state.tree:render()
+  end
+end
+
 ---Draws the given nodes on the screen.
 --@param nodes table The nodes to draw.
 --@param state table The current state of the source.
@@ -968,7 +1078,7 @@ draw = function(nodes, state, parent_id)
   state.win_width = utils.get_inner_win_width(state.winid)
   start_resize_monitor()
 
-  state.tree:render()
+  render_tree(state)
 
   -- draw winbar / statusbar
   require("neo-tree.ui.selector").set_source_selector(state)
@@ -1007,6 +1117,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
   --utils.debounce(id, function()
   events.fire_event(events.BEFORE_RENDER, state)
+  state.longest_width_exact = 0
   local parent
   local level = 0
   if parentId ~= nil then
@@ -1024,6 +1135,9 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   if config.hide_root_node then
     if not parentId then
       sourceItems[1].skip_node = true
+      if not (sourceItems[1].children and #sourceItems[1].children > 0) then
+        sourceItems[1].is_empty_with_hidden_root = true
+      end
     end
     if not config.retain_hidden_root_indent then
       level = level - 1
@@ -1041,30 +1155,37 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
 
   if state.group_empty_dirs then
     if parent then
-      -- this is a lazy load of a single sub folder
-      group_empty_dirs(sourceItems)
-      if #sourceItems == 1 and sourceItems[1].type == "directory" then
-        -- This folder needs to be grouped.
-        -- The goal is to just update the existing node in place.
-        -- To avoid digging into private internals of Nui, we will just export the entire level and replace
-        -- the one node. This keeps it in the right order, because nui doesn't have methods to replace something
-        -- in place.
-        -- We can't just mutate the existing node because we have to change it's id which would break Nui's
-        -- internal state.
-        local item = sourceItems[1]
-        parentId = parent:get_parent_id()
-        local siblings = state.tree:get_nodes(parentId)
-        for i, node in pairs(siblings) do
-          if node.id == parent.id then
-            item.name = parent.name .. utils.path_separator .. item.name
-            item.level = level - 1
-            item.is_loaded = utils.truthy(item.children)
-            siblings[i] = NuiTree.Node(item, item.children)
-            break
-          end
+      local scan_mode = require("neo-tree").config.filesystem.scan_mode
+      if scan_mode == "deep" then
+        for i, item in ipairs(sourceItems) do
+          sourceItems[i] = group_empty_dirs(item)
         end
-        sourceItems = nil -- this is a signal to skip the rest of the processing
-        state.tree:set_nodes(siblings, parentId)
+      else
+        -- this is a lazy load of a single sub folder
+        group_empty_dirs(sourceItems)
+        if #sourceItems == 1 and sourceItems[1].type == "directory" then
+          -- This folder needs to be grouped.
+          -- The goal is to just update the existing node in place.
+          -- To avoid digging into private internals of Nui, we will just export the entire level and replace
+          -- the one node. This keeps it in the right order, because nui doesn't have methods to replace something
+          -- in place.
+          -- We can't just mutate the existing node because we have to change it's id which would break Nui's
+          -- internal state.
+          local item = sourceItems[1]
+          parentId = parent:get_parent_id()
+          local siblings = state.tree:get_nodes(parentId)
+          for i, node in pairs(siblings) do
+            if node.id == parent.id then
+              item.name = parent.name .. utils.path_separator .. item.name
+              item.level = level - 1
+              item.is_loaded = utils.truthy(item.children)
+              siblings[i] = NuiTree.Node(item, item.children)
+              break
+            end
+          end
+          sourceItems = nil -- this is a signal to skip the rest of the processing
+          state.tree:set_nodes(siblings, parentId)
+        end
       end
     else
       -- if we are rendering a whole tree, just group the children because we don'the
@@ -1086,7 +1207,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
   else
     -- this was a force grouping of a lazy loaded folder
     state.win_width = utils.get_inner_win_width(state.winid)
-    state.tree:render()
+    render_tree(state)
   end
 
   vim.schedule(function()

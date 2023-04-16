@@ -9,9 +9,11 @@ local M = {
   AFTER_RENDER = "after_render",
   FILE_ADDED = "file_added",
   FILE_DELETED = "file_deleted",
+  BEFORE_FILE_MOVE = "before_file_move",
   FILE_MOVED = "file_moved",
   FILE_OPEN_REQUESTED = "file_open_requested",
   FILE_OPENED = "file_opened",
+  BEFORE_FILE_RENAME = "before_file_rename",
   FILE_RENAMED = "file_renamed",
   FS_EVENT = "fs_event",
   GIT_EVENT = "git_event",
@@ -39,6 +41,7 @@ local M = {
   VIM_LEAVE = "vim_leave",
   VIM_RESIZED = "vim_resized",
   VIM_CURSOR_MOVED = "vim_cursor_moved",
+  VIM_AFTER_SESSION_LOAD = "vim_after_session_load",
 }
 
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)

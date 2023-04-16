@@ -37,7 +37,7 @@ function setup_environment() {
 
   if [[ ! -d "${plugins_dir}/nvim-web-devicons" ]]; then
     echo "[plugins] nvim-web-devicons: installing..."
-    git clone https://github.com/kyazdani42/nvim-web-devicons "${plugins_dir}/nvim-web-devicons"
+    git clone https://github.com/nvim-tree/nvim-web-devicons "${plugins_dir}/nvim-web-devicons"
     echo "[plugins] nvim-web-devicons: installed"
     echo
   fi
@@ -46,7 +46,7 @@ function setup_environment() {
     echo "[plugins] plenary.nvim: installing..."
     git clone https://github.com/nvim-lua/plenary.nvim "${plugins_dir}/plenary.nvim"
     # this commit broke luacov
-    git -C "${plugins_dir}/plenary.nvim" revert --no-commit 9069d14a120cadb4f6825f76821533f2babcab92
+    #git -C "${plugins_dir}/plenary.nvim" revert --no-commit 9069d14a120cadb4f6825f76821533f2babcab92
     echo "[plugins] plenary.nvim: installed"
     echo
   fi
@@ -78,8 +78,8 @@ function luacov_end() {
 
 setup_environment
 
-luacov_start
+#luacov_start
 
 make test
 
-luacov_end
+#luacov_end
