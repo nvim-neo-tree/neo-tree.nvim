@@ -607,6 +607,20 @@ M.merge_config = function(user_config, is_auto_config)
   -- Setting new "sources" to be the parsed names of the sources
   M.config.sources = all_source_names
 
+  -- Check if the default source is not included in config.sources
+  -- log a warning and then "pick" the first in the sources list
+  local match = false
+  for _, source in ipairs(M.config.sources) do
+      if source == M.config.default_source then
+        match = true
+        break
+      end
+  end
+  if not match then
+    M.config.default_source = M.config.sources[1]
+    log.warn(string.format("Invalid default source found in configuration. Using first available source: %s", M.config.default_source))
+  end
+
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end
