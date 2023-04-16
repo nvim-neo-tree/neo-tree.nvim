@@ -52,9 +52,6 @@ local config = {
     show_scrolled_off_parent_node = false, -- this will replace the tabs with the parent path
                                            -- of the top visible node when scrolled down.
     tab_labels = { -- falls back to source_name if nil
-      filesystem = "  Files ",
-      buffers =    "  Buffers ",
-      git_status = "  Git ",
       diagnostics = " 裂Diagnostics ",
       document_symbols = "  Symbols ",
     },

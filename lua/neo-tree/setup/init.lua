@@ -570,6 +570,7 @@ M.merge_config = function(user_config, is_auto_config)
     source_default_config.components = module.components or require(mod_root .. ".components")
     source_default_config.commands = module.commands or require(mod_root .. ".commands")
     source_default_config.name = source_name
+    source_default_config.display_name = module.display_name or source_default_config.name
 
     if user_config.use_default_mappings == false then
       default_config.window.mappings = {}
@@ -606,8 +607,31 @@ M.merge_config = function(user_config, is_auto_config)
   end
   --print(vim.inspect(default_config.filesystem))
 
+  -- Moving user_config.sources to user_config.orig_sources
+  user_config.orig_sources = user_config.sources and user_config.sources or {}
+
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, user_config)
+
+  -- RE: 873, fixes issue with invalid source checking by overriding
+  -- source table with name table
+  -- Setting new "sources" to be the parsed names of the sources
+  M.config.sources = all_source_names
+
+  -- Check if the default source is not included in config.sources
+  -- log a warning and then "pick" the first in the sources list
+  local match = false
+  for _, source in ipairs(M.config.sources) do
+      if source == M.config.default_source then
+        match = true
+        break
+      end
+  end
+  if not match then
+    M.config.default_source = M.config.sources[1]
+    log.warn(string.format("Invalid default source found in configuration. Using first available source: %s", M.config.default_source))
+  end
+
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end

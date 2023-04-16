@@ -102,8 +102,9 @@ local get_selector_tab_info = function(source_name, source_index, is_active, sep
     log.warn("Cannot find source_selector config. `create_selector` abort.")
     return {}
   end
+  local source_config = config[source_name] or {}
   local get_strlen = vim.api.nvim_strwidth
-  local text = separator_config.tab_labels[source_name] or source_name
+  local text = separator_config.tab_labels[source_name] or source_config.display_name or source_name
   local text_length = get_strlen(text)
   if separator_config.tabs_min_width ~= nil and text_length < separator_config.tabs_min_width then
     text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_min_width)

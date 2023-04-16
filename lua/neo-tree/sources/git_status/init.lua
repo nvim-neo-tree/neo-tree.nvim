@@ -8,7 +8,10 @@ local items = require("neo-tree.sources.git_status.lib.items")
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 
-local M = { name = "git_status" }
+local M = {
+  name = "git_status",
+  display_name = "  Git "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)
