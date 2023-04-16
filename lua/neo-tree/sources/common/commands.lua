@@ -371,9 +371,10 @@ end
 
 M.next_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[1]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i + 1]
       if not next_source then
         next_source = sources[1]
@@ -383,7 +384,7 @@ M.next_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })
@@ -391,9 +392,10 @@ end
 
 M.prev_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[#sources]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i - 1]
       if not next_source then
         next_source = sources[#sources]
@@ -403,7 +405,7 @@ M.prev_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })

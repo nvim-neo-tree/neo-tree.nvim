@@ -7,7 +7,10 @@ local events = require("neo-tree.events")
 local utils = require("neo-tree.utils")
 local symbols = require("neo-tree.sources.document_symbols.lib.symbols_utils")
 
-local M = { name = "document_symbols" }
+local M = {
+  name = "document_symbols",
+  display_name = '  Symbols '
+}
 
 local get_state = function()
   return manager.get_state(M.name)

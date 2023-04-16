@@ -618,6 +618,17 @@ M.merge_config = function(user_config, is_auto_config)
   -- Setting new "sources" to be the parsed names of the sources
   M.config.sources = all_source_names
 
+  if ( M.config.source_selector.winbar or M.config.source_selector.statusline )
+    and M.config.source_selector.sources
+    and not user_config.default_source then
+    -- Set the default source to the head of these
+    -- This resolves some weirdness with the source selector having
+    -- a different "head" item than our current default.
+    -- Removing this line makes Neo-tree show the "filesystem"
+    -- source instead of whatever the first item in the config is.
+    -- Probably don't remove this unless you have a better fix for that
+    M.config.default_source = M.config.source_selector.sources[1].source
+  end
   -- Check if the default source is not included in config.sources
   -- log a warning and then "pick" the first in the sources list
   local match = false
@@ -635,6 +646,25 @@ M.merge_config = function(user_config, is_auto_config)
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end
+
+  -- Validate that the source_selector.sources are all available and if any
+  -- aren't, remove them
+  local source_selector_sources = {}
+  for _, ss_source in ipairs(M.config.source_selector.sources or {}) do
+    local source_match = false
+    for _, source in ipairs(M.config.sources) do
+      if ss_source.source == source then
+        source_match = true
+        break
+      end
+    end
+    if source_match then
+      table.insert(source_selector_sources, ss_source)
+    else
+      log.debug(string.format("Unable to locate Neo-tree extension %s", ss_source.source))
+    end
+  end
+  M.config.source_selector.sources = source_selector_sources
 
   file_nesting.setup(M.config.nesting_rules)
 

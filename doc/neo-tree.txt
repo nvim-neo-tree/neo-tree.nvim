@@ -715,11 +715,19 @@ type notations.
             winbar = false, -- toggle to show selector on winbar
             statusline = false, -- toggle to show selector on statusline
             show_scrolled_off_parent_node = false,                    -- boolean
-            tab_labels = {                                            -- table
-                filesystem = "  Files ",                             -- string | nil
-                buffers =    "  Buffers ",                           -- string | nil
-                git_status = "  Git ",                               -- string | nil
-                diagnostics = " 裂Diagnostics " ,                     -- string | nil
+            sources = {                                               -- table
+                {
+                    source = "filesystem",                            -- string
+                    display_name = "  Files "                        -- string | nil
+                },
+                {
+                    source = "buffers",                               -- string
+                    display_name = "  Buffers                        -- string | nil
+                },
+                {
+                    source = "git_status",                            -- string
+                    display_name = "  Git "                          -- string | nil
+                },
             },
             content_layout = "start",                                 -- string
             tabs_layout = "equal",                                    -- string
@@ -750,10 +758,16 @@ Configuration Options:
 When `show_scrolled_off_parent_node` is `true`, tabs are replaced with the parent
 path of the top visible node when scrolled down.
 
-`tab_labels` is a table to configure the characters shown on each tab. Keys of
-the table should match the source names defined in `sources`. Value is what is
-printed inside the tab. If value is `nil` or not set, the source name is used
-instead.
+`sources` is a table to configure the contents of the bar. Previously known
+as `tab_labels`. Sources should be a table of tables. Each table inside
+`sources` must contain a `source` key, which will refer to the "name" of the
+source to add to the bar. A second optional `display_name` key can be
+provided to modify how you wish that source to appear in the bar. It is
+safe to add sources that do not exist, they will simply be omitted from
+the bar if they cannot be found.
+NOTE: If `source_selector` is enabled (via `winbar=true` or `statusline=true`)
+then the `default_source` will be updated to be the first entry of
+`sources`.
 
 `content_layout` defines how the labels are placed inside a tab. This only takes
 effect when the tab width is greater than the length of label i.e.
