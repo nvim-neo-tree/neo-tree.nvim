@@ -618,7 +618,7 @@ M.merge_config = function(user_config, is_auto_config)
   -- Setting new "sources" to be the parsed names of the sources
   M.config.sources = all_source_names
 
-  if ( M.config.source_selector.winbar or M.config.source_selector.statusbar )
+  if ( M.config.source_selector.winbar or M.config.source_selector.statusline )
     and M.config.source_selector.sources
     and not user_config.default_source then
     -- Set the default source to the head of these

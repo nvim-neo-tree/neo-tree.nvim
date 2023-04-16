@@ -771,7 +771,7 @@ source to add to the bar. A second optional `display_name` key can be
 provided to modify how you wish that source to appear in the bar. It is
 safe to add sources that do not exist, they will simply be omitted from
 the bar if they cannot be found.
-NOTE: If `source_selector` is enabled (via `winbar=true` or `statusbar=true`)
+NOTE: If `source_selector` is enabled (via `winbar=true` or `statusline=true`)
 then the `default_source` will be updated to be the first entry of
 `sources`.
 
