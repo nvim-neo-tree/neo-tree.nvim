@@ -6,7 +6,6 @@ local M = {}
 
 local get_position = function(source_name)
   local nt = require("neo-tree")
-  local default_pos = utils.get_value(nt.config, "window.position", "left", true)
   local pos = utils.get_value(nt.config, source_name .. ".window.position", default_pos, true)
   return pos
 end
