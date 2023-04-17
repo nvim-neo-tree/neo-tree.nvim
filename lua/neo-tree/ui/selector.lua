@@ -388,7 +388,6 @@ M.get_selector = function(state, width)
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
-        .. text_with_hl("", hl_background)
     end
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
