@@ -514,6 +514,7 @@ local config = {
     },
   },
   document_symbols = {
+    follow_cursor = false,
     client_filters = "first",
     renderers = {
       root = {

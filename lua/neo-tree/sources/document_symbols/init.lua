@@ -6,10 +6,11 @@ local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local utils = require("neo-tree.utils")
 local symbols = require("neo-tree.sources.document_symbols.lib.symbols_utils")
+local renderer = require("neo-tree.ui.renderer")
 
 local M = {
   name = "document_symbols",
-  display_name = '  Symbols '
+  display_name = "  Symbols ",
 }
 
 local get_state = function()
@@ -23,6 +24,30 @@ local refresh_debounced = function(args)
   utils.debounce(
     "document_symbols_refresh",
     utils.wrap(manager.refresh, M.name),
+    100,
+    utils.debounce_strategy.CALL_LAST_ONLY
+  )
+end
+
+local follow_symbol = function()
+  local state = get_state()
+  if state.lsp_bufnr ~= vim.api.nvim_get_current_buf() then
+    return
+  end
+  local cursor = vim.api.nvim_win_get_cursor(state.lsp_winid)
+  local node_id = symbols.get_symbol_by_range(state.tree, { cursor[1] - 1, cursor[2] })
+  if #node_id > 0 then
+    renderer.focus_node(state, node_id, true)
+  end
+end
+
+local follow_debounced = function(args)
+  if utils.is_real_file(args.afile) == false then
+    return
+  end
+  utils.debounce(
+    "document_symbols_follow",
+    utils.wrap(follow_symbol, args.afile),
     100,
     utils.debounce_strategy.CALL_LAST_ONLY
   )
@@ -64,6 +89,13 @@ M.setup = function(config, global_config)
     manager.subscribe(M.name, {
       event = event,
       handler = refresh_debounced,
+    })
+  end
+
+  if config.follow_cursor then
+    manager.subscribe(M.name, {
+      event = events.VIM_CURSOR_MOVED,
+      handler = follow_debounced,
     })
   end
 end
