@@ -337,10 +337,25 @@ M.get_selector = function(state, width)
         .. text_with_hl("", hl_background)
     end
   else -- config.source_selector.tab_labels == "start", "end", "center"
-    for _, tab in ipairs(tabs) do
+    -- calculate padding based on tabs_layout
+    local pad_length = width - length_sum
+    local left_pad, right_pad = 0, 0
+    if pad_length > 0 then
+      if tabs_layout == "start" then
+        left_pad, right_pad = 0, pad_length
+      elseif tabs_layout == "end" then
+        left_pad, right_pad = pad_length, 0
+      elseif tabs_layout == "center" then
+        left_pad, right_pad = pad_length / 2, math.ceil(pad_length / 2)
+      end
+    end
+
+    for i, tab in ipairs(tabs) do
       if width == 0 then
         break
       end
+
+      -- only render trunc_char if there is no space for the tab
       local sep_length = tab.length - tab.text_length
       if width <= sep_length + 1 then
         return_string = return_string
@@ -348,29 +363,33 @@ M.get_selector = function(state, width)
         width = 0
         break
       end
+
+      -- tab_length should not exceed width
       local tab_length = width < tab.length and width or tab.length
       width = width - tab_length
+
+      -- add padding for first and last tab
+      local tab_text = tab.text
+      if i == 1 then
+        tab_text = add_padding(left_pad) .. tab_text
+        tab_length = tab_length + left_pad
+      end
+      if i == #tabs then
+        tab_text = tab_text .. add_padding(right_pad)
+        tab_length = tab_length + right_pad
+      end
+
       return_string = return_string
         .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
-          text_layout(tab.text, tabs_layout, tab_length - sep_length, trunc_char),
+          text_layout(tab_text, tabs_layout, tab_length - sep_length, trunc_char),
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
-    return_string = return_string .. "%<%0@v:lua.___neotree_selector_click@"
-    local left_pad, right_pad = 0, 0
-    if tabs_layout == "start" then
-      left_pad, right_pad = 0, width
-    elseif tabs_layout == "end" then
-      left_pad, right_pad = width, 0
-    elseif tabs_layout == "center" then
-      left_pad, right_pad = width / 2, math.ceil(width / 2)
-    end
-    return add_padding(left_pad) .. return_string .. add_padding(right_pad)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
