@@ -341,19 +341,36 @@ M.get_selector = function(state, width)
       if width == 0 then
         break
       end
-      local text_length = width < tab.text_length and width or tab.text_length
-      width = width - text_length
+      local sep_length = tab.length - tab.text_length
+      if width <= sep_length + 1 then
+        return_string = return_string
+          .. text_with_hl(trunc_char .. add_padding(width - 1), hl_background)
+        width = 0
+        break
+      end
+      local tab_length = width < tab.length and width or tab.length
+      width = width - tab_length
       return_string = return_string
         .. render_tab(
           tab.left,
           tab.right,
           tab.sep_hl,
-          text_layout(tab.text, tabs_layout, text_length, trunc_char),
+          text_layout(tab.text, tabs_layout, tab_length - sep_length, trunc_char),
           tab.tab_hl,
           calc_click_id_from_source(winid, tab.index)
         )
         .. text_with_hl("", hl_background)
     end
+    return_string = return_string .. "%<%0@v:lua.___neotree_selector_click@"
+    local left_pad, right_pad = 0, 0
+    if tabs_layout == "start" then
+      left_pad, right_pad = 0, width
+    elseif tabs_layout == "end" then
+      left_pad, right_pad = width, 0
+    elseif tabs_layout == "center" then
+      left_pad, right_pad = width / 2, math.ceil(width / 2)
+    end
+    return add_padding(left_pad) .. return_string .. add_padding(right_pad)
   end
   return return_string .. "%<%0@v:lua.___neotree_selector_click@"
 end
