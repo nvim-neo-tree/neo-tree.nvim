@@ -8,38 +8,66 @@ local M = {}
 
 ---Parse the LspRange
 ---@param range table the LspRange object to parse
----@param row_offset integer the offset for line (e.g for nvim_set_cursor() this is 1)
----@param col_offset integer the offset for column
 ---@return table range the parsed range
-local parse_range = function(range, row_offset, col_offset)
-  row_offset = row_offset or 0
-  col_offset = col_offset or 0
+local parse_range = function(range)
   return {
-    start = {
-      range.start.line + row_offset,
-      range.start.character + col_offset,
-    },
-    ["end"] = {
-      range["end"].line + row_offset,
-      range["end"].character + col_offset,
-    },
+    start = { range.start.line, range.start.character },
+    ["end"] = { range["end"].line, range["end"].character },
   }
+end
+
+local loc_less_than = function(a, b)
+  if a[1] < b[1] then
+    return true
+  elseif a[1] == b[1] then
+    return a[2] <= b[2]
+  end
+  return false
+end
+
+---Get the the current symbol under the cursor
+---@param state any
+---@param loc any
+---@return unknown
+M.get_symbol_by_range = function(tree, loc)
+  local function dfs(node)
+    local node_id = node:get_id()
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(node_id)) do
+        if
+          loc_less_than(child.extra.position, loc)
+          and loc_less_than(loc, child.extra.end_position)
+        then
+          return dfs(child)
+        end
+      end
+    end
+    return node_id
+  end
+
+  for _, root in ipairs(tree:get_nodes()) do
+    local node_id = dfs(root)
+    if node_id ~= root:get_id() then
+      return node_id
+    end
+  end
+  return ""
 end
 
 ---Parse the LSP response into a tree
 ---@param resp_node table the LSP response node
 ---@param id string the id of the current node
 ---@return table symb_node the parsed tree
-local function dfs(resp_node, id, state)
+local function parse_resp(resp_node, id, state)
   -- parse all children
   local children = {}
   for i, child in ipairs(resp_node.children or {}) do
-    local child_node = dfs(child, id .. "." .. i, state)
+    local child_node = parse_resp(child, id .. "." .. i, state)
     table.insert(children, child_node)
   end
 
   -- parse current node
-  local preview_range = parse_range(resp_node.range, 0, 0) -- for commands.preview
+  local preview_range = parse_range(resp_node.range) -- for commands.preview
   local symb_node = {
     id = id,
     name = resp_node.name,
@@ -49,7 +77,7 @@ local function dfs(resp_node, id, state)
     extra = {
       bufnr = state.lsp_bufnr,
       kind = kinds.get_kind(resp_node.kind),
-      selection_range = parse_range(resp_node.selectionRange, 1, 0),
+      selection_range = parse_range(resp_node.selectionRange),
       -- detail = resp_node.detail,
       position = preview_range.start,
       end_position = preview_range["end"],
@@ -73,7 +101,7 @@ local on_lsp_resp = function(resp, state)
   for client_name, client_result in pairs(resp) do
     local symbol_list = {}
     for i, resp_node in ipairs(client_result) do
-      table.insert(symbol_list, dfs(resp_node, #items .. "." .. i, state))
+      table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state))
     end
 
     local splits = vim.split(bufname, "/")

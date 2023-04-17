@@ -568,6 +568,7 @@ following features:
 	- [x] Symbols nesting
 	- [x] Configurable kinds' name and icon
 	- [x] Auto-refresh symbol list
+        - [x] Follow cursor
 - [ ] Commands
 	- [x] Jump to symbols, open symbol in split,... (`open_split` and friends)
 	- [x] Rename symbols (`rename`)
@@ -578,6 +579,8 @@ following features:
    - [x] LSP Support
    - [x] LSP server selection (blacklist, use first, use all, etc.)
 - [ ] CoC Support
+
+See #879 for the tracking issue of these features.
 
 This source is currently experimental, so in order to use it, you need to first 
 add `"document_symbols"` to `config.sources` and open it with the command
