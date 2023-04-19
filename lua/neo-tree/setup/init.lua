@@ -293,7 +293,7 @@ M.win_enter_event = function()
         for filename, buf_info in pairs(mod) do
           if buf_info.modified then
             if vim.startswith(filename, "[No Name]#") then
-              bufnr = string.sub(filename, 11)
+              local bufnr = string.sub(filename, 11)
               log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
               vim.schedule(function()
                 log.warn(
