@@ -20,8 +20,8 @@ local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
-local get_state = function(tabnr)
-  return manager.get_state(M.name, tabnr)
+local get_state = function(tabid)
+  return manager.get_state(M.name, tabid)
 end
 
 -- TODO: DEPRECATED in 1.19, remove in 2.0

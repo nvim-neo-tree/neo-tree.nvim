@@ -1319,7 +1319,8 @@ Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
 The event argument for all window events is a table with the following keys:
     `winid`    = the |winid| of the window being opened or closed.
-    `tabnr`    = the tab number that the window is in.
+    `tabid`    = id of the tab that the window is in.
+    `tabnr`    = (deprecated) number of the tab that the window is in.
     `source`   = the name of the source that is in the window, such as "filesystem".
     `position` = the position of the window, i.e. "left", "bottom", "right".
 
@@ -1620,7 +1621,8 @@ code or integrations if you need it. The |filetype| of the main window is
 `neo-tree`. The buffer will also have these local variables set:
 
 `winid` The window handle of the window that it was created in.
-`tabnr` The tab number that it was created in.
+`tabid` The id of the tab that it was created in.
+`tabnr` (deprecated) The number of the tab that it was created in.
 `source` The name of the source that created it, i.e. filesystem, buffers, etc.
 
 Please note that if the buffer is displayed in another window or tab, it's
