@@ -43,7 +43,7 @@ M.get_kind = function(kind_id)
 end
 
 M.setup = function(custom_kinds, kinds)
-  kinds_id_to_name = vim.tbl_extend("force", kinds_id_to_name, custom_kinds or {})
+  kinds_id_to_name = vim.tbl_deep_extend("force", kinds_id_to_name, custom_kinds or {})
   kinds_map = kinds
 end
 

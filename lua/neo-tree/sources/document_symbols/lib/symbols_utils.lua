@@ -16,6 +16,10 @@ local parse_range = function(range)
   }
 end
 
+---Compare two tuples of length 2 by first - second elements
+---@param a table
+---@param b table
+---@return boolean
 local loc_less_than = function(a, b)
   if a[1] < b[1] then
     return true
@@ -25,19 +29,24 @@ local loc_less_than = function(a, b)
   return false
 end
 
+---Check whether loc is contained in scope, i.e scope[1] <= loc <= scope[2]
+---@param loc table
+---@param scope table
+---@return boolean
+M.is_loc_in_scope = function(loc, scope)
+  return loc_less_than(scope[1], loc) and loc_less_than(loc, scope[2])
+end
+
 ---Get the the current symbol under the cursor
----@param state any
----@param loc any
----@return unknown
+---@param tree any the Nui symbol tree
+---@param loc table the cursor location {row, col} (0-index)
+---@return string node_id
 M.get_symbol_by_range = function(tree, loc)
   local function dfs(node)
     local node_id = node:get_id()
     if node:has_children() then
       for _, child in ipairs(tree:get_nodes(node_id)) do
-        if
-          loc_less_than(child.extra.position, loc)
-          and loc_less_than(loc, child.extra.end_position)
-        then
+        if M.is_loc_in_scope(loc, { child.extra.position, child.extra.end_position }) then
           return dfs(child)
         end
       end
