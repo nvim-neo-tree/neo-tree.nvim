@@ -728,6 +728,7 @@ type notations.
             source = "git_status",                                -- string
             display_name = "  Git "                              -- string | nil
           },
+
         },
         content_layout = "start",                                 -- string
         tabs_layout = "equal",                                    -- string
