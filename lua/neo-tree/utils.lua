@@ -521,6 +521,29 @@ M.get_appropriate_window = function(state)
   return winid, is_neo_tree_window
 end
 
+---Resolves the width to a number
+---@param width number|string|function
+M.resolve_width = function(width)
+  local default_width = 40
+  local available_width = vim.o.columns
+  if type(width) == "string" then
+    if string.sub(width, -1) == "%" then
+      width = tonumber(string.sub(width, 1, #width - 1)) / 100
+      width = width * available_width
+    else
+      width = tonumber(width)
+    end
+  elseif type(width) == "function" then
+    width = width()
+  end
+
+  if type(width) ~= "number" then
+    width = default_width
+  end
+
+  return math.floor(width)
+end
+
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
@@ -564,28 +587,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
         local width = vim.api.nvim_win_get_width(0)
         if width == vim.o.columns then
           -- Neo-tree must be the only window, restore it's status as a sidebar
-          local default_width = 40
-          width = M.get_value(state, "window.width", default_width, false)
-          local available_width = vim.api.nvim_win_get_width(0)
-          if type(width) == "string" then
-            if string.sub(width, -1) == "%" then
-              width = tonumber(string.sub(width, 1, #width - 1)) / 100
-            else
-              width = tonumber(width)
-            end
-            width = math.floor(available_width * width)
-          elseif type(width) == "function" then
-            width = width()
-            if type(width) ~= "number" then
-              width = default_width
-            else
-              width = math.floor(width)
-            end
-          elseif type(width) == "number" then
-            width = math.floor(width)
-          else
-            width = default_width
-          end
+          width = M.get_value(state, "window.width", 40, false)
+          width = M.resolve_width(width)
         end
 
         local split_command = "vsplit"
