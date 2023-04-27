@@ -56,7 +56,7 @@ local render_content = function(config, node, state, context)
     local zindex_rendered = { left = {}, right = {} }
     local rendered_width = 0
     for _, item in ipairs(items) do
-      local rendered_item = renderer.render_component(item, node, state, context.available_width)
+      local rendered_item = renderer.render_component(item, node, state, context.available_width) -- TODO: add padding here
       if rendered_item then
         vim.list_extend(zindex_rendered[item.align or "left"], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)

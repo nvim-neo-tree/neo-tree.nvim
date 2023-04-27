@@ -391,6 +391,8 @@ local prepare_node = function(item, state)
       local longest = state.longest_node or 0
       remaining_cols = math.min(remaining_cols, longest + 4)
     end
+    local should_pad = false
+    local last_text = "''"
     for _, component in ipairs(renderer) do
       local component_data, component_wanted_width =
         M.render_component(component, item, state, remaining_cols)
@@ -399,7 +401,11 @@ local prepare_node = function(item, state)
         for _, data in ipairs(component_data) do
           if data.text then
             actual_width = actual_width + vim.api.nvim_strwidth(data.text)
-            line:append(data.text, data.highlight)
+            local padd = should_pad and " " or ""
+            local padd_ = "'" .. padd .. "'"
+            line:append(padd .. data.text, data.highlight)
+            should_pad = data.text:sub(#data.text) ~= " "
+            last_text = "'" .. data.text .. "'"
             remaining_cols = remaining_cols - vim.fn.strchars(data.text)
           end
         end
@@ -881,7 +887,7 @@ create_window = function(state)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   elseif state.current_position == "current" then
-    -- state.id is always the window id or tabnr that this state was created for 
+    -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
     local winid = state.id
     if not vim.api.nvim_win_is_valid(winid) then

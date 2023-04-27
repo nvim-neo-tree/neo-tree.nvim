@@ -107,7 +107,7 @@ M.diagnostics = function(config, node, state)
     defined.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined = defined or { text = severity:sub(1, 1) .. " " }
+    defined = defined or { text = severity:sub(1, 1) }
     defined.texthl = config.highlights[severity_lower]
   end
 
@@ -118,7 +118,7 @@ M.diagnostics = function(config, node, state)
     }
   else
     return {
-      text = severity:sub(1, 1) .. " ",
+      text = severity:sub(1, 1),
       highlight = "Diagnostic" .. severity,
     }
   end
@@ -286,7 +286,7 @@ M.icon = function(config, node, state)
   local filtered_by = M.filtered_by(config, node, state)
 
   return {
-    text = icon .. " ",
+    text = icon,
     highlight = filtered_by.highlight or highlight,
   }
 end
@@ -340,7 +340,7 @@ M.name = function(config, node, state)
       text = text .. string.rep(" ", config.right_padding)
     end
   else
-    text = text .. " "
+    text = text
   end
 
   return {
