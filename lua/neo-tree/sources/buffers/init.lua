@@ -59,8 +59,8 @@ M.follow = function()
 end
 
 local buffers_changed_internal = function()
-  for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
-    local state = manager.get_state(M.name, tabnr)
+  for _, tabid in ipairs(vim.api.nvim_list_tabpages()) do
+    local state = manager.get_state(M.name, tabid)
     if state.path and renderer.window_exists(state) then
       items.get_opened_buffers(state)
       if state.follow_current_file then
