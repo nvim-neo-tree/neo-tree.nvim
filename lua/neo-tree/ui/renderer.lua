@@ -376,50 +376,53 @@ local prepare_node = function(item, state)
   if not renderer then
     line:append(item.type .. ": ", "Comment")
     line:append(item.name)
-  else
-    local remaining_cols = state.win_width
-    if remaining_cols == nil then
-      if state.winid then
-        remaining_cols = vim.api.nvim_win_get_width(state.winid)
-      else
-        local default_width = utils.resolve_config_option(state, "window.width", 40)
-        remaining_cols = default_width
-      end
+    return line
+  end
+
+  local remaining_cols = state.win_width
+  if remaining_cols == nil then
+    if state.winid then
+      remaining_cols = vim.api.nvim_win_get_width(state.winid)
+    else
+      local default_width = utils.resolve_config_option(state, "window.width", 40)
+      remaining_cols = default_width
     end
-    local wanted_width = 0
-    if state.current_position == "current" then
-      local longest = state.longest_node or 0
-      remaining_cols = math.min(remaining_cols, longest + 4)
-    end
-    local should_pad = false
-    local last_text = "''"
-    for _, component in ipairs(renderer) do
-      local component_data, component_wanted_width =
-        M.render_component(component, item, state, remaining_cols)
-      local actual_width = 0
-      if component_data then
-        for _, data in ipairs(component_data) do
-          if data.text then
-            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
-            local padd = should_pad and " " or ""
-            local padd_ = "'" .. padd .. "'"
-            line:append(padd .. data.text, data.highlight)
-            should_pad = data.text:sub(#data.text) ~= " "
-            last_text = "'" .. data.text .. "'"
-            remaining_cols = remaining_cols - vim.fn.strchars(data.text)
-          end
+  end
+
+  local wanted_width = 0
+  if state.current_position == "current" then
+    local longest = state.longest_node or 0
+    remaining_cols = math.min(remaining_cols, longest + 4)
+  end
+
+  local should_pad = false
+
+  for _, component in ipairs(renderer) do
+    local component_data, component_wanted_width =
+      M.render_component(component, item, state, remaining_cols)
+    local actual_width = 0
+    if component_data then
+      for _, data in ipairs(component_data) do
+        if data.text then
+          data.text = (should_pad and " " or "") .. data.text
+          should_pad = data.text:sub(#data.text) ~= " "
+
+          actual_width = actual_width + vim.api.nvim_strwidth(data.text)
+          line:append(data.text, data.highlight)
+          remaining_cols = remaining_cols - vim.fn.strchars(data.text)
         end
       end
-      component_wanted_width = component_wanted_width or actual_width
-      wanted_width = wanted_width + component_wanted_width
     end
-    line.wanted_width = wanted_width
-    if pre_render then
-      item.line = line
-      state.longest_node = math.max(state.longest_node, line.wanted_width)
-    else
-      item.line = nil
-    end
+    component_wanted_width = component_wanted_width or actual_width
+    wanted_width = wanted_width + component_wanted_width
+  end
+
+  line.wanted_width = wanted_width
+  if pre_render then
+    item.line = line
+    state.longest_node = math.max(state.longest_node, line.wanted_width)
+  else
+    item.line = nil
   end
 
   return line
