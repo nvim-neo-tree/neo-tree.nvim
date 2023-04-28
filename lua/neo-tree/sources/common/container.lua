@@ -49,19 +49,36 @@ local calc_container_width = function(config, node, state, context)
 end
 
 local render_content = function(config, node, state, context)
-  local max_width = 0
+  local add_padding = function(rendered_item, should_pad)
+    for _, data in ipairs(rendered_item) do
+      if data.text then
+        local padding = (should_pad and data.text:sub(1, 1) ~= " ") and " " or ""
+        data.text = padding .. data.text
+        should_pad = data.text:sub(#data.text) ~= " "
+      end
+    end
+    return should_pad
+  end
 
+  local max_width = 0
   local grouped_by_zindex = utils.group_by(config.content, "zindex")
+
   for zindex, items in pairs(grouped_by_zindex) do
+    local should_pad = { left = false, right = false }
     local zindex_rendered = { left = {}, right = {} }
     local rendered_width = 0
+
     for _, item in ipairs(items) do
       local rendered_item = renderer.render_component(item, node, state, context.available_width) -- TODO: add padding here
       if rendered_item then
-        vim.list_extend(zindex_rendered[item.align or "left"], rendered_item)
+        local align = item.align or "left"
+        should_pad[align] = add_padding(rendered_item, should_pad[align])
+
+        vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
     end
+
     max_width = math.max(max_width, rendered_width)
     grouped_by_zindex[zindex] = zindex_rendered
   end

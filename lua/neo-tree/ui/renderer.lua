@@ -28,7 +28,7 @@ local update_floating_windows = function()
 end
 
 local tabid_to_tabnr = function(tabid)
-    return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
+  return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
 end
 
 local cleaned_up = false
@@ -404,12 +404,13 @@ local prepare_node = function(item, state)
 
   for _, component in ipairs(renderer) do
     local component_data, component_wanted_width =
-      M.render_component(component, item, state, remaining_cols)
+      M.render_component(component, item, state, remaining_cols - (should_pad and 1 or 0))
     local actual_width = 0
     if component_data then
       for _, data in ipairs(component_data) do
         if data.text then
-          data.text = (should_pad and " " or "") .. data.text
+          local padding = (should_pad and data.text:sub(1, 1) ~= " ") and " " or ""
+          data.text = padding .. data.text
           should_pad = data.text:sub(#data.text) ~= " "
 
           actual_width = actual_width + vim.api.nvim_strwidth(data.text)

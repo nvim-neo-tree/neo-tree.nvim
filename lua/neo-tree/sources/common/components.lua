@@ -286,7 +286,7 @@ M.icon = function(config, node, state)
   local filtered_by = M.filtered_by(config, node, state)
 
   return {
-    text = icon,
+    text = icon .. " ",
     highlight = filtered_by.highlight or highlight,
   }
 end
@@ -297,7 +297,7 @@ M.modified = function(config, node, state)
 
   if buf_info and buf_info.modified then
     return {
-      text = (make_two_char(config.symbol) or "[+] "),
+      text = (make_two_char(config.symbol) or "[+]"),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
