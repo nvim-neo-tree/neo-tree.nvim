@@ -27,6 +27,10 @@ local update_floating_windows = function()
   floating_windows = valid_windows
 end
 
+local tabid_to_tabnr = function(tabid)
+    return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
+end
+
 local cleaned_up = false
 ---Clean up invalid neotree buffers (e.g after a session restore)
 ---@param force boolean if true, force cleanup. Otherwise only cleanup once
@@ -123,7 +127,8 @@ M.close = function(state)
               position = state.current_position,
               source = state.name,
               winid = state.winid,
-              tabnr = state.tabnr,
+              tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+              tabid = state.tabid,
             }
             events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
             -- focus the prior used window if we are closing the currently focused window
@@ -847,7 +852,8 @@ create_window = function(state)
   local event_args = {
     position = state.current_position,
     source = state.name,
-    tabnr = state.tabnr,
+    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+    tabid = state.tabid,
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
 
@@ -922,7 +928,8 @@ create_window = function(state)
 
   if type(state.bufnr) == "number" then
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", state.tabnr)
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", tabid_to_tabnr(state.tabid))
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabid", state.tabid)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_position", state.current_position)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
@@ -1123,7 +1130,7 @@ end
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
 M.show_nodes = function(sourceItems, state, parentId, callback)
-  --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
+  --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabid)
   --utils.debounce(id, function()
   events.fire_event(events.BEFORE_RENDER, state)
   state.longest_width_exact = 0

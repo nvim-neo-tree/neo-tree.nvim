@@ -72,7 +72,8 @@ M.execute = function(args)
 
   -- Now get the correct state
   local state
-  if args.position == "current" then
+  local requested_position = args.position or nt.config[args.source].window.position
+  if requested_position == "current" then
     local winid = vim.api.nvim_get_current_win()
     state = manager.get_state(args.source, nil, winid)
   else

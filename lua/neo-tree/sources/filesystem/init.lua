@@ -11,14 +11,17 @@ local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
-local M = { name = "filesystem" }
+local M = {
+  name = "filesystem",
+  display_name = "  Files "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
-local get_state = function(tabnr)
-  return manager.get_state(M.name, tabnr)
+local get_state = function(tabid)
+  return manager.get_state(M.name, tabid)
 end
 
 -- TODO: DEPRECATED in 1.19, remove in 2.0

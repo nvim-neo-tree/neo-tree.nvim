@@ -165,8 +165,8 @@ M.get_prior_window = function(ignore_filetypes)
   local ignore = utils.list_to_dict(ignore_filetypes)
   ignore["neo-tree"] = true
 
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabnr]
+  local tabid = vim.api.nvim_get_current_tabpage()
+  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabid]
   if wins == nil then
     return -1
   end
