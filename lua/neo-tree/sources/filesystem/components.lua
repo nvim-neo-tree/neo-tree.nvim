@@ -23,7 +23,7 @@ M.current_filter = function(config, node, state)
   end
   return {
     {
-      text = "Find ",
+      text = "Find",
       highlight = highlights.DIM_TEXT,
     },
     {
@@ -31,7 +31,7 @@ M.current_filter = function(config, node, state)
       highlight = config.highlight or highlights.FILTER_TERM,
     },
     {
-      text = " in ",
+      text = "in",
       highlight = highlights.DIM_TEXT,
     },
   }

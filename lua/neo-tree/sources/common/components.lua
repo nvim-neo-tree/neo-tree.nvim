@@ -34,7 +34,7 @@ M.bufnr = function(config, node, state)
     return {}
   end
   return {
-    text = string.format(" #%s", bufnr),
+    text = string.format("#%s", bufnr),
     highlight = highlight,
   }
 end
@@ -60,7 +60,7 @@ M.current_filter = function(config, node, state)
   end
   return {
     {
-      text = "Find ",
+      text = "Find",
       highlight = highlights.DIM_TEXT,
     },
     {
@@ -68,7 +68,7 @@ M.current_filter = function(config, node, state)
       highlight = config.highlight or highlights.FILTER_TERM,
     },
     {
-      text = " in ",
+      text = "in",
       highlight = highlights.DIM_TEXT,
     },
   }
@@ -233,27 +233,27 @@ M.filtered_by = function(config, node, state)
     local fby = node.filtered_by
     if fby.name then
       result = {
-        text = "(hide by name) ",
+        text = "(hide by name)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
       result = {
-        text = "(hide by pattern) ",
+        text = "(hide by pattern)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
       result = {
-        text = "(gitignored) ",
+        text = "(gitignored)",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
       result = {
-        text = "(dotfile) ",
+        text = "(dotfile)",
         highlight = highlights.DOTFILE,
       }
     elseif fby.hidden then
       result = {
-        text = "(hidden) ",
+        text = "(hidden)",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
