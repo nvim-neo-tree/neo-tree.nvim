@@ -166,21 +166,22 @@ local fade_content = function(layer, fade_char_count)
     return
   end
   local hl = layer[#layer].highlight or "Normal"
-  local fade0 = highlights.get_faded_highlight_group(hl, 0.68)
-  local fade1 = highlights.get_faded_highlight_group(hl, 0.6)
-  local fade2 = highlights.get_faded_highlight_group(hl, 0.35)
-  if #text >= 3 and fade_char_count >= 3 then
-    layer[#layer].text = text:sub(1, #text - 3)
-    table.insert(layer, { text = text:sub(#text - 2, -3), highlight = fade0 })
-    table.insert(layer, { text = text:sub(#text - 1, -2), highlight = fade1 })
-    table.insert(layer, { text = text:sub(#text), highlight = fade2 })
-  elseif #text >= 2 and fade_char_count >= 2 then
-    layer[#layer].text = text:sub(1, #text - 2)
-    table.insert(layer, { text = text:sub(#text - 1, -2), highlight = fade0 })
-    table.insert(layer, { text = text:sub(#text), highlight = fade1 })
-  elseif #text >= 1 and fade_char_count >= 1 then
-    layer[#layer].text = text:sub(1, #text - 1)
-    table.insert(layer, { text = text:sub(#text), highlight = fade0 })
+  local fade = {
+    highlights.get_faded_highlight_group(hl, 0.68),
+    highlights.get_faded_highlight_group(hl, 0.6),
+    highlights.get_faded_highlight_group(hl, 0.35),
+  }
+
+  for i = 3, 1, -1 do
+    if #text >= i and fade_char_count >= i then
+      layer[#layer].text = text:sub(1, -i - 1)
+      layer[#layer].no_padding = true
+      for j = i, 1, -1 do
+        local entry = { text = text:sub(-j, -j), highlight = fade[i - j + 1], no_padding = true }
+        table.insert(layer, entry)
+      end
+      break
+    end
   end
 end
 
