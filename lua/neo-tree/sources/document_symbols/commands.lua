@@ -21,6 +21,7 @@ M.jump_to_symbol = function(state, node)
     return
   end
   vim.api.nvim_set_current_win(state.lsp_winid)
+  vim.api.nvim_set_current_buf(state.lsp_bufnr)
   local symbol_loc = node.extra.selection_range.start
   vim.api.nvim_win_set_cursor(state.lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
 end
