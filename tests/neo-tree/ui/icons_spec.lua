@@ -160,9 +160,9 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         string.format(" o %s", fs_tree.abspath):sub(1, 40),
-        "   c baz ",
-        "   c foo ",
-        "   f 1.md ",
+        "   c baz",
+        "   c foo",
+        "   f 1.md",
       })
 
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
