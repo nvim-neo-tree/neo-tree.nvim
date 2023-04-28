@@ -58,9 +58,9 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         string.format("  %s", fs_tree.abspath):sub(1, 42),
-        "    baz ",
-        "    foo ",
-        "   * 1.md ",
+        "    baz",
+        "    foo",
+        "   * 1.md",
       })
 
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
@@ -73,11 +73,11 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         string.format("  %s", fs_tree.abspath):sub(1, 42),
-        "   ﰊ baz ",
-        "    foo ",
-        "   │  bar ",
-        "   └ * foo1.lua ",
-        "   * 1.md ",
+        "   ﰊ baz",
+        "    foo",
+        "   │  bar",
+        "   └ * foo1.lua",
+        "   * 1.md",
       })
 
       u.assert_highlight(bufnr, ns_id, 1, " ", "NeoTreeDirectoryIcon")
@@ -97,9 +97,9 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
-        "    baz ",
-        "    foo ",
-        "    1.md ",
+        "    baz",
+        "    foo",
+        "    1.md",
       })
 
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
@@ -112,11 +112,11 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
-        "   ﰊ baz ",
-        "    foo ",
-        "   │  bar ",
-        "   └  foo1.lua ",
-        "    1.md ",
+        "   ﰊ baz",
+        "    foo",
+        "   │  bar",
+        "   └  foo1.lua",
+        "    1.md",
       })
 
       u.assert_highlight(bufnr, ns_id, 1, " ", "NeoTreeDirectoryIcon")
@@ -175,11 +175,11 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         string.format(" o %s", fs_tree.abspath):sub(1, 40),
-        "   e baz ",
-        "   o foo ",
-        "   │ c bar ",
-        "   └ f foo1.lua ",
-        "   f 1.md ",
+        "   e baz",
+        "   o foo",
+        "   │ c bar",
+        "   └ f foo1.lua",
+        "   f 1.md",
       })
 
       u.assert_highlight(bufnr, ns_id, 1, "o ", "NeoTreeDirectoryIcon")
@@ -199,9 +199,9 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
-        "   c baz ",
-        "   c foo ",
-        "    1.md ",
+        "   c baz",
+        "   c foo",
+        "    1.md",
       })
 
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
@@ -214,11 +214,11 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
-        "   e baz ",
-        "   o foo ",
-        "   │ c bar ",
-        "   └  foo1.lua ",
-        "    1.md ",
+        "   e baz",
+        "   o foo",
+        "   │ c bar",
+        "   └  foo1.lua",
+        "    1.md",
       })
 
       u.assert_highlight(bufnr, ns_id, 1, "o ", "NeoTreeDirectoryIcon")
