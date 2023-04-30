@@ -320,6 +320,9 @@ M.render = function(config, node, state, available_width)
   if context.has_right_content then
     state.has_right_content = true
   end
+  if #context.merged_content > 0 then
+    context.merged_content[1].no_padding = false
+  end
   return context.merged_content, context.wanted_width
 end
 
