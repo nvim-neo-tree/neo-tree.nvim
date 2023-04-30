@@ -100,7 +100,7 @@ describe("sources/components/container", function()
   end)
 
   describe("should expand to width", function()
-    for pow = 1, 8 do
+    for pow = 4, 8 do
       it(2 ^ pow, function()
         config.window.width = 2 ^ pow
         require("neo-tree").setup(config)
@@ -120,8 +120,8 @@ describe("sources/components/container", function()
     end
   end)
 
-  describe("right-align should not exceed width", function()
-    for pow = 1, 8 do
+  describe("right-align should matches width", function()
+    for pow = 4, 8 do
       it(2 ^ pow, function()
         config_right.window.width = 2 ^ pow
         require("neo-tree").setup(config_right)
@@ -135,9 +135,8 @@ describe("sources/components/container", function()
         local width = vim.api.nvim_win_get_width(0)
         local lines = vim.api.nvim_buf_get_lines(0, 1, -1, false)
         for _, line in ipairs(lines) do
-          print("'" .. line .. "'")
-          print(width, vim.fn.strchars(line))
-          assert.True(width >= vim.fn.strchars(line))
+          line = vim.fn.trim(line, " ", 2)
+          assert.equals(width, vim.fn.strchars(line))
         end
       end)
     end

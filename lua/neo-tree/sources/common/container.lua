@@ -78,7 +78,6 @@ local render_content = function(config, node, state, context)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
     end
-    print("rendered_width:", rendered_width)
 
     max_width = math.max(max_width, rendered_width)
     grouped_by_zindex[zindex] = zindex_rendered
@@ -138,21 +137,27 @@ local truncate_layer_keep_right = function(layer, skip_count, max_length)
     local text_length = vim.fn.strchars(item.text)
     local remaining_to_skip = skip_count - skipped
     if remaining_to_skip > 0 then
-      if #item.text <= remaining_to_skip then
+      if text_length <= remaining_to_skip then
         skipped = skipped + text_length
         item.text = ""
       else
-        item.text = item.text:sub(1, text_length - remaining_to_skip)
-        if #item.text + taken > max_length then
-          item.text = item.text:sub(text_length - (max_length - taken))
+        -- item.text = item.text:sub(1, text_length - remaining_to_skip)
+        item.text = vim.fn.strcharpart(item.text, 0, text_length - remaining_to_skip)
+        text_length = vim.fn.strchars(item.text)
+        if text_length + taken > max_length then
+          -- item.text = item.text:sub(text_length - (max_length - taken))
+          item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
+          text_length = vim.fn.strchars(item.text)
         end
         table.insert(result, item)
         taken = taken + text_length
         skipped = skipped + remaining_to_skip
       end
     elseif taken <= max_length then
-      if #item.text + taken > max_length then
-        item.text = item.text:sub(text_length - (max_length - taken))
+      if text_length + taken > max_length then
+        -- item.text = item.text:sub(text_length - (max_length - taken - 1))
+        item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
+        text_length = vim.fn.strchars(item.text)
       end
       table.insert(result, item)
       taken = taken + text_length
@@ -297,7 +302,6 @@ local merge_content = function(context)
 end
 
 M.render = function(config, node, state, available_width)
-  print("available_width:", available_width)
   local context = {
     wanted_width = 0,
     max_width = 0,
@@ -311,14 +315,11 @@ M.render = function(config, node, state, available_width)
 
   render_content(config, node, state, context)
   calc_container_width(config, node, state, context)
-  print("ctx.container_width:", context.container_width)
-  print("ctx.max_width:", context.max_width)
   merge_content(context)
 
   if context.has_right_content then
     state.has_right_content = true
   end
-  print(vim.inspect(context.merged_content))
   return context.merged_content, context.wanted_width
 end
 
