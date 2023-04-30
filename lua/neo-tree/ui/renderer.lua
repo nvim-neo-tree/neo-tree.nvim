@@ -410,7 +410,7 @@ local prepare_node = function(item, state)
       for _, data in ipairs(component_data) do
         if data.text then
           local padding = ""
-          if should_pad and data.text:sub(1, 1) ~= " " and not data.no_padding then
+          if should_pad and #data.text and data.text:sub(1, 1) ~= " " and not data.no_padding then
             padding = " "
           end
           data.text = padding .. data.text
