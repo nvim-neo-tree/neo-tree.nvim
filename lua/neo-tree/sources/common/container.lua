@@ -78,6 +78,7 @@ local render_content = function(config, node, state, context)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
     end
+    print("rendered_width:", rendered_width)
 
     max_width = math.max(max_width, rendered_width)
     grouped_by_zindex[zindex] = zindex_rendered
@@ -175,8 +176,8 @@ local fade_content = function(layer, fade_char_count)
   for i = 3, 1, -1 do
     if #text >= i and fade_char_count >= i then
       layer[#layer].text = text:sub(1, -i - 1)
-      layer[#layer].no_padding = true
       for j = i, 1, -1 do
+        -- force no padding for each faded element
         local entry = { text = text:sub(-j, -j), highlight = fade[i - j + 1], no_padding = true }
         table.insert(layer, entry)
       end
@@ -286,6 +287,9 @@ local merge_content = function(context)
 
   local result = {}
   vim.list_extend(result, left)
+  if #right >= 1 then
+    right[1].no_padding = true
+  end
   vim.list_extend(result, right)
   context.merged_content = result
   log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
@@ -293,6 +297,7 @@ local merge_content = function(context)
 end
 
 M.render = function(config, node, state, available_width)
+  print("available_width:", available_width)
   local context = {
     wanted_width = 0,
     max_width = 0,
@@ -306,11 +311,14 @@ M.render = function(config, node, state, available_width)
 
   render_content(config, node, state, context)
   calc_container_width(config, node, state, context)
+  print("ctx.container_width:", context.container_width)
+  print("ctx.max_width:", context.max_width)
   merge_content(context)
 
   if context.has_right_content then
     state.has_right_content = true
   end
+  print(vim.inspect(context.merged_content))
   return context.merged_content, context.wanted_width
 end
 

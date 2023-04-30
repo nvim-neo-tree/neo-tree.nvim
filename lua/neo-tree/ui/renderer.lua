@@ -422,6 +422,7 @@ local prepare_node = function(item, state)
         end
       end
     end
+    print(remaining_cols)
     component_wanted_width = component_wanted_width or actual_width
     wanted_width = wanted_width + component_wanted_width
   end
