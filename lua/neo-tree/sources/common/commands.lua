@@ -39,7 +39,7 @@ local function get_folder_node(state)
     end
 
     local parent_id = node:get_parent_id()
-    if parent_id or parent_id == last_id then
+    if not parent_id or parent_id == last_id then
       return node
     else
       last_id = parent_id
@@ -73,13 +73,17 @@ end
 local M = {}
 
 ---Adds all missing common commands to the given module
----@param to_source_command_module table The commands modeul for a source
-M._add_common_commands = function(to_source_command_module)
+---@param to_source_command_module table The commands module for a source
+---@param pattern string? A pattern specifying which commands to add, nil to add all
+M._add_common_commands = function(to_source_command_module, pattern)
   for name, func in pairs(M) do
-    if type(name) == "string" and not name:match("^_") then
-      if not to_source_command_module[name] then
-        to_source_command_module[name] = func
-      end
+    if
+      type(name) == "string"
+      and not to_source_command_module[name]
+      and (not pattern or name:find(pattern))
+      and not name:find("^_")
+    then
+      to_source_command_module[name] = func
     end
   end
 end
@@ -102,11 +106,6 @@ M.add_directory = function(state, callback)
   local in_directory = node:get_id()
   local using_root_directory = get_using_root_directory(state)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
-end
-
-M.close_all_nodes = function(state)
-  renderer.collapse_all_nodes(state.tree)
-  renderer.redraw(state)
 end
 
 M.expand_all_nodes = function(state, toggle_directory)
@@ -152,11 +151,36 @@ M.close_node = function(state, callback)
     target_node = parent_node
   end
 
-  if target_node and target_node:has_children() then
+  local root = tree:get_nodes()[1]
+  local is_root = target_node:get_id() == root:get_id()
+
+  if target_node and target_node:has_children() and not is_root then
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
   end
+end
+
+M.close_all_subnodes = function(state)
+  local tree = state.tree
+  local node = tree:get_node()
+  local parent_node = tree:get_node(node:get_parent_id())
+  local target_node
+
+  if node:has_children() and node:is_expanded() then
+    target_node = node
+  else
+    target_node = parent_node
+  end
+
+  renderer.collapse_all_nodes(tree, target_node:get_id())
+  renderer.redraw(state)
+  renderer.focus_node(state, target_node:get_id())
+end
+
+M.close_all_nodes = function(state)
+  renderer.collapse_all_nodes(state.tree)
+  renderer.redraw(state)
 end
 
 M.close_window = function(state)
@@ -168,9 +192,10 @@ M.toggle_auto_expand_width = function(state)
     return
   end
   state.window.auto_expand_width = state.window.auto_expand_width == false
+  local width = utils.resolve_width(state.window.width)
   if not state.window.auto_expand_width then
-    if (state.window.last_user_width or state.window.width) >= vim.api.nvim_win_get_width(0) then
-      state.window.last_user_width = state.window.width
+    if (state.window.last_user_width or width) >= vim.api.nvim_win_get_width(0) then
+      state.window.last_user_width = width
     end
     vim.api.nvim_win_set_width(0, state.window.last_user_width)
     state.win_width = state.window.last_user_width
@@ -347,9 +372,10 @@ end
 
 M.next_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[1]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i + 1]
       if not next_source then
         next_source = sources[1]
@@ -359,7 +385,7 @@ M.next_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })
@@ -367,9 +393,10 @@ end
 
 M.prev_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[#sources]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i - 1]
       if not next_source then
         next_source = sources[#sources]
@@ -379,7 +406,7 @@ M.prev_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })
@@ -532,13 +559,14 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   local function open()
     M.revert_preview()
     local path = node.path or node:get_id()
+    local bufnr = node.extra and node.extra.bufnr
     if node.type == "terminal" then
       path = node:get_id()
     end
     if type(open_file) == "function" then
-      open_file(state, path, open_cmd)
+      open_file(state, path, open_cmd, bufnr)
     else
-      utils.open_file(state, path, open_cmd)
+      utils.open_file(state, path, open_cmd, bufnr)
     end
     local extra = node.extra or {}
     local pos = extra.position or extra.end_position

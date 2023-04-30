@@ -8,7 +8,10 @@ local items = require("neo-tree.sources.git_status.lib.items")
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 
-local M = { name = "git_status" }
+local M = {
+  name = "git_status",
+  display_name = "  Git "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)
@@ -78,7 +81,7 @@ M.setup = function(config, global_config)
   if global_config.enable_modified_markers then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_MODIFIED_SET,
-      handler = wrap(manager.modified_buffers_changed),
+      handler = wrap(manager.opened_buffers_changed),
     })
   end
 

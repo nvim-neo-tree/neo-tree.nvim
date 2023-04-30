@@ -7,8 +7,6 @@ on:
       - v2.x
       - v3.x
   pull_request:
-    branches:
-      - main
 
 jobs:
   stylua-check:

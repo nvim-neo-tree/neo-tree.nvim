@@ -88,7 +88,7 @@ local render_context = function(context)
   fs_watch.updated_watched()
 
   if root and root.children then
-    file_items.deep_sort(root.children)
+    file_items.deep_sort(root.children, state.sort_function_override)
   end
   if parent_id then
     -- lazy loading a child folder
@@ -390,8 +390,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
   state.default_expanded_nodes = state.force_open_folders or { state.path }
 
   if state.search_pattern then
-    -- Use the external command because the plenary search is slow
-    filter_external.find_files({
+    local search_opts = {
       filtered_items = state.filtered_items,
       find_command = state.find_command,
       limit = state.search_limit or 50,
@@ -410,7 +409,13 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       on_exit = vim.schedule_wrap(function()
         job_complete(context)
       end),
-    })
+    }
+    if state.use_fzy then
+      filter_external.fzy_sort_files(search_opts, state)
+    else
+      -- Use the external command because the plenary search is slow
+      filter_external.find_files(search_opts)
+    end
   else
     -- In the case of a refresh or navigating up, we need to make sure that all
     -- open folders are loaded.

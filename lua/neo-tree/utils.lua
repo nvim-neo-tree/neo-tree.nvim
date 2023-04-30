@@ -143,6 +143,44 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   end
 end
 
+--- Returns true if the contents of two tables are equal.
+M.tbl_equals = function(table1, table2)
+  -- same object
+  if table1 == table2 then
+    return true
+  end
+
+  -- not the same type
+  if type(table1) ~= "table" or type(table2) ~= "table" then
+    return false
+  end
+
+  -- If tables are lists, check if they have the same values in the same order
+  if #table1 ~= #table2 then
+    return false
+  end
+  for i, v in ipairs(table1) do
+    if table2[i] ~= v then
+      return false
+    end
+  end
+
+  -- Check if the tables have the same key/value pairs
+  for k, v in pairs(table1) do
+    if table2[k] ~= v then
+      return false
+    end
+  end
+  for k, v in pairs(table2) do
+    if table1[k] ~= v then
+      return false
+    end
+  end
+
+  -- No differences found, tables are equal
+  return true
+end
+
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 
@@ -203,18 +241,34 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
+--- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table
+---@return table opened_buffers { [buffer_name] = bool }
 M.get_modified_buffers = function()
-  local modified_buffers = {}
-  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    local buffer_name = vim.api.nvim_buf_get_name(buffer)
-    if buffer_name == nil or buffer_name == "" then
-      buffer_name = "[No Name]#" .. buffer
-    end
-    modified_buffers[buffer_name] = vim.api.nvim_buf_get_option(buffer, "modified")
+  local opened_buffers = M.get_opened_buffers()
+  for bufname, bufinfo in pairs(opened_buffers) do
+    opened_buffers[bufname] = bufinfo.modified
   end
-  return modified_buffers
+  return opened_buffers
+end
+
+---Gets a lookup of all open buffers keyed by path with additional information
+---@return table opened_buffers { [buffer_name] = { modified = bool } }
+M.get_opened_buffers = function()
+  local opened_buffers = {}
+  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.fn.buflisted(buffer) ~= 0 then
+      local buffer_name = vim.api.nvim_buf_get_name(buffer)
+      if buffer_name == nil or buffer_name == "" then
+        buffer_name = "[No Name]#" .. buffer
+      end
+      opened_buffers[buffer_name] = {
+        ["modified"] = vim.api.nvim_buf_get_option(buffer, "modified"),
+        ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
+      }
+    end
+  end
+  return opened_buffers
 end
 
 ---Resolves some variable to a string. The object can be either a string or a
@@ -359,7 +413,7 @@ end
 ---Evaluates the value of <afile>, which comes from an autocmd event, and determines if it
 ---is a valid file or some sort of utility buffer like quickfix or neo-tree itself.
 ---@param afile string The path or relative path to the file.
----@param true_for_terminals boolean Whether to return true for terminals, normally it would be false.
+---@param true_for_terminals boolean? Whether to return true for terminals, normally it would be false.
 ---@return boolean boolean Whether the buffer is a real file.
 M.is_real_file = function(afile, true_for_terminals)
   if type(afile) ~= "string" or afile == "" or afile == "quickfix" then
@@ -423,8 +477,11 @@ M.get_appropriate_window = function(state)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
+  local ignore_ft = nt.config.open_files_do_not_replace_types
+  local ignore = M.list_to_dict(ignore_ft)
+  ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
-    local prior_window = nt.get_prior_window()
+    local prior_window = nt.get_prior_window(ignore)
     if prior_window > 0 then
       local success = pcall(vim.api.nvim_set_current_win, prior_window)
       if success then
@@ -442,12 +499,17 @@ M.get_appropriate_window = function(state)
   end
   local attempts = 0
   while attempts < 5 and not suitable_window_found do
-    if vim.bo.filetype == "neo-tree" or M.is_floating() then
+    local bt = vim.bo.buftype or "normal"
+    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() then
       attempts = attempts + 1
       vim.cmd("wincmd w")
     else
       suitable_window_found = true
     end
+  end
+  if not suitable_window_found then
+    -- go back to the neotree window, this will forve it to open a new split
+    vim.api.nvim_set_current_win(current_window)
   end
 
   local winid = vim.api.nvim_get_current_win()
@@ -459,22 +521,49 @@ M.get_appropriate_window = function(state)
   return winid, is_neo_tree_window
 end
 
+---Resolves the width to a number
+---@param width number|string|function
+M.resolve_width = function(width)
+  local default_width = 40
+  local available_width = vim.o.columns
+  if type(width) == "string" then
+    if string.sub(width, -1) == "%" then
+      width = tonumber(string.sub(width, 1, #width - 1)) / 100
+      width = width * available_width
+    else
+      width = tonumber(width)
+    end
+  elseif type(width) == "function" then
+    width = width()
+  end
+
+  if type(width) ~= "number" then
+    width = default_width
+  end
+
+  return math.floor(width)
+end
+
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
 ---@param open_cmd string The vimcommand to use to open the file
-M.open_file = function(state, path, open_cmd)
+---@param bufnr number|nil The buffer number to open
+M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
   if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
-    local bufnr = M.find_buffer_by_name(path)
-    if bufnr > 0 then
+    bufnr = bufnr or M.find_buffer_by_name(path)
+    if bufnr <= 0 then
+      bufnr = nil
+    else
       open_cmd = "b"
     end
   end
 
   if M.truthy(path) then
     local escaped_path = vim.fn.fnameescape(path)
+    local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
     local err = nil
@@ -482,32 +571,45 @@ M.open_file = function(state, path, open_cmd)
       state = state,
       path = path,
       open_cmd = open_cmd,
+      bufnr = bufnr,
     }) or {}
     if event_result.handled then
       events.fire_event(events.FILE_OPENED, path)
       return
     end
     if state.current_position == "current" then
-      result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+      result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
       vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
       if is_neo_tree_window then
-        -- Neo-tree must be the only window, restore it's status as a sidebar
-        local width = M.get_value(state, "window.width", 40, false)
-        local nt = require("neo-tree")
-        local split_command = "vsplit "
-        -- respect window position in user config when Neo-tree is the only window
-        if nt.config.window.position == "left" then
-          split_command = "rightbelow vs "
-        elseif nt.config.window.position == "right" then
-          split_command = "leftabove vs "
+        local width = vim.api.nvim_win_get_width(0)
+        if width == vim.o.columns then
+          -- Neo-tree must be the only window, restore it's status as a sidebar
+          width = M.get_value(state, "window.width", 40, false)
+          width = M.resolve_width(width)
         end
-        result, err = pcall(vim.cmd, split_command .. escaped_path)
+
+        local split_command = "vsplit"
+        -- respect window position in user config when Neo-tree is the only window
+        if state.current_position == "left" then
+          split_command = "rightbelow vs"
+        elseif state.current_position == "right" then
+          split_command = "leftabove vs"
+        end
+        if path == "[No Name]" then
+          result, err = pcall(vim.cmd, split_command)
+          if result then
+            vim.cmd("b" .. bufnr)
+          end
+        else
+          result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
+        end
+
         vim.api.nvim_win_set_width(winid, width)
       else
-        result, err = pcall(vim.cmd, open_cmd .. " " .. escaped_path)
+        result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then

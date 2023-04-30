@@ -11,14 +11,17 @@ local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
-local M = { name = "filesystem" }
+local M = {
+  name = "filesystem",
+  display_name = "  Files "
+}
 
 local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
-local get_state = function(tabnr)
-  return manager.get_state(M.name, tabnr)
+local get_state = function(tabid)
+  return manager.get_state(M.name, tabid)
 end
 
 -- TODO: DEPRECATED in 1.19, remove in 2.0
@@ -209,7 +212,15 @@ end
 
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
+  -- Cancel any pending search
+  require("neo-tree.sources.filesystem.lib.filter_external").cancel()
+  -- reset search state
   state.fuzzy_finder_mode = nil
+  state.use_fzy = nil
+  state.fzy_sort_result_scores = nil
+  state.fzy_sort_file_list_cache = nil
+  state.sort_function_override = nil
+
   if refresh == nil then
     refresh = true
   end
@@ -382,8 +393,17 @@ M.setup = function(config, global_config)
   if global_config.enable_modified_markers then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_MODIFIED_SET,
-      handler = wrap(manager.modified_buffers_changed),
+      handler = wrap(manager.opened_buffers_changed),
     })
+  end
+
+  if global_config.enable_opened_markers then
+    for _, event in ipairs({ events.VIM_BUFFER_ADDED, events.VIM_BUFFER_DELETED }) do
+      manager.subscribe(M.name, {
+        event = event,
+        handler = wrap(manager.opened_buffers_changed),
+      })
+    end
   end
 
   -- Configure event handler for follow_current_file option

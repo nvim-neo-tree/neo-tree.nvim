@@ -17,6 +17,39 @@ local default_popup_size = { width = 60, height = "80%" }
 local floating_windows = {}
 local draw, create_tree, render_tree
 
+local update_floating_windows = function()
+  local valid_windows = {}
+  for _, win in ipairs(floating_windows) do
+    if M.is_window_valid(win.winid) then
+      table.insert(valid_windows, win)
+    end
+  end
+  floating_windows = valid_windows
+end
+
+local tabid_to_tabnr = function(tabid)
+    return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
+end
+
+local cleaned_up = false
+---Clean up invalid neotree buffers (e.g after a session restore)
+---@param force boolean if true, force cleanup. Otherwise only cleanup once
+M.clean_invalid_neotree_buffers = function(force)
+  if cleaned_up and not force then
+    return
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local bufname = vim.fn.bufname(buf)
+    local is_neotree_buffer = string.match(bufname, "neo%-tree [^ ]+ %[%d+]")
+    local is_valid_neotree, _ = pcall(vim.api.nvim_buf_get_var, buf, "neo_tree_source")
+    if is_neotree_buffer and not is_valid_neotree then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+  cleaned_up = true
+end
+
 local resize_monitor_timer = nil
 local start_resize_monitor = function()
   local interval = M.resize_timer_interval or -1
@@ -94,7 +127,8 @@ M.close = function(state)
               position = state.current_position,
               source = state.name,
               winid = state.winid,
-              tabnr = state.tabnr,
+              tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+              tabid = state.tabid,
             }
             events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
             -- focus the prior used window if we are closing the currently focused window
@@ -509,14 +543,13 @@ M.get_expanded_nodes = function(tree, root_node_id)
   local node_ids = {}
 
   local function process(node)
+    local id = node:get_id()
     if node:is_expanded() then
-      local id = node:get_id()
       table.insert(node_ids, id)
-
-      if node:has_children() then
-        for _, child in ipairs(tree:get_nodes(id)) do
-          process(child)
-        end
+    end
+    if node:has_children() then
+      for _, child in ipairs(tree:get_nodes(id)) do
+        process(child)
       end
     end
   end
@@ -534,8 +567,8 @@ M.get_expanded_nodes = function(tree, root_node_id)
   return node_ids
 end
 
-M.collapse_all_nodes = function(tree)
-  local expanded = M.get_expanded_nodes(tree)
+M.collapse_all_nodes = function(tree, root_node_id)
+  local expanded = M.get_expanded_nodes(tree, root_node_id)
   for _, id in ipairs(expanded) do
     local node = tree:get_node(id)
     if utils.is_expandable(node) then
@@ -779,7 +812,7 @@ end
 ---create_window: Create window based on config and state
 ---@param state table The state.
 ---@param is_dummy? boolean whether to create a dummy window. Does not work with `state.current_position == "current", "float"`. If true, events are not triggered, and `state` is not modified except `state.current_position` to its new position only if value was nil
----@return table?: NuiPopup | NuiSplit | ni: Try its best to create new window of some kind
+---@return table?: NuiPopup | NuiSplit | nil: Try its best to create new window of some kind
 M.create_window = function(state, is_dummy)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
@@ -814,7 +847,8 @@ M.create_window = function(state, is_dummy)
   local event_args = {
     position = state.current_position,
     source = state.name,
-    tabnr = state.tabnr,
+    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+    tabid = state.tabid,
   }
   if is_dummy then
     win_options.enter = false
@@ -870,7 +904,13 @@ M.create_window = function(state, is_dummy)
       log.warn("`create_window` does not work with `state.current_position` == current")
       return nil
     end
-    local winid = vim.api.nvim_get_current_win()
+    -- state.id is always the window id or tabid that this state was created for
+    -- in the case of a position = current state object, it will be the window id
+    local winid = state.id
+    if not vim.api.nvim_win_is_valid(winid) then
+      log.warn("Window ", winid, "  is no longer valid!")
+      return
+    end
     local bufnr = vim.fn.bufnr(bufname)
     if bufnr < 1 then
       bufnr = vim.api.nvim_create_buf(false, false)
@@ -901,7 +941,8 @@ M.create_window = function(state, is_dummy)
 
   if type(state.bufnr) == "number" then
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", state.tabnr)
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", tabid_to_tabnr(state.tabid))
+    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabid", state.tabid)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_position", state.current_position)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
@@ -931,6 +972,7 @@ M.create_window = function(state, is_dummy)
 end
 
 M.update_floating_window_layouts = function()
+  update_floating_windows()
   for _, win in ipairs(floating_windows) do
     local opt = {
       relative = "win",
@@ -1106,7 +1148,7 @@ end
 --@param parentId string Optional. The id of the parent node to display these nodes
 --at; defaults to nil.
 M.show_nodes = function(sourceItems, state, parentId, callback)
-  --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabnr)
+  --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabid)
   --utils.debounce(id, function()
   events.fire_event(events.BEFORE_RENDER, state)
   state.longest_width_exact = 0

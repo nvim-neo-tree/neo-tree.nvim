@@ -48,4 +48,18 @@ M.get_repository_root = function(path, callback)
   end
 end
 
+local convert_octal_char = function(octal)
+  return string.char(tonumber(octal, 8))
+end
+
+M.octal_to_utf8 = function(text)
+  -- git uses octal encoding for utf-8 filepaths, convert octal back to utf-8
+  local success, converted = pcall(string.gsub, text, "\\([0-7][0-7][0-7])", convert_octal_char)
+  if success then
+    return converted
+  else
+    return text
+  end
+end
+
 return M

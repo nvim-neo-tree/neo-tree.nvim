@@ -33,11 +33,11 @@ local get_source_data = function(source_name)
   return sd
 end
 
-local function create_state(tabnr, sd, winid)
+local function create_state(tabid, sd, winid)
   local default_config = default_configs[sd.name]
   local state = vim.deepcopy(default_config, { noref = 1 })
-  state.tabnr = tabnr
-  state.id = winid or tabnr
+  state.tabid = tabid
+  state.id = winid or tabid
   state.dirty = true
   state.position = {
     is = { restorable = false },
@@ -81,35 +81,35 @@ M.set_default_config = function(source_name, config)
   end
   default_configs[source_name] = config
   local sd = get_source_data(source_name)
-  for tabnr, tab_config in pairs(sd.state_by_tab) do
-    sd.state_by_tab[tabnr] = vim.tbl_deep_extend("force", tab_config, config)
+  for tabid, tab_config in pairs(sd.state_by_tab) do
+    sd.state_by_tab[tabid] = vim.tbl_deep_extend("force", tab_config, config)
   end
 end
 
 --TODO: we need to track state per window when working with netwrw style "current"
 --position. How do we know which one to return when this is called?
-M.get_state = function(source_name, tabnr, winid)
+M.get_state = function(source_name, tabid, winid)
   if source_name == nil then
     error("get_state: source_name cannot be nil")
   end
-  tabnr = tabnr or vim.api.nvim_get_current_tabpage()
+  tabid = tabid or vim.api.nvim_get_current_tabpage()
   local sd = get_source_data(source_name)
   if type(winid) == "number" then
     local win_state = sd.state_by_win[winid]
     if not win_state then
-      win_state = create_state(tabnr, sd, winid)
+      win_state = create_state(tabid, sd, winid)
       sd.state_by_win[winid] = win_state
     end
     return win_state
   else
-    local tab_state = sd.state_by_tab[tabnr]
+    local tab_state = sd.state_by_tab[tabid]
     if tab_state and tab_state.winid then
       -- just in case tab and window get tangled up, tab state replaces window
       sd.state_by_win[tab_state.winid] = nil
     end
     if not tab_state then
-      tab_state = create_state(tabnr, sd)
-      sd.state_by_tab[tabnr] = tab_state
+      tab_state = create_state(tabid, sd)
+      sd.state_by_tab[tabid] = tab_state
     end
     return tab_state
   end
@@ -122,17 +122,17 @@ end
 M.get_state_for_window = function(winid)
   local winid = winid or vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_win_get_buf(winid)
-  local _, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
-  local _, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
-  if not source_name or not position then
+  local source_status, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
+  local position_status, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
+  if not source_status or not position_status then
     return nil
   end
 
-  local tabnr = vim.api.nvim_get_current_tabpage()
+  local tabid = vim.api.nvim_get_current_tabpage()
   if position == "current" then
-    return M.get_state(source_name, tabnr, winid)
+    return M.get_state(source_name, tabid, winid)
   else
-    return M.get_state(source_name, tabnr, nil)
+    return M.get_state(source_name, tabid, nil)
   end
 end
 
@@ -218,10 +218,10 @@ M.close = function(source_name, at_position)
 end
 
 M.close_all = function(at_position)
-  local tabnr = vim.api.nvim_get_current_tabpage()
+  local tabid = vim.api.nvim_get_current_tabpage()
   for source_name, _ in pairs(source_data) do
     M._for_each_state(source_name, function(state)
-      if state.tabnr == tabnr then
+      if state.tabid == tabid then
         if at_position then
           if state.current_position == at_position then
             log.trace("Closing " .. source_name .. " at position " .. at_position)
@@ -237,10 +237,10 @@ M.close_all = function(at_position)
 end
 
 M.close_all_except = function(except_source_name)
-  local tabnr = vim.api.nvim_get_current_tabpage()
+  local tabid = vim.api.nvim_get_current_tabpage()
   for source_name, _ in pairs(source_data) do
     M._for_each_state(source_name, function(state)
-      if state.tabnr == tabnr and source_name ~= except_source_name then
+      if state.tabid == tabid and source_name ~= except_source_name then
         log.trace("Closing " .. source_name)
         pcall(renderer.close, state)
       end
@@ -288,10 +288,17 @@ M.git_status_changed = function(source_name, args)
   end)
 end
 
+-- Vimscript functions like vim.fn.getcwd take tabpage number (tab position counting from left)
+-- but API functions operate on tabpage id (as returned by nvim_tabpage_get_number). These values
+-- get out of sync when tabs are being moved and we want to track state according to tabpage id.
+local to_tabnr = function(tabid)
+  return tabid > 0 and vim.api.nvim_tabpage_get_number(tabid) or tabid
+end
+
 local get_params_for_cwd = function(state)
-  local tabnr = state.tabnr
-  -- the id is either the tabnr for sidebars or the winid for splits
-  local winid = state.id == tabnr and -1 or state.id
+  local tabid = state.tabid
+  -- the id is either the tabid for sidebars or the winid for splits
+  local winid = state.id == tabid and -1 or state.id
 
   if state.cwd_target then
     local target = state.cwd_target.sidebar
@@ -299,20 +306,25 @@ local get_params_for_cwd = function(state)
       target = state.cwd_target.current
     end
     if target == "window" then
-      return winid, tabnr
+      return winid, to_tabnr(tabid)
     elseif target == "global" then
       return -1, -1
+    elseif target == "none" then
+      return nil, nil
     else -- default to tab
-      return -1, tabnr
+      return -1, to_tabnr(tabid)
     end
   else
-    return winid, tabnr
+    return winid, to_tabnr(tabid)
   end
 end
 
 M.get_cwd = function(state)
   local winid, tabnr = get_params_for_cwd(state)
-  local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  local success, cwd = false, ""
+  if winid or tabnr then
+    success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
+  end
   if success then
     return cwd
   else
@@ -331,6 +343,11 @@ M.set_cwd = function(state)
   end
 
   local winid, tabnr = get_params_for_cwd(state)
+
+  if winid == nil and tabnr == nil then
+    return
+  end
+
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
     if winid > 0 then
@@ -351,11 +368,11 @@ local dispose_state = function(state)
   state.disposed = true
 end
 
-M.dispose = function(source_name, tabnr)
+M.dispose = function(source_name, tabid)
   for i, state in ipairs(all_states) do
     if source_name == nil or state.name == source_name then
-      if not tabnr or tabnr == state.tabnr then
-        log.trace(state.name, " disposing of tab: ", tabnr)
+      if not tabid or tabid == state.tabid then
+        log.trace(state.name, " disposing of tab: ", tabid)
         dispose_state(state)
         table.remove(all_states, i)
       end
@@ -363,13 +380,26 @@ M.dispose = function(source_name, tabnr)
   end
 end
 
-M.dispose_tab = function(tabnr)
-  if not tabnr then
-    error("dispose_tab: tabnr cannot be nil")
+M.dispose_tab = function(tabid)
+  if not tabid then
+    error("dispose_tab: tabid cannot be nil")
   end
   for i, state in ipairs(all_states) do
-    if tabnr == state.tabnr then
-      log.trace(state.name, " disposing of tab: ", tabnr, state.name)
+    if tabid == state.tabid then
+      log.trace(state.name, " disposing of tab: ", tabid, state.name)
+      dispose_state(state)
+      table.remove(all_states, i)
+    end
+  end
+end
+
+M.dispose_invalid_tabs = function()
+  -- Iterate in reverse because we are removing items during loop
+  for i = #all_states,1,-1 do
+    local state = all_states[i]
+    -- if not valid_tabs[state.tabid] then
+    if not vim.api.nvim_tabpage_is_valid(state.tabid) then
+      log.trace(state.name, " disposing of tab: ", state.tabid, state.name)
       dispose_state(state)
       table.remove(all_states, i)
     end
@@ -415,14 +445,20 @@ M.focus = function(source_name, path_to_reveal, callback)
 end
 
 ---Redraws the tree with updated modified markers without scanning the filesystem again.
-M.modified_buffers_changed = function(source_name, args)
+M.opened_buffers_changed = function(source_name, args)
   if not type(args) == "table" then
-    error("modified_buffers_changed: args must be a table")
+    error("opened_buffers_changed: args must be a table")
   end
-  M._for_each_state(source_name, function(state)
-    state.modified_buffers = args.modified_buffers
-    renderer.redraw(state)
-  end)
+  if type(args.opened_buffers) == "table" then
+    M._for_each_state(source_name, function(state)
+      if utils.tbl_equals(args.opened_buffers, state.opened_buffers) then
+        -- no changes, no need to redraw
+        return
+      end
+      state.opened_buffers = args.opened_buffers
+      renderer.redraw(state)
+    end)
+  end
 end
 
 ---Navigate to the given path.
@@ -465,11 +501,11 @@ M.refresh = function(source_name, callback)
   if type(callback) ~= "function" then
     callback = nil
   end
-  local current_tabnr = vim.api.nvim_get_current_tabpage()
+  local current_tabid = vim.api.nvim_get_current_tabpage()
   log.trace(source_name, "refresh")
   for i = 1, #all_states, 1 do
     local state = all_states[i]
-    if state.tabnr == current_tabnr and state.path and renderer.window_exists(state) then
+    if state.tabid == current_tabid and state.path and renderer.window_exists(state) then
       local success, err = pcall(M.navigate, state, state.path, nil, callback)
       if not success then
         log.error(err)
