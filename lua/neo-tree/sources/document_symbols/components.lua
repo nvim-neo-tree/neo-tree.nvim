@@ -16,16 +16,8 @@ local common = require("neo-tree.sources.common.components")
 local M = {}
 
 M.icon = function(config, node, state)
-  local padding = config.padding or " "
-  local icon = node.extra.kind.icon
-
-  icon = config.align == "right" and padding .. icon or icon .. padding
-  if node:get_depth() == 1 then
-    icon = ""
-  end
-
   return {
-    text = icon,
+    text = node:get_depth() == 1 and "" or node.extra.kind.icon,
     highlight = node.extra.kind.hl,
   }
 end
@@ -33,26 +25,16 @@ end
 M.kind_icon = M.icon
 
 M.kind_name = function(config, node, state)
-  local padding = config.padding or " "
-  local name = node.extra.kind.name
-
-  name = config.align == "right" and padding .. name or name .. padding
-  if node:get_depth() == 1 then
-    name = ""
-  end
-
   return {
-    text = name,
+    text = node:get_depth() == 1 and "" or node.extra.kind.name,
     highlight = node.extra.kind.hl,
   }
 end
 
 M.name = function(config, node, state)
-  local highlight = node.extra.kind.hl or highlights.FILE_NAME
-  local text = node.name
   return {
-    text = text,
-    highlight = highlight,
+    text = node.name,
+    highlight = node.extra.kind.hl or highlights.FILE_NAME,
   }
 end
 

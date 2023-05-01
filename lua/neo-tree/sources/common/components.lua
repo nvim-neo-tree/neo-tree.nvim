@@ -34,7 +34,7 @@ M.bufnr = function(config, node, state)
     return {}
   end
   return {
-    text = string.format(" #%s", bufnr),
+    text = string.format("#%s", bufnr),
     highlight = highlight,
   }
 end
@@ -60,7 +60,7 @@ M.current_filter = function(config, node, state)
   end
   return {
     {
-      text = "Find ",
+      text = "Find",
       highlight = highlights.DIM_TEXT,
     },
     {
@@ -68,7 +68,7 @@ M.current_filter = function(config, node, state)
       highlight = config.highlight or highlights.FILTER_TERM,
     },
     {
-      text = " in ",
+      text = "in",
       highlight = highlights.DIM_TEXT,
     },
   }
@@ -107,7 +107,7 @@ M.diagnostics = function(config, node, state)
     defined.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined = defined or { text = severity:sub(1, 1) .. " " }
+    defined = defined or { text = severity:sub(1, 1) }
     defined.texthl = config.highlights[severity_lower]
   end
 
@@ -118,7 +118,7 @@ M.diagnostics = function(config, node, state)
     }
   else
     return {
-      text = severity:sub(1, 1) .. " ",
+      text = severity:sub(1, 1),
       highlight = "Diagnostic" .. severity,
     }
   end
@@ -233,27 +233,27 @@ M.filtered_by = function(config, node, state)
     local fby = node.filtered_by
     if fby.name then
       result = {
-        text = "(hide by name) ",
+        text = "(hide by name)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
       result = {
-        text = "(hide by pattern) ",
+        text = "(hide by pattern)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
       result = {
-        text = "(gitignored) ",
+        text = "(gitignored)",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
       result = {
-        text = "(dotfile) ",
+        text = "(dotfile)",
         highlight = highlights.DOTFILE,
       }
     elseif fby.hidden then
       result = {
-        text = "(hidden) ",
+        text = "(hidden)",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
@@ -297,7 +297,7 @@ M.modified = function(config, node, state)
 
   if buf_info and buf_info.modified then
     return {
-      text = (make_two_char(config.symbol) or "[+] "),
+      text = (make_two_char(config.symbol) or "[+]"),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
@@ -344,7 +344,7 @@ M.name = function(config, node, state)
       text = text .. string.rep(" ", config.right_padding)
     end
   else
-    text = text .. " "
+    text = text
   end
 
   return {

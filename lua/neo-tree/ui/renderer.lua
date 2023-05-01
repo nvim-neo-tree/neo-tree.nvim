@@ -28,7 +28,7 @@ local update_floating_windows = function()
 end
 
 local tabid_to_tabnr = function(tabid)
-    return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
+  return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
 end
 
 local cleaned_up = false
@@ -381,44 +381,57 @@ local prepare_node = function(item, state)
   if not renderer then
     line:append(item.type .. ": ", "Comment")
     line:append(item.name)
-  else
-    local remaining_cols = state.win_width
-    if remaining_cols == nil then
-      if state.winid then
-        remaining_cols = vim.api.nvim_win_get_width(state.winid)
-      else
-        local default_width = utils.resolve_config_option(state, "window.width", 40)
-        remaining_cols = default_width
-      end
+    return line
+  end
+
+  local remaining_cols = state.win_width
+  if remaining_cols == nil then
+    if state.winid then
+      remaining_cols = vim.api.nvim_win_get_width(state.winid)
+    else
+      local default_width = utils.resolve_config_option(state, "window.width", 40)
+      remaining_cols = default_width
     end
-    local wanted_width = 0
-    if state.current_position == "current" then
-      local longest = state.longest_node or 0
-      remaining_cols = math.min(remaining_cols, longest + 4)
-    end
-    for _, component in ipairs(renderer) do
-      local component_data, component_wanted_width =
-        M.render_component(component, item, state, remaining_cols)
-      local actual_width = 0
-      if component_data then
-        for _, data in ipairs(component_data) do
-          if data.text then
-            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
-            line:append(data.text, data.highlight)
-            remaining_cols = remaining_cols - vim.fn.strchars(data.text)
+  end
+
+  local wanted_width = 0
+  if state.current_position == "current" then
+    local longest = state.longest_node or 0
+    remaining_cols = math.min(remaining_cols, longest + 4)
+  end
+
+  local should_pad = false
+
+  for _, component in ipairs(renderer) do
+    local component_data, component_wanted_width =
+      M.render_component(component, item, state, remaining_cols - (should_pad and 1 or 0))
+    local actual_width = 0
+    if component_data then
+      for _, data in ipairs(component_data) do
+        if data.text then
+          local padding = ""
+          if should_pad and #data.text and data.text:sub(1, 1) ~= " " and not data.no_padding then
+            padding = " "
           end
+          data.text = padding .. data.text
+          should_pad = data.text:sub(#data.text) ~= " "
+
+          actual_width = actual_width + vim.api.nvim_strwidth(data.text)
+          line:append(data.text, data.highlight)
+          remaining_cols = remaining_cols - vim.fn.strchars(data.text)
         end
       end
-      component_wanted_width = component_wanted_width or actual_width
-      wanted_width = wanted_width + component_wanted_width
     end
-    line.wanted_width = wanted_width
-    if pre_render then
-      item.line = line
-      state.longest_node = math.max(state.longest_node, line.wanted_width)
-    else
-      item.line = nil
-    end
+    component_wanted_width = component_wanted_width or actual_width
+    wanted_width = wanted_width + component_wanted_width
+  end
+
+  line.wanted_width = wanted_width
+  if pre_render then
+    item.line = line
+    state.longest_node = math.max(state.longest_node, line.wanted_width)
+  else
+    item.line = nil
   end
 
   return line
@@ -887,7 +900,7 @@ create_window = function(state)
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
   elseif state.current_position == "current" then
-    -- state.id is always the window id or tabid that this state was created for
+    -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
     local winid = state.id
     if not vim.api.nvim_win_is_valid(winid) then
