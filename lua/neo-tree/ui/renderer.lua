@@ -1176,7 +1176,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       local scan_mode = require("neo-tree").config.filesystem.scan_mode
       if scan_mode == "deep" then
         for i, item in ipairs(sourceItems) do
-          sourceItems[i] = group_empty_dirs(item)
+          sourceItems[i] = filter_never_shows(group_empty_dirs(item))
         end
       else
         -- this is a lazy load of a single sub folder
@@ -1211,7 +1211,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       for _, item in ipairs(sourceItems) do
         if item.children ~= nil then
           for i, child in ipairs(item.children) do
-            item.children[i] = group_empty_dirs(child)
+            item.children[i] = filter_never_shows(group_empty_dirs(child))
           end
         end
       end
