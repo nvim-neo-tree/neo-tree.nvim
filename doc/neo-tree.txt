@@ -718,15 +718,15 @@ type notations.
         sources = {                                               -- table
           {
             source = "filesystem",                                -- string
-            display_name = "  Files "                            -- string | nil
+            display_name = " 󰉓 Files "                            -- string | nil
           },
           {
             source = "buffers",                                   -- string
-            display_name = "  Buffers "                          -- string | nil
+            display_name = " 󰈙 Buffers "                          -- string | nil
           },
           {
             source = "git_status",                                -- string
-            display_name = "  Git "                              -- string | nil
+            display_name = " 󰊢 Git "                              -- string | nil
           },
         },
         content_layout = "start",                                 -- string
@@ -773,9 +773,9 @@ then the `default_source` will be updated to be the first entry of
 effect when the tab width is greater than the length of label i.e.
 `tabs_layout = "equal", "focus"` or when `tabs_min_width` is large enough.
 Following options are available.
-    'start'  : left aligned                  / 裡 bufname     \/..
-    'end'    : right aligned                 /     裡 bufname \/...
-    'center' : centered with equal padding   /   裡 bufname   \/...
+    'start'  : left aligned                  / 󰓩 bufname     \/..
+    'end'    : right aligned                 /     󰓩 bufname \/...
+    'center' : centered with equal padding   /   󰓩 bufname   \/...
 
 `tabs_layout` defines how the tabs are aligned inside the window when there is
 more than enough space. The following options are available. `active` will
@@ -988,11 +988,11 @@ the following properties:
           added     = "✚",
           deleted   = "✖",
           modified  = "",
-          renamed   = "",
+          renamed   = "󰁕",
           -- Status type
           untracked = "",
           ignored   = "",
-          unstaged  = "",
+          unstaged  = "󰄱",
           staged    = "",
           conflict  = "",
         }
@@ -1025,7 +1025,7 @@ The following config will remove those change type symbols:
           -- Status type
           untracked = "",
           ignored   = "",
-          unstaged  = "",
+          unstaged  = "󰄱",
           staged    = "",
           conflict  = "",
         }
@@ -1063,7 +1063,7 @@ define those somewhere in your nvim configuration. Here is an example:
     vim.fn.sign_define("LspDiagnosticsSignInformation",
         {text = " ", texthl = "LspDiagnosticsSignInformation"})
     vim.fn.sign_define("LspDiagnosticsSignHint",
-        {text = "", texthl = "LspDiagnosticsSignHint"})
+        {text = "󰌵", texthl = "LspDiagnosticsSignHint"})
 <
 
 Alternatively, you can also specify the signs and/or highlights in the
@@ -1707,7 +1707,7 @@ If set to `true`, will automatically focus on the symbol under the cursor.
 kinds~
 A table specifying how LSP kinds should be rendered. Each entry should map the
 LSP kind name to an icon and a highlight group, for example 
-  `Class = { icon = "", hl = "Include" }`
+  `Class = { icon = "󰌗", hl = "Include" }`
 
 custom_kinds~
 A table mapping the LSP kind id (an integer) to the LSP kind name that is used

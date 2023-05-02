@@ -10,7 +10,7 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {
   name = "git_status",
-  display_name = "  Git "
+  display_name = " 󰊢 Git "
 }
 
 local wrap = function(func)
