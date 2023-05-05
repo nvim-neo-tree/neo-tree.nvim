@@ -51,7 +51,7 @@ vim.cmd([[ let g:neo_tree_remove_legacy_commands = 1 ]])
 use {
   "nvim-neo-tree/neo-tree.nvim",
     branch = "v2.x",
-    requires = { 
+    requires = {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
@@ -70,12 +70,12 @@ Press `?` in the Neo-tree window to view the list of mappings.
 ## Quickstart
 
 #### Longer Example for Packer:
-  
+
 ```lua
 use {
   "nvim-neo-tree/neo-tree.nvim",
     branch = "v2.x",
-    requires = { 
+    requires = {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
@@ -114,7 +114,7 @@ use {
       vim.fn.sign_define("DiagnosticSignInfo",
         {text = " ", texthl = "DiagnosticSignInfo"})
       vim.fn.sign_define("DiagnosticSignHint",
-        {text = "", texthl = "DiagnosticSignHint"})
+        {text = "󰌵", texthl = "DiagnosticSignHint"})
       -- NOTE: this is changed from v1.x, which used the old style of highlight groups
       -- in the form "LspDiagnosticsSignWarning"
 
@@ -125,7 +125,7 @@ use {
         enable_diagnostics = true,
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
-        sort_function = nil , -- use a custom function for sorting files and directories in the tree 
+        sort_function = nil , -- use a custom function for sorting files and directories in the tree
         -- sort_function = function (a,b)
         --       if a.type == b.type then
         --           return a.path > b.path
@@ -154,7 +154,7 @@ use {
           icon = {
             folder_closed = "",
             folder_open = "",
-            folder_empty = "ﰊ",
+            folder_empty = "󰉖",
             -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
             -- then these will never be used.
             default = "*",
@@ -175,11 +175,11 @@ use {
               added     = "", -- or "✚", but this is redundant info if you use git_status_colors on the name
               modified  = "", -- or "", but this is redundant info if you use git_status_colors on the name
               deleted   = "✖",-- this can only be used in the git_status source
-              renamed   = "",-- this can only be used in the git_status source
+              renamed   = "󰁕",-- this can only be used in the git_status source
               -- Status type
               untracked = "",
               ignored   = "",
-              unstaged  = "",
+              unstaged  = "󰄱",
               staged    = "",
               conflict  = "",
             }
@@ -198,9 +198,9 @@ use {
             nowait = true,
           },
           mappings = {
-            ["<space>"] = { 
-                "toggle_node", 
-                nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use 
+            ["<space>"] = {
+                "toggle_node",
+                nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use
             },
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
@@ -220,7 +220,7 @@ use {
             -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
-            ["a"] = { 
+            ["a"] = {
               "add",
               -- this command supports BASH style brace expansion ("x{a,b,c}" -> xa,xb,xc). see `:h neo-tree-file-actions` for details
               -- some commands may take optional config options, see `:h neo-tree-mappings` for details
@@ -352,7 +352,7 @@ See `:h neo-tree` for full documentation. You can also preview that online at
 
 To see all of the default config options with commentary, you can view it online
 at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
-into a buffer after installing Neo-tree by running: 
+into a buffer after installing Neo-tree by running:
 
 ```
 :lua require("neo-tree").paste_default_config()
@@ -362,7 +362,7 @@ into a buffer after installing Neo-tree by running:
 ## The `:Neotree` Command
 
 The single `:Neotree` command accepts a range of arguments that give you full
-control over the details of what and where it will show. For example, the following 
+control over the details of what and where it will show. For example, the following
 command will open a file browser on the right hand side, "revealing" the currently
 active file:
 
@@ -385,7 +385,7 @@ without any arguments, it will use default values for everything. For example:
 :Neotree
 ```
 
-will open the filesystem source on the left hand side and focus it, if you are using 
+will open the filesystem source on the left hand side and focus it, if you are using
 the default config.
 
 ### Tab Completion
@@ -451,7 +451,7 @@ current file. For example:
 The base that is used to calculate the git status for each dir/file.
 By default it uses `HEAD`, so it shows all changes that are not yet committed.
 You can for example work on a feature branch, and set it to `main`. It will
-show all changes that happened on the feature branch and main since you 
+show all changes that happened on the feature branch and main since you
 branched off.
 
 Any git ref, commit, tag, or sha will work.
@@ -464,7 +464,7 @@ Any git ref, commit, tag, or sha will work.
 ```
 
 #### `reveal`
-This is a boolean flag. Adding this will make Neotree automatically find and 
+This is a boolean flag. Adding this will make Neotree automatically find and
 focus the current file when it opens.
 
 #### `reveal_file`
@@ -545,7 +545,7 @@ the same list you would see from `:ls`. To show with the `buffers` list, use:
 This view take the results of the `git status` command and display them in a
 tree. It includes commands for adding, unstaging, reverting, and committing.
 
-The screenshot below shows the result of `:Neotree float git_status` while the 
+The screenshot below shows the result of `:Neotree float git_status` while the
 filesystem is open in a sidebar:
 
 ![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
@@ -574,7 +574,7 @@ following features:
 	- [x] Rename symbols (`rename`)
 	- [x] Preview symbol (`preview` and friends)
 	- [ ] Hover docs
-	- [ ] Call hierarchy 
+	- [ ] Call hierarchy
 - [x] LSP
    - [x] LSP Support
    - [x] LSP server selection (blacklist, use first, use all, etc.)
@@ -582,7 +582,7 @@ following features:
 
 See #879 for the tracking issue of these features.
 
-This source is currently experimental, so in order to use it, you need to first 
+This source is currently experimental, so in order to use it, you need to first
 add `"document_symbols"` to `config.sources` and open it with the command
 ```
 :Neotree document_symbols
@@ -605,7 +605,7 @@ To do so, set one of these options to `true`:
     })
 ```
 
-There are many configuration options to change the style of these tabs. 
+There are many configuration options to change the style of these tabs.
 See [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua) for details.
 
 
@@ -613,11 +613,11 @@ See [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua) for details.
 
 This is designed to be flexible. The way that is achieved is by making
 everything a function, or a string that identifies a built-in function. All of the
-built-in functions can be replaced with your own implementation, or you can 
+built-in functions can be replaced with your own implementation, or you can
 add new ones.
 
 Each node in the tree is created from the renderer specified for the given node
-type, and each renderer is a list of component configs to be rendered in order. 
+type, and each renderer is a list of component configs to be rendered in order.
 Each component is a function, either built-in or specified in your config. Those
 functions simply return the text and highlight group for the component.
 
