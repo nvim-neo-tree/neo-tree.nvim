@@ -188,8 +188,7 @@ use {
         -- A list of functions, each representing a global custom command
         -- that will be available in all sources (if not overridden in `opts[source_name].commands`)
         -- see `:h neo-tree-global-custom-commands`
-        commands = {}
-
+        commands = {},
         window = {
           position = "left",
           width = 40,
