@@ -365,11 +365,16 @@ M.create_node = function(in_directory, callback, using_root_directory)
             + loop.constants.O_TRUNC
           local fd = loop.fs_open(destination, "w", open_mode)
           if not fd then
-            api.nvim_err_writeln("Could not create file " .. destination)
-            return
+            if not loop.fs_stat(destination) then
+              api.nvim_err_writeln("Could not create file " .. destination)
+              return
+            else
+              log.warn("Failed to complete file creation of " .. destination)
+            end
+          else
+            loop.fs_chmod(destination, 420)
+            loop.fs_close(fd)
           end
-          loop.fs_chmod(destination, 420)
-          loop.fs_close(fd)
         end
 
         vim.schedule(function()
