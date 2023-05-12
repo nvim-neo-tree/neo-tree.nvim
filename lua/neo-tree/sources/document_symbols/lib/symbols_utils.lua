@@ -1,14 +1,43 @@
 ---Utilities functions for the document_symbols source
 local renderer = require("neo-tree.ui.renderer")
-local highlights = require("neo-tree.ui.highlights")
 local filters = require("neo-tree.sources.document_symbols.lib.client_filters")
 local kinds = require("neo-tree.sources.document_symbols.lib.kinds")
 
 local M = {}
 
+---@alias Loc integer[] a location in a buffer {row, col}, 0-indexed
+---@alias LocRange { start: Loc, ["end"]: Loc } a range consisting of two loc
+
+---@class SymbolExtra
+---@field bufnr integer the buffer containing the symbols,
+---@field kind string the kind of each symbol
+---@field selection_range LocRange the symbol's location
+---@field position Loc start of symbol's definition
+---@field end_position Loc start of symbol's definition
+
+---@class SymbolNode see
+---@field id string
+---@field name string name of symbol
+---@field path string buffer path - should all be the same
+---@field type "root"|"symbol"
+---@field children SymbolNode[]
+---@field extra SymbolExtra additional info
+
+---@alias LspLoc { line: integer, character: integer}
+---@alias LspRange { start : LspLoc, ["end"]: LspLoc }
+---@class LspRespNode
+---@field name string
+---@field detail string?
+---@field kind integer
+---@field tags any
+---@field deprecated boolean?
+---@field range LspRange
+---@field selectionRange LspRange
+---@field children LspRespNode[]
+
 ---Parse the LspRange
----@param range table the LspRange object to parse
----@return table range the parsed range
+---@param range LspRange the LspRange object to parse
+---@return LocRange range the parsed range
 local parse_range = function(range)
   return {
     start = { range.start.line, range.start.character },
@@ -17,8 +46,8 @@ local parse_range = function(range)
 end
 
 ---Compare two tuples of length 2 by first - second elements
----@param a table
----@param b table
+---@param a Loc
+---@param b Loc
 ---@return boolean
 local loc_less_than = function(a, b)
   if a[1] < b[1] then
@@ -29,24 +58,24 @@ local loc_less_than = function(a, b)
   return false
 end
 
----Check whether loc is contained in scope, i.e scope[1] <= loc <= scope[2]
----@param loc table
----@param scope table
+---Check whether loc is contained in range, i.e range[1] <= loc <= range[2]
+---@param loc Loc
+---@param range LocRange
 ---@return boolean
-M.is_loc_in_scope = function(loc, scope)
-  return loc_less_than(scope[1], loc) and loc_less_than(loc, scope[2])
+M.is_loc_in_range = function(loc, range)
+  return loc_less_than(range[1], loc) and loc_less_than(loc, range[2])
 end
 
 ---Get the the current symbol under the cursor
 ---@param tree any the Nui symbol tree
----@param loc table the cursor location {row, col} (0-index)
+---@param loc Loc the cursor location {row, col} (0-index)
 ---@return string node_id
-M.get_symbol_by_range = function(tree, loc)
+M.get_symbol_by_loc = function(tree, loc)
   local function dfs(node)
     local node_id = node:get_id()
     if node:has_children() then
       for _, child in ipairs(tree:get_nodes(node_id)) do
-        if M.is_loc_in_scope(loc, { child.extra.position, child.extra.end_position }) then
+        if M.is_loc_in_range(loc, { child.extra.position, child.extra.end_position }) then
           return dfs(child)
         end
       end
@@ -63,10 +92,12 @@ M.get_symbol_by_range = function(tree, loc)
   return ""
 end
 
----Parse the LSP response into a tree
----@param resp_node table the LSP response node
+---Parse the LSP response into a tree. Each node on the tree follows
+---the same structure as a NuiTree node, with the extra field
+---containing additional information.
+---@param resp_node LspRespNode the LSP response node
 ---@param id string the id of the current node
----@return table symb_node the parsed tree
+---@return SymbolNode symb_node the parsed tree
 local function parse_resp(resp_node, id, state)
   -- parse all children
   local children = {}
@@ -76,7 +107,7 @@ local function parse_resp(resp_node, id, state)
   end
 
   -- parse current node
-  local preview_range = parse_range(resp_node.range) -- for commands.preview
+  local preview_range = parse_range(resp_node.range)
   local symb_node = {
     id = id,
     name = resp_node.name,
@@ -96,26 +127,29 @@ local function parse_resp(resp_node, id, state)
 end
 
 ---Callback function for lsp request
----@param resp table the response of the lsp client
+---@param lsp_resp LspRespRaw the response of the lsp client
 ---@param state table the state of the source
-local on_lsp_resp = function(resp, state)
-  if resp == nil or type(resp) ~= "table" then
+local on_lsp_resp = function(lsp_resp, state)
+  if lsp_resp == nil or type(lsp_resp) ~= "table" then
     return
   end
 
-  resp = filters.filter_resp(resp)
+  -- filter the response to get only the desired LSP
+  local resp = filters.filter_resp(lsp_resp)
 
   local bufname = state.path
   local items = {}
+
+  -- parse each client's response
   for client_name, client_result in pairs(resp) do
     local symbol_list = {}
     for i, resp_node in ipairs(client_result) do
       table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state))
     end
 
+    -- add the parsed response to the tree
     local splits = vim.split(bufname, "/")
     local filename = splits[#splits]
-
     table.insert(items, {
       id = "" .. #items,
       name = string.format("SYMBOLS (%s) in %s", client_name, filename),

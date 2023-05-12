@@ -1,12 +1,16 @@
----Filter lsp clients response
+---Utilities function to filter the LSP servers
 local utils = require("neo-tree.utils")
 
-local M = {
-  filter_resp = function()
-    return {}
-  end,
-}
+---@alias LspRespRaw table<integer, { result: LspRespNode }>
+local M = {}
 
+---@alias FilterFn fun(client_name: string): boolean
+
+---Filter clients
+---@param filter_type "first" | "all"
+---@param filter_fn FilterFn
+---@param resp LspRespRaw
+---@return table<string, LspRespNode>
 local filter_clients = function(filter_type, filter_fn, resp)
   if resp == nil or type(resp) ~= "table" then
     return {}
@@ -28,18 +32,34 @@ local filter_clients = function(filter_type, filter_fn, resp)
   return result
 end
 
+---Filter only clients in the white list
+---@param white_list string[] the list of clients to keep
+---@return FilterFn
 local white_list = function(white_list)
   return function(client_name)
     return vim.tbl_contains(white_list, client_name)
   end
 end
 
+---Filter clients from the black list
+---@param black_list string[] the list of clients to remove
+---@return FilterFn
 local black_list = function(black_list)
   return function(client_name)
     return not vim.tbl_contains(black_list, client_name)
   end
 end
 
+---Main entry point for the filter
+---@param resp LspRespRaw
+---@return table<string, LspRespNode>
+M.filter_resp = function(resp)
+  return {}
+end
+
+---Setup the filter accordingly to the config
+---@see neo-tree-document-symbols-source for more details on options that the filter accepts
+---@param cfg_flt "first" | "all" | { type: "first" | "all", fn: FilterFn, white_list: string[], black_list: string[] }
 M.setup = function(cfg_flt)
   local filter_type = "first"
   local filter_fn = nil

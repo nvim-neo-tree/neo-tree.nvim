@@ -17,6 +17,8 @@ local get_state = function()
   return manager.get_state(M.name)
 end
 
+---Refresh the source with debouncing
+---@param args { afile: string }
 local refresh_debounced = function(args)
   if utils.is_real_file(args.afile) == false then
     return
@@ -29,18 +31,21 @@ local refresh_debounced = function(args)
   )
 end
 
+---Internal function to follow the cursor
 local follow_symbol = function()
   local state = get_state()
   if state.lsp_bufnr ~= vim.api.nvim_get_current_buf() then
     return
   end
   local cursor = vim.api.nvim_win_get_cursor(state.lsp_winid)
-  local node_id = symbols.get_symbol_by_range(state.tree, { cursor[1] - 1, cursor[2] })
+  local node_id = symbols.get_symbol_by_loc(state.tree, { cursor[1] - 1, cursor[2] })
   if #node_id > 0 then
     renderer.focus_node(state, node_id, true)
   end
 end
 
+---Follow the cursor with debouncing
+---@param args { afile: string }
 local follow_debounced = function(args)
   if utils.is_real_file(args.afile) == false then
     return
