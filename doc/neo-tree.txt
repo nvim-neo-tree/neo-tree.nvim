@@ -1717,7 +1717,7 @@ for `kinds`, for example
 For the list of kinds (id and name), please refer to 
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentSymbol
 
-server_filter~
+client_filters~
 This option could be used to set which LSP server is used to obtain the document
 symbols. This accepts one of the following values
 
