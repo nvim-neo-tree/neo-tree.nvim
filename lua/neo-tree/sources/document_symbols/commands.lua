@@ -49,7 +49,7 @@ end
 M.open = M.jump_to_symbol
 
 M.filter = function(state)
-  filters.show_filter(state, true, true, true)
+  filters.show_filter(state, true)
 end
 
 cc._add_common_commands(M, "node") -- common tree commands
