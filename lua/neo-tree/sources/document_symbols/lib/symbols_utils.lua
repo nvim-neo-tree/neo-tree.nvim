@@ -98,11 +98,12 @@ end
 ---@param resp_node LspRespNode the LSP response node
 ---@param id string the id of the current node
 ---@return SymbolNode symb_node the parsed tree
-local function parse_resp(resp_node, id, state)
+local function parse_resp(resp_node, id, state, parent_search_path)
   -- parse all children
   local children = {}
+  local search_path = parent_search_path .. "/" .. resp_node.name
   for i, child in ipairs(resp_node.children or {}) do
-    local child_node = parse_resp(child, id .. "." .. i, state)
+    local child_node = parse_resp(child, id .. "." .. i, state, search_path)
     table.insert(children, child_node)
   end
 
@@ -118,6 +119,7 @@ local function parse_resp(resp_node, id, state)
       bufnr = state.lsp_bufnr,
       kind = kinds.get_kind(resp_node.kind),
       selection_range = parse_range(resp_node.selectionRange),
+      search_path = search_path,
       -- detail = resp_node.detail,
       position = preview_range.start,
       end_position = preview_range["end"],
@@ -144,7 +146,7 @@ local on_lsp_resp = function(lsp_resp, state)
   for client_name, client_result in pairs(resp) do
     local symbol_list = {}
     for i, resp_node in ipairs(client_result) do
-      table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state))
+      table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state, "/"))
     end
 
     -- add the parsed response to the tree
@@ -156,7 +158,7 @@ local on_lsp_resp = function(lsp_resp, state)
       path = bufname,
       type = "root",
       children = symbol_list,
-      extra = { kind = kinds.get_kind(0) },
+      extra = { kind = kinds.get_kind(0), search_path = "/" },
     })
   end
   renderer.show_nodes(items, state)
@@ -183,7 +185,7 @@ M.render_symbols = function(state)
         path = bufname,
         type = "root",
         children = {},
-        extra = { kind = kinds.get_kind(0) },
+        extra = { kind = kinds.get_kind(0), search_path = "/" },
       },
     }, state)
     return
