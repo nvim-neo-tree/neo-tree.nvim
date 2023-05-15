@@ -24,25 +24,6 @@ local cmds = {
   end,
 }
 
-local sort_by_score = function(state, a, b)
-  -- `state.fzy_sort_result_scores` should be defined in
-  -- `sources.filesystem.lib.filter_external.fzy_sort_files`
-  local result_scores = state.fzy_sort_result_scores or { foo = 0, baz = 0 }
-  local a_score = result_scores[a.path]
-  local b_score = result_scores[b.path]
-  if a_score == nil or b_score == nil then
-    log.debug(
-      string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score)
-    )
-    local config = require("neo-tree").config
-    if config.sort_function ~= nil then
-      return config.sort_function(a, b)
-    end
-    return nil
-  end
-  return a_score > b_score
-end
-
 ---Reset the current filter to the empty string.
 ---@param state any
 ---@param refresh boolean? whether to refresh the source tree
@@ -57,16 +38,13 @@ local reset_filter = function(state, refresh, open_current_node)
   require("neo-tree.sources.filesystem.lib.filter_external").cancel()
 
   -- reset search state
-  state.fuzzy_finder_mode = nil
-  state.fzy_sort_file_list_cache = nil
-  state.fzy_sort_result_scores = nil
+  if state.open_folders_before_search then
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+  else
+    state.force_open_folders = nil
+  end
   state.open_folders_before_search = nil
   state.search_pattern = nil
-  state.sort_function_override = nil
-  state.use_fzy = nil
-  state.force_open_folders = state.open_folders_before_search
-      and vim.deepcopy(state.open_folders_before_search, { noref = 1 })
-    or nil
 
   if open_current_node then
     local success, node = pcall(state.tree.get_node, state.tree)
@@ -88,6 +66,7 @@ end
 ---@param state any
 local show_filtered_tree = function(state, do_not_focus_window)
   state.tree = vim.deepcopy(state.orig_tree)
+  state.tree:get_nodes()[1].search_pattern = state.search_pattern
   local max_score, max_id = fzy.get_score_min(), nil
   local function filter_tree(node_id)
     local node = state.tree:get_node(node_id)
@@ -96,6 +75,7 @@ local show_filtered_tree = function(state, do_not_focus_window)
     local should_keep = fzy.has_match(state.search_pattern, path)
     if should_keep then
       local score = fzy.score(state.search_pattern, path)
+      node.extra.fzy_score = score
       if score > max_score then
         max_score = score
         max_id = node_id
@@ -123,7 +103,7 @@ local show_filtered_tree = function(state, do_not_focus_window)
   end
 end
 
-M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
+M.show_filter = function(state, search_as_you_type)
   local winid = vim.api.nvim_get_current_win()
   local height = vim.api.nvim_win_get_height(winid)
   local scroll_padding = 3
@@ -168,10 +148,6 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
     on_submit = function(value)
       if value == "" then
         reset_filter(state)
-        return
-      end
-      if search_as_you_type and fuzzy_finder_mode then
-        reset_filter(state, true, true)
         return
       end
       -- do the search
@@ -219,33 +195,19 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode)
   input:map("i", "<esc>", function(bufnr)
     vim.cmd("stopinsert")
     input:unmount()
-    if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
+    if utils.truthy(state.search_pattern) then
       reset_filter(state, true)
     end
     restore_height()
   end, { noremap = true })
 
-  input:on({ event.BufLeave, event.BufDelete }, function()
-    vim.cmd("stopinsert")
-    input:unmount()
-    -- If this was closed due to submit, that function will handle the reset_search
-    vim.defer_fn(function()
-      if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
-        reset_filter(state, true)
-      end
-    end, 100)
-    restore_height()
-  end, { once = true })
-
-  if fuzzy_finder_mode then
-    local config = require("neo-tree").config
-    for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
-      local cmd = cmds[cmd_name]
-      if cmd then
-        input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
-      else
-        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
-      end
+  local config = require("neo-tree").config
+  for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
+    local cmd = cmds[cmd_name]
+    if cmd then
+      input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
+    else
+      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
     end
   end
 end
