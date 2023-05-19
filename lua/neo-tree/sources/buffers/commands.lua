@@ -51,6 +51,12 @@ end
 M.copy = function(state)
   cc.copy(state, redraw)
 end
+M.copy_path = function(state)
+  cc.copy_path(state)
+end
+M.copy_abspath = function(state)
+  cc.copy_abspath(state)
+end
 
 M.move = function(state)
   cc.move(state, redraw)

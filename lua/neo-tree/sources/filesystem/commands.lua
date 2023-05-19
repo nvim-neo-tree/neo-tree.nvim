@@ -31,6 +31,10 @@ end
 M.copy = function(state)
   cc.copy(state, utils.wrap(refresh, state))
 end
+M.copy_path = function(state)
+  -- code
+  cc.copy_path(state)
+end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
