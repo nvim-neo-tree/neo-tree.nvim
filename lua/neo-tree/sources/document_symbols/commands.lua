@@ -48,6 +48,10 @@ end
 
 M.open = M.jump_to_symbol
 
+M.filter_on_submit = function(state)
+  filters.show_filter(state, true, true)
+end
+
 M.filter = function(state)
   filters.show_filter(state, true)
 end

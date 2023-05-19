@@ -64,6 +64,7 @@ end
 
 ---Show the filtered tree
 ---@param state any
+---@param do_not_focus_window boolean? whether to focus the window
 local show_filtered_tree = function(state, do_not_focus_window)
   state.tree = vim.deepcopy(state.orig_tree)
   state.tree:get_nodes()[1].search_pattern = state.search_pattern
@@ -103,7 +104,12 @@ local show_filtered_tree = function(state, do_not_focus_window)
   end
 end
 
-M.show_filter = function(state, search_as_you_type)
+---Main entry point for the filter functionality.
+---This will display a filter input popup and filter the source tree on change and on submit
+---@param state table the source state
+---@param search_as_you_type boolean? whether to filter as you type or only on submit
+---@param keep_filter_on_submit boolean? whether to keep the filter on <CR> or reset it
+M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
   local winid = vim.api.nvim_get_current_win()
   local height = vim.api.nvim_win_get_height(winid)
   local scroll_padding = 3
@@ -148,6 +154,10 @@ M.show_filter = function(state, search_as_you_type)
     on_submit = function(value)
       if value == "" then
         reset_filter(state)
+        return
+      end
+      if search_as_you_type and not keep_filter_on_submit then
+        reset_filter(state, true, true)
         return
       end
       -- do the search
