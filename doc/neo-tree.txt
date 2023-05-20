@@ -1723,18 +1723,18 @@ symbols. This accepts one of the following values
 
   `"first"`: use the first LSP server that provides the feature
   `"all"`: use all LSP server that provides the feature
-  `{ fn = function(name), white_list = table, black_list = table }` where
+  `{ fn = function(name), allow_only = table, ignore = table }` where
       `fn`: a function that returns `true` if the server `name` should be used
-      `white_list`: use only servers from this list
-      `black_list`: exclude all servers from this list
-      NOTE: `fn` preceeds `white_list` preceeds `black_list`
+      `allow_only`: use only servers from this list
+      `ignore`: exclude all servers from this list
+      NOTE: `fn` preceeds `allow_only` preceeds `ignore`
 
 For example: (NOTE: here only `fn` will be taken into account)
 >lua
   { 
     fn = function(name) return name ~= "null-ls" end,
-    white_list = { "clangd", "lua_ls" },
-    black_list = { "pyright" },
+    allow_only = { "clangd", "lua_ls" },
+    ignore = { "pyright" },
   }
 <
 Currently, this source supports the following commands:

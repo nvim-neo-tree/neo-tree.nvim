@@ -3,6 +3,7 @@ local cc = require("neo-tree.sources.common.commands")
 local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 local inputs = require("neo-tree.ui.inputs")
+local filters = require("neo-tree.sources.common.filters")
 
 local vim = vim
 
@@ -46,6 +47,14 @@ M.rename = function(state)
 end
 
 M.open = M.jump_to_symbol
+
+M.filter_on_submit = function(state)
+  filters.show_filter(state, true, true)
+end
+
+M.filter = function(state)
+  filters.show_filter(state, true)
+end
 
 cc._add_common_commands(M, "node") -- common tree commands
 cc._add_common_commands(M, "^open") -- open commands

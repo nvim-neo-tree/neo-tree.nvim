@@ -89,7 +89,19 @@ end
 ---@param find_args? string[] | table<string, string[]> Any additional options passed to command if any.
 ---@param on_insert? fun(err: string, line: string): any Executed for each line of stdout and stderr.
 ---@param on_exit? fun(return_val: table): any Executed at the end.
-M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ignore, limit, find_args, on_insert, on_exit)
+M.filter_files_external = function(
+  cmd,
+  path,
+  glob,
+  regex,
+  full_path,
+  types,
+  ignore,
+  limit,
+  find_args,
+  on_insert,
+  on_exit
+)
   if glob ~= nil and regex ~= nil then
     local log_msg = string.format([[glob: %s, regex: %s]], glob, regex)
     log.warn("both glob and regex are set. glob will take precedence. " .. log_msg)
@@ -241,7 +253,7 @@ M.filter_files_external = function(cmd, path, glob, regex, full_path, types, ign
 end
 
 local function fzy_sort_get_total_score(terms, path)
-  local fzy = require("neo-tree.sources.filesystem.lib.filter_fzy")
+  local fzy = require("neo-tree.sources.common.filters.filter_fzy")
   local total_score = 0
   for _, term in ipairs(terms) do -- spaces in `opts.term` are treated as `and`
     local score = fzy.score(term, path)
@@ -285,7 +297,8 @@ M.fzy_sort_files = function(opts, state)
   -- The fzy score is then used to sort the results
   local chars = {}
   local regex = ".*"
-  local chars_to_escape = { "%", "+", "-", "?", "[", "^", "$", "(", ")", "{", "}", "=", "!", "<", ">", "|", ":", "#" }
+  local chars_to_escape =
+    { "%", "+", "-", "?", "[", "^", "$", "(", ")", "{", "}", "=", "!", "<", ">", "|", ":", "#" }
   for _, term in ipairs(terms) do
     for c in term:gmatch(".") do
       if not chars[c] then
@@ -326,11 +339,22 @@ M.fzy_sort_files = function(opts, state)
     end
   end
 
-  M.filter_files_external(get_find_command(state), pwd, nil, regex, true,
+  M.filter_files_external(
+    get_find_command(state),
+    pwd,
+    nil,
+    regex,
+    true,
     { directory = fuzzy_finder_mode == "directory", file = fuzzy_finder_mode ~= "directory" },
-    { dotfiles = not filters.visible and filters.hide_dotfiles,
-      gitignore = not filters.visible and filters.hide_gitignored },
-    nil, opts.find_args, on_insert, opts.on_exit)
+    {
+      dotfiles = not filters.visible and filters.hide_dotfiles,
+      gitignore = not filters.visible and filters.hide_gitignored,
+    },
+    nil,
+    opts.find_args,
+    on_insert,
+    opts.on_exit
+  )
 end
 
 M.find_files = function(opts)
@@ -347,11 +371,22 @@ M.find_files = function(opts)
     glob = glob .. "*"
   end
 
-  M.filter_files_external(get_find_command(opts), opts.path, glob, regex, full_path_words,
+  M.filter_files_external(
+    get_find_command(opts),
+    opts.path,
+    glob,
+    regex,
+    full_path_words,
     { directory = fuzzy_finder_mode == "directory" },
-    { dotfiles = not filters.visible and filters.hide_dotfiles,
-      gitignore = not filters.visible and filters.hide_gitignored },
-    opts.limit or 200, opts.find_args, opts.on_insert, opts.on_exit)
+    {
+      dotfiles = not filters.visible and filters.hide_dotfiles,
+      gitignore = not filters.visible and filters.hide_gitignored,
+    },
+    opts.limit or 200,
+    opts.find_args,
+    opts.on_insert,
+    opts.on_exit
+  )
 end
 
 return M

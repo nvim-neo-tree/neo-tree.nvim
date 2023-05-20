@@ -1,12 +1,16 @@
----Filter lsp clients response
+---Utilities function to filter the LSP servers
 local utils = require("neo-tree.utils")
 
-local M = {
-  filter_resp = function()
-    return {}
-  end,
-}
+---@alias LspRespRaw table<integer, { result: LspRespNode }>
+local M = {}
 
+---@alias FilterFn fun(client_name: string): boolean
+
+---Filter clients
+---@param filter_type "first" | "all"
+---@param filter_fn FilterFn
+---@param resp LspRespRaw
+---@return table<string, LspRespNode>
 local filter_clients = function(filter_type, filter_fn, resp)
   if resp == nil or type(resp) ~= "table" then
     return {}
@@ -28,18 +32,34 @@ local filter_clients = function(filter_type, filter_fn, resp)
   return result
 end
 
-local white_list = function(white_list)
+---Filter only allowed clients
+---@param allow_only string[] the list of clients to keep
+---@return FilterFn
+local allow_only = function(allow_only)
   return function(client_name)
-    return vim.tbl_contains(white_list, client_name)
+    return vim.tbl_contains(allow_only, client_name)
   end
 end
 
-local black_list = function(black_list)
+---Ignore clients
+---@param ignore string[] the list of clients to remove
+---@return FilterFn
+local ignore = function(ignore)
   return function(client_name)
-    return not vim.tbl_contains(black_list, client_name)
+    return not vim.tbl_contains(ignore, client_name)
   end
 end
 
+---Main entry point for the filter
+---@param resp LspRespRaw
+---@return table<string, LspRespNode>
+M.filter_resp = function(resp)
+  return {}
+end
+
+---Setup the filter accordingly to the config
+---@see neo-tree-document-symbols-source for more details on options that the filter accepts
+---@param cfg_flt "first" | "all" | { type: "first" | "all", fn: FilterFn, allow_only: string[], ignore: string[] }
 M.setup = function(cfg_flt)
   local filter_type = "first"
   local filter_fn = nil
@@ -51,10 +71,10 @@ M.setup = function(cfg_flt)
 
     if cfg_flt.fn ~= nil then
       filter_fn = cfg_flt.fn
-    elseif cfg_flt.white_list then
-      filter_fn = white_list(cfg_flt.white_list)
-    elseif cfg_flt.black_list then
-      filter_fn = black_list(cfg_flt.black_list)
+    elseif cfg_flt.allow_only then
+      filter_fn = allow_only(cfg_flt.allow_only)
+    elseif cfg_flt.ignore then
+      filter_fn = ignore(cfg_flt.ignore)
     end
   elseif cfg_flt == "all" then
     filter_type = "all"

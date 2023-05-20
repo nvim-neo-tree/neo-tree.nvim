@@ -439,7 +439,7 @@ end
 
 ---Sets the cursor at the specified node.
 ---@param state table The current state of the source.
----@param id string The id of the node to set the cursor at.
+---@param id string? The id of the node to set the cursor at.
 ---@return boolean boolean True if the node was found and focused, false
 ---otherwise.
 M.focus_node = function(state, id, do_not_focus_window, relative_movement, bottom_scroll_padding)

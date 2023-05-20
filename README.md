@@ -624,7 +624,7 @@ following features:
 	- [ ] Call hierarchy 
 - [x] LSP
    - [x] LSP Support
-   - [x] LSP server selection (blacklist, use first, use all, etc.)
+   - [x] LSP server selection (ignore, allow_only, use first, use all, etc.)
 - [ ] CoC Support
 
 See #879 for the tracking issue of these features.

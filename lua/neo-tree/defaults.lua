@@ -545,6 +545,8 @@ local config = {
         ["c"] = "noop",
         ["m"] = "noop",
         ["a"] = "noop",
+        ["/"] = "filter",
+        ["f"] = "filter_on_submit",
       },
     },
     custom_kinds = {
