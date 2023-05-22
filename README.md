@@ -192,6 +192,7 @@ use {
         window = {
           position = "left",
           width = 40,
+	  auto_expand_width = false,
           mapping_options = {
             noremap = true,
             nowait = true,
