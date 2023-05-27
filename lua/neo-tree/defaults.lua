@@ -513,6 +513,9 @@ local config = {
       },
     },
   },
+  hijack_cursor = {
+    enabled = true,
+  },
   document_symbols = {
     follow_cursor = false,
     client_filters = "first",

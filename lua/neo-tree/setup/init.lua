@@ -728,6 +728,8 @@ M.merge_config = function(user_config, is_auto_config)
 
   local rt = utils.get_value(M.config, "resize_timer_interval", 50, true)
   require("neo-tree.ui.renderer").resize_timer_interval = rt
+  --TODO how to initialize properly
+  require("neo-tree.sources.common.hijack_cursor").setup(M.config, nil)
 
   return M.config
 end
