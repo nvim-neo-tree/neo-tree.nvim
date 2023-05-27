@@ -822,46 +822,8 @@ local set_window_mappings = function(state)
   state.resolved_mappings = resolved_mappings
 end
 
-create_window = function(state)
-  local default_position = utils.resolve_config_option(state, "window.position", "left")
-  local relative = utils.resolve_config_option(state, "window.relative", "editor")
-  state.current_position = state.current_position or default_position
-
-  local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
-  local size_opt, default_size
-  if state.current_position == "top" or state.current_position == "bottom" then
-    size_opt, default_size = "window.height", "15"
-  else
-    size_opt, default_size = "window.width", "40"
-  end
-  local win_options = {
-    ns_id = highlights.ns_id,
-    size = utils.resolve_config_option(state, size_opt, default_size),
-    position = state.current_position,
-    relative = relative,
-    buf_options = {
-      buftype = "nofile",
-      modifiable = false,
-      swapfile = false,
-      filetype = "neo-tree",
-      undolevels = -1,
-    },
-    win_options = {
-      colorcolumn = "",
-      signcolumn = "no",
-    },
-  }
-
-  local win
-  local event_args = {
-    position = state.current_position,
-    source = state.name,
-    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
-    tabid = state.tabid,
-  }
-  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
-
-  if state.current_position == "float" then
+local function create_floating_window(state, win_options, bufname)
+    local win
     state.force_float = nil
     -- First get the default options for floating windows.
     local sourceTitle = state.name:gsub("^%l", string.upper)
@@ -899,6 +861,50 @@ create_window = function(state)
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
+    return win
+end
+
+create_window = function(state)
+  local default_position = utils.resolve_config_option(state, "window.position", "left")
+  local relative = utils.resolve_config_option(state, "window.relative", "editor")
+  state.current_position = state.current_position or default_position
+
+  local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
+  local size_opt, default_size
+  if state.current_position == "top" or state.current_position == "bottom" then
+    size_opt, default_size = "window.height", "15"
+  else
+    size_opt, default_size = "window.width", "40"
+  end
+  local win_options = {
+    ns_id = highlights.ns_id,
+    size = utils.resolve_config_option(state, size_opt, default_size),
+    position = state.current_position,
+    relative = relative,
+    buf_options = {
+      buftype = "nofile",
+      modifiable = false,
+      swapfile = false,
+      filetype = "neo-tree",
+      undolevels = -1,
+    },
+    win_options = {
+      colorcolumn = "",
+      signcolumn = "no",
+    },
+  }
+
+  local event_args = {
+    position = state.current_position,
+    source = state.name,
+    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+    tabid = state.tabid,
+  }
+  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+
+  local win
+  if state.current_position == "float" then
+   win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
