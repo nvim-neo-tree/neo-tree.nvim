@@ -621,6 +621,8 @@ M.position = {
         _, state.position.node_id = pcall(node.get_id, node)
       end
     end
+    local win_state = vim.fn.winsaveview()
+    state.position.topline = win_state.topline
     -- Only need to restore the cursor state once per save, comes
     -- into play when some actions fire multiple times per "iteration"
     -- within the scope of where we need to perform the restore operation
@@ -643,6 +645,9 @@ M.position = {
       M.focus_node(state, state.position.node_id, true)
     else
       log.debug("Position is not restorable")
+    end
+    if state.position.topline then
+        vim.fn.winrestview({ topline = state.position.topline })
     end
     state.position.is.restorable = false
   end,
