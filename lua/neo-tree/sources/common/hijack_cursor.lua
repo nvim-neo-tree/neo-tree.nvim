@@ -4,7 +4,7 @@ local log = require("neo-tree.log")
 
 local M = {}
 
-local setup_for_module = function(module)
+local create_handler_for_module = function(module)
   return function()
     local state = manager.get_state(module)
     local winid = state.winid
@@ -22,15 +22,14 @@ local setup_for_module = function(module)
   end
 end
 
---Enables cursor hijack behavior for given sources
----@param sources table List of all sources to configure hijack for
-M.setup = function(sources)
-  for _, source_name in ipairs(sources) do
-    manager.subscribe(source_name, {
+--Enables cursor hijack behavior for all sources
+M.setup = function()
+  manager._for_each_state(nil, function (state)
+    manager.subscribe(state.name, {
       event = events.VIM_CURSOR_MOVED,
-      handler = setup_for_module(source_name),
+      handler = create_handler_for_module(state.name),
     })
-  end
+  end)
 end
 
 return M

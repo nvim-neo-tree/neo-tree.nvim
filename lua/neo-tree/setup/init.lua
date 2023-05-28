@@ -682,10 +682,6 @@ M.merge_config = function(user_config, is_auto_config)
     manager.redraw(source_name)
   end
 
-  if M.config.enable_cursor_hijack then
-    hijack_cursor.setup(all_sources)
-  end
-
   if M.config.auto_clean_after_session_restore then
     require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(false)
     events.subscribe({
@@ -733,6 +729,10 @@ M.merge_config = function(user_config, is_auto_config)
 
   local rt = utils.get_value(M.config, "resize_timer_interval", 50, true)
   require("neo-tree.ui.renderer").resize_timer_interval = rt
+
+  if M.config.enable_cursor_hijack then
+    hijack_cursor.setup()
+  end
 
   return M.config
 end
