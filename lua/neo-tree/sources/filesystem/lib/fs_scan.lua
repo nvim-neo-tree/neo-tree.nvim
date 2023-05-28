@@ -362,35 +362,9 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   M.get_items(state, parent_id, path_to_reveal, callback, true)
 end
 
-M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive)
-  if state.async_directory_scan == "always" then
-    async = true
-  elseif state.async_directory_scan == "never" then
-    async = false
-  elseif type(async) == "nil" then
-    async = (state.async_directory_scan == "auto") or state.async_directory_scan
-  end
-
-  if not parent_id then
-    M.stop_watchers(state)
-  end
-  local context = file_items.create_context()
-  context.state = state
-  context.parent_id = parent_id
-  context.path_to_reveal = path_to_reveal
-  context.recursive = recursive
-  context.callback = callback
-
-  -- Create root folder
-  local root = file_items.create_item(context, parent_id or state.path, "directory")
-  root.name = vim.fn.fnamemodify(root.path, ":~")
-  root.loaded = true
-  root.search_pattern = state.search_pattern
-  context.root = root
-  context.folders[root.path] = root
-  state.default_expanded_nodes = state.force_open_folders or { state.path }
-
-  if state.search_pattern then
+local handle_search_pattern = function (context)
+    local state = context.state
+    local root = context.root
     local search_opts = {
       filtered_items = state.filtered_items,
       find_command = state.find_command,
@@ -417,9 +391,12 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       -- Use the external command because the plenary search is slow
       filter_external.find_files(search_opts)
     end
-  else
-    -- In the case of a refresh or navigating up, we need to make sure that all
-    -- open folders are loaded.
+end
+
+local handle_refresh_or_up = function (context, async)
+    local parent_id = context.parent_id
+    local path_to_reveal = context.path_to_reveal
+    local state = context.state
     local path = parent_id or state.path
     context.paths_to_load = {}
     if parent_id == nil then
@@ -473,6 +450,42 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
     else
       sync_scan(context, path)
     end
+end
+
+M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive) 
+  if state.async_directory_scan == "always" then
+    async = true
+  elseif state.async_directory_scan == "never" then
+    async = false
+  elseif type(async) == "nil" then
+    async = (state.async_directory_scan == "auto") or state.async_directory_scan
+  end
+
+  if not parent_id then
+    M.stop_watchers(state)
+  end
+  local context = file_items.create_context()
+  context.state = state
+  context.parent_id = parent_id
+  context.path_to_reveal = path_to_reveal
+  context.recursive = recursive
+  context.callback = callback
+
+  -- Create root folder
+  local root = file_items.create_item(context, parent_id or state.path, "directory")
+  root.name = vim.fn.fnamemodify(root.path, ":~")
+  root.loaded = true
+  root.search_pattern = state.search_pattern
+  context.root = root
+  context.folders[root.path] = root
+  state.default_expanded_nodes = state.force_open_folders or { state.path }
+
+  if state.search_pattern then
+    handle_search_pattern(context)
+  else
+    -- In the case of a refresh or navigating up, we need to make sure that all
+    -- open folders are loaded.
+    handle_refresh_or_up(context, async)
   end
 end
 
