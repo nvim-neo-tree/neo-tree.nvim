@@ -680,10 +680,10 @@ M.merge_config = function(user_config, is_auto_config)
     end
     manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
+  end
 
-    if M.config.enable_cursor_hijack then
-      hijack_cursor.setup(source_name)
-    end
+  if M.config.enable_cursor_hijack then
+    hijack_cursor.setup(all_sources)
   end
 
   if M.config.auto_clean_after_session_restore then

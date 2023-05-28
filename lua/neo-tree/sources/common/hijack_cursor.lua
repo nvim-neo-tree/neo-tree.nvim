@@ -22,14 +22,15 @@ local setup_for_module = function(module)
   end
 end
 
---Enables cursor hijack behavior for given source
----@param source_name string Name of the source to configure for
-M.setup = function(source_name)
-  log.debug("Initing for " .. vim.inspect(source_name))
-  manager.subscribe(source_name, {
-    event = events.VIM_CURSOR_MOVED,
-    handler = setup_for_module(source_name),
-  })
+--Enables cursor hijack behavior for given sources
+---@param sources table List of all sources to configure hijack for
+M.setup = function(sources)
+  for _, source_name in ipairs(sources) do
+    manager.subscribe(source_name, {
+      event = events.VIM_CURSOR_MOVED,
+      handler = setup_for_module(source_name),
+    })
+  end
 end
 
 return M
