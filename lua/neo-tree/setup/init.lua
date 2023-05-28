@@ -7,6 +7,7 @@ local file_nesting = require("neo-tree.sources.common.file-nesting")
 local highlights = require("neo-tree.ui.highlights")
 local manager = require("neo-tree.sources.manager")
 local netrw = require("neo-tree.setup.netrw")
+local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
@@ -679,6 +680,10 @@ M.merge_config = function(user_config, is_auto_config)
     end
     manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
+
+    if M.config.enable_cursor_hijack then
+      hijack_cursor.setup(source_name)
+    end
   end
 
   if M.config.auto_clean_after_session_restore then
@@ -728,8 +733,6 @@ M.merge_config = function(user_config, is_auto_config)
 
   local rt = utils.get_value(M.config, "resize_timer_interval", 50, true)
   require("neo-tree.ui.renderer").resize_timer_interval = rt
-  --TODO how to initialize properly
-  require("neo-tree.sources.common.hijack_cursor").setup(M.config, nil)
 
   return M.config
 end

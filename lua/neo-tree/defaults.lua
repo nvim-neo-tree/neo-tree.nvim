@@ -22,6 +22,7 @@ local config = {
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
   enable_opened_markers = true,   -- Enable tracking of opened files. Required for `components.name.highlight_opened_files`
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
+  enable_cursor_hijack = false, -- If enabled neotree will keep the cursor on the first letter of the filename when moving in the tree.
   git_status_async = true,
   -- These options are for people with VERY large git repos
   git_status_async_options = {
@@ -512,9 +513,6 @@ local config = {
         ["gg"] = "git_commit_and_push",
       },
     },
-  },
-  hijack_cursor = {
-    enabled = true,
   },
   document_symbols = {
     follow_cursor = false,

@@ -10,7 +10,7 @@ local setup_for_module = function(module)
     local winid = state.winid
     if vim.api.nvim_get_current_win() == winid then
       local node = state.tree:get_node()
-      log.debug("Cursor moved in tree window, updating cursor pos")
+      log.debug("Cursor moved in tree window, hijacking cursor position")
       local cursor = vim.api.nvim_win_get_cursor(0)
       local row = cursor[1]
       local current_line = vim.api.nvim_get_current_line()
@@ -22,17 +22,14 @@ local setup_for_module = function(module)
   end
 end
 
----Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
----wants to change from the defaults. May be empty to accept default values.
-M.setup = function(config, global_config)
-  local modules = { "filesystem", "git_status", "buffers" }
-  for _, module in ipairs(modules) do
-    manager.subscribe(module, {
-      event = events.VIM_CURSOR_MOVED,
-      handler = setup_for_module(module),
-    })
-  end
+--Enables cursor hijack behavior for given source
+---@param source_name string Name of the source to configure for
+M.setup = function(source_name)
+  log.debug("Initing for " .. vim.inspect(source_name))
+  manager.subscribe(source_name, {
+    event = events.VIM_CURSOR_MOVED,
+    handler = setup_for_module(source_name),
+  })
 end
 
 return M
