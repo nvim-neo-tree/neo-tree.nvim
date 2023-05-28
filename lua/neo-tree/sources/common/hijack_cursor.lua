@@ -4,9 +4,8 @@ local log = require("neo-tree.log")
 
 local M = {}
 
-local create_handler_for_module = function(module)
+local create_handler_for_module = function(state)
   return function()
-    local state = manager.get_state(module)
     local winid = state.winid
     if vim.api.nvim_get_current_win() == winid then
       local node = state.tree:get_node()
@@ -27,7 +26,7 @@ M.setup = function()
   manager._for_each_state(nil, function (state)
     manager.subscribe(state.name, {
       event = events.VIM_CURSOR_MOVED,
-      handler = create_handler_for_module(state.name),
+      handler = create_handler_for_module(state),
     })
   end)
 end
