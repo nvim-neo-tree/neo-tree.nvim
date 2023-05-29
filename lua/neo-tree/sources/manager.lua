@@ -42,6 +42,7 @@ local function create_state(tabid, sd, winid)
   state.position = {
     is = { restorable = false },
   }
+  state.diagnostics_lookup = utils.get_diagnostic_counts()
   state.git_base = "HEAD"
   table.insert(all_states, state)
   return state
