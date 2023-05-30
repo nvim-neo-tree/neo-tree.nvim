@@ -160,7 +160,7 @@ local function get_children_sync(path)
       table.insert(children, { path = child_path, type = stat.type })
     end
   end
-  vim.loop.fs_closedir(dir)
+  pcall(vim.loop.fs_closedir, dir)
   return children
 end
 
