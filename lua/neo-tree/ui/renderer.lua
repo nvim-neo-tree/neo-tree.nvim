@@ -619,14 +619,14 @@ M.position = {
       local success, node = pcall(state.tree.get_node, state.tree)
       if success and node then
         _, state.position.node_id = pcall(node.get_id, node)
+        local win_state = vim.fn.winsaveview()
+        state.position.topline = win_state.topline
       end
+      -- Only need to restore the cursor state once per save, comes
+      -- into play when some actions fire multiple times per "iteration"
+      -- within the scope of where we need to perform the restore operation
+      state.position.is.restorable = true
     end
-    local win_state = vim.fn.winsaveview()
-    state.position.topline = win_state.topline
-    -- Only need to restore the cursor state once per save, comes
-    -- into play when some actions fire multiple times per "iteration"
-    -- within the scope of where we need to perform the restore operation
-    state.position.is.restorable = true
   end,
   set = function(state, node_id)
     if not type(node_id) == "string" and node_id > "" then
@@ -643,11 +643,11 @@ M.position = {
     if state.position.is.restorable then
       log.debug("Restoring position to node_id: " .. state.position.node_id)
       M.focus_node(state, state.position.node_id, true)
+      if state.position.topline then
+         vim.fn.winrestview({ topline = state.position.topline })
+      end
     else
       log.debug("Position is not restorable")
-    end
-    if state.position.topline then
-        vim.fn.winrestview({ topline = state.position.topline })
     end
     state.position.is.restorable = false
   end,
