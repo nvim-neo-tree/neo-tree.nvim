@@ -236,13 +236,13 @@ local function scan_dir_async(context, path)
         or #grandchild_nodes == 0
         or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
       then
-        scan_dir_sync(context, child.path)
+        scan_dir_async(context, child.path)
       end
     end
   end
 
-  log.debug("scan_dir_async - finish " .. path)
   process_node(context, path)
+  log.debug("scan_dir_async - finish " .. path)
   return path
 end
 
