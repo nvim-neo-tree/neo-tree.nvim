@@ -10,7 +10,6 @@ local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
-local async = require("plenary.async")
 
 local M = {
   name = "filesystem",
