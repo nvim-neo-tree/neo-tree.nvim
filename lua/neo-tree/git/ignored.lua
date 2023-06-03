@@ -118,7 +118,7 @@ M.mark_ignored = function(state, items, callback)
         on_exit = function(self, code, _)
           local result
           if code ~= 0 then
-            log.debug("Failed to load ignored files for", state.path, ":", self:stderr_result())
+            log.debug("Failed to load ignored files for", folder, ":", self:stderr_result())
             result = {}
           else
             result = self:result()

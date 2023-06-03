@@ -2,6 +2,7 @@
 
 local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
+local fs = require("neo-tree.sources.filesystem")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local events = require("neo-tree.events")
@@ -10,6 +11,7 @@ local popups = require("neo-tree.ui.popups")
 local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
+local async = require("plenary.async")
 
 ---Gets the node parent folder
 ---@param state table to look for nodes
@@ -108,35 +110,23 @@ M.add_directory = function(state, callback)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
 end
 
-M.expand_all_nodes = function(state, toggle_directory)
-  if toggle_directory == nil then
-    toggle_directory = function(_, node)
-      node:expand()
-    end
+---Expand all nodes
+---@param state table The state of the source
+---@param node table A node to expand
+M.expand_all_nodes = function(state, node)
+  log.debug("Expanding all nodes under " .. node:get_id())
+  local task = function ()
+    fs.expand_directory(state, node)
   end
-  --state.explicitly_opened_directories = state.explicitly_opened_directories or {}
-
-  local expand_node
-  expand_node = function(node)
-    local id = node:get_id()
-    if node.type == "directory" and not node:is_expanded() then
-      toggle_directory(state, node)
-      node = state.tree:get_node(id)
-    end
-    local children = state.tree:get_nodes(id)
-    if children then
-      for _, child in ipairs(children) do
-        if child.type == "directory" then
-          expand_node(child)
-        end
+  async.run(
+      task,
+      function ()
+        log.debug("All nodes expanded - redrawing")
+        vim.schedule_wrap(function()
+          renderer.redraw(state)
+        end)
       end
-    end
-  end
-
-  for _, node in ipairs(state.tree:get_nodes()) do
-    expand_node(node)
-  end
-  renderer.redraw(state)
+    )
 end
 
 M.close_node = function(state, callback)
