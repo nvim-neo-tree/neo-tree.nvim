@@ -522,7 +522,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
 end
 
 -- async method
-M.get_dir_items_async = function(state, parent_id, recursive, expand)
+M.get_dir_items_async = function(state, parent_id, recursive)
   local context = file_items.create_context()
   context.state = state
   context.parent_id = parent_id

@@ -428,74 +428,14 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
   end
 end
 
---- Recursively expand all loaded nodes under the given node
---- returns table with all discovered nodes that need to be loaded 
----@param node table a node to expand
----@param state table current state of the source
----@return table discovered nodes that need to be loaded
-local function expand_loaded(node, state)
-    local function rec(_node, to_load)
-      if _node.loaded == false then
-        table.insert(to_load, _node)
-      else
-        if not _node:is_expanded() then
-          _node:expand()
-          state.explicitly_opened_directories[_node:get_id()] = true
-        end
-        local children = state.tree:get_nodes(_node:get_id())
-        log.debug("Expanding childrens of " .. _node:get_id())
-        for _, child in ipairs(children) do
-          if child.type == "directory" then
-             rec(child, to_load)
-          else
-            log.trace("Child: " .. child.name .. " is not a directory, skipping")
-          end
-        end
-      end
-    end
-
-    local to_load = {}
-    rec(node, to_load)
-    return to_load
-end
-
---- Recursively expands all nodes under the given node
---- loading nodes if necessary.
---- async method
----@param node table a node to expand
----@param state table current state of the source
-local function expand_and_load(node, state)
-    local function rec(to_load, progress)
-      local to_load_current = expand_loaded(node, state)
-      for _,v in ipairs(to_load_current) do
-        table.insert(to_load, v)
-      end
-      if progress <= #to_load then
-        M.expand_directory_recursively(state, to_load[progress])
-        rec(to_load, progress + 1)
-      end
-    end
-    rec({}, 1)
-end
-
---- Expands given node recursively loading all descendant nodes if needed
---- async method
----@param state table current state of the source
----@param node table a node to expand
-M.expand_directory_recursively = function(state, node)
-  log.debug("Expanding directory " .. node:get_id())
-  if node.type ~= "directory" then
-    return
+M.expander = {
+  prefetch = function (state, node)
+    log.debug("Running fs prefetch for: " .. node:get_id())
+    fs_scan.get_dir_items_async(state, node:get_id(), true)
+  end,
+  should_prefetch = function (node)
+    return not node.loaded
   end
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
-  if node.loaded == false then
-    local id = node:get_id()
-    state.explicitly_opened_directories[id] = true
-    fs_scan.get_dir_items_async(state, id, true)
-    expand_loaded(node, state)
-  else
-    expand_and_load(node, state)
-  end
-end
+}
 
 return M

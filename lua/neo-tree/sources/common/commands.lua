@@ -2,7 +2,6 @@
 
 local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
-local fs = require("neo-tree.sources.filesystem")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local events = require("neo-tree.events")
@@ -12,6 +11,7 @@ local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
 local async = require("plenary.async")
+local node_expander = require("neo-tree.sources.common.node_expander")
 
 ---Gets the node parent folder
 ---@param state table to look for nodes
@@ -113,11 +113,19 @@ end
 ---Expand all nodes
 ---@param state table The state of the source
 ---@param node table A node to expand
-M.expand_all_nodes = function(state, node)
+M.expand_all_nodes = function(state, node, source_expander)
+  if node == nil then
+    node = state.tree:get_node(state.path)
+  end
   log.debug("Expanding all nodes under " .. node:get_id())
+  if source_expander == nil then
+    source_expander = node_expander.default_expander
+  end
+
   renderer.position.set(state, nil)
+
   local task = function ()
-    fs.expand_directory_recursively(state, node)
+    node_expander.expand_directory_recursively(state, node, source_expander)
   end
   async.run(
       task,
