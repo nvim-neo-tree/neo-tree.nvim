@@ -122,9 +122,7 @@ M.expand_all_nodes = function(state, node)
       task,
       function ()
         log.debug("All nodes expanded - redrawing")
-        vim.schedule_wrap(function()
-          renderer.redraw(state)
-        end)
+        renderer.redraw(state)
       end
     )
 end

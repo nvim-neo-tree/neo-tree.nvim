@@ -493,8 +493,10 @@ M.expand_directory = function(state, node)
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil) -- todo should not be called recursively
     fs_scan.get_dir_items_async(state, id, true)
+    expand_loaded(node, state)
+  else
+    expand_and_load(node, state)
   end
-  expand_and_load(node, state)
 end
 
 return M

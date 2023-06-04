@@ -219,6 +219,7 @@ local function scan_dir_sync(context, path)
   end
 end
 
+--- async method
 local function scan_dir_async(context, path)
   log.debug("scan_dir_async - start " .. path)
 
@@ -234,7 +235,8 @@ local function scan_dir_async(context, path)
       if
         grandchild_nodes == nil
         or #grandchild_nodes == 0
-        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+        or (#grandchild_nodes == 1 and grandchild_nodes[1].type == "directory")
+        or context.recursive
       then
         scan_dir_async(context, child.path)
       end
@@ -520,7 +522,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
 end
 
 -- async method
-M.get_dir_items_async = function(state, parent_id, recursive)
+M.get_dir_items_async = function(state, parent_id, recursive, expand)
   local context = file_items.create_context()
   context.state = state
   context.parent_id = parent_id
