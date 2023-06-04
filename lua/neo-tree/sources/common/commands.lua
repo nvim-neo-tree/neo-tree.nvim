@@ -117,7 +117,7 @@ M.expand_all_nodes = function(state, node)
   log.debug("Expanding all nodes under " .. node:get_id())
   renderer.position.set(state, nil)
   local task = function ()
-    fs.expand_directory(state, node)
+    fs.expand_directory_recursively(state, node)
   end
   async.run(
       task,

@@ -471,7 +471,7 @@ local function expand_and_load(node, state)
         table.insert(to_load, v)
       end
       if progress <= #to_load then
-        M.expand_directory(state, to_load[progress])
+        M.expand_directory_recursively(state, to_load[progress])
         rec(to_load, progress + 1)
       end
     end
