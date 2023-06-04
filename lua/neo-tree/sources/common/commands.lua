@@ -115,6 +115,7 @@ end
 ---@param node table A node to expand
 M.expand_all_nodes = function(state, node)
   log.debug("Expanding all nodes under " .. node:get_id())
+  renderer.position.set(state, nil)
   local task = function ()
     fs.expand_directory(state, node)
   end

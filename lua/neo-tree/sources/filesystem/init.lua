@@ -478,11 +478,11 @@ local function expand_and_load(node, state)
     rec({}, 1)
 end
 
----Expands given node recursively loading all descendant nodes if needed
----async method
+--- Expands given node recursively loading all descendant nodes if needed
+--- async method
 ---@param state table current state of the source
 ---@param node table a node to expand
-M.expand_directory = function(state, node)
+M.expand_directory_recursively = function(state, node)
   log.debug("Expanding directory " .. node:get_id())
   if node.type ~= "directory" then
     return
@@ -491,7 +491,6 @@ M.expand_directory = function(state, node)
   if node.loaded == false then
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
-    renderer.position.set(state, nil) -- todo should not be called recursively
     fs_scan.get_dir_items_async(state, id, true)
     expand_loaded(node, state)
   else
