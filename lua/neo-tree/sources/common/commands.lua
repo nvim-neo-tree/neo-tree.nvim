@@ -114,9 +114,6 @@ end
 ---@param state table The state of the source
 ---@param node table A node to expand
 M.expand_all_nodes = function(state, node, source_expander)
-  if node == nil then
-    node = state.tree:get_node(state.path)
-  end
   log.debug("Expanding all nodes under " .. node:get_id())
   if source_expander == nil then
     source_expander = node_expander.default_expander
