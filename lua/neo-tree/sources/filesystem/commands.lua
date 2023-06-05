@@ -71,7 +71,7 @@ M.expand_all_nodes = function(state, node)
   if node == nil then
     node = state.tree:get_node(state.path)
   end
-  cc.expand_all_nodes(state, node, fs.expander)
+  cc.expand_all_nodes(state, node, fs.prefetcher)
 end
 
 ---Shows the filter input, which will filter the tree.

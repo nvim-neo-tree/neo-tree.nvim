@@ -113,16 +113,17 @@ end
 ---Expand all nodes
 ---@param state table The state of the source
 ---@param node table A node to expand
-M.expand_all_nodes = function(state, node, source_expander)
+---@param prefetcher table an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+M.expand_all_nodes = function(state, node, prefetcher)
   log.debug("Expanding all nodes under " .. node:get_id())
-  if source_expander == nil then
-    source_expander = node_expander.default_expander
+  if prefetcher == nil then
+    prefetcher = node_expander.default_prefetcher
   end
 
   renderer.position.set(state, nil)
 
   local task = function ()
-    node_expander.expand_directory_recursively(state, node, source_expander)
+    node_expander.expand_directory_recursively(state, node, prefetcher)
   end
   async.run(
       task,

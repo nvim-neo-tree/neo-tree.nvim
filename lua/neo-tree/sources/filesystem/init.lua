@@ -428,7 +428,7 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
   end
 end
 
-M.expander = {
+M.prefetcher = {
   prefetch = function (state, node)
     log.debug("Running fs prefetch for: " .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
