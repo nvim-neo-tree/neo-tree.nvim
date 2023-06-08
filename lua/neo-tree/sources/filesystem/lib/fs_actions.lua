@@ -356,6 +356,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
           destination = vim.fn.fnamemodify(destination, ":p")
         end
 
+        if utils.is_windows then destination = utils.windowize_path(destination) end
         if loop.fs_stat(destination) then
           log.warn("File already exists")
           return
