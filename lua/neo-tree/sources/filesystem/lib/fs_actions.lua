@@ -331,8 +331,13 @@ M.create_node = function(in_directory, callback, using_root_directory)
     using_root_directory = false
   end
 
+  local dir_ending = '"/"'
+  if utils.path_separator ~= '/' then
+    dir_ending = dir_ending .. string.format(' or "%s"', utils.path_separator)
+  end
+  local msg = 'Enter name for new file or directory (dirs end with a ' .. dir_ending .. '):'
   inputs.input(
-    'Enter name for new file or directory (dirs end with a "/"):',
+    msg,
     base,
     function(destinations)
       if not destinations then
@@ -343,7 +348,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
         if not destination or destination == base then
           return
         end
-        local is_dir = vim.endswith(destination, "/")
+        local is_dir = vim.endswith(destination, "/") or vim.endswith(destination, utils.path_separator)
 
         if using_root_directory then
           destination = utils.path_join(using_root_directory, destination)
@@ -351,6 +356,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
           destination = vim.fn.fnamemodify(destination, ":p")
         end
 
+        if utils.is_windows then destination = utils.windowize_path(destination) end
         if loop.fs_stat(destination) then
           log.warn("File already exists")
           return
