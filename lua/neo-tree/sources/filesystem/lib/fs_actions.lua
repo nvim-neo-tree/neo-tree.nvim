@@ -335,7 +335,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
   if utils.path_separator ~= '/' then
     dir_ending = dir_ending .. string.format(' or "%s"', utils.path_separator)
   end
-  local msg = 'Enter name for new file or directory (dirs end with a ' .. dir_ending .. ')'
+  local msg = 'Enter name for new file or directory (dirs end with a ' .. dir_ending .. '):'
   inputs.input(
     msg,
     base,
