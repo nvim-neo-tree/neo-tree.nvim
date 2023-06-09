@@ -201,6 +201,8 @@ local remove_filtered = function(source_items, filtered_items)
       if not fby.never_show then
         if filtered_items.visible or child.is_nested or fby.always_show then
           table.insert(visible, child)
+        elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
+          table.insert(hidden, child)
         elseif fby.show_gitignored and fby.gitignored then
           table.insert(visible, child)
         else
