@@ -43,6 +43,7 @@ local function create_state(tabid, sd, winid)
     is = { restorable = false },
   }
   state.git_base = "HEAD"
+  events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
 end
