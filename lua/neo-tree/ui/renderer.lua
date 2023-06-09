@@ -414,7 +414,7 @@ local prepare_node = function(item, state)
             padding = " "
           end
           data.text = padding .. data.text
-          should_pad = data.text:sub(#data.text) ~= " "
+          should_pad = data.text:sub(#data.text) ~= " " and not data.no_next_padding
 
           actual_width = actual_width + vim.api.nvim_strwidth(data.text)
           line:append(data.text, data.highlight)
@@ -644,7 +644,7 @@ M.position = {
       log.debug("Restoring position to node_id: " .. state.position.node_id)
       M.focus_node(state, state.position.node_id, true)
       if state.position.topline then
-         vim.fn.winrestview({ topline = state.position.topline })
+        vim.fn.winrestview({ topline = state.position.topline })
       end
     else
       log.debug("Position is not restorable")
@@ -828,45 +828,45 @@ local set_window_mappings = function(state)
 end
 
 local function create_floating_window(state, win_options, bufname)
-    local win
-    state.force_float = nil
-    -- First get the default options for floating windows.
-    local sourceTitle = state.name:gsub("^%l", string.upper)
-    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
-    win_options.win_options = nil
-    win_options.zindex = 40
+  local win
+  state.force_float = nil
+  -- First get the default options for floating windows.
+  local sourceTitle = state.name:gsub("^%l", string.upper)
+  win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+  win_options.win_options = nil
+  win_options.zindex = 40
 
-    -- Then override with source specific options.
-    local b = win_options.border
-    win_options.size = utils.resolve_config_option(state, "window.popup.size", default_popup_size)
-    win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
-    win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
+  -- Then override with source specific options.
+  local b = win_options.border
+  win_options.size = utils.resolve_config_option(state, "window.popup.size", default_popup_size)
+  win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
+  win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
 
-    win = NuiPopup(win_options)
-    win:mount()
-    win.source_name = state.name
-    win.original_options = state.window
-    table.insert(floating_windows, win)
+  win = NuiPopup(win_options)
+  win:mount()
+  win.source_name = state.name
+  win.original_options = state.window
+  table.insert(floating_windows, win)
 
-    if require("neo-tree").config.close_floats_on_escape_key then
-      win:map("n", "<esc>", function(_)
-        win:unmount()
-      end, { noremap = true })
-    end
+  if require("neo-tree").config.close_floats_on_escape_key then
+    win:map("n", "<esc>", function(_)
+      win:unmount()
+    end, { noremap = true })
+  end
 
-    win:on({ "BufHidden" }, function()
-      vim.schedule(function()
-        win:unmount()
-      end)
-    end, { once = true })
-    state.winid = win.winid
-    state.bufnr = win.bufnr
-    log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
-    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+  win:on({ "BufHidden" }, function()
+    vim.schedule(function()
+      win:unmount()
+    end)
+  end, { once = true })
+  state.winid = win.winid
+  state.bufnr = win.bufnr
+  log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
+  vim.api.nvim_buf_set_name(state.bufnr, bufname)
 
-    -- why is this necessary?
-    vim.api.nvim_set_current_win(win.winid)
-    return win
+  -- why is this necessary?
+  vim.api.nvim_set_current_win(win.winid)
+  return win
 end
 
 create_window = function(state)
@@ -909,7 +909,7 @@ create_window = function(state)
 
   local win
   if state.current_position == "float" then
-   win = create_floating_window(state, win_options, bufname)
+    win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id

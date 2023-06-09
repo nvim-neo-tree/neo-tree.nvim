@@ -420,7 +420,11 @@ M.indent = function(config, node, state)
       end
     end
 
-    table.insert(indent, { text = char .. string.rep(" ", spaces_count), highlight = highlight })
+    table.insert(indent, {
+      text = char .. string.rep(" ", spaces_count),
+      highlight = highlight,
+      no_next_padding = true,
+    })
   end
 
   return indent
