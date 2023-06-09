@@ -218,13 +218,16 @@ M.reset_search = function(state, refresh, open_current_node)
           pcall(renderer.focus_node, state, path, false)
         end)
       else
-        utils.open_file(state, path)
         if
           refresh
           and state.current_position ~= "current"
           and state.current_position ~= "float"
         then
-          M.navigate(state, nil, path)
+          M.navigate(state, nil, path, function()
+            utils.open_file(state, path)
+          end)
+        else
+          utils.open_file(state, path)
         end
       end
     end

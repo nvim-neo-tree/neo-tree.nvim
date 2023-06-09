@@ -547,7 +547,7 @@ end
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
----@param open_cmd string The vimcommand to use to open the file
+---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
