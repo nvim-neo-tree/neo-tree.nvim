@@ -99,19 +99,22 @@ M.diagnostics = function(config, node, state)
     defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
   end
   defined = defined and defined[1]
+  if type(defined) ~= "table" then
+    defined = {}
+  end
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
   if config.symbols and config.symbols[severity_lower] then
-    defined = defined or { texthl = "Diagnostic" .. severity }
+    defined.texthl = defined.texthl or ("Diagnostic" .. severity)
     defined.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined = defined or { text = severity:sub(1, 1) }
+    defined.text = defined.text or severity:sub(1, 1)
     defined.texthl = config.highlights[severity_lower]
   end
 
-  if defined and defined.text and defined.texthl then
+  if defined.text and defined.texthl then
     return {
       text = make_two_char(defined.text),
       highlight = defined.texthl,
