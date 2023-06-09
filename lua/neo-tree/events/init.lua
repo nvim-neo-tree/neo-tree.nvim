@@ -5,6 +5,7 @@ local utils = require("neo-tree.utils")
 
 local M = {
   -- Well known event names, you can make up your own
+  STATE_CREATED = "state_created",
   BEFORE_RENDER = "before_render",
   AFTER_RENDER = "after_render",
   FILE_ADDED = "file_added",
