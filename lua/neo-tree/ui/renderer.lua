@@ -414,7 +414,7 @@ local prepare_node = function(item, state)
             padding = " "
           end
           data.text = padding .. data.text
-          should_pad = data.text:sub(#data.text) ~= " "
+          should_pad = data.text:sub(#data.text) ~= " " and not data.no_next_padding
 
           actual_width = actual_width + vim.api.nvim_strwidth(data.text)
           line:append(data.text, data.highlight)
