@@ -100,7 +100,9 @@ M.execute = function(args)
   -- Handle setting directory if requested
   local path_changed = false
   if utils.truthy(args.dir) then
-    if #args.dir > 1 and args.dir:sub(-1) == utils.path_separator then
+    -- Root paths on Windows have 3 characters ("C:\")
+    local root_len = vim.fn.has("win32") == 1 and 3 or 1
+    if #args.dir > root_len and args.dir:sub(-1) == utils.path_separator then
       args.dir = args.dir:sub(1, -2)
     end
     path_changed = state.path ~= args.dir
