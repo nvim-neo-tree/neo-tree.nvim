@@ -34,23 +34,18 @@ local function expand_loaded(node, state, prefetcher)
     return to_load
 end
 
---- Recursively expands all nodes under the given node
---- loading nodes if necessary.
+--- Recursively expands all nodes under the given node collecting all unloaded nodes
+--- Then run prefetcher on all unloaded nodes. Finally, expand loded nodes. 
 --- async method
 ---@param node table a node to expand
 ---@param state table current state of the source
 local function expand_and_load(node, state, prefetcher)
-    local function rec(to_load, progress)
-      local to_load_current = expand_loaded(node, state, prefetcher)
-      for _,v in ipairs(to_load_current) do
-        table.insert(to_load, v)
+      local to_load = expand_loaded(node, state, prefetcher)
+      for _, _node in ipairs(to_load) do
+        prefetcher.prefetch(state, _node)
+        -- no need to handle results as prefetch is recursive
+        expand_loaded(_node, state, prefetcher)
       end
-      if progress <= #to_load then
-        M.expand_directory_recursively(state, to_load[progress], prefetcher)
-        rec(to_load, progress + 1)
-      end
-    end
-    rec({}, 1)
 end
 
 --- Expands given node recursively loading all descendant nodes if needed
