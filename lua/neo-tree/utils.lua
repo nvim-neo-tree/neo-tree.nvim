@@ -551,14 +551,17 @@ end
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
-  local cmd_for_buf = { edit = "b", e = "b", split = "sb", sp = "sb" }
-  if open_cmd[cmd_for_buf] ~= nil then
     -- If the file is already open, switch to it.
-    bufnr = bufnr or M.find_buffer_by_name(path)
-    if bufnr <= 0 then
-      bufnr = nil
+  bufnr = bufnr or M.find_buffer_by_name(path)
+  if bufnr <= 0 then
+    bufnr = nil
+  else
+    local buf_cmd_lookup = { edit = "b", e = "b", split = "sb", sb = "sb", vsplit = "vert sb", vs = "vert sb" }
+    local cmd_for_buf = buf_cmd_lookup[open_cmd]
+    if cmd_for_buf then
+      open_cmd = cmd_for_buf
     else
-      open_cmd = cmd_for_buf[open_cmd]
+      bufnr = nil
     end
   end
 
