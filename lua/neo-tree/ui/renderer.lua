@@ -1086,6 +1086,7 @@ draw = function(nodes, state, parent_id)
 
   -- Create the tree if it doesn't exist.
   if not parent_id and not M.window_exists(state) then
+    M.close(state)
     create_window(state)
     create_tree(state)
   end
