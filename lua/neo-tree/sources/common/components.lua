@@ -280,7 +280,8 @@ M.icon = function(config, node, state)
   elseif node.type == "file" or node.type == "terminal" then
     local success, web_devicons = pcall(require, "nvim-web-devicons")
     if success then
-      local devicon, hl = web_devicons.get_icon(node.name, node.ext)
+      local ext = node.ext and node.ext:lower() or nil
+      local devicon, hl = web_devicons.get_icon(node.name, ext)
       icon = devicon or icon
       highlight = hl or highlight
     end
