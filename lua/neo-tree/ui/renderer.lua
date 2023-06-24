@@ -992,6 +992,7 @@ create_window = function(state)
       state.bufnr = win.bufnr
       state.winid = win.winid
       location.winid = state.winid
+      vim.api.nvim_buf_set_name(state.bufnr, bufname)
       vim.api.nvim_set_current_win(state.winid)
     end
     location.source = state.name
@@ -1079,7 +1080,6 @@ M.window_exists = function(state)
       end
       local buf_position = vim.api.nvim_buf_get_var(bufnr, "neo_tree_position")
       if buf_position ~= position then
-        log.warn("window exists but at wrong position")
         window_exists = false
       end
     end
