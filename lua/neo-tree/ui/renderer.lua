@@ -959,7 +959,8 @@ create_window = function(state)
 
   local win
   if state.current_position == "float" then
-   win = create_floating_window(state, win_options, bufname)
+    M.close_all_floating_windows()
+    win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
@@ -992,8 +993,6 @@ create_window = function(state)
       state.bufnr = win.bufnr
       state.winid = win.winid
       location.winid = state.winid
-      vim.api.nvim_buf_set_name(state.bufnr, bufname)
-      vim.api.nvim_set_current_win(state.winid)
     end
     location.source = state.name
   end
@@ -1009,6 +1008,8 @@ create_window = function(state)
   end
 
   if win ~= nil then
+    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
     --
     -- Note `WinEnter` is often too early to restore the cursor position so we do not set
