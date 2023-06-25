@@ -106,4 +106,4 @@ body:
         -- add anything else here
       render: Lua
     validations:
-      required: false
+      required: true
