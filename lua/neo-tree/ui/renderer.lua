@@ -900,8 +900,6 @@ local get_buffer = function(bufname, state)
   end
   if bufnr < 1 then
     bufnr = vim.api.nvim_create_buf(false, false)
-    local loading_message = string.format("Neo-tree %s loading...", state.name)
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { loading_message })
     vim.api.nvim_buf_set_name(bufnr, bufname)
     vim.api.nvim_buf_set_option(bufnr, "buftype", "nofile")
     vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
