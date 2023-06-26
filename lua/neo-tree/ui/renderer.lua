@@ -15,7 +15,7 @@ local windows = require("neo-tree.ui.windows")
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
-local draw, create_window, create_tree, render_tree
+local draw, create_tree, render_tree
 
 local floating_windows = {}
 local update_floating_windows = function()
@@ -900,6 +900,8 @@ local get_buffer = function(bufname, state)
   end
   if bufnr < 1 then
     bufnr = vim.api.nvim_create_buf(false, false)
+    local loading_message = string.format("Neo-tree %s loading...", state.name)
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { loading_message })
     vim.api.nvim_buf_set_name(bufnr, bufname)
     vim.api.nvim_buf_set_option(bufnr, "buftype", "nofile")
     vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
@@ -913,7 +915,11 @@ local get_buffer = function(bufname, state)
   return bufnr
 end
 
-create_window = function(state)
+M.acquire_window = function(state)
+  if M.window_exists(state) then
+    return state.winid
+  end
+
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
@@ -954,6 +960,7 @@ create_window = function(state)
   local win
   if state.current_position == "float" then
     M.close_all_floating_windows()
+    M.close(state)
     win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
@@ -1020,7 +1027,8 @@ create_window = function(state)
   end
 
   set_buffer_mappings(state)
-  return win
+  create_tree(state)
+  return state.winid
 end
 
 M.update_floating_window_layouts = function()
@@ -1142,9 +1150,13 @@ draw = function(nodes, state, parent_id)
   end
 
   -- Create the tree if it doesn't exist.
-  if not parent_id and not M.window_exists(state) then
-    create_window(state)
-    create_tree(state)
+  if parent_id then
+    if not M.window_exists(state) then
+      log.trace("Window is gone, aborting lazy load of folder")
+      return
+    end
+  else
+    M.acquire_window(state)
   end
 
   -- draw the given nodes

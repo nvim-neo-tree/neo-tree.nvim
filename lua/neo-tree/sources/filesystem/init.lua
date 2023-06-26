@@ -178,6 +178,7 @@ end
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
+  renderer.acquire_window(state)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
