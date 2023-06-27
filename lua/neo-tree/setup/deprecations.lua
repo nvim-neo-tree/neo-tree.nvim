@@ -39,10 +39,24 @@ M.migrate = function(config)
       if type(converter) == "function" then
         existing = converter(existing)
       end
-      utils.set_value(config, new, existing)
-      config[old] = nil
+      utils.set_value(config, old, nil)
+      utils.set_value(config, new, existing, true)
       migrations[#migrations + 1] =
         string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
+    end
+  end
+
+  local moved_inside = function(old, new_inside, converter)
+    local existing = utils.get_value(config, old)
+    if type(existing) ~= "nil" and type(existing) ~= "table" then
+      if type(converter) == "function" then
+        existing = converter(existing)
+      end
+      utils.set_value(config, old, {})
+      local new = old .. "." .. new_inside
+      utils.set_value(config, new, existing, true)
+      migrations[#migrations + 1] =
+        string.format("The `%s` option is replaced with a table, please move to `%s`.", old, new)
     end
   end
 
@@ -86,6 +100,8 @@ M.migrate = function(config)
   for _, source in ipairs({ "filesystem", "buffers", "git_status" }) do
     renamed_value(source .. "window.position", "split", "current")
   end
+  moved_inside("filesystem.follow_current_file", "enabled")
+  moved_inside("buffers.follow_current_file", "enabled")
 
   return migrations
 end
