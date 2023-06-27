@@ -114,7 +114,6 @@ M.expand_all_nodes = function(state, toggle_directory)
       node:expand()
     end
   end
-  --state.explicitly_opened_directories = state.explicitly_opened_directories or {}
 
   local expand_node
   expand_node = function(node)
