@@ -129,11 +129,13 @@ describe("Command", function()
   for _, follow_current_file in ipairs({ true, false }) do
     require("neo-tree").setup({
       filesystem = {
-        follow_current_file = follow_current_file,
+        follow_current_file = {
+          enabled = follow_current_file,
+        },
       },
     })
 
-    describe(string.format("w/ follow_current_file=%s", follow_current_file), function()
+    describe(string.format("w/ follow_current_file.enabled=%s", follow_current_file), function()
       describe("with show  :", function()
         it("`:Neotree show` should show the window without focusing", function()
           local cmd = "Neotree show"
