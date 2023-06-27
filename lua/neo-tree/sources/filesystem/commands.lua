@@ -32,6 +32,14 @@ M.copy = function(state)
   cc.copy(state, utils.wrap(refresh, state))
 end
 
+M.copy_path = function(state)
+  cc.copy_path(state)
+end
+
+M.copy_abspath = function(state)
+  cc.copy_abspath(state)
+end
+
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, utils.wrap(redraw, state))

@@ -481,6 +481,34 @@ M.copy = function(state, callback)
   fs_actions.copy_node(node.path, nil, callback, using_root_directory)
 end
 
+---Copies a node relative path to clipboard.
+---@param state table The state of the source
+M.copy_path = function(state)
+  local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  local pwdpath = state.path
+  local content = node.path
+  local rpath = "." .. string.sub(content, string.len(pwdpath) + 1)
+  vim.fn.setreg("+", rpath)
+  vim.fn.setreg('"', rpath)
+  log.info("copy " .. node.name .. " path to clipboard")
+end
+
+---Copies a node absolute path to clipboard.
+---@param state table The state of the source
+M.copy_abspath = function(state)
+  local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  local content = node.path
+  vim.fn.setreg("+", content)
+  vim.fn.setreg('"', content)
+  log.info("copy " .. node.name .. "abs path to clipboard")
+end
+
 ---Moves a node to a new location, using typed input.
 ---@param state table The state of the source
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
