@@ -34,10 +34,10 @@ end
 local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
-    return
+    return false
   end
   local path_to_reveal = manager.get_path_to_reveal()
-  if not utils.truthy(path_to_reveal) then
+  if not path_to_reveal or not utils.truthy(path_to_reveal) then
     return false
   end
 
