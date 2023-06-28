@@ -185,6 +185,10 @@ use {
             }
           },
         },
+        -- A list of functions, each representing a global custom command
+        -- that will be available in all sources (if not overridden in `opts[source_name].commands`)
+        -- see `:h neo-tree-global-custom-commands`
+        commands = {},
         window = {
           position = "left",
           width = 40,
@@ -299,7 +303,9 @@ use {
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
             },
-          }
+          },
+
+          commands = {} -- Add a custom command or override a global one using the same function name
         },
         buffers = {
           follow_current_file = true, -- This will find and focus the file in the active buffer every
@@ -351,6 +357,54 @@ into a buffer after installing Neo-tree by running:
 :lua require("neo-tree").paste_default_config()
 ```
 
+#### Configuration for Nerd Fonts v3 Users
+
+The following configuration should fix broken icons if you are using Nerd Fonts v3:
+
+```lua
+require("neo-tree").setup({
+  default_component_configs = {
+    icon = {
+      folder_empty = "󰜌",
+      folder_empty_open = "󰜌",
+    },
+    git_status = {
+      symbols = {
+        renamed   = "󰁕",
+        unstaged  = "󰄱",
+      },
+    },
+  },
+  document_symbols = {
+    kinds = {
+      File = { icon = "󰈙", hl = "Tag" },
+      Namespace = { icon = "󰌗", hl = "Include" },
+      Package = { icon = "󰏖", hl = "Label" },
+      Class = { icon = "󰌗", hl = "Include" },
+      Property = { icon = "󰆧", hl = "@property" },
+      Enum = { icon = "󰒻", hl = "@number" },
+      Function = { icon = "󰊕", hl = "Function" },
+      String = { icon = "󰀬", hl = "String" },
+      Number = { icon = "󰎠", hl = "Number" },
+      Array = { icon = "󰅪", hl = "Type" },
+      Object = { icon = "󰅩", hl = "Type" },
+      Key = { icon = "󰌋", hl = "" },
+      Struct = { icon = "󰌗", hl = "Type" },
+      Operator = { icon = "󰆕", hl = "Operator" },
+      TypeParameter = { icon = "󰊄", hl = "Type" },
+      StaticMethod = { icon = '󰠄 ', hl = 'Function' },
+    }
+  },
+  -- Add this section only if you've configured source selector.
+  source_selector = {
+    sources = {
+      { source = "filesystem", display_name = " 󰉓 Files " },
+      { source = "git_status", display_name = " 󰊢 Git " },
+    },
+  },
+  -- Other options ...
+})
+```
 
 ## The `:Neotree` Command
 
@@ -549,6 +603,39 @@ possible to unstage / revert a file that is already committed.
 ```
 :Neotree float git_status git_base=main
 ```
+
+### document_symbols
+
+![Neo-tree document_symbols](https://github.com/nvim-neo-tree/resources/raw/main/images/neo-tree-document-symbols.png)
+The document_symbols source lists the symbols in the current document obtained
+by the LSP request "textDocument/documentSymbols". It currently supports the
+following features:
+- [x] UI:
+	- [x] Display all symbols in the current file with symbol kinds
+	- [x] Symbols nesting
+	- [x] Configurable kinds' name and icon
+	- [x] Auto-refresh symbol list
+        - [x] Follow cursor
+- [ ] Commands
+	- [x] Jump to symbols, open symbol in split,... (`open_split` and friends)
+	- [x] Rename symbols (`rename`)
+	- [x] Preview symbol (`preview` and friends)
+	- [ ] Hover docs
+	- [ ] Call hierarchy 
+- [x] LSP
+   - [x] LSP Support
+   - [x] LSP server selection (ignore, allow_only, use first, use all, etc.)
+- [ ] CoC Support
+
+See #879 for the tracking issue of these features.
+
+This source is currently experimental, so in order to use it, you need to first 
+add `"document_symbols"` to `config.sources` and open it with the command
+```
+:Neotree document_symbols
+```
+
+
 
 ### Source Selector
 ![Neo-tree source selector](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-source-selector.png)

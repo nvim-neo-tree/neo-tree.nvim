@@ -45,32 +45,40 @@ local define_events = function()
     return args
   end)
 
-  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost", "BufFilePost" }, 200)
 
+
+  local update_opened_buffers = function(args)
+    args.opened_buffers = utils.get_opened_buffers()
+    return args
+  end
+
+  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
+  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
+  events.define_autocmd_event(
+    events.VIM_BUFFER_DELETED,
+    { "BufDelete" },
+    200,
+    update_opened_buffers
+  )
+  events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
   events.define_autocmd_event(
     events.VIM_BUFFER_MODIFIED_SET,
     { "BufModifiedSet" },
     0,
-    function(args)
-      args.modified_buffers = utils.get_modified_buffers()
-      return args
-    end
+    update_opened_buffers
   )
-
-  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200)
-  events.define_autocmd_event(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200)
-  events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
-
-  events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
-  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
-  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
-  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
-  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
-  events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
-  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
   events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
-  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
+  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
+  events.define_autocmd_event(events.VIM_INSERT_LEAVE, { "InsertLeave" }, 200)
+  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
+  events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
+  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
+  events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
+  events.define_autocmd_event(events.VIM_TEXT_CHANGED_NORMAL, { "TextChanged" }, 200)
+  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
+  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
+
   events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
@@ -105,6 +113,7 @@ local store_local_window_settings = function(winid)
   prior_window_options[tostring(winid)] = {
     cursorline = vim.wo.cursorline,
     cursorlineopt = vim.wo.cursorlineopt,
+    foldcolumn = vim.wo.foldcolumn,
     wrap = vim.wo.wrap,
     list = vim.wo.list,
     spell = vim.wo.spell,
@@ -123,6 +132,7 @@ local restore_local_window_settings = function(winid)
   if wo then
     vim.wo.cursorline = wo.cursorline
     vim.wo.cursorlineopt = wo.cursorlineopt
+    vim.wo.foldcolumn = wo.foldcolumn
     vim.wo.wrap = wo.wrap
     vim.wo.list = wo.list
     vim.wo.spell = wo.spell
@@ -215,9 +225,9 @@ M.buffer_enter_event = function()
       return
     end
 
-    local current_tabnr = vim.api.nvim_get_current_tabpage()
-    local neo_tree_tabnr = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabnr")
-    if neo_tree_tabnr ~= current_tabnr then
+    local current_tabid = vim.api.nvim_get_current_tabpage()
+    local neo_tree_tabid = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabid")
+    if neo_tree_tabid ~= current_tabid then
       -- This a new tab, so the alternate being neo-tree doesn't matter.
       return
     end
@@ -258,12 +268,12 @@ M.win_enter_event = function()
   manager.close_all("float")
 
   if M.config.close_if_last_window then
-    local tabnr = vim.api.nvim_get_current_tabpage()
-    local wins = utils.get_value(M, "config.prior_windows", {})[tabnr]
+    local tabid = vim.api.nvim_get_current_tabpage()
+    local wins = utils.get_value(M, "config.prior_windows", {})[tabid]
     local prior_exists = utils.truthy(wins)
     local non_floating_wins = vim.tbl_filter(function(win)
       return not utils.is_floating(win)
-    end, vim.api.nvim_tabpage_list_wins(tabnr))
+    end, vim.api.nvim_tabpage_list_wins(tabid))
     local win_count = #non_floating_wins
     log.trace("checking if last window")
     log.trace("prior window exists = ", prior_exists)
@@ -278,23 +288,26 @@ M.win_enter_event = function()
         if state == nil then
           return
         end
-        local mod = utils.get_modified_buffers()
+        local mod = utils.get_opened_buffers()
         log.debug("close_if_last_window, modified files found: ", vim.inspect(mod))
-        for filename, is_modified in pairs(mod) do
-          if is_modified then
+        for filename, buf_info in pairs(mod) do
+          if buf_info.modified then
+            local buf_name, message
             if vim.startswith(filename, "[No Name]#") then
-              bufnr = string.sub(filename, 11)
-              log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
-              vim.schedule(function()
-                log.warn(
-                  "Cannot close because an unnamed buffer is modified. Please save or discard this file."
-                )
-                vim.cmd("vsplit")
-                vim.api.nvim_win_set_width(win_id, state.window.width or 40)
-                vim.cmd("b" .. bufnr)
-              end)
-              return
+              buf_name = string.sub(filename, 11)
+              message = "Cannot close because an unnamed buffer is modified. Please save or discard this file."
+            else
+              buf_name = filename
+              message = "Cannot close because one of the files is modified. Please save or discard changes."
             end
+            log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
+            vim.schedule(function()
+              log.warn(message)
+              vim.cmd("rightbelow vertical split")
+              vim.api.nvim_win_set_width(win_id, state.window.width or 40)
+              vim.cmd("b" .. buf_name)
+            end)
+            return
           end
         end
         vim.cmd("q!")
@@ -321,6 +334,7 @@ M.win_enter_event = function()
           local bufnr = vim.api.nvim_get_current_buf()
           if bufnr ~= current_bufnr then
             -- The neo-tree buffer was replaced with something else, so we don't need to do anything.
+            log.trace("neo-tree buffer replaced with something else - no further action required")
             return
           end
           -- create a new tree for this window
@@ -340,11 +354,11 @@ M.win_enter_event = function()
 
   M.config.prior_windows = M.config.prior_windows or {}
 
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  local tab_windows = M.config.prior_windows[tabnr]
+  local tabid = vim.api.nvim_get_current_tabpage()
+  local tab_windows = M.config.prior_windows[tabid]
   if tab_windows == nil then
     tab_windows = {}
-    M.config.prior_windows[tabnr] = tab_windows
+    M.config.prior_windows[tabid] = tab_windows
   end
   table.insert(tab_windows, win_id)
 
@@ -355,7 +369,7 @@ M.win_enter_event = function()
     for i = 80, win_count do
       table.insert(new_array, tab_windows[i])
     end
-    M.config.prior_windows[tabnr] = new_array
+    M.config.prior_windows[tabid] = new_array
   end
 end
 
@@ -560,6 +574,7 @@ M.merge_config = function(user_config, is_auto_config)
     source_default_config.components = module.components or require(mod_root .. ".components")
     source_default_config.commands = module.commands or require(mod_root .. ".commands")
     source_default_config.name = source_name
+    source_default_config.display_name = module.display_name or source_default_config.name
 
     if user_config.use_default_mappings == false then
       default_config.window.mappings = {}
@@ -596,11 +611,64 @@ M.merge_config = function(user_config, is_auto_config)
   end
   --print(vim.inspect(default_config.filesystem))
 
+  -- Moving user_config.sources to user_config.orig_sources
+  user_config.orig_sources = user_config.sources and user_config.sources or {}
+
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, user_config)
+
+  -- RE: 873, fixes issue with invalid source checking by overriding
+  -- source table with name table
+  -- Setting new "sources" to be the parsed names of the sources
+  M.config.sources = all_source_names
+
+  if ( M.config.source_selector.winbar or M.config.source_selector.statusline )
+    and M.config.source_selector.sources
+    and not user_config.default_source then
+    -- Set the default source to the head of these
+    -- This resolves some weirdness with the source selector having
+    -- a different "head" item than our current default.
+    -- Removing this line makes Neo-tree show the "filesystem"
+    -- source instead of whatever the first item in the config is.
+    -- Probably don't remove this unless you have a better fix for that
+    M.config.default_source = M.config.source_selector.sources[1].source
+  end
+  -- Check if the default source is not included in config.sources
+  -- log a warning and then "pick" the first in the sources list
+  local match = false
+  for _, source in ipairs(M.config.sources) do
+      if source == M.config.default_source then
+        match = true
+        break
+      end
+  end
+  if not match then
+    M.config.default_source = M.config.sources[1]
+    log.warn(string.format("Invalid default source found in configuration. Using first available source: %s", M.config.default_source))
+  end
+
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end
+
+  -- Validate that the source_selector.sources are all available and if any
+  -- aren't, remove them
+  local source_selector_sources = {}
+  for _, ss_source in ipairs(M.config.source_selector.sources or {}) do
+    local source_match = false
+    for _, source in ipairs(M.config.sources) do
+      if ss_source.source == source then
+        source_match = true
+        break
+      end
+    end
+    if source_match then
+      table.insert(source_selector_sources, ss_source)
+    else
+      log.debug(string.format("Unable to locate Neo-tree extension %s", ss_source.source))
+    end
+  end
+  M.config.source_selector.sources = source_selector_sources
 
   file_nesting.setup(M.config.nesting_rules)
 
@@ -609,6 +677,10 @@ M.merge_config = function(user_config, is_auto_config)
       M.config[source_name].renderers[name] = merge_global_components_config(rndr, M.config)
     end
     local module = require(mod_root)
+    if M.config.commands then
+      M.config[source_name].commands =
+        vim.tbl_extend("keep", M.config[source_name].commands or {}, M.config.commands)
+    end
     manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
   end
@@ -640,8 +712,11 @@ M.merge_config = function(user_config, is_auto_config)
     event = events.VIM_TAB_CLOSED,
     handler = function(args)
       local tabnr = tonumber(args.afile)
-      log.debug("VIM_TAB_CLOSED: disposing state for tab", tabnr)
-      manager.dispose_tab(tabnr)
+      log.debug("VIM_TAB_CLOSED: disposing state for tabnr", tabnr)
+      -- Internally we use tabids to track state but <afile> is tabnr of a tab that has already been
+      -- closed so there is no way to get its tabid. Instead dispose all tabs that are no longer valid.
+      -- Must be scheduled because nvim_tabpage_is_valid does not work inside TabClosed event callback.
+      vim.schedule_wrap(manager.dispose_invalid_tabs)()
     end,
   })
 

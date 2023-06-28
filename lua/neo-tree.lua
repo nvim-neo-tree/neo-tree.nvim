@@ -165,8 +165,8 @@ M.get_prior_window = function(ignore_filetypes)
   local ignore = utils.list_to_dict(ignore_filetypes)
   ignore["neo-tree"] = true
 
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabnr]
+  local tabid = vim.api.nvim_get_current_tabpage()
+  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabid]
   if wins == nil then
     return -1
   end
@@ -246,6 +246,7 @@ M.setup = function(config, is_auto_config)
   local netrw = require("neo-tree.setup.netrw")
   if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
+    netrw.hijack()
   end
 end
 

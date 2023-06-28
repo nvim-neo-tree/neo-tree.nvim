@@ -34,7 +34,7 @@ M.bufnr = function(config, node, state)
     return {}
   end
   return {
-    text = string.format(" #%s", bufnr),
+    text = string.format("#%s", bufnr),
     highlight = highlight,
   }
 end
@@ -60,7 +60,7 @@ M.current_filter = function(config, node, state)
   end
   return {
     {
-      text = "Find ",
+      text = "Find",
       highlight = highlights.DIM_TEXT,
     },
     {
@@ -68,7 +68,7 @@ M.current_filter = function(config, node, state)
       highlight = config.highlight or highlights.FILTER_TERM,
     },
     {
-      text = " in ",
+      text = "in",
       highlight = highlights.DIM_TEXT,
     },
   }
@@ -99,26 +99,29 @@ M.diagnostics = function(config, node, state)
     defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
   end
   defined = defined and defined[1]
+  if type(defined) ~= "table" then
+    defined = {}
+  end
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
   if config.symbols and config.symbols[severity_lower] then
-    defined = defined or { texthl = "Diagnostic" .. severity }
+    defined.texthl = defined.texthl or ("Diagnostic" .. severity)
     defined.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined = defined or { text = severity:sub(1, 1) .. " " }
+    defined.text = defined.text or severity:sub(1, 1)
     defined.texthl = config.highlights[severity_lower]
   end
 
-  if defined and defined.text and defined.texthl then
+  if defined.text and defined.texthl then
     return {
       text = make_two_char(defined.text),
       highlight = defined.texthl,
     }
   else
     return {
-      text = severity:sub(1, 1) .. " ",
+      text = severity:sub(1, 1),
       highlight = "Diagnostic" .. severity,
     }
   end
@@ -233,27 +236,27 @@ M.filtered_by = function(config, node, state)
     local fby = node.filtered_by
     if fby.name then
       result = {
-        text = "(hide by name) ",
+        text = "(hide by name)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
       result = {
-        text = "(hide by pattern) ",
+        text = "(hide by pattern)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
       result = {
-        text = "(gitignored) ",
+        text = "(gitignored)",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
       result = {
-        text = "(dotfile) ",
+        text = "(dotfile)",
         highlight = highlights.DOTFILE,
       }
     elseif fby.hidden then
       result = {
-        text = "(hidden) ",
+        text = "(hidden)",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
@@ -277,7 +280,8 @@ M.icon = function(config, node, state)
   elseif node.type == "file" or node.type == "terminal" then
     local success, web_devicons = pcall(require, "nvim-web-devicons")
     if success then
-      local devicon, hl = web_devicons.get_icon(node.name, node.ext)
+      local ext = node.ext and node.ext:lower() or nil
+      local devicon, hl = web_devicons.get_icon(node.name, ext)
       icon = devicon or icon
       highlight = hl or highlight
     end
@@ -292,11 +296,12 @@ M.icon = function(config, node, state)
 end
 
 M.modified = function(config, node, state)
-  local modified_buffers = state.modified_buffers or {}
+  local opened_buffers = state.opened_buffers or {}
+  local buf_info = opened_buffers[node.path]
 
-  if modified_buffers[node.path] then
+  if buf_info and buf_info.modified then
     return {
-      text = (make_two_char(config.symbol) or "[+] "),
+      text = (make_two_char(config.symbol) or "[+]"),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
@@ -327,12 +332,23 @@ M.name = function(config, node, state)
     end
   end
 
+  local hl_opened = config.highlight_opened_files
+  if hl_opened then
+    local opened_buffers = state.opened_buffers or {}
+    if
+      (hl_opened == "all" and opened_buffers[node.path])
+      or (opened_buffers[node.path] and opened_buffers[node.path].loaded)
+    then
+      highlight = highlights.FILE_NAME_OPENED
+    end
+  end
+
   if type(config.right_padding) == "number" then
     if config.right_padding > 0 then
       text = text .. string.rep(" ", config.right_padding)
     end
   else
-    text = text .. " "
+    text = text
   end
 
   return {
@@ -408,7 +424,11 @@ M.indent = function(config, node, state)
       end
     end
 
-    table.insert(indent, { text = char .. string.rep(" ", spaces_count), highlight = highlight })
+    table.insert(indent, {
+      text = char .. string.rep(" ", spaces_count),
+      highlight = highlight,
+      no_next_padding = true,
+    })
   end
 
   return indent

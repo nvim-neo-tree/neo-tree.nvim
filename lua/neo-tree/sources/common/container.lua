@@ -49,19 +49,36 @@ local calc_container_width = function(config, node, state, context)
 end
 
 local render_content = function(config, node, state, context)
-  local max_width = 0
+  local add_padding = function(rendered_item, should_pad)
+    for _, data in ipairs(rendered_item) do
+      if data.text then
+        local padding = (should_pad and #data.text and data.text:sub(1, 1) ~= " ") and " " or ""
+        data.text = padding .. data.text
+        should_pad = data.text:sub(#data.text) ~= " "
+      end
+    end
+    return should_pad
+  end
 
+  local max_width = 0
   local grouped_by_zindex = utils.group_by(config.content, "zindex")
+
   for zindex, items in pairs(grouped_by_zindex) do
+    local should_pad = { left = false, right = false }
     local zindex_rendered = { left = {}, right = {} }
     local rendered_width = 0
+
     for _, item in ipairs(items) do
       local rendered_item = renderer.render_component(item, node, state, context.available_width)
       if rendered_item then
-        vim.list_extend(zindex_rendered[item.align or "left"], rendered_item)
+        local align = item.align or "left"
+        should_pad[align] = add_padding(rendered_item, should_pad[align])
+
+        vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
     end
+
     max_width = math.max(max_width, rendered_width)
     grouped_by_zindex[zindex] = zindex_rendered
   end
@@ -120,21 +137,24 @@ local truncate_layer_keep_right = function(layer, skip_count, max_length)
     local text_length = vim.fn.strchars(item.text)
     local remaining_to_skip = skip_count - skipped
     if remaining_to_skip > 0 then
-      if #item.text <= remaining_to_skip then
+      if text_length <= remaining_to_skip then
         skipped = skipped + text_length
         item.text = ""
       else
-        item.text = item.text:sub(1, text_length - remaining_to_skip)
-        if #item.text + taken > max_length then
-          item.text = item.text:sub(text_length - (max_length - taken))
+        item.text = vim.fn.strcharpart(item.text, 0, text_length - remaining_to_skip)
+        text_length = vim.fn.strchars(item.text)
+        if text_length + taken > max_length then
+          item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
+          text_length = vim.fn.strchars(item.text)
         end
         table.insert(result, item)
         taken = taken + text_length
         skipped = skipped + remaining_to_skip
       end
     elseif taken <= max_length then
-      if #item.text + taken > max_length then
-        item.text = item.text:sub(text_length - (max_length - taken))
+      if text_length + taken > max_length then
+        item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
+        text_length = vim.fn.strchars(item.text)
       end
       table.insert(result, item)
       taken = taken + text_length
@@ -149,21 +169,22 @@ local fade_content = function(layer, fade_char_count)
     return
   end
   local hl = layer[#layer].highlight or "Normal"
-  local fade0 = highlights.get_faded_highlight_group(hl, 0.68)
-  local fade1 = highlights.get_faded_highlight_group(hl, 0.6)
-  local fade2 = highlights.get_faded_highlight_group(hl, 0.35)
-  if #text >= 3 and fade_char_count >= 3 then
-    layer[#layer].text = text:sub(1, #text - 3)
-    table.insert(layer, { text = text:sub(#text - 2, -3), highlight = fade0 })
-    table.insert(layer, { text = text:sub(#text - 1, -2), highlight = fade1 })
-    table.insert(layer, { text = text:sub(#text), highlight = fade2 })
-  elseif #text >= 2 and fade_char_count >= 2 then
-    layer[#layer].text = text:sub(1, #text - 2)
-    table.insert(layer, { text = text:sub(#text - 1, -2), highlight = fade0 })
-    table.insert(layer, { text = text:sub(#text), highlight = fade1 })
-  elseif #text >= 1 and fade_char_count >= 1 then
-    layer[#layer].text = text:sub(1, #text - 1)
-    table.insert(layer, { text = text:sub(#text), highlight = fade0 })
+  local fade = {
+    highlights.get_faded_highlight_group(hl, 0.68),
+    highlights.get_faded_highlight_group(hl, 0.6),
+    highlights.get_faded_highlight_group(hl, 0.35),
+  }
+
+  for i = 3, 1, -1 do
+    if #text >= i and fade_char_count >= i then
+      layer[#layer].text = text:sub(1, -i - 1)
+      for j = i, 1, -1 do
+        -- force no padding for each faded character
+        local entry = { text = text:sub(-j, -j), highlight = fade[i - j + 1], no_padding = true }
+        table.insert(layer, entry)
+      end
+      break
+    end
   end
 end
 
@@ -268,6 +289,12 @@ local merge_content = function(context)
 
   local result = {}
   vim.list_extend(result, left)
+
+  -- we do not pad between left and right side
+  if #right >= 1 then
+    right[1].no_padding = true
+  end
+
   vim.list_extend(result, right)
   context.merged_content = result
   log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
@@ -292,6 +319,11 @@ M.render = function(config, node, state, available_width)
 
   if context.has_right_content then
     state.has_right_content = true
+  end
+
+  -- we still want padding between this container and the previous component
+  if #context.merged_content > 0 then
+    context.merged_content[1].no_padding = false
   end
   return context.merged_content, context.wanted_width
 end

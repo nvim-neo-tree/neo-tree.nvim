@@ -73,13 +73,17 @@ end
 local M = {}
 
 ---Adds all missing common commands to the given module
----@param to_source_command_module table The commands modeul for a source
-M._add_common_commands = function(to_source_command_module)
+---@param to_source_command_module table The commands module for a source
+---@param pattern string? A pattern specifying which commands to add, nil to add all
+M._add_common_commands = function(to_source_command_module, pattern)
   for name, func in pairs(M) do
-    if type(name) == "string" and not name:match("^_") then
-      if not to_source_command_module[name] then
-        to_source_command_module[name] = func
-      end
+    if
+      type(name) == "string"
+      and not to_source_command_module[name]
+      and (not pattern or name:find(pattern))
+      and not name:find("^_")
+    then
+      to_source_command_module[name] = func
     end
   end
 end
@@ -188,9 +192,10 @@ M.toggle_auto_expand_width = function(state)
     return
   end
   state.window.auto_expand_width = state.window.auto_expand_width == false
+  local width = utils.resolve_width(state.window.width)
   if not state.window.auto_expand_width then
-    if (state.window.last_user_width or state.window.width) >= vim.api.nvim_win_get_width(0) then
-      state.window.last_user_width = state.window.width
+    if (state.window.last_user_width or width) >= vim.api.nvim_win_get_width(0) then
+      state.window.last_user_width = width
     end
     vim.api.nvim_win_set_width(0, state.window.last_user_width)
     state.win_width = state.window.last_user_width
@@ -367,9 +372,10 @@ end
 
 M.next_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[1]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i + 1]
       if not next_source then
         next_source = sources[1]
@@ -379,7 +385,7 @@ M.next_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })
@@ -387,9 +393,10 @@ end
 
 M.prev_source = function(state)
   local sources = require("neo-tree").config.sources
+  local sources = require("neo-tree").config.source_selector.sources
   local next_source = sources[#sources]
-  for i, source in ipairs(sources) do
-    if source == state.name then
+  for i, source_info in ipairs(sources) do
+    if source_info.source == state.name then
       next_source = sources[i - 1]
       if not next_source then
         next_source = sources[#sources]
@@ -399,7 +406,7 @@ M.prev_source = function(state)
   end
 
   require("neo-tree.command").execute({
-    source = next_source,
+    source = next_source.source,
     position = state.current_position,
     action = "focus",
   })

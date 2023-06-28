@@ -7,6 +7,7 @@ local config = {
     "filesystem",
     "buffers",
     "git_status",
+    -- "document_symbols",
   },
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
@@ -19,6 +20,7 @@ local config = {
   enable_diagnostics = true,
   enable_git_status = true,
   enable_modified_markers = true, -- Show markers for files with unsaved changes.
+  enable_opened_markers = true,   -- Enable tracking of opened files. Required for `components.name.highlight_opened_files`
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   git_status_async = true,
   -- These options are for people with VERY large git repos
@@ -34,7 +36,7 @@ local config = {
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
-  open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
+  open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
@@ -49,11 +51,10 @@ local config = {
     statusline = false, -- toggle to show selector on statusline
     show_scrolled_off_parent_node = false, -- this will replace the tabs with the parent path
                                            -- of the top visible node when scrolled down.
-    tab_labels = { -- falls back to source_name if nil
-      filesystem = "  Files ",
-      buffers =    "  Buffers ",
-      git_status = "  Git ",
-      diagnostics = " 裂Diagnostics ",
+    sources = {
+      { source = "filesystem" },
+      { source = "buffers" },
+      { source = "git_status" },
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
     --                start  : |/ 裡 bufname     \/...
@@ -210,6 +211,10 @@ local config = {
     },
     name = {
       trailing_slash = false,
+      highlight_opened_files = false, -- Requires `enable_opened_markers = true`. 
+                                      -- Take values in { false (no highlight), true (only loaded), 
+                                      -- "all" (both loaded and unloaded)}. For more information,
+                                      -- see the `show_unloaded` config of the `buffers` source.
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
     },
@@ -285,6 +290,21 @@ local config = {
     }
   },
   nesting_rules = {},
+  -- Global custom commands that will be available in all sources (if not overridden in `opts[source_name].commands`)
+  --
+  -- You can then reference the custom command by adding a mapping to it:
+  --    globally    -> `opts.window.mappings`
+  --    locally     -> `opt[source_name].window.mappings` to make it source specific.
+  --
+  -- commands = {              |  window {                 |  filesystem {
+  --   hello = function()      |    mappings = {           |    commands = {
+  --     print("Hello world")  |      ["<C-c>"] = "hello"  |      hello = function()
+  --   end                     |    }                      |        print("Hello world in filesystem")
+  -- }                         |  }                        |      end
+  --
+  -- see `:h neo-tree-global-custom-commands`
+  commands = {}, -- A list of functions
+
   window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
              -- possible options. These can also be functions that return these options.
     position = "left", -- left, right, top, bottom, float, current
@@ -469,7 +489,9 @@ local config = {
     bind_to_cwd = true,
     follow_current_file = true, -- This will find and focus the file in the active buffer every time
                                 -- the current file is changed while the tree is open.
-    group_empty_dirs = true, -- when true, empty directories will be grouped together
+    group_empty_dirs = true,  -- when true, empty directories will be grouped together
+    show_unloaded = false,    -- When working with sessions, for example, restored but unfocused buffers
+                              -- are mark as "unloaded". Turn this on to view these unloaded buffer.
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",
@@ -490,6 +512,87 @@ local config = {
         ["gg"] = "git_commit_and_push",
       },
     },
+  },
+  document_symbols = {
+    follow_cursor = false,
+    client_filters = "first",
+    renderers = {
+      root = {
+        {"indent"},
+        {"icon", default="C" },
+        {"name", zindex = 10},
+      },
+      symbol = {
+        {"indent", with_expanders = true},
+        {"kind_icon", default="?" },
+        {"container",
+        content = {
+          {"name", zindex = 10},
+          {"kind_name", zindex = 20, align = "right"},
+          }
+        }
+      },
+    },
+    window = {
+      mappings = {
+        ["<cr>"] = "jump_to_symbol",
+        ["o"] = "jump_to_symbol",
+        ["A"] = "noop", -- also accepts the config.show_path and config.insert_as options.
+        ["d"] = "noop",
+        ["y"] = "noop",
+        ["x"] = "noop",
+        ["p"] = "noop",
+        ["c"] = "noop",
+        ["m"] = "noop",
+        ["a"] = "noop",
+        ["/"] = "filter",
+        ["f"] = "filter_on_submit",
+      },
+    },
+    custom_kinds = {
+      -- define custom kinds here (also remember to add icon and hl group to kinds)
+      -- ccls
+      -- [252] = 'TypeAlias',
+      -- [253] = 'Parameter',
+      -- [254] = 'StaticMethod',
+      -- [255] = 'Macro',
+    },
+    kinds = {
+      Unknown = { icon = "?", hl = "" },
+      Root = { icon = "", hl = "NeoTreeRootName" },
+      File = { icon = "", hl = "Tag" },
+      Module = { icon = "", hl = "Exception" },
+      Namespace = { icon = "", hl = "Include" },
+      Package = { icon = "", hl = "Label" },
+      Class = { icon = "", hl = "Include" },
+      Method = { icon = "", hl = "Function" },
+      Property = { icon = "", hl = "@property" },
+      Field = { icon = "", hl = "@field" },
+      Constructor = { icon = "", hl = "@constructor" },
+      Enum = { icon = "了", hl = "@number" },
+      Interface = { icon = "", hl = "Type" },
+      Function = { icon = "", hl = "Function" },
+      Variable = { icon = "", hl = "@variable" },
+      Constant = { icon = "", hl = "Constant" },
+      String = { icon = "", hl = "String" },
+      Number = { icon = "", hl = "Number" },
+      Boolean = { icon = "", hl = "Boolean" },
+      Array = { icon = "", hl = "Type" },
+      Object = { icon = "", hl = "Type" },
+      Key = { icon = "", hl = "" },
+      Null = { icon = "", hl = "Constant" },
+      EnumMember = { icon = "", hl = "Number" },
+      Struct = { icon = "", hl = "Type" },
+      Event = { icon = "", hl = "Constant" },
+      Operator = { icon = "", hl = "Operator" },
+      TypeParameter = { icon = "", hl = "Type" },
+
+      -- ccls
+      -- TypeAlias = { icon = ' ', hl = 'Type' },
+      -- Parameter = { icon = ' ', hl = '@parameter' },
+      -- StaticMethod = { icon = 'ﴂ ', hl = 'Function' },
+      -- Macro = { icon = ' ', hl = 'Macro' },
+    }
   },
   example = {
     renderers = {

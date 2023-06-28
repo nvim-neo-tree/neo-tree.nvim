@@ -12,36 +12,29 @@
 
 local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
-local utils = require("neo-tree.utils")
 
 local M = {}
 
-M.name = function(config, node, state)
-  local highlight = config.highlight or highlights.FILE_NAME_OPENED
-  local name = node.name
-  if node.type == "directory" then
-    if node:get_depth() == 1 then
-      highlight = highlights.ROOT_NAME
-      name = "OPEN BUFFERS in " .. name
-    else
-      highlight = highlights.DIRECTORY_NAME
-    end
-  elseif node.type == "terminal" then
-    if node:get_depth() == 1 then
-      highlight = highlights.ROOT_NAME
-      name = "TERMINALS"
-    else
-      highlight = highlights.FILE_NAME
-    end
-  elseif config.use_git_status_colors then
-    local git_status = state.components.git_status({}, node, state)
-    if git_status and git_status.highlight then
-      highlight = git_status.highlight
-    end
-  end
+M.icon = function(config, node, state)
   return {
-    text = name,
-    highlight = highlight,
+    text = node:get_depth() == 1 and "" or node.extra.kind.icon,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
+  }
+end
+
+M.kind_icon = M.icon
+
+M.kind_name = function(config, node, state)
+  return {
+    text = node:get_depth() == 1 and "" or node.extra.kind.name,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
+  }
+end
+
+M.name = function(config, node, state)
+  return {
+    text = node.name,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
   }
 end
 

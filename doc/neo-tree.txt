@@ -9,6 +9,7 @@ Mappings .................... |neo-tree-mappings|
   View Changes .............. |neo-tree-view-changes|
   File Actions .............. |neo-tree-file-actions|
   Filter .................... |neo-tree-filter|
+  Global custom commands .... |neo-tree-custom-commands-global|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
@@ -29,6 +30,7 @@ Configuration ............... |neo-tree-configuration|
 Other Sources ............... |neo-tree-sources|
   Buffers ................... |neo-tree-buffers|
   Git Status ................ |neo-tree-git-status-source|
+  Document Symbols .......... |neo-tree-document-symbols|
 
 
 INTRODUCTION                                             *neo-tree-introduction*
@@ -58,9 +60,9 @@ control over the details of what and where it will show. Arguments can be
 specified as either a key=value pair or just as the value. The key=value form
 is more verbose but may help with clarity. For example, the "buffers" command
 above can also be specified as:
-
+>vim
     :Neotree action=show source=buffers position=right toggle=true
-
+<
 These arguments can be specified in any order. Here is the full list of 
 arguments you can use:
 
@@ -142,7 +144,7 @@ should change their mapping to the new |:Neotree| command specified above.
 
 Once you have migrated your mappings, it is recommended that you remove the old
 commands by adding this option before the Neotree config is run:
->
+>vim
   let g:neo_tree_remove_legacy_commands = 1
 <
 
@@ -298,7 +300,7 @@ FILTER                                                        *neo-tree-filter*
 
 NOTE: All of the below commands are affected by the `find_by_full_path_words`
 option:
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         find_by_full_path_words = false,  
@@ -350,7 +352,7 @@ switching focus from the Neo-tree window. By default, files will be previewed
 in a new floating window. This can also be configured to automatically choose 
 an existing split by configuring the command like this:
 
->
+>lua
     require("neo-tree").setup({
       window = {
         mappings = {
@@ -380,7 +382,7 @@ source level, such as `filesystem.window.mappings` will override and extend
 those global mappings for that particular source. 
 
 For example:
->
+>lua
    require("neo-tree").setup({
      window = {
        mappings = {
@@ -407,7 +409,7 @@ the sequence to `none` or `noop`. For example, if you don’t wish to use
 fuzzy finder (default mapping `/`), but instead rely on Neovim’s built-in
 search functionality, you can do that like so this:
 
->
+>lua
    require("neo-tree").setup({
      filesystem = {
        window = {
@@ -433,7 +435,7 @@ If you want to define your own command, you have two options:
   2. You can map directly to a function and skip defining a command.
 
 You probably want #2:
->
+>lua
    require("neo-tree").setup({
      filesystem = {
        window = {
@@ -448,7 +450,7 @@ You probably want #2:
    })
 <
 ..or
->
+>lua
    local print_me = function(state)
      local node = state.tree:get_node()
      print(node.name)
@@ -466,7 +468,7 @@ You probably want #2:
 <
 ...but if you want #1, here is how that works:
 
->
+>lua
    require("neo-tree").setup({
      filesystem = {
        commands = {
@@ -482,6 +484,38 @@ You probably want #2:
    })
 <
 
+GLOBAL CUSTOM COMMANDS                       *neo-tree-custom-commands-global*
+
+You can also have global custom commands that will be added to all available
+sources. If you need it you can then override it in a specific source.
+>lua
+   require("neo-tree").setup({
+     commands = {
+       hello = function()            -- define a global "hello world" function
+         print("Hello world")
+       end
+     },
+
+     window = {
+       mappings = {
+         ["<C-c>"] = "hello"
+                    -- define a global mapping to call 'hello' in every source
+       }
+     },
+
+     filesystem = {
+       commands = {
+         -- override implementation of the 'hello' action in filesystem source
+         hello = function()
+           print("Hello inside filesystem")
+         end
+       }
+     }
+   })
+<
+Now when pressing `<C-c>` in 'buffers' or 'git_status' it will print "Hello world",
+but in 'filesystem' it will print "Hello inside filesystem".
+
 CUSTOM MAPPINGS WITH VISUAL MODE
 
 If you want to create a mapping that supports visual mode, the way to do that
@@ -494,13 +528,13 @@ which is a list of the nodes that were selected when the command was called.
 
 For example, this is how the built-in `delete` command is defined:
 
->
+>lua
     M.delete = function(state, callback)
       local tree = state.tree
       local node = tree:get_node()
       fs_actions.delete_node(node.path, callback)
     end
-    
+
     M.delete_visual = function(state, selected_nodes, callback)
       local paths_to_delete = {}
       for _, node_to_delete in pairs(selected_nodes) do
@@ -521,7 +555,7 @@ overrides the global `mapping_options`
 The command can be either the string name of a built-in command, or a
 function, and is specified either as the first element in the table or by
 assigning it to the `command` key:
->
+>lua
    require("neo-tree").setup({
      filesystem = {
        window = {
@@ -565,7 +599,7 @@ CUSTOM MAPPINGS WITH CONFIG
 Some mappings may accept an optional `config` table to control it's behavior.
 When that is the case, the command is specified using the table syntax, and
 the config options are in a table bound to the `config` key:
->
+>lua
    require("neo-tree").setup({
      filesystem = {
        window = {
@@ -584,7 +618,7 @@ the config options are in a table bound to the `config` key:
 <
 When the `config` key is used, it is added to the `state` argument that is
 passed to the command function:
->
+>lua
     M.add = function(state, callback)
       local show_path = state.config.show_path
       ...
@@ -631,7 +665,7 @@ SETUP                                                           *neo-tree-setup*
 To override the defaults or add new functionality, call the setup() function
 with your overrides. For example, to add your own mappings in 'lua':
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         window = {
@@ -662,12 +696,12 @@ You can enable a clickable source selector in either the winbar
 (requires neovim 0.8+) or the statusline. To do so, set one of these options
 to `true`:
 
->
+>lua
     requires("neo-tree").setup({
-        source_selector = {
-            winbar = false,
-            statusline = false
-        }
+      source_selector = {
+        winbar = false,
+        statusline = false
+      }
     })
 <
 
@@ -675,33 +709,41 @@ The configuration options for source selector are all placed inside
 `source_selector` table. Below are the options with their default values and
 type notations.
 
->
+>lua
     requires("neo-tree").setup({
-        source_selector = {
-            winbar = false, -- toggle to show selector on winbar
-            statusline = false, -- toggle to show selector on statusline
-            show_scrolled_off_parent_node = false,                    -- boolean
-            tab_labels = {                                            -- table
-                filesystem = "  Files ",                             -- string | nil
-                buffers =    "  Buffers ",                           -- string | nil
-                git_status = "  Git ",                               -- string | nil
-                diagnostics = " 裂Diagnostics " ,                     -- string | nil
-            },
-            content_layout = "start",                                 -- string
-            tabs_layout = "equal",                                    -- string
-            truncation_character = "…",                               -- string
-            tabs_min_width = nil,                                     -- int | nil
-            tabs_max_width = nil,                                     -- int | nil
-            padding = 0,                                              -- int | { left: int, right: int }
-            separator = { left = "▏", right= "▕" },                   -- string | { left: string, right: string, override: string | nil }
-            separator_active = nil,                                   -- string | { left: string, right: string, override: string | nil } | nil
-            show_separator_on_edge = false,                           -- boolean
-            highlight_tab = "NeoTreeTabInactive",                     -- string
-            highlight_tab_active = "NeoTreeTabActive",                -- string
-            highlight_background = "NeoTreeTabInactive",              -- string
-            highlight_separator = "NeoTreeTabSeparatorInactive",      -- string
-            highlight_separator_active = "NeoTreeTabSeparatorActive", -- string
+      source_selector = {
+        winbar = false, -- toggle to show selector on winbar
+        statusline = false, -- toggle to show selector on statusline
+        show_scrolled_off_parent_node = false,                    -- boolean
+        sources = {                                               -- table
+          {
+            source = "filesystem",                                -- string
+            display_name = "  Files "                            -- string | nil
+          },
+          {
+            source = "buffers",                                   -- string
+            display_name = "  Buffers "                          -- string | nil
+          },
+          {
+            source = "git_status",                                -- string
+            display_name = "  Git "                              -- string | nil
+          },
         },
+        content_layout = "start",                                 -- string
+        tabs_layout = "equal",                                    -- string
+        truncation_character = "…",                               -- string
+        tabs_min_width = nil,                                     -- int | nil
+        tabs_max_width = nil,                                     -- int | nil
+        padding = 0,                                              -- int | { left: int, right: int }
+        separator = { left = "▏", right= "▕" },                   -- string | { left: string, right: string, override: string | nil }
+        separator_active = nil,                                   -- string | { left: string, right: string, override: string | nil } | nil
+        show_separator_on_edge = false,                           -- boolean
+        highlight_tab = "NeoTreeTabInactive",                     -- string
+        highlight_tab_active = "NeoTreeTabActive",                -- string
+        highlight_background = "NeoTreeTabInactive",              -- string
+        highlight_separator = "NeoTreeTabSeparatorInactive",      -- string
+        highlight_separator_active = "NeoTreeTabSeparatorActive", -- string
+      },
     })
 <
 
@@ -716,10 +758,16 @@ Configuration Options:
 When `show_scrolled_off_parent_node` is `true`, tabs are replaced with the parent
 path of the top visible node when scrolled down.
 
-`tab_labels` is a table to configure the characters shown on each tab. Keys of
-the table should match the source names defined in `sources`. Value is what is
-printed inside the tab. If value is `nil` or not set, the source name is used
-instead.
+`sources` is a table to configure the contents of the bar. Previously known
+as `tab_labels`. Sources should be a table of tables. Each table inside
+`sources` must contain a `source` key, which will refer to the "name" of the
+source to add to the bar. A second optional `display_name` key can be
+provided to modify how you wish that source to appear in the bar. It is
+safe to add sources that do not exist, they will simply be omitted from
+the bar if they cannot be found.
+NOTE: If `source_selector` is enabled (via `winbar=true` or `statusline=true`)
+then the `default_source` will be updated to be the first entry of
+`sources`.
 
 `content_layout` defines how the labels are placed inside a tab. This only takes
 effect when the tab width is greater than the length of label i.e.
@@ -774,7 +822,7 @@ with the window local working directory (|lcd|).
 
 These defaults can be changed by setting the following options:
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
@@ -789,7 +837,7 @@ These defaults can be changed by setting the following options:
 In addition to `"tab"` and `"window"`, you can also set the target to `"global"`
 for either option, which is the same as using the |cd| command. Setting the target
 to `"none"` will prevent neo-tree from setting vim's cwd for that position.
-        
+
 
 FILTERED ITEMS                                         *neo-tree-filtered-items*
 
@@ -800,7 +848,7 @@ be toggled on and off with a command. Each type of filter has a corresponding
 highlight group which will be applied when they are visible, see 
 |neo-tree-highlights| for details. The following options are available:
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         filtered_items = {
@@ -825,7 +873,7 @@ highlight group which will be applied when they are visible, see
             --"thumbs.db",
           },
           never_show_by_pattern = { -- uses glob style patterns
-              --".null-ls_*",
+            --".null-ls_*",
           },
         },
       }
@@ -877,11 +925,11 @@ open_default (default) Netrw disabled, opening a directory opens neo-tree
 open_current           Netrw disabled, opening a directory opens within the
                        window like netrw would, regardless of `window.position`.
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         hijack_netrw_behavior = "open_default",
-                             -- "open_current",  
+                             -- "open_current",
                              -- "disabled", 
     })
 <
@@ -900,7 +948,7 @@ components in a universal way, the best place to do that is in the
 For example, to add indent markers, you can apply your settings in each renderer
 for each source, or just do it once in the default_component_configs section:
 
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         indent = {
@@ -932,7 +980,7 @@ component of your renderer(s).
 Starting with 2.0, this will display symbols by default. The default symbols
 will require a nerd font to be installed. To change these symbols, you can set
 the following properties:
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         symbols = {
@@ -965,7 +1013,7 @@ If you'd like to disable certain symbols, you can set them to an empty string.
 For example, it is actually redundant to show the change type if you use the
 default behavior of highlighting the file name according to the change type.
 The following config will remove those change type symbols:
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         symbols = {
@@ -988,7 +1036,7 @@ The following config will remove those change type symbols:
 To revert to the previous behavior of passing the git status through as-is
 with codes like `[M ]` for changed/unstaged, and `[ M]` for changed/staged,
 you can set the `symbols` property to nil or false:
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         git_status = {
@@ -1007,7 +1055,7 @@ display the highest severity level for files, and errors only for directories.
 If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
->
+>lua
     vim.fn.sign_define("LspDiagnosticsSignError",
         {text = " ", texthl = "LspDiagnosticsSignError"})
     vim.fn.sign_define("LspDiagnosticsSignWarning",
@@ -1021,7 +1069,7 @@ define those somewhere in your nvim configuration. Here is an example:
 Alternatively, you can also specify the signs and/or highlights in the
 neo-tree setup call like this:
 
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         diagnostics = {
@@ -1055,7 +1103,7 @@ indent is a component, so to enable indent markers, you need configure the
 `indent` component:
 
 ...at the global level:
->
+>lua
     require("neo-tree").setup({
       default_component_configs = {
         indent = {
@@ -1069,31 +1117,32 @@ indent is a component, so to enable indent markers, you need configure the
 <
 
 ...or in each renderer:
->
+>lua
     require("neo-tree").setup({
-        filesystem = {
-            renderers = {
-              directory = {
-                {
-                  "indent",
-                  with_markers = true,
-                  indent_marker = "│",
-                  last_indent_marker = "└",
-                  indent_size = 2,
-                },
-                -- other components
-              },
-              file = {
-                {
-                  "indent",
-                  with_markers = true,
-                  indent_marker = "│",
-                  last_indent_marker = "└",
-                  indent_size = 2,
-                -- other components
-              },
-            }
+      filesystem = {
+        renderers = {
+          directory = {
+            {
+              "indent",
+              with_markers = true,
+              indent_marker = "│",
+              last_indent_marker = "└",
+              indent_size = 2,
+            },
+            -- other components
+          },
+          file = {
+            {
+              "indent",
+              with_markers = true,
+              indent_marker = "│",
+              last_indent_marker = "└",
+              indent_size = 2,
+            },
+            -- other components
+          },
         }
+      }
     })
 <
 
@@ -1108,16 +1157,16 @@ EXPANDERS                                                   *neo-tree-expanders*
 Is hightly recommended enable if file nesting is enabled (this is the default
 behavior if `with_expanders` is nil). The config can be done inside the `indent`
 component:
->
+>lua
     require("neo-tree").setup({
-        default_component_configs = {
-            indent = {
-                with_expanders = true,
-                expander_collapsed = "",
-                expander_expanded = "",
-                expander_highlight = "NeoTreeExpander",
-            },
+      default_component_configs = {
+        indent = {
+          with_expanders = true,
+          expander_collapsed = "",
+          expander_expanded = "",
+          expander_highlight = "NeoTreeExpander",
         },
+      },
     })
 <
 
@@ -1126,11 +1175,11 @@ FILE NESTING                                             *neo-tree-file-nesting*
 By default, file nesting is disabled since the `nesting_rules` table is empty.
 To enable this feature, fill in the `nesting_rules` table with the following
 structure:
->
+>lua
     require("neo-tree").setup({
-        nesting_rules = {
-            ["js"] = { "js.map" },
-        }
+      nesting_rules = {
+        ["js"] = { "js.map" },
+      }
     })
 <
 This will render:
@@ -1197,7 +1246,7 @@ Events are one way to customize the behavior of Neo-tree. You can add event
 handlers to your config in the `event_handlers` section, which should be a list
 of objects in the form:
 
->
+>lua
     {
       event = "event_name",
       handler = function(arg)
@@ -1271,7 +1320,8 @@ Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
 The event argument for all window events is a table with the following keys:
     `winid`    = the |winid| of the window being opened or closed.
-    `tabnr`    = the tab number that the window is in.
+    `tabid`    = id of the tab that the window is in.
+    `tabnr`    = (deprecated) number of the tab that the window is in.
     `source`   = the name of the source that is in the window, such as "filesystem".
     `position` = the position of the window, i.e. "left", "bottom", "right".
 
@@ -1316,7 +1366,7 @@ Fired on the |ColorScheme| autocmd event
 
 You can also define your own with:
 >
->
+>lua
     require("neo-tree.events.queue").define_event(event_name, {
       setup = <function>,
       seed = <function>,
@@ -1353,7 +1403,7 @@ A renderer is just a list of component configs, to be rendered in order to
 create a line in the tree. Each renderer is for a specific node type, such as
 `directory` or `file`.  To view the available built-in components and their
 configs for each source, look at the default config by pasting it with
->
+>vim
     :lua require("neo-tree").paste_default_config()
 <
 or view it online at:
@@ -1366,7 +1416,7 @@ configs.
 
                                                            *neo-tree-components*
 A component is a function that returns a single text object:
->
+>lua
     {
       text = "Node A",
       highlight = "Normal"
@@ -1374,7 +1424,7 @@ A component is a function that returns a single text object:
 <
 
 ... or a list of text objects:
->
+>lua
     {
       {
         text = "Node Name",
@@ -1474,8 +1524,7 @@ This example container has the name on the left hand side, and the
 diagnostics and git status aligned to the right hand side of the window. The
 diagnostics and git_status will always be shown, and the name will be clipped if
 there is not enough space:
->
-
+>lua
       {
         "container",
         width = "100%",
@@ -1489,6 +1538,7 @@ there is not enough space:
           { "diagnostics",  zindex = 20, align = "right" },
           { "git_status", zindex = 20, align = "right" },
         },
+      }
 <
 
 
@@ -1513,7 +1563,7 @@ Each component function is called with the following args:
 
 For example, here is the simplest possible component:
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         components = {
@@ -1533,7 +1583,7 @@ For example, here is the simplest possible component:
 For a more complete example, here is the actual built-in `name` component, which
 is much more dynamic and configurable:
 
->
+>lua
     require("neo-tree").setup({
       filesystem = {
         components = {
@@ -1572,7 +1622,8 @@ code or integrations if you need it. The |filetype| of the main window is
 `neo-tree`. The buffer will also have these local variables set:
 
 `winid` The window handle of the window that it was created in.
-`tabnr` The tab number that it was created in.
+`tabid` The id of the tab that it was created in.
+`tabnr` (deprecated) The number of the tab that it was created in.
 `source` The name of the source that created it, i.e. filesystem, buffers, etc.
 
 Please note that if the buffer is displayed in another window or tab, it's
@@ -1633,7 +1684,7 @@ empty.
 
 This view has most file commands except for "add", plus the following git
 specific commands:
-
+>lua
       ["A"]  = "git_add_all",
       ["ga"] = "git_add_file",
       ["gu"] = "git_unstage_file",
@@ -1641,5 +1692,56 @@ specific commands:
       ["gc"] = "git_commit"
       ["gp"] = "git_push",
       ["gg"] = "git_commit_and_push",
+<
 
+DOCUMENT SYMBOLS                                     *neo-tree-document-symbols*
+
+The document_symbols source lists the symbols in the current document obtained
+by the LSP request "textDocument/documentSymbols". 
+
+Its configuration includes the following options:
+
+follow_cursor~
+If set to `true`, will automatically focus on the symbol under the cursor.
+
+kinds~
+A table specifying how LSP kinds should be rendered. Each entry should map the
+LSP kind name to an icon and a highlight group, for example 
+  `Class = { icon = "", hl = "Include" }`
+
+custom_kinds~
+A table mapping the LSP kind id (an integer) to the LSP kind name that is used
+for `kinds`, for example 
+  `[252] = 'TypeAlias'`
+
+For the list of kinds (id and name), please refer to 
+https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentSymbol
+
+client_filters~
+This option could be used to set which LSP server is used to obtain the document
+symbols. This accepts one of the following values
+
+  `"first"`: use the first LSP server that provides the feature
+  `"all"`: use all LSP server that provides the feature
+  `{ fn = function(name), allow_only = table, ignore = table }` where
+      `fn`: a function that returns `true` if the server `name` should be used
+      `allow_only`: use only servers from this list
+      `ignore`: exclude all servers from this list
+      NOTE: `fn` preceeds `allow_only` preceeds `ignore`
+
+For example: (NOTE: here only `fn` will be taken into account)
+>lua
+  { 
+    fn = function(name) return name ~= "null-ls" end,
+    allow_only = { "clangd", "lua_ls" },
+    ignore = { "pyright" },
+  }
+<
+Currently, this source supports the following commands:
+>lua
+    ["o"] = "jump_to_symbol",
+    ["r"] = "rename",
+    ["P"] = "preview", (and related commands)
+    ["s"] = "split", (and related commands)
+<
 vim:tw=80:ts=2:et:ft=help:
