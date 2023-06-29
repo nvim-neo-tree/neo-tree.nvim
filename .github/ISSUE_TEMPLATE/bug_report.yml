@@ -86,7 +86,7 @@ body:
 
         local neotree_config = {
           "nvim-neo-tree/neo-tree.nvim",
-          dependencies = { "MunifTanjim/nui.nvim", "nvim-tree/nvim-web-devicons" },
+          dependencies = { "MunifTanjim/nui.nvim", "nvim-tree/nvim-web-devicons", "nvim-lua/plenary.nvim" },
           cmd = { "Neotree" },
           keys = {
             { "<Leader>e", "<Cmd>Neotree<CR>" }, -- change or remove this line if relevant.
