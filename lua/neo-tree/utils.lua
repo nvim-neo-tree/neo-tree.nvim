@@ -544,6 +544,14 @@ M.resolve_width = function(width)
   return math.floor(width)
 end
 
+M.escape_path = function(path)
+  local escaped_path = vim.fn.fnameescape(path)
+  if vim.fn.has("win32") then
+    escaped_path = escaped_path:gsub("\\", "/")
+  end
+  return escaped_path
+end
+
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
@@ -566,7 +574,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = vim.fn.fnameescape(path)
+    local escaped_path = M.escape_path(path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
