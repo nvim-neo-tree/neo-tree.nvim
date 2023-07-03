@@ -544,14 +544,6 @@ M.resolve_width = function(width)
   return math.floor(width)
 end
 
-M.escape_path = function(path)
-  local escaped_path = vim.fn.fnameescape(path)
-  if vim.fn.has("win32") then
-    escaped_path = escaped_path:gsub("\\", "/")
-  end
-  return escaped_path
-end
-
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
@@ -903,6 +895,14 @@ end
 
 M.windowize_path = function(path)
   return path:gsub("/", "\\")
+end
+
+M.escape_path = function(path)
+  local escaped_path = vim.fn.fnameescape(path)
+  if M.is_windows then
+    escaped_path = escaped_path:gsub("\\", "/")
+  end
+  return escaped_path
 end
 
 M.wrap = function(func, ...)
