@@ -566,7 +566,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = vim.fn.fnameescape(path)
+    local escaped_path = M.escape_path(path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
@@ -895,6 +895,14 @@ end
 
 M.windowize_path = function(path)
   return path:gsub("/", "\\")
+end
+
+M.escape_path = function(path)
+  local escaped_path = vim.fn.fnameescape(path)
+  if M.is_windows then
+    escaped_path = escaped_path:gsub("\\", "/")
+  end
+  return escaped_path
 end
 
 M.wrap = function(func, ...)
