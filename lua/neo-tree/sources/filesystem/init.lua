@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = "  Files ",
+  display_name = " 󰉓 Files ",
 }
 
 local wrap = function(func)
