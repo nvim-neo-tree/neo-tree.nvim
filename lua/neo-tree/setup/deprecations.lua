@@ -40,7 +40,7 @@ M.migrate = function(config)
         existing = converter(existing)
       end
       utils.set_value(config, old, nil)
-      utils.set_value(config, new, existing, true)
+      utils.set_value(config, new, existing)
       migrations[#migrations + 1] =
         string.format("The `%s` option has been deprecated, please use `%s` instead.", old, new)
     end
@@ -54,7 +54,7 @@ M.migrate = function(config)
       end
       utils.set_value(config, old, {})
       local new = old .. "." .. new_inside
-      utils.set_value(config, new, existing, true)
+      utils.set_value(config, new, existing)
       migrations[#migrations + 1] =
         string.format("The `%s` option is replaced with a table, please move to `%s`.", old, new)
     end

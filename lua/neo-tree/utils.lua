@@ -349,15 +349,14 @@ end
 ---@param sourceObject table The table to set a value in.
 ---@param valuePath string The path to the value to set.
 ---@param value any The value to set.
----@param force_tabulize boolean? Overwrite existing non-table parents with a table along the way.
-M.set_value = function(sourceObject, valuePath, value, force_tabulize)
+M.set_value = function(sourceObject, valuePath, value)
   local pathParts = M.split(valuePath, ".")
   local currentTable = sourceObject
   for i, part in ipairs(pathParts) do
     if i == #pathParts then
       currentTable[part] = value
     else
-      if force_tabulize and type(currentTable[part]) ~= "table" then
+      if type(currentTable[part]) ~= "table" then
         currentTable[part] = {}
       end
       currentTable = currentTable[part]
