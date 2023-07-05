@@ -57,9 +57,9 @@ local config = {
       { source = "git_status" },
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
-    --                start  : |/ 裡 bufname     \/...
-    --                end    : |/     裡 bufname \/...
-    --                center : |/   裡 bufname   \/...
+    --                start  : |/ 󰓩 bufname     \/...
+    --                end    : |/     󰓩 bufname \/...
+    --                center : |/   󰓩 bufname   \/...
     tabs_layout = "equal", -- start, end, center, equal, focus
     --             start  : |/  a  \/  b  \/  c  \            |
     --             end    : |            /  a  \/  b  \/  c  \|
@@ -198,8 +198,8 @@ local config = {
     icon = {
       folder_closed = "",
       folder_open = "",
-      folder_empty = "ﰊ",
-      folder_empty_open = "ﰊ",
+      folder_empty = "󰜌",
+      folder_empty_open = "󰜌",
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
       default = "*",
@@ -224,11 +224,11 @@ local config = {
         added     = "✚", -- NOTE: you can set any of these to an empty string to not show them
         deleted   = "✖",
         modified  = "",
-        renamed   = "",
+        renamed   = "󰁕",
         -- Status type
         untracked = "",
         ignored   = "",
-        unstaged  = "",
+        unstaged  = "󰄱",
         staged    = "",
         conflict  = "",
       },
@@ -566,37 +566,37 @@ local config = {
     kinds = {
       Unknown = { icon = "?", hl = "" },
       Root = { icon = "", hl = "NeoTreeRootName" },
-      File = { icon = "", hl = "Tag" },
+      File = { icon = "󰈙", hl = "Tag" },
       Module = { icon = "", hl = "Exception" },
-      Namespace = { icon = "", hl = "Include" },
-      Package = { icon = "", hl = "Label" },
-      Class = { icon = "", hl = "Include" },
+      Namespace = { icon = "󰌗", hl = "Include" },
+      Package = { icon = "󰏖", hl = "Label" },
+      Class = { icon = "󰌗", hl = "Include" },
       Method = { icon = "", hl = "Function" },
-      Property = { icon = "", hl = "@property" },
+      Property = { icon = "󰆧", hl = "@property" },
       Field = { icon = "", hl = "@field" },
       Constructor = { icon = "", hl = "@constructor" },
-      Enum = { icon = "了", hl = "@number" },
+      Enum = { icon = "󰒻", hl = "@number" },
       Interface = { icon = "", hl = "Type" },
-      Function = { icon = "", hl = "Function" },
+      Function = { icon = "󰊕", hl = "Function" },
       Variable = { icon = "", hl = "@variable" },
       Constant = { icon = "", hl = "Constant" },
-      String = { icon = "", hl = "String" },
-      Number = { icon = "", hl = "Number" },
+      String = { icon = "󰀬", hl = "String" },
+      Number = { icon = "󰎠", hl = "Number" },
       Boolean = { icon = "", hl = "Boolean" },
-      Array = { icon = "", hl = "Type" },
-      Object = { icon = "", hl = "Type" },
-      Key = { icon = "", hl = "" },
+      Array = { icon = "󰅪", hl = "Type" },
+      Object = { icon = "󰅩", hl = "Type" },
+      Key = { icon = "󰌋", hl = "" },
       Null = { icon = "", hl = "Constant" },
       EnumMember = { icon = "", hl = "Number" },
-      Struct = { icon = "", hl = "Type" },
+      Struct = { icon = "󰌗", hl = "Type" },
       Event = { icon = "", hl = "Constant" },
-      Operator = { icon = "", hl = "Operator" },
-      TypeParameter = { icon = "", hl = "Type" },
+      Operator = { icon = "󰆕", hl = "Operator" },
+      TypeParameter = { icon = "󰊄", hl = "Type" },
 
       -- ccls
       -- TypeAlias = { icon = ' ', hl = 'Type' },
       -- Parameter = { icon = ' ', hl = '@parameter' },
-      -- StaticMethod = { icon = 'ﴂ ', hl = 'Function' },
+      -- StaticMethod = { icon = '󰠄 ', hl = 'Function' },
       -- Macro = { icon = ' ', hl = 'Macro' },
     }
   },
