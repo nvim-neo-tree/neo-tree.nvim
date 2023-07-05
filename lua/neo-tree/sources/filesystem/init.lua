@@ -37,9 +37,10 @@ local follow_internal = function(callback, force_show, async)
     return false
   end
   local path_to_reveal = manager.get_path_to_reveal()
-  if not path_to_reveal or not utils.truthy(path_to_reveal) then
+  if not utils.truthy(path_to_reveal) then
     return false
   end
+  ---@cast path_to_reveal string
 
   local state = get_state()
   if state.current_position == "float" then
