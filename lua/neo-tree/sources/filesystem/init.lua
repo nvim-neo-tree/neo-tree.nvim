@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = "  Files ",
+  display_name = " 󰉓 Files "
 }
 
 local wrap = function(func)
@@ -175,9 +175,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 end
 
 ---Navigate to the given path.
----@param path string? Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string? Node to focus after the items are loaded.
----@param callback function? Callback to call after the items are loaded.
+---@param path string Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string Node to focus after the items are loaded.
+---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
@@ -218,21 +218,20 @@ M.reset_search = function(state, refresh, open_current_node)
           pcall(renderer.focus_node, state, path, false)
         end)
       else
+        utils.open_file(state, path)
         if
           refresh
           and state.current_position ~= "current"
           and state.current_position ~= "float"
         then
-          M.navigate(state, nil, path, function()
-            utils.open_file(state, path)
-          end)
-        else
-          utils.open_file(state, path)
+          M.navigate(state, nil, path)
         end
       end
     end
-  elseif refresh then
-    M.navigate(state)
+  else
+    if refresh then
+      M.navigate(state)
+    end
   end
 end
 
@@ -359,12 +358,6 @@ M.setup = function(config, global_config)
 
   --Configure event handlers for lsp diagnostic updates
   if global_config.enable_diagnostics then
-    manager.subscribe(M.name, {
-      event = events.STATE_CREATED,
-      handler = function(state)
-        state.diagnostics_lookup = utils.get_diagnostic_counts()
-      end,
-    })
     manager.subscribe(M.name, {
       event = events.VIM_DIAGNOSTIC_CHANGED,
       handler = wrap(manager.diagnostics_changed),
