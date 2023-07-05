@@ -433,7 +433,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       -- Ensure that there are no nested files in the list of folders to load
       context.paths_to_load = vim.tbl_filter(function(p)
         local stats = vim.loop.fs_stat(p)
-        return stats and stats.type == "directory"
+        return stats and stats.type == "directory" or false
       end, context.paths_to_load)
       if path_to_reveal then
         -- be sure to load all of the folders leading up to the path to reveal

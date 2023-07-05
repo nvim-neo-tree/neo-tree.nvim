@@ -63,7 +63,7 @@ local buffers_changed_internal = function()
     local state = manager.get_state(M.name, tabid)
     if state.path and renderer.window_exists(state) then
       items.get_opened_buffers(state)
-      if state.follow_current_file then
+      if state.follow_current_file.enabled then
         follow_internal()
       end
     end
@@ -182,7 +182,7 @@ M.setup = function(config, global_config)
   end
 
   -- Configure event handler for follow_current_file option
-  if config.follow_current_file then
+  if config.follow_current_file.enabled then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_ENTER,
       handler = M.follow,

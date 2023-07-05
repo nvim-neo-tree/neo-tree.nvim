@@ -31,7 +31,7 @@ should you!
 - Neo-tree won't leave its window scrolled to the last line when there is
   plenty of room to display the whole tree.
 - Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher=true`)
-- Neo-tree can intelligently follow the current file (set `follow_current_file=true`)
+- Neo-tree can intelligently follow the current file (set `follow_current_file.enabled=true`)
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!
@@ -273,8 +273,11 @@ use {
               --".null-ls_*",
             },
           },
-          follow_current_file = false, -- This will find and focus the file in the active buffer every
-                                       -- time the current file is changed while the tree is open.
+          follow_current_file = {
+            enabled = false, -- This will find and focus the file in the active buffer every time
+            --               -- the current file is changed while the tree is open.
+            leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+          },
           group_empty_dirs = false, -- when true, empty folders will be grouped together
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                                   -- in whatever position is specified in window.position
@@ -308,8 +311,11 @@ use {
           commands = {} -- Add a custom command or override a global one using the same function name
         },
         buffers = {
-          follow_current_file = true, -- This will find and focus the file in the active buffer every
-                                       -- time the current file is changed while the tree is open.
+          follow_current_file = {
+            enabled = true, -- This will find and focus the file in the active buffer every time
+            --              -- the current file is changed while the tree is open.
+            leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+          },
           group_empty_dirs = true, -- when true, empty folders will be grouped together
           show_unloaded = true,
           window = {

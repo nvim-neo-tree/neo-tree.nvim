@@ -315,10 +315,10 @@ end
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any The default value to return if the value is nil.
----@param strict_type_check boolean Whether to require the type of the value is
+---@param defaultValue any|nil The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is
 ---the same as the default value.
----@return table|nil table The value at the path or the default value.
+---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
     return defaultValue
@@ -356,6 +356,9 @@ M.set_value = function(sourceObject, valuePath, value)
     if i == #pathParts then
       currentTable[part] = value
     else
+      if type(currentTable[part]) ~= "table" then
+        currentTable[part] = {}
+      end
       currentTable = currentTable[part]
     end
   end
