@@ -547,17 +547,21 @@ end
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
----@param open_cmd string The vimcommand to use to open the file
+---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
-  if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
-    bufnr = bufnr or M.find_buffer_by_name(path)
-    if bufnr <= 0 then
-      bufnr = nil
+  bufnr = bufnr or M.find_buffer_by_name(path)
+  if bufnr <= 0 then
+    bufnr = nil
+  else
+    local buf_cmd_lookup = { edit = "b", e = "b", split = "sb", sb = "sb", vsplit = "vert sb", vs = "vert sb" }
+    local cmd_for_buf = buf_cmd_lookup[open_cmd]
+    if cmd_for_buf then
+      open_cmd = cmd_for_buf
     else
-      open_cmd = "b"
+      bufnr = nil
     end
   end
 

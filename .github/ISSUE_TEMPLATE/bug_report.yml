@@ -1,0 +1,109 @@
+name: Bug Report
+description: File a bug / issue.
+title: "BUG: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before** reporting an issue, make sure to read [`:h neo-tree.txt`](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v2.x/doc/neo-tree.txt) and search [existing issues](https://github.com/nvim-neo-tree/neo-tree.nvim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/nvim-neo-tree/neo-tree.nvim/discussions) and will be closed.
+  - type: checkboxes
+    attributes:
+      label: Did you check docs and existing issues?
+      description: Make sure you checked all of the below before submitting an issue
+      options:
+        - label: I have read all the docs.
+          required: true
+        - label: I have searched the existing issues.
+          required: true
+        - label: I have searched the existing discussions.
+          required: true
+  - type: input
+    attributes:
+      label: "Neovim Version (nvim -v)"
+      placeholder: "0.8.0 commit db1b0ee3b30f"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Operating System / Version"
+      placeholder: "MacOS 11.5"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is. Please include any related errors you see in Neovim.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshots, Traceback
+      description: Screenshot and traceback if exists. Not required.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior. Describe with the exact commands and keypresses.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: A concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Your Configuration
+      description: Minimal `init.lua` to reproduce this issue. Save as `repro.lua` and run with `nvim -u repro.lua`
+      value: |
+        -- DO NOT change the paths and don't remove the colorscheme
+        local root = vim.fn.fnamemodify("./.repro", ":p")
+
+        -- set stdpaths to use .repro
+        for _, name in ipairs({ "config", "data", "state", "cache" }) do
+          vim.env[("XDG_%s_HOME"):format(name:upper())] = root .. "/" .. name
+        end
+
+        -- bootstrap lazy
+        local lazypath = root .. "/plugins/lazy.nvim"
+        if not vim.loop.fs_stat(lazypath) then
+          vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", lazypath, })
+        end
+        vim.opt.runtimepath:prepend(lazypath)
+
+        -- install plugins
+        local plugins = {
+          "folke/tokyonight.nvim",
+          -- add any other plugins here
+        }
+
+        local neotree_config = {
+          "nvim-neo-tree/neo-tree.nvim",
+          dependencies = { "MunifTanjim/nui.nvim", "nvim-tree/nvim-web-devicons", "nvim-lua/plenary.nvim" },
+          cmd = { "Neotree" },
+          keys = {
+            { "<Leader>e", "<Cmd>Neotree<CR>" }, -- change or remove this line if relevant.
+          },
+          opts = {
+            -- Your config here
+            -- ...
+          },
+        }
+
+        table.insert(plugins, neotree_config)
+        require("lazy").setup(plugins, {
+          root = root .. "/plugins",
+        })
+
+        vim.cmd.colorscheme("tokyonight")
+        -- add anything else here
+      render: Lua
+    validations:
+      required: true

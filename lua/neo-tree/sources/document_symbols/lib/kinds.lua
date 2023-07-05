@@ -1,4 +1,5 @@
----Functions to render symbols' kinds
+---Helper module to render symbols' kinds
+---Need to be initialized by calling M.setup()
 local M = {}
 
 local kinds_id_to_name = {
@@ -33,6 +34,9 @@ local kinds_id_to_name = {
 
 local kinds_map = {}
 
+---Get how the kind with kind_id should be rendered
+---@param kind_id integer the kind_id to be render
+---@return table res of the form { name = kind_display_name, icon = kind_icon, hl = kind_hl }
 M.get_kind = function(kind_id)
   local kind_name = kinds_id_to_name[kind_id]
   return vim.tbl_extend(
@@ -42,9 +46,17 @@ M.get_kind = function(kind_id)
   )
 end
 
-M.setup = function(custom_kinds, kinds)
+---Setup the module with custom kinds
+---@param custom_kinds table additional kinds, should be of the form { [kind_id] = kind_name }
+---@param kinds_display table mapping of kind_name to corresponding display name, icon and hl group
+---   { [kind_name] = {
+---         name = kind_display_name,
+---         icon = kind_icon,
+---         hl = kind_hl
+---         }, }
+M.setup = function(custom_kinds, kinds_display)
   kinds_id_to_name = vim.tbl_deep_extend("force", kinds_id_to_name, custom_kinds or {})
-  kinds_map = kinds
+  kinds_map = kinds_display
 end
 
 return M

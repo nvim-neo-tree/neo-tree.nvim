@@ -43,6 +43,7 @@ local function create_state(tabid, sd, winid)
     is = { restorable = false },
   }
   state.git_base = "HEAD"
+  events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
 end
@@ -395,7 +396,7 @@ end
 
 M.dispose_invalid_tabs = function()
   -- Iterate in reverse because we are removing items during loop
-  for i = #all_states,1,-1 do
+  for i = #all_states, 1, -1 do
     local state = all_states[i]
     -- if not valid_tabs[state.tabid] then
     if not vim.api.nvim_tabpage_is_valid(state.tabid) then
@@ -463,10 +464,10 @@ end
 
 ---Navigate to the given path.
 ---@param state_or_source_name string|table The state or source name to navigate.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string Node to focus after the items are loaded.
----@param callback function Callback to call after the items are loaded.
----@param async boolean Whether to load the items asynchronously, may not be respected by all sources.
+---@param path string? Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string? Node to focus after the items are loaded.
+---@param callback function? Callback to call after the items are loaded.
+---@param async boolean? Whether to load the items asynchronously, may not be respected by all sources.
 M.navigate = function(state_or_source_name, path, path_to_reveal, callback, async)
   require("neo-tree").ensure_config()
   local state, source_name

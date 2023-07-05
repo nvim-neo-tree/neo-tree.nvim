@@ -99,19 +99,22 @@ M.diagnostics = function(config, node, state)
     defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
   end
   defined = defined and defined[1]
+  if type(defined) ~= "table" then
+    defined = {}
+  end
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
   if config.symbols and config.symbols[severity_lower] then
-    defined = defined or { texthl = "Diagnostic" .. severity }
+    defined.texthl = defined.texthl or ("Diagnostic" .. severity)
     defined.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined = defined or { text = severity:sub(1, 1) }
+    defined.text = defined.text or severity:sub(1, 1)
     defined.texthl = config.highlights[severity_lower]
   end
 
-  if defined and defined.text and defined.texthl then
+  if defined.text and defined.texthl then
     return {
       text = make_two_char(defined.text),
       highlight = defined.texthl,
@@ -277,7 +280,8 @@ M.icon = function(config, node, state)
   elseif node.type == "file" or node.type == "terminal" then
     local success, web_devicons = pcall(require, "nvim-web-devicons")
     if success then
-      local devicon, hl = web_devicons.get_icon(node.name, node.ext)
+      local ext = node.ext and node.ext:lower() or nil
+      local devicon, hl = web_devicons.get_icon(node.name, ext)
       icon = devicon or icon
       highlight = hl or highlight
     end
@@ -420,7 +424,11 @@ M.indent = function(config, node, state)
       end
     end
 
-    table.insert(indent, { text = char .. string.rep(" ", spaces_count), highlight = highlight })
+    table.insert(indent, {
+      text = char .. string.rep(" ", spaces_count),
+      highlight = highlight,
+      no_next_padding = true,
+    })
   end
 
   return indent

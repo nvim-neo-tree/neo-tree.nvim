@@ -10,6 +10,7 @@ local events = require("neo-tree.events")
 local keymap = require("nui.utils.keymap")
 local autocmd = require("nui.utils.autocmd")
 local log = require("neo-tree.log")
+local windows = require("neo-tree.ui.windows")
 
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
@@ -29,6 +30,10 @@ end
 
 local tabid_to_tabnr = function(tabid)
   return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
+end
+
+local buffer_is_usable = function(bufnr)
+  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
 end
 
 local cleaned_up = false
@@ -103,7 +108,13 @@ local start_resize_monitor = function()
   vim.defer_fn(check_window_size, interval)
 end
 
-M.close = function(state)
+---Safely closes the window and deletes the buffer associated with the state
+---@param state table State of the source to close
+---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
+M.close = function(state, focus_prior_window)
+  if focus_prior_window == nil then
+    focus_prior_window = true
+  end
   local window_existed = false
   if state and state.winid then
     if M.window_exists(state) then
@@ -121,8 +132,9 @@ M.close = function(state)
           end
           vim.api.nvim_win_set_buf(state.winid, new_buf)
         else
+          events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
           local win_list = vim.api.nvim_tabpage_list_wins(0)
-          if #win_list > 1 then
+          if focus_prior_window and #win_list > 1 then
             local args = {
               position = state.current_position,
               source = state.name,
@@ -130,7 +142,6 @@ M.close = function(state)
               tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
               tabid = state.tabid,
             }
-            events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
             -- focus the prior used window if we are closing the currently focused window
             local current_winid = vim.api.nvim_get_current_win()
             if current_winid == state.winid then
@@ -139,21 +150,24 @@ M.close = function(state)
                 pcall(vim.api.nvim_set_current_win, pwin)
               end
             end
-            -- if the window was a float, changing the current win would have closed it already
-            pcall(vim.api.nvim_win_close, state.winid, true)
-            events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
           end
+          -- if the window was a float, changing the current win would have closed it already
+          pcall(vim.api.nvim_win_close, state.winid, true)
+          events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
         end
       end
     end
     state.winid = nil
   end
   local bufnr = utils.get_value(state, "bufnr", 0, true)
-  if bufnr > 0 then
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      vim.api.nvim_buf_delete(bufnr, { force = true })
-    end
+    if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
     state.bufnr = nil
+    local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+    if not success and err:match("E523") then
+      vim.schedule_wrap(function()
+        vim.api.nvim_buf_delete(bufnr, { force = true })
+      end)()
+    end
   end
   return window_existed
 end
@@ -197,9 +211,13 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   for _, child in ipairs(source_items) do
     local fby = child.filtered_by
-    if type(fby) == "table" and not child.is_reveal_target and not fby.show_anyway then
+    if type(fby) == "table" and not child.is_reveal_target then
       if not fby.never_show then
         if filtered_items.visible or child.is_nested or fby.always_show then
+          table.insert(visible, child)
+        elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
+          table.insert(hidden, child)
+        elseif fby.show_gitignored and fby.gitignored then
           table.insert(visible, child)
         else
           table.insert(hidden, child)
@@ -414,7 +432,7 @@ local prepare_node = function(item, state)
             padding = " "
           end
           data.text = padding .. data.text
-          should_pad = data.text:sub(#data.text) ~= " "
+          should_pad = data.text:sub(#data.text) ~= " " and not data.no_next_padding
 
           actual_width = actual_width + vim.api.nvim_strwidth(data.text)
           line:append(data.text, data.highlight)
@@ -439,7 +457,7 @@ end
 
 ---Sets the cursor at the specified node.
 ---@param state table The current state of the source.
----@param id string The id of the node to set the cursor at.
+---@param id string? The id of the node to set the cursor at.
 ---@return boolean boolean True if the node was found and focused, false
 ---otherwise.
 M.focus_node = function(state, id, do_not_focus_window, relative_movement, bottom_scroll_padding)
@@ -619,12 +637,14 @@ M.position = {
       local success, node = pcall(state.tree.get_node, state.tree)
       if success and node then
         _, state.position.node_id = pcall(node.get_id, node)
+        local win_state = vim.fn.winsaveview()
+        state.position.topline = win_state.topline
       end
+      -- Only need to restore the cursor state once per save, comes
+      -- into play when some actions fire multiple times per "iteration"
+      -- within the scope of where we need to perform the restore operation
+      state.position.is.restorable = true
     end
-    -- Only need to restore the cursor state once per save, comes
-    -- into play when some actions fire multiple times per "iteration"
-    -- within the scope of where we need to perform the restore operation
-    state.position.is.restorable = true
   end,
   set = function(state, node_id)
     if not type(node_id) == "string" and node_id > "" then
@@ -641,6 +661,9 @@ M.position = {
     if state.position.is.restorable then
       log.debug("Restoring position to node_id: " .. state.position.node_id)
       M.focus_node(state, state.position.node_id, true)
+      if state.position.topline then
+         vim.fn.winrestview({ topline = state.position.topline })
+      end
     else
       log.debug("Position is not restorable")
     end
@@ -728,6 +751,13 @@ M.set_expanded_nodes = function(tree, expanded_nodes)
 end
 
 create_tree = function(state)
+  if state.tree and state.tree.bufnr == state.bufnr then
+    if buffer_is_usable(state.tree.bufnr) then
+      log.debug("Tree already exists and buffer is valid, skipping creation", state.name, state.id)
+      state.tree.winid = state.winid
+      return
+    end
+  end
   state.tree = NuiTree({
     ns_id = highlights.ns_id,
     winid = state.winid,
@@ -761,7 +791,7 @@ local get_selected_nodes = function(state)
   return selected_nodes
 end
 
-local set_window_mappings = function(state)
+local set_buffer_mappings = function(state)
   local resolved_mappings = {}
   local skip_this_mapping = {
     ["none"] = true,
@@ -822,46 +852,8 @@ local set_window_mappings = function(state)
   state.resolved_mappings = resolved_mappings
 end
 
-create_window = function(state)
-  local default_position = utils.resolve_config_option(state, "window.position", "left")
-  local relative = utils.resolve_config_option(state, "window.relative", "editor")
-  state.current_position = state.current_position or default_position
-
-  local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
-  local size_opt, default_size
-  if state.current_position == "top" or state.current_position == "bottom" then
-    size_opt, default_size = "window.height", "15"
-  else
-    size_opt, default_size = "window.width", "40"
-  end
-  local win_options = {
-    ns_id = highlights.ns_id,
-    size = utils.resolve_config_option(state, size_opt, default_size),
-    position = state.current_position,
-    relative = relative,
-    buf_options = {
-      buftype = "nofile",
-      modifiable = false,
-      swapfile = false,
-      filetype = "neo-tree",
-      undolevels = -1,
-    },
-    win_options = {
-      colorcolumn = "",
-      signcolumn = "no",
-    },
-  }
-
-  local win
-  local event_args = {
-    position = state.current_position,
-    source = state.name,
-    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
-    tabid = state.tabid,
-  }
-  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
-
-  if state.current_position == "float" then
+local function create_floating_window(state, win_options, bufname)
+    local win
     state.force_float = nil
     -- First get the default options for floating windows.
     local sourceTitle = state.name:gsub("^%l", string.upper)
@@ -899,6 +891,76 @@ create_window = function(state)
 
     -- why is this necessary?
     vim.api.nvim_set_current_win(win.winid)
+    return win
+end
+
+local get_buffer = function(bufname, state)
+  local bufnr = vim.fn.bufnr(bufname)
+  if bufnr > 0 then
+    if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
+      return bufnr
+    else
+      pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+      bufnr = 0
+    end
+  end
+  if bufnr < 1 then
+    bufnr = vim.api.nvim_create_buf(false, false)
+    vim.api.nvim_buf_set_name(bufnr, bufname)
+    vim.api.nvim_buf_set_option(bufnr, "buftype", "nofile")
+    vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
+    vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
+    vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
+    vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+    autocmd.buf.define(bufnr, "WinLeave", function()
+      M.position.save(state)
+    end)
+  end
+  return bufnr
+end
+
+create_window = function(state)
+  local default_position = utils.resolve_config_option(state, "window.position", "left")
+  local relative = utils.resolve_config_option(state, "window.relative", "editor")
+  state.current_position = state.current_position or default_position
+
+  local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
+  local size_opt, default_size
+  if state.current_position == "top" or state.current_position == "bottom" then
+    size_opt, default_size = "window.height", "15"
+  else
+    size_opt, default_size = "window.width", "40"
+  end
+  local win_options = {
+    ns_id = highlights.ns_id,
+    size = utils.resolve_config_option(state, size_opt, default_size),
+    position = state.current_position,
+    relative = relative,
+    buf_options = {
+      buftype = "nofile",
+      modifiable = false,
+      swapfile = false,
+      filetype = "neo-tree",
+      undolevels = -1,
+    },
+    win_options = {
+      colorcolumn = "",
+      signcolumn = "no",
+    },
+  }
+
+  local event_args = {
+    position = state.current_position,
+    source = state.name,
+    tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+    tabid = state.tabid,
+  }
+  events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
+
+  local win
+  if state.current_position == "float" then
+    M.close_all_floating_windows()
+    win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
@@ -907,25 +969,32 @@ create_window = function(state)
       log.warn("Window ", winid, "  is no longer valid!")
       return
     end
-    local bufnr = vim.fn.bufnr(bufname)
-    if bufnr < 1 then
-      bufnr = vim.api.nvim_create_buf(false, false)
-      vim.api.nvim_buf_set_name(bufnr, bufname)
-    end
     state.winid = winid
-    state.bufnr = bufnr
-    vim.api.nvim_buf_set_option(bufnr, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
-    vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
-    vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
-    vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
-    vim.api.nvim_win_set_buf(winid, bufnr)
+    state.bufnr = get_buffer(bufname, state)
+    vim.api.nvim_win_set_buf(state.winid, state.bufnr)
   else
-    win = NuiSplit(win_options)
-    win:mount()
-    state.winid = win.winid
-    state.bufnr = win.bufnr
-    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    local close_old_window = function(new_winid)
+      if state.winid and new_winid ~= state.winid then
+        -- This state may be showing in another window, close it first because
+        -- each state can only be shown in one window at a time.
+        M.close(state, false)
+      end
+    end
+    local location = windows.get_location(state.current_position)
+    if location.winid > 0 then
+      close_old_window(location.winid)
+      state.bufnr = get_buffer(bufname, state)
+      state.winid = location.winid
+      vim.api.nvim_win_set_buf(state.winid, state.bufnr)
+    else
+      close_old_window()
+      win = NuiSplit(win_options)
+      win:mount()
+      state.bufnr = win.bufnr
+      state.winid = win.winid
+      location.winid = state.winid
+    end
+    location.source = state.name
   end
   event_args.winid = state.winid
   events.fire_event(events.NEO_TREE_WINDOW_AFTER_OPEN, event_args)
@@ -938,11 +1007,9 @@ create_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
 
-  if win == nil then
-    autocmd.buf.define(state.bufnr, "WinLeave", function()
-      M.position.save(state)
-    end)
-  else
+  if win ~= nil then
+    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
     --
     -- Note `WinEnter` is often too early to restore the cursor position so we do not set
@@ -958,7 +1025,7 @@ create_window = function(state)
     end, { once = true })
   end
 
-  set_window_mappings(state)
+  set_buffer_mappings(state)
   return win
 end
 
@@ -1007,16 +1074,14 @@ M.window_exists = function(state)
   else
     local isvalid = M.is_window_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
-    if not window_exists then
-      state.winid = nil
-      if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
-        state.bufnr = nil
-        local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
-        if not success and err:match("E523") then
-          vim.schedule_wrap(function()
-            vim.api.nvim_buf_delete(bufnr, { force = true })
-          end)()
-        end
+    if window_exists then
+      local bufnr = vim.api.nvim_win_get_buf(winid)
+      if bufnr > 0 and bufnr ~= state.bufnr then
+        window_exists = false
+      end
+      local buf_position = vim.api.nvim_buf_get_var(bufnr, "neo_tree_position")
+      if buf_position ~= position then
+        window_exists = false
       end
     end
   end
