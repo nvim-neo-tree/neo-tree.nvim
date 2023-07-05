@@ -722,7 +722,7 @@ type notations.
           },
           {
             source = "buffers",                                   -- string
-            display_name = " 󰈙 Buffers "                          -- string | nil
+            display_name = " 󰈚 Buffers "                          -- string | nil
           },
           {
             source = "git_status",                                -- string
