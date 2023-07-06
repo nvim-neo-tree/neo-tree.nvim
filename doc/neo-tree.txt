@@ -1056,14 +1056,14 @@ If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
 >lua
-    vim.fn.sign_define("LspDiagnosticsSignError",
-        {text = " ", texthl = "LspDiagnosticsSignError"})
-    vim.fn.sign_define("LspDiagnosticsSignWarning",
-        {text = " ", texthl = "LspDiagnosticsSignWarning"})
-    vim.fn.sign_define("LspDiagnosticsSignInformation",
-        {text = " ", texthl = "LspDiagnosticsSignInformation"})
-    vim.fn.sign_define("LspDiagnosticsSignHint",
-        {text = "󰌵", texthl = "LspDiagnosticsSignHint"})
+    vim.fn.sign_define("DiagnosticSignError",
+        {text = " ", texthl = "DiagnosticSignError"})
+    vim.fn.sign_define("DiagnosticSignWarn",
+        {text = " ", texthl = "DiagnosticSignWarn"})
+    vim.fn.sign_define("DiagnosticSignInfo",
+        {text = " ", texthl = "DiagnosticSignInfo"})
+    vim.fn.sign_define("DiagnosticSignHint",
+        {text = "󰌵", texthl = "DiagnosticSignHint"})
 <
 
 Alternatively, you can also specify the signs and/or highlights in the
