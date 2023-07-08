@@ -399,6 +399,7 @@ require("neo-tree").setup({
   source_selector = {
     sources = {
       { source = "filesystem", display_name = " 󰉓 Files " },
+      { source = "buffers", display_name = " 󰈚 Buffers " },
       { source = "git_status", display_name = " 󰊢 Git " },
     },
   },
