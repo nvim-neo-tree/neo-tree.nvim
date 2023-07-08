@@ -11,9 +11,6 @@ local git = require("neo-tree.git")
 local events = require("neo-tree.events")
 local async = require("plenary.async")
 
-local Path = require("plenary.path")
-local os_sep = Path.path.sep
-
 local M = {}
 
 local on_directory_loaded = function(context, dir_path)
@@ -223,15 +220,15 @@ end
 local function scan_dir_async(context, path)
   log.debug("scan_dir_async - start " .. path)
 
-  local get_children = async.wrap(function (callback)
-    return get_children_async(path, callback)
-  end, 1)
+  local get_children = async.wrap(function (_path, callback)
+    return get_children_async(_path, callback)
+  end, 2)
 
-  local children = get_children()
+  local children = get_children(path)
   for _, child in ipairs(children) do
     create_node(context, child)
     if child.type == "directory" then
-      local grandchild_nodes = get_children_sync(child.path)
+      local grandchild_nodes = get_children(child.path)
       if
         grandchild_nodes == nil
         or #grandchild_nodes == 0
