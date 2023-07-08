@@ -393,7 +393,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive)
+M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive, callback)
   local tree = state.tree
   if not node then
     node = tree:get_node()
@@ -406,7 +406,7 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil)
-    fs_scan.get_items(state, id, path_to_reveal, nil, false, recursive)
+    fs_scan.get_items(state, id, path_to_reveal, callback, false, recursive)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
@@ -427,5 +427,15 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     renderer.redraw(state)
   end
 end
+
+M.prefetcher = {
+  prefetch = function (state, node)
+    log.debug("Running fs prefetch for: " .. node:get_id())
+    fs_scan.get_dir_items_async(state, node:get_id(), true)
+  end,
+  should_prefetch = function (node)
+    return not node.loaded
+  end
+}
 
 return M

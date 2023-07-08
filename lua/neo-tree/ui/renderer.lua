@@ -1263,7 +1263,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
             if node.id == parent.id then
               item.name = parent.name .. utils.path_separator .. item.name
               item.level = level - 1
-              item.is_loaded = utils.truthy(item.children)
+              item.loaded = utils.truthy(item.children)
               siblings[i] = NuiTree.Node(item, item.children)
               break
             end

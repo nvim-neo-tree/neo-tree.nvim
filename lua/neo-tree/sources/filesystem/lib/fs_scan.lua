@@ -11,9 +11,6 @@ local git = require("neo-tree.git")
 local events = require("neo-tree.events")
 local async = require("plenary.async")
 
-local Path = require("plenary.path")
-local os_sep = Path.path.sep
-
 local M = {}
 
 local on_directory_loaded = function(context, dir_path)
@@ -106,6 +103,26 @@ local render_context = function(context)
   context = nil
 end
 
+local job_complete_async = function(context)
+  local state = context.state
+  local parent_id = context.parent_id
+  if #context.all_items == 0 then
+    log.info("No items, skipping git ignored/status lookups")
+  elseif state.filtered_items.hide_gitignored or state.enable_git_status then
+    local mark_ignored_async = async.wrap(function (_state, _all_items, _callback)
+      git.mark_ignored(_state, _all_items, _callback)
+    end, 3)
+    local all_items = mark_ignored_async(state, context.all_items)
+
+    if parent_id then
+      vim.list_extend(state.git_ignored, all_items)
+    else
+      state.git_ignored = all_items
+    end
+  end
+  return context
+end
+
 local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
@@ -135,8 +152,8 @@ local job_complete = function(context)
         state.git_ignored = all_items
       end
     end
+    render_context(context)
   end
-  render_context(context)
 end
 
 local function create_node(context, node)
@@ -190,7 +207,8 @@ local function scan_dir_sync(context, path)
       if
         grandchild_nodes == nil
         or #grandchild_nodes == 0
-        or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
+        or (#grandchild_nodes == 1 and grandchild_nodes[1].type == "directory")
+        or context.recursive
       then
         scan_dir_sync(context, child.path)
       end
@@ -198,25 +216,35 @@ local function scan_dir_sync(context, path)
   end
 end
 
-local function scan_dir_async(context, path, callback)
-  get_children_async(path, function(children)
-    for _, child in ipairs(children) do
-      create_node(context, child)
-      if child.type == "directory" then
-        local grandchild_nodes = get_children_sync(child.path)
-        if
-          grandchild_nodes == nil
-          or #grandchild_nodes == 0
-          or #grandchild_nodes == 1 and grandchild_nodes[1].type == "directory"
-        then
-          scan_dir_sync(context, child.path)
-        end
+--- async method
+local function scan_dir_async(context, path)
+  log.debug("scan_dir_async - start " .. path)
+
+  local get_children = async.wrap(function (_path, callback)
+    return get_children_async(_path, callback)
+  end, 2)
+
+  local children = get_children(path)
+  for _, child in ipairs(children) do
+    create_node(context, child)
+    if child.type == "directory" then
+      local grandchild_nodes = get_children(child.path)
+      if
+        grandchild_nodes == nil
+        or #grandchild_nodes == 0
+        or (#grandchild_nodes == 1 and grandchild_nodes[1].type == "directory")
+        or context.recursive
+      then
+        scan_dir_async(context, child.path)
       end
     end
-    process_node(context, path)
-    callback(path)
-  end)
+  end
+
+  process_node(context, path)
+  log.debug("scan_dir_async - finish " .. path)
+  return path
 end
+
 
 -- async_scan scans all the directories in context.paths_to_load
 -- and adds them as items to render in the UI.
@@ -227,9 +255,9 @@ local function async_scan(context, path)
   if scan_mode == "deep" then
     local scan_tasks = {}
     for _, p in ipairs(context.paths_to_load) do
-      local scan_task = async.wrap(function(callback)
-        scan_dir_async(context, p, callback)
-      end, 1)
+      local scan_task = function ()
+        scan_dir_async(context, p)
+      end
       table.insert(scan_tasks, scan_task)
     end
 
@@ -362,35 +390,9 @@ M.get_items_async = function(state, parent_id, path_to_reveal, callback)
   M.get_items(state, parent_id, path_to_reveal, callback, true)
 end
 
-M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive)
-  if state.async_directory_scan == "always" then
-    async = true
-  elseif state.async_directory_scan == "never" then
-    async = false
-  elseif type(async) == "nil" then
-    async = (state.async_directory_scan == "auto") or state.async_directory_scan
-  end
-
-  if not parent_id then
-    M.stop_watchers(state)
-  end
-  local context = file_items.create_context()
-  context.state = state
-  context.parent_id = parent_id
-  context.path_to_reveal = path_to_reveal
-  context.recursive = recursive
-  context.callback = callback
-
-  -- Create root folder
-  local root = file_items.create_item(context, parent_id or state.path, "directory")
-  root.name = vim.fn.fnamemodify(root.path, ":~")
-  root.loaded = true
-  root.search_pattern = state.search_pattern
-  context.root = root
-  context.folders[root.path] = root
-  state.default_expanded_nodes = state.force_open_folders or { state.path }
-
-  if state.search_pattern then
+local handle_search_pattern = function (context)
+    local state = context.state
+    local root = context.root
     local search_opts = {
       filtered_items = state.filtered_items,
       find_command = state.find_command,
@@ -417,9 +419,12 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
       -- Use the external command because the plenary search is slow
       filter_external.find_files(search_opts)
     end
-  else
-    -- In the case of a refresh or navigating up, we need to make sure that all
-    -- open folders are loaded.
+end
+
+local handle_refresh_or_up = function (context, async)
+    local parent_id = context.parent_id
+    local path_to_reveal = context.path_to_reveal
+    local state = context.state
     local path = parent_id or state.path
     context.paths_to_load = {}
     if parent_id == nil then
@@ -473,7 +478,98 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async, recurs
     else
       sync_scan(context, path)
     end
+end
+
+M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive) 
+  if state.async_directory_scan == "always" then
+    async = true
+  elseif state.async_directory_scan == "never" then
+    async = false
+  elseif type(async) == "nil" then
+    async = (state.async_directory_scan == "auto") or state.async_directory_scan
   end
+
+  if not parent_id then
+    M.stop_watchers(state)
+  end
+  local context = file_items.create_context()
+  context.state = state
+  context.parent_id = parent_id
+  context.path_to_reveal = path_to_reveal
+  context.recursive = recursive
+  context.callback = callback
+  -- Create root folder
+  local root = file_items.create_item(context, parent_id or state.path, "directory")
+  root.name = vim.fn.fnamemodify(root.path, ":~")
+  root.loaded = true
+  root.search_pattern = state.search_pattern
+  context.root = root
+  context.folders[root.path] = root
+  state.default_expanded_nodes = state.force_open_folders or { state.path }
+
+  if state.search_pattern then
+    handle_search_pattern(context)
+  else
+    -- In the case of a refresh or navigating up, we need to make sure that all
+    -- open folders are loaded.
+    handle_refresh_or_up(context, async)
+  end
+end
+
+-- async method
+M.get_dir_items_async = function(state, parent_id, recursive)
+  local context = file_items.create_context()
+  context.state = state
+  context.parent_id = parent_id
+  context.path_to_reveal = nil
+  context.recursive = recursive
+  context.callback = nil
+  context.paths_to_load = {}
+
+  -- Create root folder
+  local root = file_items.create_item(context, parent_id or state.path, "directory")
+  root.name = vim.fn.fnamemodify(root.path, ":~")
+  root.loaded = true
+  root.search_pattern = state.search_pattern
+  context.root = root
+  context.folders[root.path] = root
+  state.default_expanded_nodes = state.force_open_folders or { state.path }
+
+  local filtered_items = state.filtered_items or {}
+  context.is_a_never_show_file = function(fname)
+    if fname then
+      local _, name = utils.split_path(fname)
+      if name then
+        if filtered_items.never_show and filtered_items.never_show[name] then
+          return true
+        end
+        if utils.is_filtered_by_pattern(filtered_items.never_show_by_pattern, fname, name) then
+          return true
+        end
+      end
+    end
+    return false
+  end
+  table.insert(context.paths_to_load, parent_id)
+ 
+  local scan_tasks = {}
+  for _, p in ipairs(context.paths_to_load) do
+     local scan_task = function ()
+       scan_dir_async(context, p)
+     end
+     table.insert(scan_tasks, scan_task)
+  end
+  async.util.join(scan_tasks)
+
+  job_complete_async(context)
+
+  local finalize =  async.wrap(function (_context, _callback)
+    vim.schedule(function ()
+        render_context(_context)
+        _callback()
+    end)
+  end, 2)
+  finalize(context)
 end
 
 M.stop_watchers = function(state)
