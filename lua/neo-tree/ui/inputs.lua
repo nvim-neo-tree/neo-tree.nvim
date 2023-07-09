@@ -15,6 +15,13 @@ M.show_input = function(input, callback)
 
   input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
+  end, { noremap = true })
+
+  input:map("n", "<esc>", function()
+    input:unmount()
+  end, { noremap = true })
+
+  input:map("n", "q", function()
     input:unmount()
   end, { noremap = true })
 
