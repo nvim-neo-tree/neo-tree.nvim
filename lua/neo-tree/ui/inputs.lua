@@ -14,6 +14,12 @@ M.show_input = function(input, callback)
  local config = require("neo-tree").config
   input:mount()
 
+  if config.enable_normal_mode_for_inputs then
+    vim.schedule(function()
+      vim.cmd("stopinsert")
+    end)
+  end
+
   input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
     if not config.enable_normal_mode_for_inputs then
