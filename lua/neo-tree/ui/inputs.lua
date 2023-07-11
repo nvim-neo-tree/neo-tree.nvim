@@ -11,10 +11,14 @@ local should_use_popup_input = function()
 end
 
 M.show_input = function(input, callback)
+ local config = require("neo-tree").config
   input:mount()
 
   input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
+    if not config.enable_normal_mode_for_inputs then
+      input:unmount()
+    end
   end, { noremap = true })
 
   input:map("n", "<esc>", function()
@@ -33,7 +37,7 @@ M.show_input = function(input, callback)
     if callback then
       callback()
     end
-  end, { once = true })
+  end, { once = true }) 
 end
 
 M.input = function(message, default_value, callback, options, completion)
