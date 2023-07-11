@@ -37,7 +37,7 @@ M.show_input = function(input, callback)
     if callback then
       callback()
     end
-  end, { once = true }) 
+  end, { once = true })
 end
 
 M.input = function(message, default_value, callback, options, completion)
