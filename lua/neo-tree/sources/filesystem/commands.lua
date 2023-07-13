@@ -67,11 +67,11 @@ M.delete_visual = function(state, selected_nodes)
   cc.delete_visual(state, selected_nodes, utils.wrap(refresh, state))
 end
 
-M.expand_all_nodes = function(state)
-  local toggle_dir_no_redraw = function(_state, node)
-    fs.toggle_directory(_state, node, nil, true, true)
+M.expand_all_nodes = function(state, node)
+  if node == nil then
+    node = state.tree:get_node(state.path)
   end
-  cc.expand_all_nodes(state, toggle_dir_no_redraw)
+  cc.expand_all_nodes(state, node, fs.prefetcher)
 end
 
 ---Shows the filter input, which will filter the tree.

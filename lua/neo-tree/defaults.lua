@@ -23,6 +23,7 @@ local config = {
   enable_opened_markers = true,   -- Enable tracking of opened files. Required for `components.name.highlight_opened_files`
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   enable_cursor_hijack = false, -- If enabled neotree will keep the cursor on the first letter of the filename when moving in the tree.
+  enable_normal_mode_for_inputs = false, -- Enable normal mode for input dialogs.
   git_status_async = true,
   -- These options are for people with VERY large git repos
   git_status_async_options = {
@@ -37,7 +38,7 @@ local config = {
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
-  open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
+  open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
@@ -58,9 +59,9 @@ local config = {
       { source = "git_status" },
     },
     content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
-    --                start  : |/ 裡 bufname     \/...
-    --                end    : |/     裡 bufname \/...
-    --                center : |/   裡 bufname   \/...
+    --                start  : |/ 󰓩 bufname     \/...
+    --                end    : |/     󰓩 bufname \/...
+    --                center : |/   󰓩 bufname   \/...
     tabs_layout = "equal", -- start, end, center, equal, focus
     --             start  : |/  a  \/  b  \/  c  \            |
     --             end    : |            /  a  \/  b  \/  c  \|
@@ -199,8 +200,8 @@ local config = {
     icon = {
       folder_closed = "",
       folder_open = "",
-      folder_empty = "ﰊ",
-      folder_empty_open = "ﰊ",
+      folder_empty = "󰜌",
+      folder_empty_open = "󰜌",
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
       default = "*",
@@ -225,11 +226,11 @@ local config = {
         added     = "✚", -- NOTE: you can set any of these to an empty string to not show them
         deleted   = "✖",
         modified  = "",
-        renamed   = "",
+        renamed   = "󰁕",
         -- Status type
         untracked = "",
         ignored   = "",
-        unstaged  = "",
+        unstaged  = "󰄱",
         staged    = "",
         conflict  = "",
       },
@@ -476,8 +477,11 @@ local config = {
     --end,
     group_empty_dirs = false, -- when true, empty folders will be grouped together
     search_limit = 50, -- max number of search results when using filters
-    follow_current_file = false, -- This will find and focus the file in the active buffer every time
-                                 -- the current file is changed while the tree is open.
+    follow_current_file = {
+      enabled = false, -- This will find and focus the file in the active buffer every time
+      --               -- the current file is changed while the tree is open.
+      leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+    },
     hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                             -- in whatever position is specified in window.position
                           -- "open_current",-- netrw disabled, opening a directory opens within the
@@ -488,8 +492,11 @@ local config = {
   },
   buffers = {
     bind_to_cwd = true,
-    follow_current_file = true, -- This will find and focus the file in the active buffer every time
-                                -- the current file is changed while the tree is open.
+    follow_current_file = {
+      enabled = true, -- This will find and focus the file in the active buffer every time
+      --              -- the current file is changed while the tree is open.
+      leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+    },
     group_empty_dirs = true,  -- when true, empty directories will be grouped together
     show_unloaded = false,    -- When working with sessions, for example, restored but unfocused buffers
                               -- are mark as "unloaded". Turn this on to view these unloaded buffer.
@@ -561,37 +568,37 @@ local config = {
     kinds = {
       Unknown = { icon = "?", hl = "" },
       Root = { icon = "", hl = "NeoTreeRootName" },
-      File = { icon = "", hl = "Tag" },
+      File = { icon = "󰈙", hl = "Tag" },
       Module = { icon = "", hl = "Exception" },
-      Namespace = { icon = "", hl = "Include" },
-      Package = { icon = "", hl = "Label" },
-      Class = { icon = "", hl = "Include" },
+      Namespace = { icon = "󰌗", hl = "Include" },
+      Package = { icon = "󰏖", hl = "Label" },
+      Class = { icon = "󰌗", hl = "Include" },
       Method = { icon = "", hl = "Function" },
-      Property = { icon = "", hl = "@property" },
+      Property = { icon = "󰆧", hl = "@property" },
       Field = { icon = "", hl = "@field" },
       Constructor = { icon = "", hl = "@constructor" },
-      Enum = { icon = "了", hl = "@number" },
+      Enum = { icon = "󰒻", hl = "@number" },
       Interface = { icon = "", hl = "Type" },
-      Function = { icon = "", hl = "Function" },
+      Function = { icon = "󰊕", hl = "Function" },
       Variable = { icon = "", hl = "@variable" },
       Constant = { icon = "", hl = "Constant" },
-      String = { icon = "", hl = "String" },
-      Number = { icon = "", hl = "Number" },
+      String = { icon = "󰀬", hl = "String" },
+      Number = { icon = "󰎠", hl = "Number" },
       Boolean = { icon = "", hl = "Boolean" },
-      Array = { icon = "", hl = "Type" },
-      Object = { icon = "", hl = "Type" },
-      Key = { icon = "", hl = "" },
+      Array = { icon = "󰅪", hl = "Type" },
+      Object = { icon = "󰅩", hl = "Type" },
+      Key = { icon = "󰌋", hl = "" },
       Null = { icon = "", hl = "Constant" },
       EnumMember = { icon = "", hl = "Number" },
-      Struct = { icon = "", hl = "Type" },
+      Struct = { icon = "󰌗", hl = "Type" },
       Event = { icon = "", hl = "Constant" },
-      Operator = { icon = "", hl = "Operator" },
-      TypeParameter = { icon = "", hl = "Type" },
+      Operator = { icon = "󰆕", hl = "Operator" },
+      TypeParameter = { icon = "󰊄", hl = "Type" },
 
       -- ccls
       -- TypeAlias = { icon = ' ', hl = 'Type' },
       -- Parameter = { icon = ' ', hl = '@parameter' },
-      -- StaticMethod = { icon = 'ﴂ ', hl = 'Function' },
+      -- StaticMethod = { icon = '󰠄 ', hl = 'Function' },
       -- Macro = { icon = ' ', hl = 'Macro' },
     }
   },

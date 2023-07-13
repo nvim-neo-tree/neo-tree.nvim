@@ -18,7 +18,7 @@ local M = {}
 M.icon = function(config, node, state)
   return {
     text = node:get_depth() == 1 and "" or node.extra.kind.icon,
-    highlight = node.extra.kind.hl,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
   }
 end
 
@@ -27,14 +27,14 @@ M.kind_icon = M.icon
 M.kind_name = function(config, node, state)
   return {
     text = node:get_depth() == 1 and "" or node.extra.kind.name,
-    highlight = node.extra.kind.hl,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
   }
 end
 
 M.name = function(config, node, state)
   return {
     text = node.name,
-    highlight = node.extra.kind.hl or highlights.FILE_NAME,
+    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
   }
 end
 

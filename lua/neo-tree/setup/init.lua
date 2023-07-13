@@ -293,19 +293,22 @@ M.win_enter_event = function()
         log.debug("close_if_last_window, modified files found: ", vim.inspect(mod))
         for filename, buf_info in pairs(mod) do
           if buf_info.modified then
+            local buf_name, message
             if vim.startswith(filename, "[No Name]#") then
-              local bufnr = string.sub(filename, 11)
-              log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
-              vim.schedule(function()
-                log.warn(
-                  "Cannot close because an unnamed buffer is modified. Please save or discard this file."
-                )
-                vim.cmd("vsplit")
-                vim.api.nvim_win_set_width(win_id, state.window.width or 40)
-                vim.cmd("b" .. bufnr)
-              end)
-              return
+              buf_name = string.sub(filename, 11)
+              message = "Cannot close because an unnamed buffer is modified. Please save or discard this file."
+            else
+              buf_name = filename
+              message = "Cannot close because one of the files is modified. Please save or discard changes."
             end
+            log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
+            vim.schedule(function()
+              log.warn(message)
+              vim.cmd("rightbelow vertical split")
+              vim.api.nvim_win_set_width(win_id, state.window.width or 40)
+              vim.cmd("b" .. buf_name)
+            end)
+            return
           end
         end
         vim.cmd("q!")
@@ -332,6 +335,7 @@ M.win_enter_event = function()
           local bufnr = vim.api.nvim_get_current_buf()
           if bufnr ~= current_bufnr then
             -- The neo-tree buffer was replaced with something else, so we don't need to do anything.
+            log.trace("neo-tree buffer replaced with something else - no further action required")
             return
           end
           -- create a new tree for this window

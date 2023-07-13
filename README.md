@@ -31,7 +31,7 @@ should you!
 - Neo-tree won't leave its window scrolled to the last line when there is
   plenty of room to display the whole tree.
 - Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher=true`)
-- Neo-tree can intelligently follow the current file (set `follow_current_file=true`)
+- Neo-tree can intelligently follow the current file (set `follow_current_file.enabled=true`)
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!
@@ -114,7 +114,7 @@ use {
       vim.fn.sign_define("DiagnosticSignInfo",
         {text = " ", texthl = "DiagnosticSignInfo"})
       vim.fn.sign_define("DiagnosticSignHint",
-        {text = "", texthl = "DiagnosticSignHint"})
+        {text = "󰌵", texthl = "DiagnosticSignHint"})
       -- NOTE: this is changed from v1.x, which used the old style of highlight groups
       -- in the form "LspDiagnosticsSignWarning"
 
@@ -123,6 +123,7 @@ use {
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
+        enable_normal_mode_for_inputs = false, -- Enable normal mode for input dialogs.
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
         sort_function = nil , -- use a custom function for sorting files and directories in the tree 
@@ -154,7 +155,7 @@ use {
           icon = {
             folder_closed = "",
             folder_open = "",
-            folder_empty = "ﰊ",
+            folder_empty = "󰜌",
             -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
             -- then these will never be used.
             default = "*",
@@ -175,11 +176,11 @@ use {
               added     = "", -- or "✚", but this is redundant info if you use git_status_colors on the name
               modified  = "", -- or "", but this is redundant info if you use git_status_colors on the name
               deleted   = "✖",-- this can only be used in the git_status source
-              renamed   = "",-- this can only be used in the git_status source
+              renamed   = "󰁕",-- this can only be used in the git_status source
               -- Status type
               untracked = "",
               ignored   = "",
-              unstaged  = "",
+              unstaged  = "󰄱",
               staged    = "",
               conflict  = "",
             }
@@ -273,8 +274,11 @@ use {
               --".null-ls_*",
             },
           },
-          follow_current_file = false, -- This will find and focus the file in the active buffer every
-                                       -- time the current file is changed while the tree is open.
+          follow_current_file = {
+            enabled = false, -- This will find and focus the file in the active buffer every time
+            --               -- the current file is changed while the tree is open.
+            leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+          },
           group_empty_dirs = false, -- when true, empty folders will be grouped together
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
                                                   -- in whatever position is specified in window.position
@@ -308,8 +312,11 @@ use {
           commands = {} -- Add a custom command or override a global one using the same function name
         },
         buffers = {
-          follow_current_file = true, -- This will find and focus the file in the active buffer every
-                                       -- time the current file is changed while the tree is open.
+          follow_current_file = {
+            enabled = true, -- This will find and focus the file in the active buffer every time
+            --              -- the current file is changed while the tree is open.
+            leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+          },
           group_empty_dirs = true, -- when true, empty folders will be grouped together
           show_unloaded = true,
           window = {
@@ -399,6 +406,7 @@ require("neo-tree").setup({
   source_selector = {
     sources = {
       { source = "filesystem", display_name = " 󰉓 Files " },
+      { source = "buffers", display_name = " 󰈚 Buffers " },
       { source = "git_status", display_name = " 󰊢 Git " },
     },
   },

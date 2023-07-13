@@ -100,7 +100,9 @@ M.execute = function(args)
   -- Handle setting directory if requested
   local path_changed = false
   if utils.truthy(args.dir) then
-    if #args.dir > 1 and args.dir:sub(-1) == utils.path_separator then
+    -- Root paths on Windows have 3 characters ("C:\")
+    local root_len = vim.fn.has("win32") == 1 and 3 or 1
+    if #args.dir > root_len and args.dir:sub(-1) == utils.path_separator then
       args.dir = args.dir:sub(1, -2)
     end
     path_changed = state.path ~= args.dir
@@ -124,9 +126,9 @@ M.execute = function(args)
 
   -- All set, now show or focus the window
   local force_navigate = path_changed or do_reveal or git_base_changed or state.dirty
-  if position_changed and args.position ~= "current" and current_position ~= "current" then
-    manager.close(args.source)
-  end
+  --if position_changed and args.position ~= "current" and current_position ~= "current" then
+  --  manager.close(args.source)
+  --end
   if do_reveal then
     handle_reveal(args, state)
   else
@@ -159,7 +161,7 @@ do_show_or_focus = function(args, state, force_navigate)
       -- There's nothing to do here, we are already at the target state
       return
     end
-    close_other_sources()
+    -- close_other_sources()
     local current_win = vim.api.nvim_get_current_win()
     manager.navigate(state, args.dir, args.reveal_file, function()
       -- navigate changes the window to neo-tree, so just quickly hop back to the original window
@@ -171,7 +173,7 @@ do_show_or_focus = function(args, state, force_navigate)
       vim.api.nvim_set_current_win(state.winid)
     end
     if force_navigate or not window_exists then
-      close_other_sources()
+      -- close_other_sources()
       manager.navigate(state, args.dir, args.reveal_file, nil, false)
     end
   end

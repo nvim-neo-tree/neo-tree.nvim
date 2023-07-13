@@ -315,10 +315,10 @@ end
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any The default value to return if the value is nil.
----@param strict_type_check boolean Whether to require the type of the value is
+---@param defaultValue any|nil The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is
 ---the same as the default value.
----@return table|nil table The value at the path or the default value.
+---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
     return defaultValue
@@ -356,6 +356,9 @@ M.set_value = function(sourceObject, valuePath, value)
     if i == #pathParts then
       currentTable[part] = value
     else
+      if type(currentTable[part]) ~= "table" then
+        currentTable[part] = {}
+      end
       currentTable = currentTable[part]
     end
   end
@@ -547,22 +550,26 @@ end
 ---Open file in the appropriate window.
 ---@param state table The state of the source
 ---@param path string The file to open
----@param open_cmd string The vimcommand to use to open the file
+---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
-  if open_cmd == "edit" or open_cmd == "e" then
     -- If the file is already open, switch to it.
-    bufnr = bufnr or M.find_buffer_by_name(path)
-    if bufnr <= 0 then
-      bufnr = nil
+  bufnr = bufnr or M.find_buffer_by_name(path)
+  if bufnr <= 0 then
+    bufnr = nil
+  else
+    local buf_cmd_lookup = { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
+    local cmd_for_buf = buf_cmd_lookup[open_cmd]
+    if cmd_for_buf then
+      open_cmd = cmd_for_buf
     else
-      open_cmd = "b"
+      bufnr = nil
     end
   end
 
   if M.truthy(path) then
-    local escaped_path = vim.fn.fnameescape(path)
+    local escaped_path = M.escape_path(path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
@@ -891,6 +898,14 @@ end
 
 M.windowize_path = function(path)
   return path:gsub("/", "\\")
+end
+
+M.escape_path = function(path)
+  local escaped_path = vim.fn.fnameescape(path)
+  if M.is_windows then
+    escaped_path = escaped_path:gsub("\\", "/")
+  end
+  return escaped_path
 end
 
 M.wrap = function(func, ...)

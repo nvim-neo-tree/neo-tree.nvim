@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = "  Files ",
+  display_name = " 󰉓 Files "
 }
 
 local wrap = function(func)
@@ -34,12 +34,13 @@ end
 local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
-    return
+    return false
   end
   local path_to_reveal = manager.get_path_to_reveal()
   if not utils.truthy(path_to_reveal) then
     return false
   end
+  ---@cast path_to_reveal string
 
   local state = get_state()
   if state.current_position == "float" then
@@ -70,22 +71,19 @@ local follow_internal = function(callback, force_show, async)
 
   log.debug("follow file: ", path_to_reveal)
   local show_only_explicitly_opened = function()
-    local eod = state.explicitly_opened_directories or {}
+    state.explicitly_opened_directories = state.explicitly_opened_directories or {}
     local expanded_nodes = renderer.get_expanded_nodes(state.tree)
     local state_changed = false
     for _, id in ipairs(expanded_nodes) do
-      local is_explicit = eod[id]
-      if not is_explicit then
-        local is_in_path = path_to_reveal:sub(1, #id) == id
-        if is_in_path then
-          is_explicit = true
-        end
-      end
-      if not is_explicit then
-        local node = state.tree:get_node(id)
-        if node then
-          node:collapse()
-          state_changed = true
+      if not state.explicitly_opened_directories[id] then
+        if path_to_reveal:sub(1, #id) == id then
+          state.explicitly_opened_directories[id] = state.follow_current_file.leave_dirs_open
+        else
+          local node = state.tree:get_node(id)
+          if node then
+            node:collapse()
+            state_changed = true
+          end
         end
       end
       if state_changed then
@@ -146,7 +144,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     fs_scan.get_items(state, nil, path_to_reveal, callback)
   else
     local is_current = state.current_position == "current"
-    local follow_file = state.follow_current_file
+    local follow_file = state.follow_current_file.enabled
       and not is_search
       and not is_current
       and manager.get_path_to_reveal()
@@ -175,9 +173,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 end
 
 ---Navigate to the given path.
----@param path string? Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string? Node to focus after the items are loaded.
----@param callback function? Callback to call after the items are loaded.
+---@param path string Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string Node to focus after the items are loaded.
+---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
@@ -228,8 +226,10 @@ M.reset_search = function(state, refresh, open_current_node)
         end
       end
     end
-  elseif refresh then
-    M.navigate(state)
+  else
+    if refresh then
+      M.navigate(state)
+    end
   end
 end
 
@@ -380,7 +380,7 @@ M.setup = function(config, global_config)
   end
 
   -- Configure event handler for follow_current_file option
-  if config.follow_current_file then
+  if config.follow_current_file.enabled then
     manager.subscribe(M.name, {
       event = events.VIM_BUFFER_ENTER,
       handler = function(args)
@@ -393,7 +393,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
-M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive)
+M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive, callback)
   local tree = state.tree
   if not node then
     node = tree:get_node()
@@ -406,7 +406,7 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     local id = node:get_id()
     state.explicitly_opened_directories[id] = true
     renderer.position.set(state, nil)
-    fs_scan.get_items(state, id, path_to_reveal, nil, false, recursive)
+    fs_scan.get_items(state, id, path_to_reveal, callback, false, recursive)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
@@ -427,5 +427,15 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
     renderer.redraw(state)
   end
 end
+
+M.prefetcher = {
+  prefetch = function (state, node)
+    log.debug("Running fs prefetch for: " .. node:get_id())
+    fs_scan.get_dir_items_async(state, node:get_id(), true)
+  end,
+  should_prefetch = function (node)
+    return not node.loaded
+  end
+}
 
 return M

@@ -10,7 +10,7 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {
   name = "git_status",
-  display_name = "  Git "
+  display_name = " 󰊢 Git "
 }
 
 local wrap = function(func)
@@ -71,6 +71,12 @@ M.setup = function(config, global_config)
   end
 
   if global_config.enable_diagnostics then
+    manager.subscribe(M.name, {
+      event = events.STATE_CREATED,
+      handler = function(state)
+        state.diagnostics_lookup = utils.get_diagnostic_counts()
+      end,
+    })
     manager.subscribe(M.name, {
       event = events.VIM_DIAGNOSTIC_CHANGED,
       handler = wrap(manager.diagnostics_changed),
