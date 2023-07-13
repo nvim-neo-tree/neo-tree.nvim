@@ -1,11 +1,17 @@
 local events = require("neo-tree.events")
-local manager = require("neo-tree.sources.manager")
 local log = require("neo-tree.log")
 
 local M = {}
 
-local create_handler_for_module = function(state)
-  return function()
+local hijack_cursor_handler = function()
+  if vim.o.filetype ~= "neo-tree" then
+        return
+    end
+    local source = vim.api.nvim_buf_get_var(0, "neo_tree_source")
+    local state = require("neo-tree.sources.manager").get_state(source)
+    if state == nil then
+      return
+    end
     local winid = state.winid
     if vim.api.nvim_get_current_win() == winid then
       local node = state.tree:get_node()
@@ -18,17 +24,15 @@ local create_handler_for_module = function(state)
         vim.api.nvim_win_set_cursor(0, { row, startIndex - 1 })
       end
     end
-  end
 end
 
 --Enables cursor hijack behavior for all sources
 M.setup = function()
-  manager._for_each_state(nil, function (state)
-    manager.subscribe(state.name, {
-      event = events.VIM_CURSOR_MOVED,
-      handler = create_handler_for_module(state),
-    })
-  end)
+  events.subscribe({
+    event = events.VIM_CURSOR_MOVED,
+    handler = hijack_cursor_handler,
+    id = "neo-tree-hijack-cursor",
+  })
 end
 
 return M
