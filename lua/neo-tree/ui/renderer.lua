@@ -873,12 +873,6 @@ local function create_floating_window(state, win_options, bufname)
     win.original_options = state.window
     table.insert(floating_windows, win)
 
-    if require("neo-tree").config.close_floats_on_escape_key then
-      win:map("n", "<esc>", function(_)
-        win:unmount()
-      end, { noremap = true })
-    end
-
     win:on({ "BufHidden" }, function()
       vim.schedule(function()
         win:unmount()

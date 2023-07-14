@@ -15,7 +15,6 @@ local config = {
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
-  close_floats_on_escape_key = true,
   default_source = "filesystem",
   enable_diagnostics = true,
   enable_git_status = true,
@@ -338,7 +337,7 @@ local config = {
       },
       ["<2-LeftMouse>"] = "open",
       ["<cr>"] = "open",
-      ["<esc>"] = "revert_preview",
+      ["<esc>"] = "cancel", -- close preview or floating neo-tree window
       ["P"] = { "toggle_preview", config = { use_float = true } },
       ["l"] = "focus_preview",
       ["S"] = "open_split",
