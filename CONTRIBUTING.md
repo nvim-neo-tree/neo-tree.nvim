@@ -32,8 +32,7 @@ optional scope for this project would usually be the source, i.e.
 
 ## Branching
 
-The default branch is set to the current major version to make it simple for end
-users visiting the repo. Pull Requests, however, should go to the `main`
+The default branch is set to `main` and all Pull Requests should target this
 branch. After a short testing period, it will be merged to the current release
 branch.
 
@@ -48,11 +47,16 @@ All new features should be documented in the commit they were added in. The
 current strategy is to maintain:
 
 - Config Options: added to [defaults](lua/neo-tree/defaults.lua) and described
-  in comments
+  in comments. This is the bare minimum documentation for an option.
 - The README contains "back of the box" high level overview of features. It is
   meant for people trying to decide if they want to install this plugin or not.
   It should include references to the help file for more information: 
   `:h neo-tree-setup`
+- Whether something should be mentioned in the README or just in the help file
+  is a completely subjective judement call that is made on a case by case basis 
+  based on how many people are likely to be interested in that information.
 - The vim help file [doc/neo-tree.txt](doc/neo-tree.txt) is the definitive
   reference and should contain all information needed to configure and use the
   plugin.
+- OUR DOCUMENTATION IS NOT GOOD ENOUGH! Consider the current level of documentation
+  the bare minumum and not the ideal. More documentation would be greatly appreciated.

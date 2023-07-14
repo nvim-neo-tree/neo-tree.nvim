@@ -15,8 +15,8 @@ will be a new branch that you can opt into, when it is a good time for you.
 
 See [What is a Breaking Change?](#what-is-a-breaking-change) for details.
 
-See [Changelog 2.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#20)
-for breaking changes and deprecations in 2.0.
+See [Changelog 3.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#30)
+for breaking changes and deprecations in 3.0.
 
 
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
@@ -43,11 +43,24 @@ so we can fix it.
 
 ## Minimal Quickstart
 
+#### Minimal Example for Lazy:
+```lua
+{
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    requires = { 
+      "nvim-lua/plenary.nvim",
+      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+      "MunifTanjim/nui.nvim",
+    }
+}
+```
+
 #### Minimal Example for Packer:
 ```lua
 use {
   "nvim-neo-tree/neo-tree.nvim",
-    branch = "v2.x",
+    branch = "v3.x",
     requires = { 
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
@@ -71,7 +84,7 @@ Press `?` in the Neo-tree window to view the list of mappings.
 ```lua
 use {
   "nvim-neo-tree/neo-tree.nvim",
-    branch = "v2.x",
+    branch = "v3.x",
     requires = { 
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
@@ -109,8 +122,6 @@ use {
         {text = " ", texthl = "DiagnosticSignInfo"})
       vim.fn.sign_define("DiagnosticSignHint",
         {text = "󰌵", texthl = "DiagnosticSignHint"})
-      -- NOTE: this is changed from v1.x, which used the old style of highlight groups
-      -- in the form "LspDiagnosticsSignWarning"
 
       require("neo-tree").setup({
         close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
@@ -587,7 +598,10 @@ add `"document_symbols"` to `config.sources` and open it with the command
 :Neotree document_symbols
 ```
 
+### External Sources
 
+There are more sources available as extensions that are managed outside of this repository. See the
+[wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for me information.
 
 ### Source Selector
 ![Neo-tree source selector](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-source-selector.png)
@@ -709,6 +723,22 @@ part of the public API, please open an issue so we can discuss it.
 Contributions are encouraged. Please see [CONTRIBUTING](CONTRIBUTING.md) for more details.
 
 ## Acknowledgements
+
+### Maintainers
+
+First and foremost, this project is a community endeavor and would not survive without the constant stream of features
+and bug fixes that comes from that community. There have been many valued contributors, but a few have stepped up to
+become maintainers that generously donate their time to guide the project, help out others, and manage the issues. The
+current list of maintainers are:
+
+(in alphabetical order)
+
+- @cseickel
+- @miversen33
+- @nhat-vo
+- @pysan3
+
+### Other Projects
 
 This project relies upon these two excellent libraries:
 - [nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI components, including the tree!
