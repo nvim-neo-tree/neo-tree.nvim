@@ -7,7 +7,11 @@ local hijack_cursor_handler = function()
     if vim.o.filetype ~= "neo-tree" then
         return
     end
-    local source = vim.api.nvim_buf_get_var(0, "neo_tree_source")
+    local success, source = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
+    if not success then
+        log.debug("Cursor hijack failure: " .. vim.inspect(source))
+        return
+    end
     local state = require("neo-tree.sources.manager").get_state(source)
     if state == nil then
       return
