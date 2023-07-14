@@ -1,7 +1,11 @@
 local locations = {}
 
 local get_location = function(location)
-  local loc = locations[location]
+  local tab = vim.api.nvim_get_current_tabpage()
+  if not locations[tab] then
+    locations[tab] = {}
+  end
+  local loc = locations[tab][location]
   if loc then
     if loc.winid ~= 0 then
       -- verify the window before we return it
@@ -16,9 +20,8 @@ local get_location = function(location)
     name = location,
     winid = 0,
   }
-  locations[location] = loc
+  locations[tab][location] = loc
   return loc
 end
 
-local M = { get_location = get_location }
-return M
+return { get_location = get_location }
