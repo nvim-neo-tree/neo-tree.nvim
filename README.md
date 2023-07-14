@@ -689,7 +689,7 @@ add any features you can think of through existing hooks in the setup function.
 
 As of v1.30, a breaking change is defined as anything that _changes_ existing:
 
-- vim commands (`:Neotree`, `:NeoTreeReveal`, etc)
+- vim commands (`:Neotree`)
 - configuration options that are passed into the `setup()` function
 - `NeoTree*` highlight groups
 - lua functions exported in the following modules that are not prefixed with `_`:
