@@ -45,9 +45,6 @@ so we can fix it.
 
 #### Minimal Example for Packer:
 ```lua
--- Unless you are still migrating, remove the deprecated commands from v1.x
-vim.cmd([[ let g:neo_tree_remove_legacy_commands = 1 ]])
-
 use {
   "nvim-neo-tree/neo-tree.nvim",
     branch = "v2.x",
@@ -103,9 +100,6 @@ use {
       }
     },
     config = function ()
-      -- Unless you are still migrating, remove the deprecated commands from v1.x
-      vim.cmd([[ let g:neo_tree_remove_legacy_commands = 1 ]])
-
       -- If you want icons for diagnostic errors, you'll need to define them somewhere:
       vim.fn.sign_define("DiagnosticSignError",
         {text = " ", texthl = "DiagnosticSignError"})
@@ -362,56 +356,6 @@ into a buffer after installing Neo-tree by running:
 
 ```
 :lua require("neo-tree").paste_default_config()
-```
-
-#### Configuration for Nerd Fonts v3 Users
-
-The following configuration should fix broken icons if you are using Nerd Fonts v3:
-
-```lua
-require("neo-tree").setup({
-  default_component_configs = {
-    icon = {
-      folder_empty = "󰜌",
-      folder_empty_open = "󰜌",
-    },
-    git_status = {
-      symbols = {
-        renamed   = "󰁕",
-        unstaged  = "󰄱",
-      },
-    },
-  },
-  document_symbols = {
-    kinds = {
-      File = { icon = "󰈙", hl = "Tag" },
-      Namespace = { icon = "󰌗", hl = "Include" },
-      Package = { icon = "󰏖", hl = "Label" },
-      Class = { icon = "󰌗", hl = "Include" },
-      Property = { icon = "󰆧", hl = "@property" },
-      Enum = { icon = "󰒻", hl = "@number" },
-      Function = { icon = "󰊕", hl = "Function" },
-      String = { icon = "󰀬", hl = "String" },
-      Number = { icon = "󰎠", hl = "Number" },
-      Array = { icon = "󰅪", hl = "Type" },
-      Object = { icon = "󰅩", hl = "Type" },
-      Key = { icon = "󰌋", hl = "" },
-      Struct = { icon = "󰌗", hl = "Type" },
-      Operator = { icon = "󰆕", hl = "Operator" },
-      TypeParameter = { icon = "󰊄", hl = "Type" },
-      StaticMethod = { icon = '󰠄 ', hl = 'Function' },
-    }
-  },
-  -- Add this section only if you've configured source selector.
-  source_selector = {
-    sources = {
-      { source = "filesystem", display_name = " 󰉓 Files " },
-      { source = "buffers", display_name = " 󰈚 Buffers " },
-      { source = "git_status", display_name = " 󰊢 Git " },
-    },
-  },
-  -- Other options ...
-})
 ```
 
 ## The `:Neotree` Command
@@ -745,7 +689,7 @@ add any features you can think of through existing hooks in the setup function.
 
 As of v1.30, a breaking change is defined as anything that _changes_ existing:
 
-- vim commands (`:NeoTreeShow`, `:NeoTreeReveal`, etc)
+- vim commands (`:Neotree`)
 - configuration options that are passed into the `setup()` function
 - `NeoTree*` highlight groups
 - lua functions exported in the following modules that are not prefixed with `_`:
