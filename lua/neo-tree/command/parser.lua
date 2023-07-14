@@ -79,6 +79,7 @@ M.setup = function(all_source_names)
 end
 
 M.resolve_path = function(path, validate_type)
+  path = vim.fs.normalize(path)
   local expanded = vim.fn.expand(path)
   local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
