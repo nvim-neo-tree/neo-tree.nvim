@@ -103,6 +103,9 @@ M.migrate = function(config)
   moved_inside("filesystem.follow_current_file", "enabled")
   moved_inside("buffers.follow_current_file", "enabled")
 
+  -- v3.x
+  removed("close_floats_on_escape_key")
+
   return migrations
 end
 
