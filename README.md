@@ -6,6 +6,10 @@ netrw split style, or all of them at once!
 
 ![Neo-tree file system](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-right-aligned-symbols.png)
 
+## NOTICE
+
+**You are viewing an old release of Neo-tree, please switch to the [main](https://github.com/nvim-neo-tree/neo-tree.nvim/tree/main#readme) branch to view the current version.**
+
 ### Breaking Changes BAD :bomb: :imp:
 
 The biggest and most important feature of Neo-tree is that we will never
