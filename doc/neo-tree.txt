@@ -9,7 +9,8 @@ Mappings .................... |neo-tree-mappings|
   View Changes .............. |neo-tree-view-changes|
   File Actions .............. |neo-tree-file-actions|
   Filter .................... |neo-tree-filter|
-  Global custom commands .... |neo-tree-custom-commands-global|
+  Custom Mappings ........... |neo-tree-custom-mappings|
+  Custom Commands ........... |neo-tree-custom-commands|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
@@ -427,6 +428,114 @@ section in the default config instead of at the root level, that means it is
 specific to that source and will not work for others.
 
 
+CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
+
+If you want to create a mapping that supports visual mode, the way to do that
+is to add a second command where the name is the same as the normal mode
+command, but with `_visual` added to the end. Any mapping for this command will
+then work in either normal or visual mode.
+
+The `_visual` version of the command will be called with a second argument
+which is a list of the nodes that were selected when the command was called.
+
+For example, this is how the built-in `delete` command is defined:
+
+>lua
+    M.delete = function(state, callback)
+      local tree = state.tree
+      local node = tree:get_node()
+      fs_actions.delete_node(node.path, callback)
+    end
+
+    M.delete_visual = function(state, selected_nodes, callback)
+      local paths_to_delete = {}
+      for _, node_to_delete in pairs(selected_nodes) do
+        table.insert(paths_to_delete, node_to_delete.path)
+      end
+      fs_actions.delete_nodes(paths_to_delete, callback)
+    end
+<
+
+CUSTOM MAPPINGS WITH ARGUMENTS               *neo-tree-custom-mappings-args*
+
+If you want to include options for your mappings, such as `nowait`, you can
+set this for all mappings using the `mapping_options` key, or on individual
+mappings by specifying them as a table that consists of the command and any
+options you want to use. If both are specified, the mapping merges with and
+overrides the global `mapping_options`
+
+The command can be either the string name of a built-in command, or a
+function, and is specified either as the first element in the table or by
+assigning it to the `command` key:
+>lua
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mapping_options = {
+            noremap = true,
+            nowait = false,
+         },
+         mappings = {
+           ["?"] = {
+             function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             nowait = true
+           },
+           ["i"] = {
+             command = function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             nowait = true
+           },
+           ["o"] = {
+             command = "open",
+             nowait = true
+           },
+           ["O"] = {
+             "open",
+             nowait = true
+           },
+         }
+       }
+     }
+   })
+<
+See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
+are enabled by default.
+
+CUSTOM MAPPINGS WITH CONFIG               *neo-tree-custom-mappings-config*
+
+Some mappings may accept an optional `config` table to control it's behavior.
+When that is the case, the command is specified using the table syntax, and
+the config options are in a table bound to the `config` key:
+>lua
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mappings = {
+           ["a"] = {
+             "add",
+             nowait = true
+             config = {
+               show_path = "none" -- "none", "relative", "absolute"
+             }
+           },
+         }
+       }
+     }
+   })
+<
+When the `config` key is used, it is added to the `state` argument that is
+passed to the command function:
+>lua
+    M.add = function(state, callback)
+      local show_path = state.config.show_path
+      ...
+<
+
 CUSTOM COMMANDS                                       *neo-tree-custom-commands*
 
 If you want to define your own command, you have two options:
@@ -516,113 +625,6 @@ sources. If you need it you can then override it in a specific source.
 Now when pressing `<C-c>` in 'buffers' or 'git_status' it will print "Hello world",
 but in 'filesystem' it will print "Hello inside filesystem".
 
-CUSTOM MAPPINGS WITH VISUAL MODE
-
-If you want to create a mapping that supports visual mode, the way to do that
-is to add a second command where the name is the same as the normal mode
-command, but with `_visual` added to the end. Any mapping for this command will
-then work in either normal or visual mode.
-
-The `_visual` version of the command will be called with a second argument
-which is a list of the nodes that were selected when the command was called.
-
-For example, this is how the built-in `delete` command is defined:
-
->lua
-    M.delete = function(state, callback)
-      local tree = state.tree
-      local node = tree:get_node()
-      fs_actions.delete_node(node.path, callback)
-    end
-
-    M.delete_visual = function(state, selected_nodes, callback)
-      local paths_to_delete = {}
-      for _, node_to_delete in pairs(selected_nodes) do
-        table.insert(paths_to_delete, node_to_delete.path)
-      end
-      fs_actions.delete_nodes(paths_to_delete, callback)
-    end
-<
-
-CUSTOM MAPPINGS WITH ARGUMENTS
-
-If you want to include options for your mappings, such as `nowait`, you can
-set this for all mappings using the `mapping_options` key, or on individual
-mappings by specifying them as a table that consists of the command and any
-options you want to use. If both are specified, the mapping merges with and
-overrides the global `mapping_options`
-
-The command can be either the string name of a built-in command, or a
-function, and is specified either as the first element in the table or by
-assigning it to the `command` key:
->lua
-   require("neo-tree").setup({
-     filesystem = {
-       window = {
-         mapping_options = {
-            noremap = true,
-            nowait = false,
-         },
-         mappings = {
-           ["?"] = {
-             function(state)
-               local node = state.tree:get_node()
-               print(node.name)
-             end,
-             nowait = true
-           },
-           ["i"] = {
-             command = function(state)
-               local node = state.tree:get_node()
-               print(node.name)
-             end,
-             nowait = true
-           },
-           ["o"] = {
-             command = "open",
-             nowait = true
-           },
-           ["O"] = {
-             "open",
-             nowait = true
-           },
-         }
-       }
-     }
-   })
-<
-See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
-are enabled by default.
-
-CUSTOM MAPPINGS WITH CONFIG
-
-Some mappings may accept an optional `config` table to control it's behavior.
-When that is the case, the command is specified using the table syntax, and
-the config options are in a table bound to the `config` key:
->lua
-   require("neo-tree").setup({
-     filesystem = {
-       window = {
-         mappings = {
-           ["a"] = {
-             "add",
-             nowait = true
-             config = {
-               show_path = "none" -- "none", "relative", "absolute"
-             }
-           },
-         }
-       }
-     }
-   })
-<
-When the `config` key is used, it is added to the `state` argument that is
-passed to the command function:
->lua
-    M.add = function(state, callback)
-      local show_path = state.config.show_path
-      ...
-<
 
 ================================================================================
 CONFIGURATION                                                                  ~

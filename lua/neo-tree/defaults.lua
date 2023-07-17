@@ -302,7 +302,7 @@ local config = {
   --   end                     |    }                      |        print("Hello world in filesystem")
   -- }                         |  }                        |      end
   --
-  -- see `:h neo-tree-global-custom-commands`
+  -- see `:h neo-tree-custom-commands-global`
   commands = {}, -- A list of functions
 
   window = { -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
