@@ -160,7 +160,7 @@ M.close = function(state, focus_prior_window)
     state.winid = nil
   end
   local bufnr = utils.get_value(state, "bufnr", 0, true)
-    if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+  if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
     state.bufnr = nil
     local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
     if not success and err:match("E523") then
@@ -662,7 +662,7 @@ M.position = {
       log.debug("Restoring position to node_id: " .. state.position.node_id)
       M.focus_node(state, state.position.node_id, true)
       if state.position.topline then
-         vim.fn.winrestview({ topline = state.position.topline })
+        vim.fn.winrestview({ topline = state.position.topline })
       end
     else
       log.debug("Position is not restorable")
@@ -1092,12 +1092,17 @@ end
 ---Renders the given tree and expands window width if needed
 --@param state table The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
+  local add_blank_line_at_top = require("neo-tree").config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
     state._in_pre_render = true
-    state.tree:render()
+    if add_blank_line_at_top then
+      state.tree:render(2)
+    else
+      state.tree:render()
+    end
     state._in_pre_render = false
     state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
     if should_auto_expand and state.longest_node > state.window.last_user_width then
@@ -1107,7 +1112,11 @@ render_tree = function(state)
     end
   end
   if M.tree_is_visible(state) then
-    state.tree:render()
+    if add_blank_line_at_top then
+      state.tree:render(2)
+    else
+      state.tree:render()
+    end
   end
 end
 
@@ -1221,15 +1230,6 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     if not config.retain_hidden_root_indent then
       level = level - 1
     end
-  end
-
-  if config.add_blank_line_at_top and not parentId then
-    table.insert(sourceItems, 1, {
-      type = "message",
-      name = "",
-      path = "",
-      id = "blank_line_at_top",
-    })
   end
 
   if state.group_empty_dirs then
