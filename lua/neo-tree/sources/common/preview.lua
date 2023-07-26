@@ -393,7 +393,8 @@ Preview.toggle = function(state)
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
-        if not toggle_state or vim.api.nvim_get_current_win() == instance.winid then
+        local did_enter_preview = vim.api.nvim_get_current_win() == instance.winid
+        if not toggle_state or (did_enter_preview and instance.config.use_float) then
           return
         end
         if vim.api.nvim_get_current_win() == winid then
