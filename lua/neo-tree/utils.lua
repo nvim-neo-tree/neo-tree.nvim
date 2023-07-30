@@ -903,7 +903,7 @@ end
 M.escape_path = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    escaped_path = escaped_path:gsub("\\", "/")
+    escaped_path = escaped_path:gsub("\\", "/"):gsub("/ ", " ")
   end
   return escaped_path
 end
