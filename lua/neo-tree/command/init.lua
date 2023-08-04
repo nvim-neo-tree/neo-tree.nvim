@@ -67,6 +67,11 @@ M.execute = function(args)
   -- Restore the last source used if requested
   if args.source == "last" then
     args.source = M._last_source or nt.config.default_source
+
+    -- Prevent the default source from being set to "last"
+    if args.source == "last" then
+      args.source = nt.config.sources[1]
+    end
   end
   M._last_source = args.source
 
