@@ -11,6 +11,9 @@ local M = {
   complete_args = completion.complete_args,
 }
 
+-- Store the last source used for `M.execute`
+M._last_source = nil
+
 ---Executes a Neo-tree action from outside of a Neo-tree window,
 ---such as show, hide, navigate, etc.
 ---@param args table The action to execute. The table can have the following keys:
@@ -60,6 +63,12 @@ M.execute = function(args)
 
   -- The rest of the actions require a source
   args.source = args.source or nt.config.default_source
+
+  -- Restore the last source used if requested
+  if args.source == "last" then
+    args.source = M._last_source or nt.config.default_source
+  end
+  M._last_source = args.source
 
   -- If position=current was requested, but we are currently in a neo-tree window,
   -- then we need to override that.
