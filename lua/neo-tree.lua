@@ -3,6 +3,14 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local M = {}
 
+-- DEPRECATED: to be removed in a future release, use this instead:
+-- ```
+-- require("neo-tree.command").execute({ action = "close" }) 
+-- ```
+M.close_all = function()
+  require("neo-tree.command").execute({ action = "close" })
+end
+
 M.ensure_config = function()
   if not M.config then
     M.setup({ log_to_file = false }, true)
