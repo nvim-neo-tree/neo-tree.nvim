@@ -7,6 +7,7 @@ local run_focus_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
 
   vim.cmd(command)
+  --u.wait_for_neo_tree()
   verify.window_handle_is_not(winid)
   verify.buf_name_endswith("neo-tree filesystem [1]")
   if expected_tree_node then
@@ -20,6 +21,7 @@ local run_show_command = function(command, expected_tree_node)
   local expected_num_windows = #vim.api.nvim_list_wins() + 1
 
   vim.cmd(command)
+  --u.wait_for_neo_tree()
   verify.eventually(500, function()
     if #vim.api.nvim_list_wins() ~= expected_num_windows then
       return false

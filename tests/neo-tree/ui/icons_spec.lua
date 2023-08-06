@@ -49,9 +49,7 @@ describe("ui/icons", function()
       req_switch.disable_package("nvim-web-devicons")
 
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -88,9 +86,7 @@ describe("ui/icons", function()
 
     it("works w/ nvim-web-devicons", function()
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -151,9 +147,7 @@ describe("ui/icons", function()
       req_switch.disable_package("nvim-web-devicons")
 
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -190,9 +184,7 @@ describe("ui/icons", function()
 
     it("works w/ nvim-web-devicons", function()
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)

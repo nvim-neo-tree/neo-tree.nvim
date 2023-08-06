@@ -918,6 +918,9 @@ M.acquire_window = function(state)
     return state.winid
   end
 
+  -- used by tests to determine if the tree is ready for testing
+  state._ready = false
+
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
@@ -1184,6 +1187,7 @@ draw = function(nodes, state, parent_id)
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
   M.position.restore(state)
+  state._ready = true
 end
 
 local function group_empty_dirs(node)
