@@ -481,6 +481,7 @@ local handle_refresh_or_up = function (context, async)
 end
 
 M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive) 
+  renderer.acquire_window(state)
   if state.async_directory_scan == "always" then
     async = true
   elseif state.async_directory_scan == "never" then

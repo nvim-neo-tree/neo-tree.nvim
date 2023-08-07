@@ -15,7 +15,7 @@ local windows = require("neo-tree.ui.windows")
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
 local default_popup_size = { width = 60, height = "80%" }
-local draw, create_window, create_tree, render_tree
+local draw, create_tree, render_tree
 
 local floating_windows = {}
 local update_floating_windows = function()
@@ -913,7 +913,14 @@ local get_buffer = function(bufname, state)
   return bufnr
 end
 
-create_window = function(state)
+M.acquire_window = function(state)
+  if M.window_exists(state) then
+    return state.winid
+  end
+
+  -- used by tests to determine if the tree is ready for testing
+  state._ready = false
+
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
@@ -954,6 +961,7 @@ create_window = function(state)
   local win
   if state.current_position == "float" then
     M.close_all_floating_windows()
+    M.close(state)
     win = create_floating_window(state, win_options, bufname)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
@@ -1020,7 +1028,7 @@ create_window = function(state)
   end
 
   set_buffer_mappings(state)
-  return win
+  return state.winid
 end
 
 M.update_floating_window_layouts = function()
@@ -1142,8 +1150,13 @@ draw = function(nodes, state, parent_id)
   end
 
   -- Create the tree if it doesn't exist.
-  if not parent_id and not M.window_exists(state) then
-    create_window(state)
+  if parent_id then
+    if not M.window_exists(state) then
+      log.trace("Window is gone, aborting lazy load of folder")
+      return
+    end
+  else
+    M.acquire_window(state)
     create_tree(state)
   end
 
@@ -1174,6 +1187,7 @@ draw = function(nodes, state, parent_id)
   -- Restore the cursor position/focused node in the tree based on the state
   -- when it was last closed
   M.position.restore(state)
+  state._ready = true
 end
 
 local function group_empty_dirs(node)

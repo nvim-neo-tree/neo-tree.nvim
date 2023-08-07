@@ -54,14 +54,35 @@ end
 
 verify.tree_focused = function(timeout)
   verify.eventually(timeout or 1000, function()
+    if not verify.get_state() then
+      return false
+    end
     return vim.api.nvim_buf_get_option(0, "filetype") == "neo-tree"
   end, "Current buffer is not a 'neo-tree' filetype")
 end
 
+verify.get_state = function(source_name, winid)
+  if source_name == nil then
+    local success
+    success, source_name = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_source")
+    if not success then
+      return nil
+    end
+  end
+  local state = require("neo-tree.sources.manager").get_state(source_name, nil, winid)
+  if not state.tree then
+    return nil
+  end
+  if not state._ready then
+    return nil
+  end
+  return state
+end
+
 verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
   verify.eventually(timeout or 500, function()
-    local state = require("neo-tree.sources.manager").get_state(source_name, nil, winid)
-    if not state.tree then
+    local state = verify.get_state(source_name, winid)
+    if not state then
       return false
     end
     local success, node = pcall(state.tree.get_node, state.tree)

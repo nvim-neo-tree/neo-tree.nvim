@@ -180,4 +180,12 @@ function mod.wait_for(callback, options)
   vim.wait(options.timeout or 1000, callback, options.interval or 100)
 end
 
+---@param options? { interval?: integer, timeout?: integer }
+function mod.wait_for_neo_tree(options)
+  local verify = require("tests.utils.verify")
+  mod.wait_for(function()
+    return verify.get_state() ~= nil
+  end, options)
+end
+
 return mod
