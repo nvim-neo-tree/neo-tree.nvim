@@ -96,7 +96,6 @@ verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
     if node_id == expected_node_id then
       return true
     end
-    print(string.format("Expected node id '%s' but got '%s'", expected_node_id, node_id))
     return false
   end, string.format("Tree node '%s' not focused", expected_node_id))
 end

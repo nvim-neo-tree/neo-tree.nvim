@@ -7,6 +7,7 @@ local run_focus_command = function(command, expected_tree_node)
   local winid = vim.api.nvim_get_current_win()
 
   vim.cmd(command)
+  u.wait_for_neo_tree({ interval = 10, timeout = 200 })
   --u.wait_for_neo_tree()
   verify.window_handle_is_not(winid)
   verify.buf_name_endswith("neo-tree filesystem [1]")
