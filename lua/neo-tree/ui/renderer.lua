@@ -1028,7 +1028,6 @@ M.acquire_window = function(state)
   end
 
   set_buffer_mappings(state)
-  create_tree(state)
   return state.winid
 end
 
@@ -1158,6 +1157,7 @@ draw = function(nodes, state, parent_id)
     end
   else
     M.acquire_window(state)
+    create_tree(state)
   end
 
   -- draw the given nodes

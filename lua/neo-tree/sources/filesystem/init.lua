@@ -33,6 +33,7 @@ end
 
 local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
+  local state = get_state()
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return false
   end
@@ -42,7 +43,6 @@ local follow_internal = function(callback, force_show, async)
   end
   ---@cast path_to_reveal string
 
-  local state = get_state()
   if state.current_position == "float" then
     return false
   end
@@ -177,8 +177,8 @@ end
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
+  state._ready = false
   log.trace("navigate", path, path_to_reveal, async)
-  renderer.acquire_window(state)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
   end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)

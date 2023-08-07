@@ -21,7 +21,6 @@ local run_show_command = function(command, expected_tree_node)
   local expected_num_windows = #vim.api.nvim_list_wins() + 1
 
   vim.cmd(command)
-  --u.wait_for_neo_tree()
   verify.eventually(500, function()
     if #vim.api.nvim_list_wins() ~= expected_num_windows then
       return false
@@ -188,11 +187,10 @@ describe("Command", function()
           u.editfile(baz)
           run_focus_command("Neotree reveal", baz)
           local expected_tree_node = baz
+          -- toggle CLOSE
+          vim.cmd(cmd)
 
           verify.after(500, function()
-            -- toggle CLOSE
-            vim.cmd(cmd)
-
             -- toggle OPEN
             u.editfile(topfile)
             if follow_current_file then
