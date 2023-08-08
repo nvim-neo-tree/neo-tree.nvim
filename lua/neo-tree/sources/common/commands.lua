@@ -31,7 +31,12 @@ local function get_folder_node(state)
       use_parent = insert_as_global == "sibling"
     end
 
-    local is_open_dir = node.type == "directory" and (node:is_expanded() or node.empty_expanded)
+    local is_open_dir = node.type == "directory"
+      and (
+        node:is_expanded()
+        or node.empty_expanded
+        or state.explicitly_opened_directories[node:get_id()]
+      )
     if use_parent and not is_open_dir then
       return tree:get_node(node:get_parent_id())
     end
