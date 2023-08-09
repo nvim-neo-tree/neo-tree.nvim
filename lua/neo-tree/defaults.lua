@@ -12,9 +12,6 @@ local config = {
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
-  -- popup_border_style is for input and confirmation dialogs.
-  -- Configurtaion of floating window is done in the individual source sections.
-  -- "NC" is a special style that works well with NormalNC set
   default_source = "filesystem",
   enable_diagnostics = true,
   enable_git_status = true,
@@ -37,6 +34,9 @@ local config = {
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
+  -- popup_border_style is for input and confirmation dialogs.
+  -- Configurtaion of floating window is done in the individual source sections.
+  -- "NC" is a special style that works well with NormalNC set
   popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
