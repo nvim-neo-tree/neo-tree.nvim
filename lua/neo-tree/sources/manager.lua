@@ -527,7 +527,7 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   -- (potentially) different position/node
   state.position.is.restorable = false
 
-  require("neo-tree").close_all_except(source_name)
+  M.close_all()
   local path = M.get_path_to_reveal()
   if not path then
     M.focus(source_name)
