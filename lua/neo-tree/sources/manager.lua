@@ -517,14 +517,72 @@ M.refresh = function(source_name, callback)
   end
 end
 
---- DEPRECATED: Keeping this here as a warning for a few releases...
+--- DEPRECATED: To be removed in 4.0
+--- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
 M.reveal_current_file = function(source_name, callback, force_cwd)
   log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]])
+
+  log.trace("Revealing current file")
+  local state = M.get_state(source_name)
+  state.current_position = nil
+
+  -- When events trigger that try to restore the position of the cursor in the tree window,
+  -- we want them to ignore this "iteration" as the user is trying to explicitly focus a
+  -- (potentially) different position/node
+  state.position.is.restorable = false
+
+  local path = M.get_path_to_reveal()
+  if not path then
+    M.focus(source_name)
+    return
+  end
+  local cwd = state.path
+  if cwd == nil then
+    cwd = M.get_cwd(state)
+  end
+  if force_cwd then
+    if not utils.is_subpath(cwd, path) then
+      state.path, _ = utils.split_path(path)
+    end
+  elseif not utils.is_subpath(cwd, path) then
+    cwd, _ = utils.split_path(path)
+    inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
+      if response == true then
+        state.path = cwd
+        M.focus(source_name, path, callback)
+      else
+        M.focus(source_name, nil, callback)
+      end
+    end)
+    return
+  end
+  if path then
+    if not renderer.focus_node(state, path) then
+      M.focus(source_name, path, callback)
+    end
+  end
 end
 
---- DEPRECATED: Keeping this here as a warning for a few releases...
+--- DEPRECATED: To be removed in 4.0
+--- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
 M.reveal_in_split = function(source_name, callback)
   log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]])
+
+  local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
+  state.current_position = "current"
+  local path_to_reveal = M.get_path_to_reveal()
+  if not path_to_reveal then
+    M.navigate(state, nil, nil, callback)
+    return
+  end
+  local cwd = state.path
+  if cwd == nil then
+    cwd = M.get_cwd(state)
+  end
+  if cwd and not utils.is_subpath(cwd, path_to_reveal) then
+    state.path, _ = utils.split_path(path_to_reveal)
+  end
+  M.navigate(state, state.path, path_to_reveal, callback)
 end
 
 ---Opens the tree and displays the current path or cwd, without focusing it.
