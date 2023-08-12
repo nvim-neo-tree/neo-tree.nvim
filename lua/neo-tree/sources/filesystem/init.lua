@@ -24,13 +24,6 @@ local get_state = function(tabid)
   return manager.get_state(M.name, tabid)
 end
 
--- TODO: DEPRECATED in 1.19, remove in 2.0
--- Leaving this here for now because it was mentioned in the help file.
-M.reveal_current_file = function()
-  log.warn("DEPRECATED: use `neotree.sources.manager.reveal_current_file('filesystem')` instead")
-  return manager.reveal_current_file(M.name)
-end
-
 local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
   local state = get_state()
