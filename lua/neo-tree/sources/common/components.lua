@@ -433,6 +433,48 @@ M.indent = function(config, node, state)
   return indent
 end
 
+M.file_size = function (config, node, state)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = string.format("%10s  ", "Size"),
+      highlight = highlights.ROOT_NAME
+    }
+  end
+
+  local size = node.stat and node.stat.size or nil
+  local human = utils.filesize(size)
+  return {
+    text = human and string.format("%10s  ", human) or "",
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
+M.file_time = function(config, node, state)
+  local stat = config.stat or "mtime"
+
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    local label = stat
+    if stat == "mtime" then
+      label = "Last Modified"
+    elseif stat == "birthtime" then
+      label = "Created"
+    end
+    return {
+      text = string.format("%20s  ", label),
+      highlight = highlights.ROOT_NAME
+    }
+  end
+
+  local seconds = node.stat and node.stat[stat] and node.stat[stat].sec or nil
+  local as_date = seconds and os.date("%Y-%m-%d %I:%M %p  ", seconds) or nil
+  return {
+    text = as_date and string.format(" %s", as_date) or "",
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
 M.symlink_target = function(config, node, state)
   if node.is_link then
     return {
@@ -442,6 +484,23 @@ M.symlink_target = function(config, node, state)
   else
     return {}
   end
+end
+
+M.type = function (config, node, state)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = string.format("%-10s  ", "Type"),
+      highlight = highlights.ROOT_NAME
+    }
+  end
+
+  local type = node.ext or node.type
+
+  return {
+    text = string.format("%-10s  ", type),
+    highlight = config.highlight or highlights.FILE_STATS
+  }
 end
 
 return M

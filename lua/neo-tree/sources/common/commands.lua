@@ -411,6 +411,15 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
+M.show_stat = function (state)
+  local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  local stat = node.stat or {}
+  print(vim.inspect(stat))
+end
+
 ---Pastes all items from the clipboard to the current directory.
 ---@param state table The state of the source
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.

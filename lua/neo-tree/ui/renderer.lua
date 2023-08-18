@@ -269,6 +269,7 @@ create_nodes = function(source_items, state, level)
       is_nested = item.is_nested,
       skip_node = item.skip_node,
       is_empty_with_hidden_root = item.is_empty_with_hidden_root,
+      stat = item.stat,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,

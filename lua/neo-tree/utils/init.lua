@@ -1,5 +1,6 @@
 local vim = vim
 local log = require("neo-tree.log")
+local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
 local ffi = require("ffi")
 
@@ -15,7 +16,7 @@ table.pack = table.pack or function(...)
 end
 table.unpack = table.unpack or unpack
 
-local M = {}
+local M = { filesize = filesize }
 
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then

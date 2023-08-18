@@ -17,6 +17,7 @@ M.FADE_TEXT_2 = "NeoTreeFadeText2"
 M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
+M.FILE_STATS = "NeoTreeFileStats"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.FLOAT_NORMAL = "NeoTreeFloatNormal"
@@ -232,6 +233,7 @@ M.setup = function()
 
   M.create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   M.create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
+  M.create_highlight_group(M.FILE_STATS, {}, nil, "505050")
   M.create_highlight_group(M.MESSAGE, {}, nil, "505050", "italic")
   M.create_highlight_group(M.FADE_TEXT_1, {}, nil, "626262")
   M.create_highlight_group(M.FADE_TEXT_2, {}, nil, "444444")
