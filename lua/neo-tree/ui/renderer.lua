@@ -677,8 +677,15 @@ M.position = {
 M.redraw = function(state)
   if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
-    render_tree(state)
-    log.trace("  Redrawing tree done", state.name, state.id)
+    -- every now and then this will fail because the window was closed in 
+    -- betweeen the start of an async refresh and the redraw call.
+    -- This is not a problem, so we just ignore the error.
+    local success = pcall(render_tree, state)
+    if success then
+      log.trace("  Redrawing tree done", state.name, state.id)
+    else
+      log.trace("  Redrawing tree failed, maybe it was closed?", state.name, state.id)
+    end
   end
 end
 ---Visit all nodes ina tree recursively and reduce to a single value.
