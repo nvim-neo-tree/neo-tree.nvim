@@ -442,23 +442,28 @@ M.file_size = function (config, node, state)
     }
   end
 
-  local size = node.stat and node.stat.size or nil
-  local human = utils.filesize(size)
+  local stat = utils.get_stat(node)
+  local text = "-"
+  if node.type == "file" then
+    local size = stat and stat.size or nil
+    text = utils.filesize(size) or text
+  end
+
   return {
-    text = human and string.format("%10s  ", human) or "",
+    text = string.format("%12s  ", text),
     highlight = config.highlight or highlights.FILE_STATS
   }
 end
 
 M.file_time = function(config, node, state)
-  local stat = config.stat or "mtime"
+  local stat_field = config.stat or "mtime"
 
   -- Root node gets column labels
   if node:get_depth() == 1 then
-    local label = stat
-    if stat == "mtime" then
+    local label = stat_field
+    if stat_field == "mtime" then
       label = "Last Modified"
-    elseif stat == "birthtime" then
+    elseif stat_field == "birthtime" then
       label = "Created"
     end
     return {
@@ -467,7 +472,9 @@ M.file_time = function(config, node, state)
     }
   end
 
-  local seconds = node.stat and node.stat[stat] and node.stat[stat].sec or nil
+  local stat = utils.get_stat(node)
+  local value = stat and stat[stat_field]
+  local seconds = value and value.sec or nil
   local as_date = seconds and os.date("%Y-%m-%d %I:%M %p  ", seconds) or nil
   return {
     text = as_date and string.format(" %s", as_date) or "",

@@ -74,8 +74,8 @@ function create_item(context, path, _type, bufnr)
     end
   end
 
-  local stat = vim.loop.fs_stat(path)
   if _type == nil then
+    local stat = vim.loop.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
   local item = {
@@ -84,7 +84,6 @@ function create_item(context, path, _type, bufnr)
     parent_path = parent_path,
     path = path,
     type = _type,
-    stat = stat,
   }
   if item.type == "link" then
     item.is_link = true

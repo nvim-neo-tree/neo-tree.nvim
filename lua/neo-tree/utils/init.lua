@@ -313,6 +313,17 @@ M.get_inner_win_width = function(winid)
   end
 end
 
+--- Gets the statics for a node in the file system. The `stat` object will be cached 
+--- for the lifetime of the node.
+---@param node table The Nui TreeNode node to get the stats for.
+---@return table stat The stat object from libuv.
+M.get_stat = function (node)
+  if node.stat == nil then
+    node.stat = vim.loop.fs_stat(node.path)
+  end
+  return node.stat
+end
+
 ---Handles null coalescing into a table at any depth.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
