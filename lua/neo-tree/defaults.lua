@@ -380,7 +380,7 @@ local config = {
       ["?"] = "show_help",
       ["<"] = "prev_source",
       [">"] = "next_source",
-      ["i"] = "show_stat",
+      ["i"] = "show_file_details",
     },
   },
   filesystem = {
