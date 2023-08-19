@@ -416,8 +416,8 @@ M.show_stat = function (state)
   if node.type == "message" then
     return
   end
-  local stat = node.stat or {}
-  print(vim.inspect(stat))
+  local stat = utils.get_stat(node)
+  vim.notify(vim.inspect(stat))
 end
 
 ---Pastes all items from the clipboard to the current directory.
