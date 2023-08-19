@@ -438,7 +438,7 @@ M.file_size = function (config, node, state)
   if node:get_depth() == 1 then
     return {
       text = string.format("%10s  ", "Size"),
-      highlight = highlights.ROOT_NAME
+      highlight = highlights.FILE_STATS_HEADER
     }
   end
 
@@ -455,9 +455,7 @@ M.file_size = function (config, node, state)
   }
 end
 
-M.file_time = function(config, node, state)
-  local stat_field = config.stat or "mtime"
-
+local file_time = function(config, node, state, stat_field)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     local label = stat_field
@@ -468,7 +466,7 @@ M.file_time = function(config, node, state)
     end
     return {
       text = string.format("%20s  ", label),
-      highlight = highlights.ROOT_NAME
+      highlight = highlights.FILE_STATS_HEADER
     }
   end
 
@@ -480,6 +478,14 @@ M.file_time = function(config, node, state)
     text = as_date and string.format(" %s", as_date) or "",
     highlight = config.highlight or highlights.FILE_STATS
   }
+end
+
+M.last_modified = function(config, node, state)
+  return file_time(config, node, state, "mtime")
+end
+
+M.created = function(config, node, state)
+  return file_time(config, node, state, "birthtime")
 end
 
 M.symlink_target = function(config, node, state)
@@ -498,7 +504,7 @@ M.type = function (config, node, state)
   if node:get_depth() == 1 then
     return {
       text = string.format("%-10s  ", "Type"),
-      highlight = highlights.ROOT_NAME
+      highlight = highlights.FILE_STATS_HEADER
     }
   end
 

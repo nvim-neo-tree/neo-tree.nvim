@@ -319,7 +319,8 @@ end
 ---@return table stat The stat object from libuv.
 M.get_stat = function (node)
   if node.stat == nil then
-    node.stat = vim.loop.fs_stat(node.path)
+    local success, stat = pcall(vim.loop.fs_stat, node.path)
+    node.stat = success and stat or {}
   end
   return node.stat
 end

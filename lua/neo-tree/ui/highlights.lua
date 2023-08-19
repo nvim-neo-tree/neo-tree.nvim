@@ -18,6 +18,7 @@ M.FILE_ICON = "NeoTreeFileIcon"
 M.FILE_NAME = "NeoTreeFileName"
 M.FILE_NAME_OPENED = "NeoTreeFileNameOpened"
 M.FILE_STATS = "NeoTreeFileStats"
+M.FILE_STATS_HEADER = "NeoTreeFileStatsHeader"
 M.FILTER_TERM = "NeoTreeFilterTerm"
 M.FLOAT_BORDER = "NeoTreeFloatBorder"
 M.FLOAT_NORMAL = "NeoTreeFloatNormal"
@@ -119,23 +120,7 @@ M.create_highlight_group = function(hl_group_name, link_to_if_exists, background
   return hl_group
 end
 
-local faded_highlight_group_cache = {}
-M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
-  if type(hl_group_name) ~= "string" then
-    error("hl_group_name must be a string")
-  end
-  if type(fade_percentage) ~= "number" then
-    error("hl_group_name must be a number")
-  end
-  if fade_percentage < 0 or fade_percentage > 1 then
-    error("fade_percentage must be between 0 and 1")
-  end
-
-  local key = hl_group_name .. "_" .. tostring(math.floor(fade_percentage * 100))
-  if faded_highlight_group_cache[key] then
-    return faded_highlight_group_cache[key]
-  end
-
+local calculate_faded_highlight_group = function (hl_group_name, fade_percentage)
   local normal = vim.api.nvim_get_hl_by_name("Normal", true)
   if type(normal.foreground) ~= "number" then
     if vim.api.nvim_get_option("background") == "dark" then
@@ -196,7 +181,33 @@ M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
   local new_foreground =
     string.format("%s%s%s", dec_to_hex(red, 2), dec_to_hex(green, 2), dec_to_hex(blue, 2))
 
-  M.create_highlight_group(key, {}, hl_group.background, new_foreground, gui)
+  return {
+    background = hl_group.background,
+    foreground = new_foreground,
+    gui = gui,
+  }
+end
+
+local faded_highlight_group_cache = {}
+M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
+  if type(hl_group_name) ~= "string" then
+    error("hl_group_name must be a string")
+  end
+  if type(fade_percentage) ~= "number" then
+    error("hl_group_name must be a number")
+  end
+  if fade_percentage < 0 or fade_percentage > 1 then
+    error("fade_percentage must be between 0 and 1")
+  end
+
+  local key = hl_group_name .. "_" .. tostring(math.floor(fade_percentage * 100))
+  if faded_highlight_group_cache[key] then
+    return faded_highlight_group_cache[key]
+  end
+
+  local faded = calculate_faded_highlight_group(hl_group_name, fade_percentage)
+
+  M.create_highlight_group(key, {}, faded.background, faded.foreground, faded.gui)
   faded_highlight_group_cache[key] = key
   return key
 end
@@ -233,7 +244,6 @@ M.setup = function()
 
   M.create_highlight_group(M.BUFFER_NUMBER, { "SpecialChar" })
   M.create_highlight_group(M.DIM_TEXT, {}, nil, "505050")
-  M.create_highlight_group(M.FILE_STATS, {}, nil, "505050")
   M.create_highlight_group(M.MESSAGE, {}, nil, "505050", "italic")
   M.create_highlight_group(M.FADE_TEXT_1, {}, nil, "626262")
   M.create_highlight_group(M.FADE_TEXT_2, {}, nil, "444444")
@@ -268,6 +278,12 @@ M.setup = function()
   M.create_highlight_group(M.TAB_INACTIVE, {}, "141414", "777777")
   M.create_highlight_group(M.TAB_SEPARATOR_ACTIVE, {}, nil, "0a0a0a")
   M.create_highlight_group(M.TAB_SEPARATOR_INACTIVE, {}, "141414", "101010")
+
+  local faded_normal = calculate_faded_highlight_group("NeoTreeNormal", 0.4)
+  M.create_highlight_group(M.FILE_STATS, {}, nil, faded_normal.foreground)
+
+  local faded_root = calculate_faded_highlight_group("NeoTreeRootName", 0.5)
+  M.create_highlight_group(M.FILE_STATS_HEADER, {}, nil, faded_root.foreground, faded_root.gui)
 end
 
 return M

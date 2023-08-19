@@ -1230,6 +1230,8 @@ NeoTreeExpander           Used for collapsed/expanded icons.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hl-NormalNC| override in Neo-tree window.
 NeoTreeSignColumn         |hl-SignColumn| override in Neo-tree window.
+NeoTreeStats              Used for "stat" columns like size, last modified, etc.
+NeoTreeStatsHeader        Used for the header (top line) of the above columns.
 NeoTreeStatusLine         |hl-StatusLine| override in Neo-tree window.
 NeoTreeStatusLineNC       |hl-StatusLineNC| override in Neo-tree window.
 NeoTreeVertSplit          |hl-VertSplit| override in Neo-tree window.
