@@ -100,7 +100,7 @@ M.get_opened_buffers = function(state)
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
   end
-  file_items.deep_sort(root.children)
+  file_items.advanced_sort(root.children, state)
   renderer.show_nodes(root_folders, state)
   state.loading = false
 end

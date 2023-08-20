@@ -49,6 +49,7 @@ local calc_container_width = function(config, node, state, context)
 end
 
 local render_content = function(config, node, state, context)
+  local window_width = vim.api.nvim_win_get_width(state.winid)
   local add_padding = function(rendered_item, should_pad)
     for _, data in ipairs(rendered_item) do
       if data.text then
@@ -69,6 +70,13 @@ local render_content = function(config, node, state, context)
     local rendered_width = 0
 
     for _, item in ipairs(items) do
+      if item.enabled == false then
+        goto continue
+      end
+      local required_width = item.required_width or 0
+      if required_width > window_width then
+        goto continue
+      end
       local rendered_item = renderer.render_component(item, node, state, context.available_width)
       if rendered_item then
         local align = item.align or "left"
@@ -77,6 +85,7 @@ local render_content = function(config, node, state, context)
         vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
+        ::continue::
     end
 
     max_width = math.max(max_width, rendered_width)

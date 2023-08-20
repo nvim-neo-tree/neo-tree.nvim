@@ -1,5 +1,6 @@
 local vim = vim
 local log = require("neo-tree.log")
+local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -17,7 +18,7 @@ table.pack = table.pack or function(...)
 end
 table.unpack = table.unpack or unpack
 
-local M = {}
+local M = { filesize = filesize }
 
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
@@ -312,6 +313,18 @@ M.get_inner_win_width = function(winid)
   else
     log.error("Could not get window info for window", winid)
   end
+end
+
+--- Gets the statics for a node in the file system. The `stat` object will be cached 
+--- for the lifetime of the node.
+---@param node table The Nui TreeNode node to get the stats for.
+---@return table stat The stat object from libuv.
+M.get_stat = function (node)
+  if node.stat == nil then
+    local success, stat = pcall(vim.loop.fs_stat, node.path)
+    node.stat = success and stat or {}
+  end
+  return node.stat
 end
 
 ---Handles null coalescing into a table at any depth.

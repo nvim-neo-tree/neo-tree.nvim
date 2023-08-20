@@ -270,6 +270,9 @@ A    = add_directory:        Create a new directory, in this mode it does not
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
 
+i    = show_file_details     Show file details in popup window, such as size
+                             and last modified date.
+
 r    = rename:               Rename the selected file or directory.
 
 y    = copy_to_clipboard:    Mark file to be copied.
@@ -290,11 +293,25 @@ m    = move:                 Move the selected file or directory.
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
-H = toggle_hidden: Toggle whether hidden (filtered items) are shown or not.
+H  = toggle_hidden:  Toggle whether hidden (filtered items) are shown or not.
 
-R = refresh:       Rescan the filesystem and redraw the tree. Changes made 
-                   within nvim should be detected automatically, but this is
-                   useful for changes made elsewhere.
+R  = refresh:        Rescan the filesystem and redraw the tree. Changes made 
+                     within nvim should be detected automatically, but this is
+                     useful for changes made elsewhere.
+
+o  = order_by...     Show help menu for order by choices.
+
+oc = ...created:     Sort the tree by created date.
+
+od = ...diagnostics: Sort by diagnostic severity.
+
+om = ...modified:    Sort by last modified date.
+
+om = ...name:        Sort by name (default sort).
+
+os = ...size:        Sort by size.
+
+ot = ...type:        Sort by type.
 
 
 FILTER                                                        *neo-tree-filter*
@@ -1230,6 +1247,8 @@ NeoTreeExpander           Used for collapsed/expanded icons.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hl-NormalNC| override in Neo-tree window.
 NeoTreeSignColumn         |hl-SignColumn| override in Neo-tree window.
+NeoTreeStats              Used for "stat" columns like size, last modified, etc.
+NeoTreeStatsHeader        Used for the header (top line) of the above columns.
 NeoTreeStatusLine         |hl-StatusLine| override in Neo-tree window.
 NeoTreeStatusLineNC       |hl-StatusLineNC| override in Neo-tree window.
 NeoTreeVertSplit          |hl-VertSplit| override in Neo-tree window.

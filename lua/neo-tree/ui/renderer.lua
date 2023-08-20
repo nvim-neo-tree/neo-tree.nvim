@@ -269,6 +269,7 @@ create_nodes = function(source_items, state, level)
       is_nested = item.is_nested,
       skip_node = item.skip_node,
       is_empty_with_hidden_root = item.is_empty_with_hidden_root,
+      stat = item.stat,
       -- TODO: The below properties are not universal and should not be here.
       -- Maybe they should be moved to the "extra" field?
       is_link = item.is_link,
@@ -421,6 +422,9 @@ local prepare_node = function(item, state)
   local should_pad = false
 
   for _, component in ipairs(renderer) do
+    if component.enabled == false then
+      goto continue
+    end
     local component_data, component_wanted_width =
       M.render_component(component, item, state, remaining_cols - (should_pad and 1 or 0))
     local actual_width = 0
@@ -442,6 +446,7 @@ local prepare_node = function(item, state)
     end
     component_wanted_width = component_wanted_width or actual_width
     wanted_width = wanted_width + component_wanted_width
+    ::continue::
   end
 
   line.wanted_width = wanted_width

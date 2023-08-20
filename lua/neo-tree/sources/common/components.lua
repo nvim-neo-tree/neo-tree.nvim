@@ -433,6 +433,70 @@ M.indent = function(config, node, state)
   return indent
 end
 
+local get_header = function (state, label, size)
+  if state.sort and state.sort.label == label then
+    local icon = state.sort.direction == 1 and "▲" or "▼"
+    size = size - 2
+    return string.format("%" .. size .. "s %s  ", label, icon)
+  end
+  return string.format("%" .. size .. "s  ", label)
+end
+
+M.file_size = function (config, node, state)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = get_header(state, "Size", 12),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  local stat = utils.get_stat(node)
+  local text = "-"
+  if node.type == "file" then
+    local size = stat and stat.size or nil
+    text = utils.filesize(size) or text
+  end
+
+  return {
+    text = string.format("%12s  ", text),
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
+local file_time = function(config, node, state, stat_field)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    local label = stat_field
+    if stat_field == "mtime" then
+      label = "Last Modified"
+    elseif stat_field == "birthtime" then
+      label = "Created"
+    end
+    return {
+      text = get_header(state, label, 20),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  local stat = utils.get_stat(node)
+  local value = stat and stat[stat_field]
+  local seconds = value and value.sec or nil
+  local as_date = seconds and os.date("%Y-%m-%d %I:%M %p  ", seconds) or nil
+  return {
+    text = as_date and string.format(" %s", as_date) or "",
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
+M.last_modified = function(config, node, state)
+  return file_time(config, node, state, "mtime")
+end
+
+M.created = function(config, node, state)
+  return file_time(config, node, state, "birthtime")
+end
+
 M.symlink_target = function(config, node, state)
   if node.is_link then
     return {
@@ -442,6 +506,22 @@ M.symlink_target = function(config, node, state)
   else
     return {}
   end
+end
+
+M.type = function (config, node, state)
+  local text = node.ext or node.type
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = get_header(state, "Type", 10),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  return {
+    text = string.format("%10s  ", text),
+    highlight = highlights.FILE_STATS
+  }
 end
 
 return M
