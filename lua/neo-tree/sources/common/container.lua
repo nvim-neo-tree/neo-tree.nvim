@@ -70,6 +70,9 @@ local render_content = function(config, node, state, context)
     local rendered_width = 0
 
     for _, item in ipairs(items) do
+      if item.enabled == false then
+        goto continue
+      end
       local required_width = item.required_width or 0
       if required_width > window_width then
         goto continue
