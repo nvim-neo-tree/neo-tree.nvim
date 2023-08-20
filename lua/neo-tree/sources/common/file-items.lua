@@ -2,9 +2,6 @@ local vim = vim
 local files_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
-local git = require("neo-tree.git")
-
-local unused_to_produce_diagnostic = {}
 
 local function sort_items(a, b)
   if a.type == b.type then
@@ -19,6 +16,31 @@ local function sort_items_case_insensitive(a, b)
     return a.path:lower() < b.path:lower()
   else
     return a.type < b.type
+  end
+end
+
+---Creates a sort function the will sort by the values returned by the field provider.
+---@param field_provider function a function that takes an item and returns a value to
+--                        sort by.
+---@param fallback_sort_function function a sort function to use if the field provider 
+--                                returns the same value for both items.
+local function make_sort_function(field_provider, fallback_sort_function, direction)
+  return function(a, b)
+    if a.type == b.type then
+      local a_field = field_provider(a)
+      local b_field = field_provider(b)
+      if a_field == b_field then
+        return fallback_sort_function(a, b)
+      else
+        if direction < 0 then
+          return a_field > b_field
+        else
+          return a_field < b_field
+        end
+      end
+    else
+      return a.type < b.type
+    end
   end
 end
 
@@ -39,7 +61,7 @@ local function sort_function_is_valid(func)
   return false
 end
 
-local function deep_sort(tbl, sort_func)
+local function deep_sort(tbl, sort_func, field_provider, direction)
   if sort_func == nil then
     local config = require("neo-tree").config
     if sort_function_is_valid(config.sort_function) then
@@ -49,6 +71,9 @@ local function deep_sort(tbl, sort_func)
     else
       sort_func = sort_items
     end
+    if field_provider ~= nil then
+      sort_func = make_sort_function(field_provider, sort_func, direction)
+    end
   end
   table.sort(tbl, sort_func)
   for _, item in pairs(tbl) do
@@ -56,6 +81,13 @@ local function deep_sort(tbl, sort_func)
       deep_sort(item.children, sort_func)
     end
   end
+end
+
+local advanced_sort = function(tbl, state)
+  local sort_func = state.sort_function_override
+  local field_provider = state.sort_field_provider
+  local direction = state.sort and state.sort.direction or 1
+  deep_sort(tbl, sort_func, field_provider, direction)
 end
 
 local create_item, set_parents
@@ -228,4 +260,5 @@ return {
   create_context = create_context,
   create_item = create_item,
   deep_sort = deep_sort,
+  advanced_sort = advanced_sort,
 }

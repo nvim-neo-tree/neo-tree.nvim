@@ -11,9 +11,38 @@ local add_text = function(text, highlight)
   return line
 end
 
-M.show = function(state)
-  local tree_width = vim.api.nvim_win_get_width(state.winid)
+local get_sub_keys = function(state, prefix_key)
   local keys = utils.get_keys(state.resolved_mappings, true)
+  if prefix_key then
+    local len = prefix_key:len()
+    local sub_keys = {}
+    for _, key in ipairs(keys) do
+      if #key > len and key:sub(1, len) == prefix_key then
+        table.insert(sub_keys, key)
+      end
+    end
+    return sub_keys
+  else
+    return keys
+  end
+end
+
+local function key_minus_prefix(key, prefix)
+  if prefix then
+    return key:sub(prefix:len() + 1)
+  else
+    return key
+  end
+end
+
+---Shows a help screen for the mapped commands when will execute those commands
+---when the corresponding key is pressed.
+---@param state table state of the source.
+---@param title string if this is a sub-menu for a multi-key mapping, the title for the window.
+---@param prefix_key string if this is a sub-menu, the start of tehe multi-key mapping
+M.show = function(state, title, prefix_key)
+  local tree_width = vim.api.nvim_win_get_width(state.winid)
+  local keys = get_sub_keys(state, prefix_key)
 
   local lines = { add_text("") }
   lines[1] = add_text(" Press the corresponding key to execute the command.", "Comment")
@@ -28,7 +57,7 @@ M.show = function(state)
   for _, key in ipairs(keys) do
     local value = state.resolved_mappings[key]
     local nline = NuiLine()
-    nline:append(string.format(" %14s", key), highlights.FILTER_TERM)
+    nline:append(string.format(" %14s", key_minus_prefix(key, prefix_key)), highlights.FILTER_TERM)
     nline:append(" -> ", highlights.DIM_TEXT)
     nline:append(value.text, highlights.NORMAL)
     local line = nline:content()
@@ -60,7 +89,8 @@ M.show = function(state)
     zindex = 50,
     relative = "editor",
   }
-  local options = popups.popup_options("Neotree Help", width, options)
+  local title = title or "Neotree Help"
+  local options = popups.popup_options(title, width, options)
   local popup = Popup(options)
   popup:mount()
 
@@ -77,7 +107,7 @@ M.show = function(state)
     -- map everything except for <escape>
     if string.match(key:lower(), "^<esc") == nil then
       local value = state.resolved_mappings[key]
-      popup:map("n", key, function()
+      popup:map("n", key_minus_prefix(key, prefix_key), function()
         popup:unmount()
         vim.api.nvim_set_current_win(state.winid)
         value.handler()

@@ -407,6 +407,97 @@ M.prev_source = function(state)
   })
 end
 
+local function set_sort(state, label)
+  local sort = state.sort or { label = "Name", direction = -1}
+  if sort.label == label then
+    sort.direction = sort.direction * -1
+  else
+    sort.label = label
+    sort.direction = -1
+  end
+  state.sort = sort
+end
+
+M.order_by_created = function (state)
+  set_sort(state, "Created")
+  state.sort_field_provider = function (node)
+    local stat = utils.get_stat(node)
+    return stat.birthtime and stat.birthtime.sec or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_modified = function (state)
+  set_sort(state, "Last Modified")
+  state.sort_field_provider = function (node)
+    local stat = utils.get_stat(node)
+    return stat.mtime and stat.mtime.sec or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_name = function (state)
+  set_sort(state, "Name")
+  state.sort_field_provider = nil
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_size = function (state)
+  set_sort(state, "Size")
+  state.sort_field_provider = function (node)
+    local stat = utils.get_stat(node)
+    return stat.size or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_type = function (state)
+  set_sort(state, "Type")
+  state.sort_field_provider = function (node)
+    return node.ext or node.type
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_git_status = function (state)
+  set_sort(state, "Git Status")
+
+  state.sort_field_provider = function (node)
+    local git_status_lookup = state.git_status_lookup or {}
+    local git_status = git_status_lookup[node.path]
+    if git_status then
+      return git_status
+    end
+
+    if node.filtered_by and node.filtered_by.gitignored then
+       return "!!"
+    else
+      return ""
+    end
+  end
+
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_diagnostics = function (state)
+  set_sort(state, "Diagnostics")
+
+  state.sort_field_provider = function (node)
+    local diag = state.diagnostics_lookup or {}
+    local diagnostics = diag[node.path]
+    if not diagnostics then
+      return 0
+    end
+    if not diagnostics.severity_number then
+      return 0
+    end
+    -- lower severity number means higher severity
+    return 5 - diagnostics.severity_number
+  end
+
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
 M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
@@ -769,7 +860,9 @@ M.vsplit_with_window_picker = function(state, toggle_directory)
 end
 
 M.show_help = function(state)
-  help.show(state)
+  local title = state.config and state.config.title or nil
+  local prefix_key = state.config and state.config.prefix_key or nil
+  help.show(state, title, prefix_key)
 end
 
 return M

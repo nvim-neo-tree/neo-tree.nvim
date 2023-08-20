@@ -85,7 +85,7 @@ local render_context = function(context)
   fs_watch.updated_watched()
 
   if root and root.children then
-    file_items.deep_sort(root.children, state.sort_function_override)
+    file_items.advanced_sort(root.children, state)
   end
   if parent_id then
     -- lazy loading a child folder

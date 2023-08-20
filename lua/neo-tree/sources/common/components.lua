@@ -433,11 +433,20 @@ M.indent = function(config, node, state)
   return indent
 end
 
+local get_header = function (state, label, size)
+  if state.sort and state.sort.label == label then
+    local icon = state.sort.direction == 1 and "▲" or "▼"
+    size = size - 2
+    return string.format("%" .. size .. "s %s  ", label, icon)
+  end
+  return string.format("%" .. size .. "s  ", label)
+end
+
 M.file_size = function (config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
-      text = string.format("%10s  ", "Size"),
+      text = get_header(state, "Size", 12),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
@@ -465,7 +474,7 @@ local file_time = function(config, node, state, stat_field)
       label = "Created"
     end
     return {
-      text = string.format("%20s  ", label),
+      text = get_header(state, label, 20),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
@@ -500,19 +509,18 @@ M.symlink_target = function(config, node, state)
 end
 
 M.type = function (config, node, state)
+  local text = node.ext or node.type
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
-      text = string.format("%-10s  ", "Type"),
+      text = get_header(state, "Type", 10),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
 
-  local type = node.ext or node.type
-
   return {
-    text = string.format("%-10s  ", type),
-    highlight = config.highlight or highlights.FILE_STATS
+    text = string.format("%10s  ", text),
+    highlight = highlights.FILE_STATS
   }
 end
 
