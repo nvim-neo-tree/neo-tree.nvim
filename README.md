@@ -5,9 +5,17 @@ structures in whatever style suits you, including sidebars, floating windows,
 netrw split style, or all of them at once!
 
 ### Neo-tree filesystem as Sidebar:
+
+This screenshot shows Neo-tree opened in the traditional sidebar layout:
+
 ![Neo-tree file system sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-right-aligned-symbols.png)
 
-### Neo-tree filesystem as Split with Details
+### Neo-tree filesystem as Split
+
+The below screenshot shows Neo-tree opened as a normal split (`:Neo-tree position=current`). When opened in this way,
+there is more room so the extra detail columns can be shown. This screenshot also shows how the contents can be
+sorted on any column. In this example, we are sorted on "Size" descending:
+
 ![Neo-tree file system
 details](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-file-details-and-sort.png)
 
