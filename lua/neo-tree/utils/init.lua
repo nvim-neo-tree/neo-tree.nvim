@@ -2,13 +2,15 @@ local vim = vim
 local log = require("neo-tree.log")
 local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
-local ffi = require("ffi")
+local ffi_available, ffi = pcall(require, "ffi")
 
 local FILE_ATTRIBUTE_HIDDEN = 0x2
 
-ffi.cdef([[
-int GetFileAttributesA(const char *path);
-]])
+if ffi_available then
+  ffi.cdef([[
+  int GetFileAttributesA(const char *path);
+  ]])
+end
 
 -- Backwards compatibility
 table.pack = table.pack or function(...)
@@ -936,10 +938,11 @@ end
 ---@param path string
 ---@return boolean
 function M.is_hidden(path)
-  if not M.is_windows then
+  if ffi_available and M.is_windows then
+    return bit.band(ffi.C.GetFileAttributesA(path), FILE_ATTRIBUTE_HIDDEN) ~= 0
+  else
     return false
   end
-  return bit.band(ffi.C.GetFileAttributesA(path), FILE_ATTRIBUTE_HIDDEN) ~= 0
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.
