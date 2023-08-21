@@ -10,9 +10,9 @@ This screenshot shows Neo-tree opened in the traditional sidebar layout:
 
 ![Neo-tree file system sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-right-aligned-symbols.png)
 
-### Neo-tree filesystem as Split
+### Neo-tree filesystem Netrw Style
 
-The below screenshot shows Neo-tree opened as a normal split (`:Neo-tree position=current`). When opened in this way,
+The below screenshot shows Neo-tree opened "netrw style" (`:Neo-tree position=current`). When opened in this way,
 there is more room so the extra detail columns can be shown. This screenshot also shows how the contents can be
 sorted on any column. In this example, we are sorted on "Size" descending:
 
