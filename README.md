@@ -10,9 +10,9 @@ This screenshot shows Neo-tree opened in the traditional sidebar layout:
 
 ![Neo-tree file system sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-right-aligned-symbols.png)
 
-### Neo-tree filesystem as Split
+### Neo-tree filesystem Netrw Style
 
-The below screenshot shows Neo-tree opened as a normal split (`:Neo-tree position=current`). When opened in this way,
+The below screenshot shows Neo-tree opened "netrw style" (`:Neo-tree position=current`). When opened in this way,
 there is more room so the extra detail columns can be shown. This screenshot also shows how the contents can be
 sorted on any column. In this example, we are sorted on "Size" descending:
 
@@ -283,13 +283,6 @@ use {
             ["<"] = "prev_source",
             [">"] = "next_source",
             ["i"] = "show_file_details",
-            ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
-            ["oc"] = { "order_by_created", nowait = false },
-            ["od"] = { "order_by_diagnostics", nowait = false },
-            ["om"] = { "order_by_modified", nowait = false },
-            ["on"] = { "order_by_name", nowait = false },
-            ["os"] = { "order_by_size", nowait = false },
-            ["ot"] = { "order_by_type", nowait = false },
           }
         },
         nesting_rules = {},
@@ -343,6 +336,13 @@ use {
               ["<c-x>"] = "clear_filter",
               ["[g"] = "prev_git_modified",
               ["]g"] = "next_git_modified",
+              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["oc"] = { "order_by_created", nowait = false },
+              ["od"] = { "order_by_diagnostics", nowait = false },
+              ["om"] = { "order_by_modified", nowait = false },
+              ["on"] = { "order_by_name", nowait = false },
+              ["os"] = { "order_by_size", nowait = false },
+              ["ot"] = { "order_by_type", nowait = false },
             },
             fuzzy_finder_mappings = { -- define keymaps for filter popup window in fuzzy_finder_mode
               ["<down>"] = "move_cursor_down",
@@ -367,6 +367,13 @@ use {
               ["bd"] = "buffer_delete",
               ["<bs>"] = "navigate_up",
               ["."] = "set_root",
+              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["oc"] = { "order_by_created", nowait = false },
+              ["od"] = { "order_by_diagnostics", nowait = false },
+              ["om"] = { "order_by_modified", nowait = false },
+              ["on"] = { "order_by_name", nowait = false },
+              ["os"] = { "order_by_size", nowait = false },
+              ["ot"] = { "order_by_type", nowait = false },
             }
           },
         },
@@ -381,6 +388,13 @@ use {
               ["gc"] = "git_commit",
               ["gp"] = "git_push",
               ["gg"] = "git_commit_and_push",
+              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["oc"] = { "order_by_created", nowait = false },
+              ["od"] = { "order_by_diagnostics", nowait = false },
+              ["om"] = { "order_by_modified", nowait = false },
+              ["on"] = { "order_by_name", nowait = false },
+              ["os"] = { "order_by_size", nowait = false },
+              ["ot"] = { "order_by_type", nowait = false },
             }
           }
         }

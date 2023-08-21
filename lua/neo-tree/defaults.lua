@@ -241,15 +241,15 @@ local config = {
     },
     type = {
       enabled = true,
-      required_width = 122, -- min width of window required to show this column
+      required_width = 110, -- min width of window required to show this column
     },
     last_modified = {
       enabled = true,
       required_width = 88, -- min width of window required to show this column
     },
     created = {
-      enabled = true,
-      required_width = 110, -- min width of window required to show this column
+      enabled = false,
+      required_width = 120, -- min width of window required to show this column
     },
   },
   renderers = {
@@ -397,14 +397,6 @@ local config = {
       ["?"] = "show_help",
       ["<"] = "prev_source",
       [">"] = "next_source",
-      ["i"] = "show_file_details",
-      ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
-      ["oc"] = { "order_by_created", nowait = false },
-      ["od"] = { "order_by_diagnostics", nowait = false },
-      ["om"] = { "order_by_modified", nowait = false },
-      ["on"] = { "order_by_name", nowait = false },
-      ["os"] = { "order_by_size", nowait = false },
-      ["ot"] = { "order_by_type", nowait = false },
     },
   },
   filesystem = {
@@ -422,6 +414,14 @@ local config = {
         ["."] = "set_root",
         ["[g"] = "prev_git_modified",
         ["]g"] = "next_git_modified",
+        ["i"] = "show_file_details",
+        ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+        ["oc"] = { "order_by_created", nowait = false },
+        ["od"] = { "order_by_diagnostics", nowait = false },
+        ["om"] = { "order_by_modified", nowait = false },
+        ["on"] = { "order_by_name", nowait = false },
+        ["os"] = { "order_by_size", nowait = false },
+        ["ot"] = { "order_by_type", nowait = false },
       },
       fuzzy_finder_mappings = { -- define keymaps for filter popup window in fuzzy_finder_mode
         ["<down>"] = "move_cursor_down",
@@ -536,6 +536,14 @@ local config = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
         ["bd"] = "buffer_delete",
+        ["i"] = "show_file_details",
+        ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+        ["oc"] = { "order_by_created", nowait = false },
+        ["od"] = { "order_by_diagnostics", nowait = false },
+        ["om"] = { "order_by_modified", nowait = false },
+        ["on"] = { "order_by_name", nowait = false },
+        ["os"] = { "order_by_size", nowait = false },
+        ["ot"] = { "order_by_type", nowait = false },
       },
     },
   },
@@ -549,6 +557,14 @@ local config = {
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
+        ["i"] = "show_file_details",
+        ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+        ["oc"] = { "order_by_created", nowait = false },
+        ["od"] = { "order_by_diagnostics", nowait = false },
+        ["om"] = { "order_by_modified", nowait = false },
+        ["on"] = { "order_by_name", nowait = false },
+        ["os"] = { "order_by_size", nowait = false },
+        ["ot"] = { "order_by_type", nowait = false },
       },
     },
   },
