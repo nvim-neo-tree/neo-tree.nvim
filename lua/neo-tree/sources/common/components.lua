@@ -451,11 +451,16 @@ M.file_size = function (config, node, state)
     }
   end
 
-  local stat = utils.get_stat(node)
   local text = "-"
   if node.type == "file" then
+    local stat = utils.get_stat(node)
     local size = stat and stat.size or nil
-    text = utils.filesize(size) or text
+    if size then
+      local success, human = pcall(utils.filesize, size)
+      if success then
+        text = human or text
+      end
+    end
   end
 
   return {
@@ -482,9 +487,9 @@ local file_time = function(config, node, state, stat_field)
   local stat = utils.get_stat(node)
   local value = stat and stat[stat_field]
   local seconds = value and value.sec or nil
-  local as_date = seconds and os.date("%Y-%m-%d %I:%M %p  ", seconds) or nil
+  local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
   return {
-    text = as_date and string.format(" %s", as_date) or "",
+    text = string.format("%20s  ", display),
     highlight = config.highlight or highlights.FILE_STATS
   }
 end
