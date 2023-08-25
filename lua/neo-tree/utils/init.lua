@@ -18,7 +18,7 @@ table.pack = table.pack or function(...)
 end
 table.unpack = table.unpack or unpack
 
-local M = { filesize = filesize }
+local M = {}
 
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
@@ -203,6 +203,15 @@ M.find_buffer_by_name = function(name)
     end
   end
   return -1
+end
+
+---Converts a filesize from libuv.stats into a human readable string with appropriate units.
+---@param size any
+---@return string
+M.human_size = function (size)
+  local human = filesize(size, { output = "string" })
+  ---@cast human string
+  return human
 end
 
 ---Gets diagnostic severity counts for all files

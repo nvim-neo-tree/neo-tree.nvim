@@ -518,7 +518,7 @@ M.show_file_details = function (state)
   table.insert(right, node.type)
   if stat.size then
     table.insert(left, "Size")
-    table.insert(right, utils.filesize(stat.size))
+    table.insert(right, utils.human_size(stat.size))
     table.insert(left, "Created")
     table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.birthtime.sec))
     table.insert(left, "Modified")

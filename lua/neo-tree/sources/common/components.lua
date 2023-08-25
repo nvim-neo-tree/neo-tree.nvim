@@ -456,7 +456,7 @@ M.file_size = function (config, node, state)
     local stat = utils.get_stat(node)
     local size = stat and stat.size or nil
     if size then
-      local success, human = pcall(utils.filesize, size)
+      local success, human = pcall(utils.human_size, size)
       if success then
         text = human or text
       end
