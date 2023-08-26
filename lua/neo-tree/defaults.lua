@@ -418,6 +418,7 @@ local config = {
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
+        ["og"] = { "order_by_git_status", nowait = false },
         ["om"] = { "order_by_modified", nowait = false },
         ["on"] = { "order_by_name", nowait = false },
         ["os"] = { "order_by_size", nowait = false },

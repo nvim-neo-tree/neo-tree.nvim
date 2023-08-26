@@ -305,6 +305,8 @@ oc = ...created:     Sort the tree by created date.
 
 od = ...diagnostics: Sort by diagnostic severity.
 
+og = ...git_status:  Sort by git status.
+
 om = ...modified:    Sort by last modified date.
 
 om = ...name:        Sort by name (default sort).
