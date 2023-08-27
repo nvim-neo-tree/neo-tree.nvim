@@ -325,7 +325,9 @@ M.get_inner_win_width = function(winid)
 end
 
 local stat_providers = {
-  default = vim.loop.fs_stat,
+  default = function (node)
+    return vim.loop.fs_stat(node.path)
+  end,
 }
 
 --- Gets the statics for a node in the file system. The `stat` object will be cached 
@@ -344,7 +346,7 @@ local stat_providers = {
 M.get_stat = function (node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]
-    local success, stat = pcall(provider, node.path)
+    local success, stat = pcall(provider, node)
     node.stat = success and stat or {}
   end
   return node.stat
