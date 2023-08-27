@@ -251,6 +251,9 @@ local config = {
       enabled = false,
       required_width = 120, -- min width of window required to show this column
     },
+    symlink_target = {
+      enabled = false,
+    },
   },
   renderers = {
     directory = {
@@ -261,11 +264,11 @@ local config = {
         "container",
         content = {
           { "name", zindex = 10 },
-          -- {
-          --   "symlink_target",
-          --   zindex = 10,
-          --   highlight = "NeoTreeSymbolicLinkTarget",
-          -- },
+          {
+            "symlink_target",
+            zindex = 10,
+            highlight = "NeoTreeSymbolicLinkTarget",
+          },
           { "clipboard", zindex = 10 },
           { "diagnostics", errors_only = true, zindex = 20, align = "right", hide_when_expanded = true },
           { "git_status", zindex = 10, align = "right", hide_when_expanded = true },
@@ -286,11 +289,11 @@ local config = {
             "name",
             zindex = 10
           },
-          -- {
-          --   "symlink_target",
-          --   zindex = 10,
-          --   highlight = "NeoTreeSymbolicLinkTarget",
-          -- },
+          {
+            "symlink_target",
+            zindex = 10,
+            highlight = "NeoTreeSymbolicLinkTarget",
+          },
           { "clipboard", zindex = 10 },
           { "bufnr", zindex = 10 },
           { "modified", zindex = 20, align = "right" },
