@@ -220,6 +220,9 @@ use {
             enabled = true,
             required_width = 110, -- min width of window required to show this column
           },
+          symlink_target = {
+            enabled = false,
+          },
         },
         -- A list of functions, each representing a global custom command
         -- that will be available in all sources (if not overridden in `opts[source_name].commands`)
