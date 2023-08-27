@@ -324,16 +324,38 @@ M.get_inner_win_width = function(winid)
   end
 end
 
+local stat_providers = {
+  default = vim.loop.fs_stat,
+}
+
 --- Gets the statics for a node in the file system. The `stat` object will be cached 
 --- for the lifetime of the node.
+---
 ---@param node table The Nui TreeNode node to get the stats for.
----@return table stat The stat object from libuv.
+---@return StatTable | table
+---
+---@class StatTime
+--- @field sec number
+---
+---@class StatTable
+--- @field birthtime StatTime
+--- @field mtime StatTime
+--- @field size number
 M.get_stat = function (node)
   if node.stat == nil then
-    local success, stat = pcall(vim.loop.fs_stat, node.path)
+    local provider = stat_providers[node.stat_provider or "default"]
+    local success, stat = pcall(provider, node.path)
     node.stat = success and stat or {}
   end
   return node.stat
+end
+
+---Register a function to provide stats for a node.
+---@param name string The name of the stat provider.
+---@param func function The function to call to get the stats.
+M.register_stat_provider = function (name, func)
+  stat_providers[name] = func
+  log.debug("Registered stat provider", name)
 end
 
 ---Handles null coalescing into a table at any depth.
