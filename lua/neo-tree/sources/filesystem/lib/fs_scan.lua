@@ -103,12 +103,32 @@ local render_context = function(context)
   context = nil
 end
 
+local should_check_gitignore = function (context)
+  local state = context.state
+  if #context.all_items == 0 then
+    log.info("No items, skipping git ignored/status lookups")
+    return false
+  end
+  if state.search_pattern and state.check_gitignore_in_search == false then
+    return false
+  end
+  if state.filtered_items.hide_gitignored then
+    return true
+  end
+  if not state.enable_git_status then
+    return true
+  end
+  return false
+end
+
 local job_complete_async = function(context)
   local state = context.state
   local parent_id = context.parent_id
-  if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
-  elseif state.filtered_items.hide_gitignored or state.enable_git_status then
+  -- if state.search_pattern and #context.all_items > 50 then
+  --   -- don't do git ignored/status lookups when searching unless we are down to a reasonable number of items
+  --   return context
+  -- end
+  if should_check_gitignore(context) then
     local mark_ignored_async = async.wrap(function (_state, _all_items, _callback)
       git.mark_ignored(_state, _all_items, _callback)
     end, 3)
@@ -126,12 +146,7 @@ end
 local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
-  if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
-    render_context(context)
-    return
-  end
-  if state.filtered_items.hide_gitignored or state.enable_git_status then
+  if should_check_gitignore(context) then
     if require("neo-tree").config.git_status_async then
       git.mark_ignored(state, context.all_items, function(all_items)
         if parent_id then
@@ -152,6 +167,8 @@ local job_complete = function(context)
         state.git_ignored = all_items
       end
     end
+    render_context(context)
+  else
     render_context(context)
   end
 end

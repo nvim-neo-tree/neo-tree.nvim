@@ -444,6 +444,9 @@ local config = {
       sidebar = "tab",   -- sidebar is when position = left or right
       current = "window" -- current is when position = current
     },
+    check_gitignore_in_search = true, -- check gitignore status for files/directories when searching
+                                      -- setting this to false will speed up searches, but gitignored
+                                      -- items won't be marked if they are visible.
     -- The renderer section provides the renderers that will be used to render the tree.
     --   The first level is the node type.
     --   For each node type, you can specify a list of components to render.
