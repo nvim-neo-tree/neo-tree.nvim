@@ -22,6 +22,8 @@ local config = {
   enable_opened_markers = true,   -- Enable tracking of opened files. Required for `components.name.highlight_opened_files`
   enable_refresh_on_write = true, -- Refresh the tree when a file is written. Only used if `use_libuv_file_watcher` is false.
   enable_normal_mode_for_inputs = false, -- Enable normal mode for input dialogs.
+  git_ignore_max_folders = 200, -- Maximum number of folders before git ignore checks are skipped. If you increase this,
+                                -- you may need to increase the open files limit in your OS as well. i.e. `ulimit -n 4096`
   git_status_async = true,
   -- These options are for people with VERY large git repos
   git_status_async_options = {
@@ -444,6 +446,9 @@ local config = {
       sidebar = "tab",   -- sidebar is when position = left or right
       current = "window" -- current is when position = current
     },
+    check_gitignore_in_search = true, -- check gitignore status for files/directories when searching
+                                      -- setting this to false will speed up searches, but gitignored
+                                      -- items won't be marked if they are visible.
     -- The renderer section provides the renderers that will be used to render the tree.
     --   The first level is the node type.
     --   For each node type, you can specify a list of components to render.

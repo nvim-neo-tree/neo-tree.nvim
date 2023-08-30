@@ -44,11 +44,21 @@ M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")
   log.trace("IGNORED: mark_ignore BEGIN...")
+  local folder_count = 0
+  local git_ignore_max_folders = require("neo-tree").config.git_ignore_max_folders or 200
 
   for _, item in ipairs(items) do
     local folder = utils.split_path(item.path)
     if folder then
       if not folders[folder] then
+        folder_count = folder_count + 1
+        if folder_count > git_ignore_max_folders then
+          log.info("Too many folders to check for git ignored files, skipping... you can change this with the `git_ignore_max_folders` option")
+          if type(callback) == "function" then
+            callback({})
+          end
+          return {}
+        end
         folders[folder] = {}
       end
       table.insert(folders[folder], item.path)
