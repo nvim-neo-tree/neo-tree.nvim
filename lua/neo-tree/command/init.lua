@@ -12,7 +12,10 @@ local M = {
 }
 
 -- Store the last source used for `M.execute`
-M._last_source = nil
+M._last = {
+  source = nil,
+  position = nil,
+}
 
 ---Executes a Neo-tree action from outside of a Neo-tree window,
 ---such as show, hide, navigate, etc.
@@ -64,16 +67,22 @@ M.execute = function(args)
   -- The rest of the actions require a source
   args.source = args.source or nt.config.default_source
 
-  -- Restore the last source used if requested
+  -- Handle source=last
   if args.source == "last" then
-    args.source = M._last_source or nt.config.default_source
+    args.source = M._last.source or nt.config.default_source
+
+    -- Restore last position if it was not specified
+    if args.position == nil then
+      args.position = M._last.position
+    end
 
     -- Prevent the default source from being set to "last"
     if args.source == "last" then
       args.source = nt.config.sources[1]
     end
   end
-  M._last_source = args.source
+  M._last.source = args.source
+  M._last.position = args.position
 
   -- If position=current was requested, but we are currently in a neo-tree window,
   -- then we need to override that.
