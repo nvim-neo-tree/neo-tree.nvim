@@ -44,21 +44,11 @@ M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")
   log.trace("IGNORED: mark_ignore BEGIN...")
-  local folder_count = 0
-  local git_ignore_max_folders = require("neo-tree").config.git_ignore_max_folders or 200
 
   for _, item in ipairs(items) do
     local folder = utils.split_path(item.path)
     if folder then
       if not folders[folder] then
-        folder_count = folder_count + 1
-        if folder_count > git_ignore_max_folders then
-          log.info("Too many folders to check for git ignored files, skipping... you can change this with the `git_ignore_max_folders` option")
-          if type(callback) == "function" then
-            callback({})
-          end
-          return {}
-        end
         folders[folder] = {}
       end
       table.insert(folders[folder], item.path)
@@ -114,7 +104,29 @@ M.mark_ignored = function(state, items, callback)
   local all_results = {}
   if type(callback) == "function" then
     local jobs = {}
-    local progress = 0
+    local running_jobs = 0
+    local job_count = 0
+    local completed_jobs = 0
+
+    -- This is called when a job completes, and starts the next job if there are any left
+    -- or calls the callback if all jobs are complete.
+    -- It is also called once at the start to start the first 50 jobs.
+    --
+    -- This is done to avoid running too many jobs at once, which can cause a crash from
+    -- having too many open files.
+    local run_more_jobs = function()
+      while #jobs > 0 and running_jobs < 50 and job_count > completed_jobs do
+        local next_job = table.remove(jobs, #jobs)
+        next_job:start()
+        running_jobs = running_jobs + 1
+      end
+
+      if completed_jobs == job_count then
+        finalize(all_results)
+        callback(all_results)
+      end
+    end
+
     for folder, folder_items in pairs(folders) do
       local args = { "-C", folder, "check-ignore", "--stdin" }
       local job = Job:new({
@@ -134,19 +146,17 @@ M.mark_ignored = function(state, items, callback)
             result = self:result()
           end
           vim.list_extend(all_results, process_result(result))
-          progress = progress + 1
-          if progress == #jobs then
-            finalize(all_results)
-            callback(all_results)
-          end
+
+          running_jobs = running_jobs - 1
+          completed_jobs = completed_jobs + 1
+          run_more_jobs()
         end,
       })
       table.insert(jobs, job)
+      job_count = job_count + 1
     end
 
-    for _, job in ipairs(jobs) do
-      job:start()
-    end
+    run_more_jobs()
   else
     for folder, folder_items in pairs(folders) do
       local cmd = { "git", "-C", folder, "check-ignore", unpack(folder_items) }
