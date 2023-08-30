@@ -11,6 +11,9 @@ M.setup = function(all_source_names)
   local source_names = utils.table_copy(all_source_names)
   table.insert(source_names, "migrations")
 
+  -- A special source referring to the last used source.
+  table.insert(source_names, "last")
+
   -- For lists, the first value is the default value.
   local arguments = {
     action = {

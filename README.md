@@ -482,6 +482,7 @@ What to show. Can be one of:
 | filesystem | Show a file browser. DEFAULT |
 | buffers    | Show a list of currently open buffers. |
 | git_status | Show the output of `git status` in a tree layout. |
+| last       | Equivalent to the last source used |
 
 #### `position`
 Where to show it, can be one of:
