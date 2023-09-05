@@ -1090,13 +1090,20 @@ M.window_exists = function(state)
     local isvalid = M.is_window_valid(winid)
     window_exists = isvalid and (vim.api.nvim_win_get_number(winid) > 0)
     if window_exists then
-      local bufnr = vim.api.nvim_win_get_buf(winid)
-      if bufnr > 0 and bufnr ~= state.bufnr then
-        window_exists = false
-      end
-      local buf_position = vim.api.nvim_buf_get_var(bufnr, "neo_tree_position")
-      if buf_position ~= position then
-        window_exists = false
+      local winbufnr = vim.api.nvim_win_get_buf(winid)
+      if winbufnr < 1 then
+        return false
+      else
+        if winbufnr ~= bufnr then
+          return false
+        end
+        local success, buf_position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
+        if not success then
+          return false
+        end
+        if buf_position ~= position then
+          return false
+        end
       end
     end
   end
