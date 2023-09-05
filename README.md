@@ -700,7 +700,7 @@ Details on how to configure everything is in the help file at `:h
 neo-tree-configuration` or online at
 [neo-tree.txt](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/doc/neo-tree.txt)
 
-Recipes for customizations can be found on the [wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Recipes). Recipes include
+Recipes for customizations can be found on the [wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Recipies). Recipes include
 things like adding a component to show the
 [Harpoon](https://github.com/ThePrimeagen/harpoon) index for files, or
 responding to the `"file_opened"` event to auto clear the search when you open a
