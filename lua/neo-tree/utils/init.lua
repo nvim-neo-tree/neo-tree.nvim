@@ -34,6 +34,10 @@ local diag_severity_to_string = function(severity)
   end
 end
 
+local diagnostic_filter = function(diag)
+  return diag.source == "Lua Diagnostics." and diag.message == "Undefined global `vim`."
+end
+
 local tracked_functions = {}
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
@@ -214,39 +218,78 @@ M.human_size = function (size)
   return human
 end
 
----Gets diagnostic severity counts for all files
----@return table table { file_path = { Error = int, Warning = int, Information = int, Hint = int, Unknown = int } }
+---Gets non-zero diagnostics counts for each open file and each ancestor directory.
+---severity_number and severity_string refer to the highest severity with
+---non-zero diagnostics count.
+---Entry is nil if all counts are 0
+---@return table table
+---{ [file_path] = {
+---    severity_number = int,
+---    severity_string = string,
+---    Error = int or nil,
+---    Warn = int or nil,
+---    Info = int or nil
+---    Hint = int or nil,
+---  } or nil }
 M.get_diagnostic_counts = function()
-  local d = vim.diagnostic.get()
   local lookup = {}
-  for _, diag in ipairs(d) do
-    if diag.source == "Lua Diagnostics." and diag.message == "Undefined global `vim`." then
-      -- ignore this diagnostic
-    else
-      local success, file_name = pcall(vim.api.nvim_buf_get_name, diag.bufnr)
-      if success then
-        local sev = diag_severity_to_string(diag.severity)
-        if sev then
-          local entry = lookup[file_name] or { severity_number = 4 }
-          entry[sev] = (entry[sev] or 0) + 1
-          entry.severity_number = math.min(entry.severity_number, diag.severity)
-          entry.severity_string = diag_severity_to_string(entry.severity_number)
-          lookup[file_name] = entry
+
+  for ns, _ in pairs(vim.diagnostic.get_namespaces()) do
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      local success, file_name = pcall(vim.api.nvim_buf_get_name, bufnr)
+      if success and not vim.diagnostic.is_disabled(bufnr, ns) then
+        for severity, _ in ipairs(vim.diagnostic.severity) do
+          local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
+
+          -- It would be nice to not do this manual filtering below
+          -- Note that lua diagnostics can be suppressed using neodev
+          -- or lua_ls settings instead.
+          -- https://github.com/folke/neodev.nvim
+          local ignored_diagnostics = 0
+          for _, diag in ipairs(diagnostics) do
+            if diagnostic_filter(diag) then
+              ignored_diagnostics = ignored_diagnostics + 1
+            end
+          end
+
+          local n_diagnostics = #diagnostics - ignored_diagnostics
+          if n_diagnostics > 0 then
+            local severity_string = diag_severity_to_string(severity)
+            if lookup[file_name] == nil then
+              lookup[file_name] = {
+                severity_number = severity,
+                severity_string = severity_string,
+              }
+            end
+            if severity_string ~= nil then
+              lookup[file_name][severity_string] = n_diagnostics
+            end
+          end
         end
       end
     end
   end
 
-  for file_name, entry in pairs(lookup) do
+  for file_name, file_entry in pairs(lookup) do
     -- Now bubble this status up to the parent directories
     local parts = M.split(file_name, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
     M.reduce(parts, "", function(acc, part)
       local path = (M.is_windows and acc == "") and part or M.path_join(acc, part)
-      local path_entry = lookup[path] or { severity_number = 4 }
-      path_entry.severity_number = math.min(path_entry.severity_number, entry.severity_number)
-      path_entry.severity_string = diag_severity_to_string(path_entry.severity_number)
-      lookup[path] = path_entry
+
+      if file_entry.severity_number then
+        if not lookup[path] then
+          lookup[path] = {
+            severity_number = file_entry.severity_number,
+            severity_string = file_entry.severity_string,
+          }
+        else -- lookup[path].severity_number ~= nil
+          local min_severity = math.min(lookup[path].severity_number, file_entry.severity_number)
+          lookup[path].severity_number = min_severity
+          lookup[path].severity_string = diag_severity_to_string(min_severity)
+        end
+      end
+
       return path
     end)
   end
