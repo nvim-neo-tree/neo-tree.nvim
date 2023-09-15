@@ -34,10 +34,6 @@ local diag_severity_to_string = function(severity)
   end
 end
 
-local diagnostic_filter = function(diag)
-  return diag.source == "Lua Diagnostics." and diag.message == "Undefined global `vim`."
-end
-
 local tracked_functions = {}
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
@@ -241,19 +237,7 @@ M.get_diagnostic_counts = function()
         for severity, _ in ipairs(vim.diagnostic.severity) do
           local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
 
-          -- It would be nice to not do this manual filtering below
-          -- Note that lua diagnostics can be suppressed using neodev
-          -- or lua_ls settings instead.
-          -- https://github.com/folke/neodev.nvim
-          local ignored_diagnostics = 0
-          for _, diag in ipairs(diagnostics) do
-            if diagnostic_filter(diag) then
-              ignored_diagnostics = ignored_diagnostics + 1
-            end
-          end
-
-          local n_diagnostics = #diagnostics - ignored_diagnostics
-          if n_diagnostics > 0 then
+          if #diagnostics > 0 then
             local severity_string = diag_severity_to_string(severity)
             if lookup[file_name] == nil then
               lookup[file_name] = {
@@ -262,7 +246,7 @@ M.get_diagnostic_counts = function()
               }
             end
             if severity_string ~= nil then
-              lookup[file_name][severity_string] = n_diagnostics
+              lookup[file_name][severity_string] = #diagnostics
             end
           end
         end
