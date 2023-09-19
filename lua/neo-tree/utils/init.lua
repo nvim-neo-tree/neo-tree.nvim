@@ -233,7 +233,10 @@ M.get_diagnostic_counts = function()
   for ns, _ in pairs(vim.diagnostic.get_namespaces()) do
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       local success, file_name = pcall(vim.api.nvim_buf_get_name, bufnr)
-      if success and not vim.diagnostic.is_disabled(bufnr, ns) then
+      -- TODO, remove is_disabled nil check when dropping support for 0.8
+      if
+        success and vim.diagnostic.is_disabled == nil or not vim.diagnostic.is_disabled(bufnr, ns)
+      then
         for severity, _ in ipairs(vim.diagnostic.severity) do
           local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
 
