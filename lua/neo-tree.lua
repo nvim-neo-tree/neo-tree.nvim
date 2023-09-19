@@ -5,7 +5,7 @@ local M = {}
 
 -- DEPRECATED: to be removed in a future release, use this instead:
 -- ```
--- require("neo-tree.command").execute({ action = "close" }) 
+-- require("neo-tree.command").execute({ action = "close" })
 -- ```
 M.close_all = function()
   require("neo-tree.command").execute({ action = "close" })
@@ -47,7 +47,7 @@ M.get_prior_window = function(ignore_filetypes)
 end
 
 M.paste_default_config = function()
-  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils.lua$")
+  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$")
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
   local lines = vim.fn.readfile(config_path)
   if lines == nil then
