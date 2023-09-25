@@ -538,6 +538,7 @@ local config = {
     group_empty_dirs = true,  -- when true, empty directories will be grouped together
     show_unloaded = false,    -- When working with sessions, for example, restored but unfocused buffers
                               -- are mark as "unloaded". Turn this on to view these unloaded buffer.
+    terminals_first = false,  -- when true, terminals will be listed before file buffers
     window = {
       mappings = {
         ["<bs>"] = "navigate_up",
