@@ -309,7 +309,7 @@ og = ...git_status:  Sort by git status.
 
 om = ...modified:    Sort by last modified date.
 
-om = ...name:        Sort by name (default sort).
+on = ...name:        Sort by name (default sort).
 
 os = ...size:        Sort by size.
 
