@@ -214,13 +214,22 @@ local function get_children_async(path, callback)
   end, 1000)
 end
 
+local function filter_never_shows(paths, context)
+  if paths == nil or #paths < 1 then
+    return paths
+  end
+  return vim.tbl_filter(function(c)
+    return not context.is_a_never_show_file(c.path)
+  end, paths)
+end
+
 local function scan_dir_sync(context, path)
   process_node(context, path)
   local children = get_children_sync(path)
   for _, child in ipairs(children) do
     create_node(context, child)
     if child.type == "directory" then
-      local grandchild_nodes = get_children_sync(child.path)
+      local grandchild_nodes = filter_never_shows(get_children_sync(child.path), context)
       if
         grandchild_nodes == nil
         or #grandchild_nodes == 0

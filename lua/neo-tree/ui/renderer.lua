@@ -1210,13 +1210,24 @@ draw = function(nodes, state, parent_id)
   state._ready = true
 end
 
+local function filter_never_shows(node_tbl)
+  if node_tbl == nil or #node_tbl == 0 then
+    return node_tbl
+  end
+  return vim.tbl_filter(function(e)
+    local filtered_by = e.filtered_by or {}
+    return not filtered_by.never_show
+  end, node_tbl)
+end
+
 local function group_empty_dirs(node)
   if node.children == nil then
     return node
   end
 
-  local first_child = node.children[1]
-  if #node.children == 1 and first_child.type == "directory" then
+  local filtered_children = filter_never_shows(node.children)
+  local first_child = filtered_children[1]
+  if #filtered_children == 1 and first_child.type == "directory" then
     -- this is the only path that changes the tree
     -- at each step where we discover an empty directory, merge it's name with the parent
     -- then skip over it
@@ -1271,11 +1282,11 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       local scan_mode = require("neo-tree").config.filesystem.scan_mode
       if scan_mode == "deep" then
         for i, item in ipairs(sourceItems) do
-          sourceItems[i] = group_empty_dirs(item)
+          sourceItems[i] = filter_never_shows(group_empty_dirs(item))
         end
       else
         -- this is a lazy load of a single sub folder
-        group_empty_dirs(sourceItems)
+        sourceItems = filter_never_shows(group_empty_dirs(sourceItems))
         if #sourceItems == 1 and sourceItems[1].type == "directory" then
           -- This folder needs to be grouped.
           -- The goal is to just update the existing node in place.
@@ -1306,7 +1317,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
       for _, item in ipairs(sourceItems) do
         if item.children ~= nil then
           for i, child in ipairs(item.children) do
-            item.children[i] = group_empty_dirs(child)
+            item.children[i] = filter_never_shows(group_empty_dirs(child))
           end
         end
       end
