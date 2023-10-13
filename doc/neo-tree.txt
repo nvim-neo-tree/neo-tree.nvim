@@ -1208,6 +1208,43 @@ This will render:
     FILENAME.js
         FILENAME.js.map
 
+A more advanced usage are rules with patterns. Those can be mixed with file
+extension based rules. In this case the rule key is
+not evaluated but a defined pattern. The pattern can have captures which can
+be used for file matching via globs:
+>lua
+    require("neo-tree").setup({
+      nesting_rules = {
+        ["package.json"] = {
+          pattern = "^package%.json$",
+          files = { "package-lock.json", "yarn*" }
+        },
+        ["go"] = {
+          pattern = "(.*)%.go$",
+          files = { "%1_test.go" }, 
+        },
+        ["js-extended"] = {
+          pattern = "(.+)%.js$",
+          files = { "%1.js.map", "%1.min.js", "%1.d.ts" },
+        }
+      }
+    })
+
+This will render:
+
+    FILENAME.js
+        FILENAME.js.map
+        FILENAME.min.js
+        FILENAME.d.ts
+
+    FILENAME.go
+        FILENAME_test.go
+
+    package.json
+        package-lock.json
+        yarn.lock
+
+
 <
 The default mapping to expand/collapse nested files is <space>.
 

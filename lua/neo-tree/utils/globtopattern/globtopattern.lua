@@ -1,4 +1,6 @@
 -- https://github.com/davidm/lua-glob-pattern
+-- License: MIT/X11
+-- Author: David Manura
 local M = { _TYPE = "module", _NAME = "globtopattern", _VERSION = "0.2.1.20120406" }
 
 function M.globtopattern(g)
