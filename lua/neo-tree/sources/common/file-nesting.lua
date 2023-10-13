@@ -3,8 +3,6 @@ local utils = require("neo-tree.utils")
 local Path = require("plenary.path")
 local globtopattern = require("neo-tree.utils.globtopattern.globtopattern")
 
-local log = require("neo-tree.log")
-
 -- File nesting a la JetBrains (#117).
 local M = {}
 M.config = {}
