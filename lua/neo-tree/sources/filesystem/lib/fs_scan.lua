@@ -115,10 +115,10 @@ local should_check_gitignore = function (context)
   if state.filtered_items.hide_gitignored then
     return true
   end
-  if not state.enable_git_status then
-    return true
+  if state.enable_git_status == false then
+    return false
   end
-  return false
+  return true
 end
 
 local job_complete_async = function(context)
