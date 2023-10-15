@@ -1,7 +1,7 @@
 local iter = require("plenary.iterators").iter
 local utils = require("neo-tree.utils")
 local Path = require("plenary.path")
-local globtopattern = require("neo-tree.utils.globtopattern.globtopattern")
+local globtopattern = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 -- File nesting a la JetBrains (#117).
 local M = {}

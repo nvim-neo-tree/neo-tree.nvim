@@ -1235,9 +1235,9 @@ ignore_case to the config:
         }
       }
     })
-
+<
 This will render:
-
+>
     FILENAME.js
         FILENAME.js.map
         FILENAME.min.js
@@ -1253,8 +1253,8 @@ This will render:
     Dockerfile
         .dockerignore
         docker-compose.yml
-
 <
+
 The default mapping to expand/collapse nested files is <space>.
 
 
