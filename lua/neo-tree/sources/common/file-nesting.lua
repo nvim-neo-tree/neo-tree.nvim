@@ -5,7 +5,6 @@ local globtopattern = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 -- File nesting a la JetBrains (#117).
 local M = {}
-M.config = {}
 
 local pattern_matcher = {
   enabled = false,
@@ -86,7 +85,12 @@ end
 --- Checks if file-nesting module is enabled by config
 ---@return boolean
 function M.is_enabled()
-  return next(M.config) ~= nil
+  for _, matcher in pairs(matchers) do
+    if matcher.enabled then
+      return true
+    end
+  end
+  return false
 end
 
 local function case_insensitive_pattern(pattern)
@@ -136,16 +140,6 @@ function M.can_have_nesting(item)
   return false
 end
 
---- Checks if `target` should be nested into `base`
----@return boolean
-function M.should_nest_file(base, target)
-  local ext_lookup = M.exts[base.exts]
-
-  return utils.truthy(
-    base.base == target.base and ext_lookup and iter(ext_lookup):find(target.exts)
-  )
-end
-
 ---Setup the module with the given config
 ---@param config table
 function M.setup(config)
@@ -165,7 +159,6 @@ function M.setup(config)
       value.enabled = true
     end
   end
-  M.config = config or {}
 end
 
 return M
