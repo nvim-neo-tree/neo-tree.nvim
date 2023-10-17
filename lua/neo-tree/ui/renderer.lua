@@ -835,7 +835,7 @@ local set_buffer_mappings = function(state)
           vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
         elseif type(func) == "function" then
-          resolved_mappings[cmd] = { text = config.text or "<function>" }
+          resolved_mappings[cmd] = { text = config.label or "<function>" }
         end
         if type(func) == "function" then
           resolved_mappings[cmd].handler = function()
