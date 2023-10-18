@@ -1,4 +1,3 @@
-local iter = require("plenary.iterators").iter
 local utils = require("neo-tree.utils")
 local Path = require("plenary.path")
 local globtopattern = require("neo-tree.sources.filesystem.lib.globtopattern")
@@ -73,27 +72,44 @@ pattern_matcher.get_nesting_callback = function(item)
   return nil
 end
 
+pattern_matcher.pattern_types = {}
+pattern_matcher.pattern_types.files_glob = {}
+pattern_matcher.pattern_types.files_glob.get_pattern = function(pattern)
+  return globtopattern.globtopattern(pattern)
+end
+pattern_matcher.pattern_types.files_glob.match = function(filename, pattern)
+  return filename:match(pattern)
+end
+pattern_matcher.pattern_types.files_exact = {}
+pattern_matcher.pattern_types.files_exact.get_pattern = function(pattern)
+  return pattern
+end
+pattern_matcher.pattern_types.files_exact.match = function(filename, pattern)
+  return filename == pattern
+end
+
 pattern_matcher.get_children = function(item, siblings, rule_config)
   local matching_files = {}
   if siblings == nil then
     return matching_files
   end
-
-  for _, pattern in pairs(rule_config["files"]) do
-    local glob_pattern =
-      globtopattern.globtopattern(item.name:gsub(rule_config["pattern"], pattern))
-    for _, sibling in pairs(siblings) do
-      if
-        sibling.id ~= item.id
-        and sibling.is_nested ~= true
-        and item.parent_path == sibling.parent_path
-      then
-        local sibling_name = sibling.name
-        if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
-          sibling_name = sibling.name_lcase
-        end
-        if sibling_name:match(glob_pattern) then
-          table.insert(matching_files, sibling)
+  for type, type_functions in pairs(pattern_matcher.pattern_types) do
+    for _, pattern in pairs(rule_config[type]) do
+      local glob_or_file =
+        type_functions.get_pattern(item.name:gsub(rule_config["pattern"], pattern))
+      for _, sibling in pairs(siblings) do
+        if
+          sibling.id ~= item.id
+          and sibling.is_nested ~= true
+          and item.parent_path == sibling.parent_path
+        then
+          local sibling_name = sibling.name
+          if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
+            sibling_name = sibling.name_lcase
+          end
+          if type_functions.match(sibling_name, glob_or_file) then
+            table.insert(matching_files, sibling)
+          end
         end
       end
     end
@@ -108,6 +124,15 @@ function M.is_enabled()
     if matcher.enabled then
       return true
     end
+  end
+  return false
+end
+
+local function is_glob(str)
+  local test = str:gsub("\\[%*%?%[%]]", "")
+  local pos, _ = test:find("*")
+  if pos ~= nil then
+    return true
   end
   return false
 end
@@ -206,6 +231,16 @@ function M.setup(config)
       type = "pattern"
       if value["ignore_case"] == true then
         value["pattern"] = case_insensitive_pattern(value["pattern"])
+      end
+      value["files_glob"] = {}
+      value["files_exact"] = {}
+      for _, glob in pairs(value["files"]) do
+        local replaced = glob:gsub("%%%d+", "")
+        if is_glob(replaced) then
+          table.insert(value["files_glob"], glob)
+        else
+          table.insert(value["files_exact"], glob)
+        end
       end
     end
     matchers[type]["config"][key] = value
