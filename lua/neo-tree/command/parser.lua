@@ -45,6 +45,7 @@ M.setup = function(all_source_names)
     toggle = { type = M.FLAG },
     reveal = { type = M.FLAG },
     reveal_force_cwd = { type = M.FLAG },
+    selector = { type = M.FLAG },
   }
 
   local arg_type_lookup = {}

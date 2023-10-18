@@ -400,6 +400,9 @@ end
 ---@param state table: state
 ---@return nil
 M.set_source_selector = function(state)
+  if state.enable_source_selector == false then
+    return
+  end
   local sel_config = utils.resolve_config_option(require("neo-tree").config, "source_selector", {})
   if sel_config and sel_config.winbar then
     vim.wo[state.winid].winbar = "%{%v:lua.require'neo-tree.ui.selector'.get()%}"
