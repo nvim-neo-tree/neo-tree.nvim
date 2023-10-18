@@ -148,6 +148,12 @@ commands by adding this option before the Neotree config is run:
 >vim
   let g:neo_tree_remove_legacy_commands = 1
 <
+CALLING_FROM_LUA
+
+You can call Neotree commands from your Lua scripts as follows:
+
+>lua
+  require('neo-tree.command').execute({ ... })
 
 ===============================================================================
 MAPPINGS                                                                      ~
