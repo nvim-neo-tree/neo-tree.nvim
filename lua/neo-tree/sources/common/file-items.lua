@@ -77,7 +77,7 @@ local function deep_sort(tbl, sort_func, field_provider, direction)
   end
   table.sort(tbl, sort_func)
   for _, item in pairs(tbl) do
-    if item.type == "directory" then
+    if item.type == "directory" or item.children ~= nil then
       deep_sort(item.children, sort_func)
     end
   end

@@ -156,17 +156,39 @@ function table_is_empty(table_to_check)
   return table_to_check == nil or next(table_to_check) == nil
 end
 
+function flatten_nesting(nesting_parents)
+  for key, config in pairs(nesting_parents) do
+    if config.is_nested ~= nil then
+      local parent = config.nesting_parent
+      -- count for emergency escape
+      local count = 0
+      while parent.nesting_parent ~= nil and count < 100 do
+        parent = parent.nesting_parent
+        count = count + 1
+      end
+      if parent ~= nil then
+        for _, child in pairs(config.children) do
+          child.nesting_parent = parent
+          table.insert(parent.children, child)
+        end
+        config.children = nil
+      end
+    end
+    nesting_parents[key] = nil
+  end
+end
+
 function M.nest_items(context)
   if M.is_enabled() == false or table_is_empty(context.nesting) then
     return
   end
-
   for _, config in pairs(context.nesting) do
     local files = config.nesting_callback(config, context.all_items)
     local folder = context.folders[config.parent_path]
     for _, to_be_nested in ipairs(files) do
       table.insert(config.children, to_be_nested)
       to_be_nested.is_nested = true
+      to_be_nested.nesting_parent = config
       if folder ~= nil then
         for index, file_to_check in ipairs(folder.children) do
           if file_to_check.id == to_be_nested.id then
@@ -176,6 +198,8 @@ function M.nest_items(context)
       end
     end
   end
+
+  flatten_nesting(context.nesting)
 end
 
 --- Returns `item` nesting parent path if exists
