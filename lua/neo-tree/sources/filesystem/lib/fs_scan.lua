@@ -125,6 +125,9 @@ end
 local job_complete_async = function(context)
   local state = context.state
   local parent_id = context.parent_id
+
+  file_nesting.nest_items(context)
+
   -- if state.search_pattern and #context.all_items > 50 then
   --   -- don't do git ignored/status lookups when searching unless we are down to a reasonable number of items
   --   return context
