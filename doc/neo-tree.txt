@@ -155,6 +155,32 @@ You can call Neotree commands from your Lua scripts as follows:
 >lua
   require('neo-tree.command').execute({ ... })
 
+For example, in the `keys` configuration, you could use the following to make
+the `-` key reveal the current file, or if in an unsaved file, the current
+working directory.
+
+>lua
+
+  keys = {
+    {'-', function()
+      local reveal_file = vim.fn.expand('%:p')
+      if (reveal_file == '') then
+        reveal_file = vim.fn.getcwd();
+      else
+        local f = io.open(reveal_file, "r")
+        if (f) then
+          f.close(f)
+        else
+          reveal_file = vim.fn.getcwd()
+        end
+      end
+      require('neo-tree.command').execute({
+        reveal_file = reveal_file, reveal_force_cwd = true
+      })
+    }
+  }
+
+
 ===============================================================================
 MAPPINGS                                                                      ~
 ===============================================================================
