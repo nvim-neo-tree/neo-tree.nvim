@@ -20,8 +20,31 @@ local matchers = {}
 matchers.pattern = pattern_matcher
 matchers.exts = extension_matcher
 
-extension_matcher.can_have_nesting = function(item)
-  return utils.truthy(extension_matcher.config[item.exts])
+extension_matcher.get_nesting_callback = function(item)
+  if utils.truthy(extension_matcher.config[item.exts]) then
+    return extension_matcher.get_children
+  end
+  return nil
+end
+
+extension_matcher.get_children = function(item, siblings)
+  local matching_files = {}
+  if siblings == nil then
+    return matching_files
+  end
+  for _, ext in pairs(extension_matcher.config[item.exts]) do
+    for _, sibling in pairs(siblings) do
+      if
+        sibling.id ~= item.id
+        and sibling.is_nested ~= true
+        and item.parent_path == sibling.parent_path
+        and sibling.exts == ext
+      then
+        table.insert(matching_files, sibling)
+      end
+    end
+  end
+  return matching_files
 end
 
 extension_matcher.get_parent = function(item)
@@ -38,48 +61,44 @@ extension_matcher.get_parent = function(item)
   return nil
 end
 
-pattern_matcher.can_have_nesting = function(item)
-  for _, patternFiles in pairs(pattern_matcher.config) do
-    if item.name:match(patternFiles["pattern"]) then
-      return true
-    end
-  end
-  return false
-end
-
-pattern_matcher.get_parent = function(item)
-  local dir = vim.loop.fs_scandir(item.parent_path)
-  if dir then
-    local file = vim.loop.fs_scandir_next(dir)
-    while file do
-      local stat = vim.loop.fs_stat(utils.path_join(item.parent_path, file))
-      if stat ~= nil and stat.type == "file" then
-        if file ~= item.name then
-          for _, ruleConfig in pairs(pattern_matcher.config) do
-            local pattern = ruleConfig["pattern"]
-            local item_name = item.name
-            if ruleConfig["ignore_case"] then
-              item_name = item_name:lower()
-            end
-            if file:match(pattern) then
-              for _, patternFile in pairs(ruleConfig["files"] or {}) do
-                if ruleConfig["ignore_case"] then
-                  patternFile = patternFile:lower()
-                end
-                local result = globtopattern.globtopattern(file:gsub(pattern, patternFile))
-
-                if item_name:match(result) then
-                  return utils.path_join(item.parent_path, file)
-                end
-              end
-            end
-          end
-        end
+pattern_matcher.get_nesting_callback = function(item)
+  for _, rule_config in pairs(pattern_matcher.config) do
+    if item.name:match(rule_config["pattern"]) then
+      return function(item, siblings)
+        local rule_config_helper = rule_config
+        return pattern_matcher.get_children(item, siblings, rule_config_helper)
       end
-      file = vim.loop.fs_scandir_next(dir)
     end
   end
   return nil
+end
+
+pattern_matcher.get_children = function(item, siblings, rule_config)
+  local matching_files = {}
+  if siblings == nil then
+    return matching_files
+  end
+
+  for _, pattern in pairs(rule_config["files"]) do
+    local glob_pattern =
+      globtopattern.globtopattern(item.name:gsub(rule_config["pattern"], pattern))
+    for _, sibling in pairs(siblings) do
+      if
+        sibling.id ~= item.id
+        and sibling.is_nested ~= true
+        and item.parent_path == sibling.parent_path
+      then
+        local sibling_name = sibling.name
+        if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
+          sibling_name = sibling.name_lcase
+        end
+        if sibling_name:match(glob_pattern) then
+          table.insert(matching_files, sibling)
+        end
+      end
+    end
+  end
+  return matching_files
 end
 
 --- Checks if file-nesting module is enabled by config
@@ -108,15 +127,41 @@ local function case_insensitive_pattern(pattern)
   return p
 end
 
+function table_is_empty(table_to_check)
+  return table_to_check == nil or next(table_to_check) == nil
+end
+
+function M.nest_items(context)
+  if M.is_enabled() == false or table_is_empty(context.nesting) then
+    return
+  end
+
+  for _, config in pairs(context.nesting) do
+    local files = config.nesting_callback(config, context.all_items)
+    local folder = context.folders[config.parent_path]
+    for _, to_be_nested in ipairs(files) do
+      table.insert(config.children, to_be_nested)
+      to_be_nested.is_nested = true
+      if folder ~= nil then
+        for index, file_to_check in ipairs(folder.children) do
+          if file_to_check.id == to_be_nested.id then
+            table.remove(folder.children, index)
+          end
+        end
+      end
+    end
+  end
+end
+
 --- Returns `item` nesting parent path if exists
 ---@return string?
-function M.get_parent(item)
+function get_parent(item, siblings)
   if item.type ~= "file" then
     return nil
   end
   for _, matcher in pairs(matchers) do
     if matcher.enabled then
-      local parent = matcher.get_parent(item)
+      local parent = matcher.get_parent(item, siblings)
       if parent ~= nil then
         return parent
       end
@@ -132,12 +177,24 @@ function M.can_have_nesting(item)
   for _, matcher in pairs(matchers) do
     if matcher.enabled then
       if matcher.can_have_nesting(item) then
-        return true
+        return
       end
     end
   end
 
   return false
+end
+
+function M.get_nesting_callback(item)
+  for _, matcher in pairs(matchers) do
+    if matcher.enabled then
+      local callback = matcher.get_nesting_callback(item)
+      if callback ~= nil then
+        return callback
+      end
+    end
+  end
+  return nil
 end
 
 ---Setup the module with the given config
@@ -154,7 +211,7 @@ function M.setup(config)
     matchers[type]["config"][key] = value
   end
   local next = next
-  for key, value in pairs(matchers) do
+  for _, value in pairs(matchers) do
     if next(value.config) ~= nil then
       value.enabled = true
     end
