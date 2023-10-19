@@ -412,7 +412,7 @@ For example:
              local node = state.tree:get_node()
              print(node.path)
            end,
-           label = "print path",
+           desc = "print path",
          },
        }
      },
@@ -428,7 +428,7 @@ For example:
 The above config will map `A` to command_a for all sources except for
 filesystem, which will use command_b instead.
 
-The label is used to display in the help popup.
+The desc is used to display in the help popup.
 
 If you don't want to use *any* default mappings, you can set
 `use_default_mappings = false` in your config.
@@ -509,7 +509,7 @@ assigning it to the `command` key:
                local node = state.tree:get_node()
                print(node.name)
              end,
-             label = "print name",
+             desc = "print name",
              nowait = true
            },
            ["i"] = {
@@ -517,7 +517,7 @@ assigning it to the `command` key:
                local node = state.tree:get_node()
                print(node.name)
              end,
-             label = "print name",
+             desc = "print name",
              nowait = true,
            },
            ["o"] = {
