@@ -128,26 +128,6 @@ want to change the current working directory. If you include this flag, it will
 automatically change the directory without prompting. This option implies
 "reveal", so you do not need to specify both.
 
-DEPRECATED_COMMANDS
-
-The following commands from Neotree v1.x will remain until v3.0 for backwards
-compatibility. You should not use them if you are a new user, and existing users
-should change their mapping to the new |:Neotree| command specified above.
-
-    :NeoTreeFocus         -> :Neotree
-    :NeoTreeShow          -> :Neotree show
-    :NeoTreeShowInSplit   -> :Neotree show current
-    :NeoTreeReveal        -> :Neotree reveal
-    :NeoTreeRevealInSplit -> :Neotree reveal current
-    :NeoTreeFloat         -> :Neotree float
-    :NeoTreeClose         -> :Neotree close
-    :NeoTreePasteConfig   -> :lua require("neo-tree").paste_default_config()
-
-Once you have migrated your mappings, it is recommended that you remove the old
-commands by adding this option before the Neotree config is run:
->vim
-  let g:neo_tree_remove_legacy_commands = 1
-<
 CALLING_FROM_LUA
 
 You can call Neotree commands from your Lua scripts as follows:
