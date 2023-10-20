@@ -154,6 +154,7 @@ You can call Neotree commands from your Lua scripts as follows:
 
 >lua
   require('neo-tree.command').execute({ ... })
+<
 
 For example, in the `keys` configuration, you could use the following to make
 the `-` key reveal the current file, or if in an unsaved file, the current
