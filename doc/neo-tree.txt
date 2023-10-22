@@ -134,25 +134,40 @@ neo-tree will disable the |neo-tree-source-selector| for that neo-tree
 instance. Otherwise, the source selector will depend on what you specified in
 the configuration (|config.source_selector.{winbar,statusline}|).
 
-DEPRECATED_COMMANDS
+CALLING_FROM_LUA
 
-The following commands from Neotree v1.x will remain until v3.0 for backwards
-compatibility. You should not use them if you are a new user, and existing users
-should change their mapping to the new |:Neotree| command specified above.
+You can call Neotree commands from your Lua scripts as follows:
 
-    :NeoTreeFocus         -> :Neotree
-    :NeoTreeShow          -> :Neotree show
-    :NeoTreeShowInSplit   -> :Neotree show current
-    :NeoTreeReveal        -> :Neotree reveal
-    :NeoTreeRevealInSplit -> :Neotree reveal current
-    :NeoTreeFloat         -> :Neotree float
-    :NeoTreeClose         -> :Neotree close
-    :NeoTreePasteConfig   -> :lua require("neo-tree").paste_default_config()
+>lua
+  require('neo-tree.command').execute({ ... })
+<
 
-Once you have migrated your mappings, it is recommended that you remove the old
-commands by adding this option before the Neotree config is run:
->vim
-  let g:neo_tree_remove_legacy_commands = 1
+For example, you could use the following keymap to make the `-` key reveal the
+current file, or if in an unsaved file, the current working directory.
+
+>lua
+  vim.keymap.set('n', '-', function()
+    local reveal_file = vim.fn.expand('%:p')
+    if (reveal_file == '') then
+      reveal_file = vim.fn.getcwd()
+    else
+      local f = io.open(reveal_file, "r")
+      if (f) then
+        f.close(f)
+      else
+        reveal_file = vim.fn.getcwd()
+      end
+    end
+    require('neo-tree.command').execute({
+      action = "focus",          -- OPTIONAL, this is the default value
+      source = "filesystem",     -- OPTIONAL, this is the default value
+      position = "left",         -- OPTIONAL, this is the default value
+      reveal_file = reveal_file, -- path to file or folder to reveal
+      reveal_force_cwd = true,   -- change cwd without asking if needed
+    })
+    end,
+    {description: "Open neo-tree at current file or working directory"}
+  );
 <
 
 ===============================================================================
@@ -412,7 +427,14 @@ For example:
    require("neo-tree").setup({
      window = {
        mappings = {
-         ["A"] = "command_a"
+         ["A"] = "command_a",
+         ["i"] = {
+           function(state)
+             local node = state.tree:get_node()
+             print(node.path)
+           end,
+           desc = "print path",
+         },
        }
      },
      filesystem = {
@@ -426,6 +448,8 @@ For example:
 <
 The above config will map `A` to command_a for all sources except for
 filesystem, which will use command_b instead.
+
+The desc is used to display in the help popup.
 
 If you don't want to use *any* default mappings, you can set
 `use_default_mappings = false` in your config.
@@ -506,6 +530,7 @@ assigning it to the `command` key:
                local node = state.tree:get_node()
                print(node.name)
              end,
+             desc = "print name",
              nowait = true
            },
            ["i"] = {
@@ -513,7 +538,8 @@ assigning it to the `command` key:
                local node = state.tree:get_node()
                print(node.name)
              end,
-             nowait = true
+             desc = "print name",
+             nowait = true,
            },
            ["o"] = {
              command = "open",
