@@ -558,6 +558,12 @@ want to change the current working directory. If you include this flag, it will
 automatically change the directory without prompting. This option implies
 "reveal", so you do not need to specify both.
 
+#### `selector`
+This is a boolean flag. When you specifically set this to false (`selector=false`)
+neo-tree will disable the [source selector](#source-selector) for that neo-tree
+instance. Otherwise, the source selector will depend on what you specified in
+the configuration (`config.source_selector.{winbar,statusline}`).
+
 See `:h neo-tree-commands` for details and a full listing of available arguments.
 
 ### File Nesting
