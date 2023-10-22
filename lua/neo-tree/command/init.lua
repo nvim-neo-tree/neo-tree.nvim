@@ -139,6 +139,9 @@ M.execute = function(args)
     state.git_base = args.git_base
   end
 
+  -- Handle source selector option
+  state.enable_source_selector = args.selector
+
   -- Handle reveal logic
   args.reveal = args.reveal or args.reveal_force_cwd
   local do_reveal = utils.truthy(args.reveal_file)
