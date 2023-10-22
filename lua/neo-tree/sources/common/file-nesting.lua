@@ -1,6 +1,7 @@
 local utils = require("neo-tree.utils")
 local Path = require("plenary.path")
 local globtopattern = require("neo-tree.sources.filesystem.lib.globtopattern")
+local log = require("neo-tree.log")
 
 -- File nesting a la JetBrains (#117).
 local M = {}
@@ -95,22 +96,27 @@ pattern_matcher.get_children = function(item, siblings, rule_config)
   end
   for type, type_functions in pairs(pattern_matcher.pattern_types) do
     for _, pattern in pairs(rule_config[type]) do
-      local glob_or_file =
-        type_functions.get_pattern(item.name:gsub(rule_config["pattern"], pattern))
-      for _, sibling in pairs(siblings) do
-        if
-          sibling.id ~= item.id
-          and sibling.is_nested ~= true
-          and item.parent_path == sibling.parent_path
-        then
-          local sibling_name = sibling.name
-          if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
-            sibling_name = sibling.name_lcase
-          end
-          if type_functions.match(sibling_name, glob_or_file) then
-            table.insert(matching_files, sibling)
+      local success, replaced_pattern =
+        pcall(string.gsub, item.name, rule_config["pattern"], pattern)
+      if success then
+        local glob_or_file = type_functions.get_pattern(replaced_pattern)
+        for _, sibling in pairs(siblings) do
+          if
+            sibling.id ~= item.id
+            and sibling.is_nested ~= true
+            and item.parent_path == sibling.parent_path
+          then
+            local sibling_name = sibling.name
+            if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
+              sibling_name = sibling.name_lcase
+            end
+            if type_functions.match(sibling_name, glob_or_file) then
+              table.insert(matching_files, sibling)
+            end
           end
         end
+      else
+        log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
       end
     end
   end
