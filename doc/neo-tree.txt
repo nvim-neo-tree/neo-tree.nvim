@@ -1221,7 +1221,7 @@ FILE NESTING                                             *neo-tree-file-nesting*
 
 By default, file nesting is disabled since the `nesting_rules` table is empty.
 To enable this feature, fill in the `nesting_rules` table with the following
-structure:
+structure to match files based on their extensions:
 >lua
     require("neo-tree").setup({
       nesting_rules = {
@@ -1234,7 +1234,54 @@ This will render:
     FILENAME.js
         FILENAME.js.map
 
+A more advanced usage are rules with patterns. Those can be mixed with file
+extension based rules. In this case the rule key is not evaluated but a 
+pattern which is defined in a subkey. The pattern is a Lua pattern and can 
+have captures which can be used for file matching via globs.
+If the matching should be case insensitive, add an option ignore_case to the 
+config:
+>lua
+    require("neo-tree").setup({
+      nesting_rules = {
+        ["package.json"] = {
+          pattern = "^package%.json$",             -- <-- Lua pattern
+          files = { "package-lock.json", "yarn*" } -- <-- glob pattern
+        },
+        ["go"] = {
+          pattern = "(.*)%.go$",    -- <-- Lua pattern with capture
+          files = { "%1_test.go" }, -- <-- glob pattern with capture
+        },
+        ["js-extended"] = {
+          pattern = "(.+)%.js$",
+          files = { "%1.js.map", "%1.min.js", "%1.d.ts" },
+        },
+        ["docker"] = {
+            pattern = "^dockerfile$",
+            ignore_case = true,
+            files = { ".dockerignore", "docker-compose.*", "dockerfile*" }, 
+        }
+      }
+    })
 <
+This will render:
+>
+    FILENAME.js
+        FILENAME.js.map
+        FILENAME.min.js
+        FILENAME.d.ts
+
+    FILENAME.go
+        FILENAME_test.go
+
+    package.json
+        package-lock.json
+        yarn.lock
+
+    Dockerfile
+        .dockerignore
+        docker-compose.yml
+<
+
 The default mapping to expand/collapse nested files is <space>.
 
 

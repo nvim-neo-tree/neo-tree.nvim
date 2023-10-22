@@ -1,5 +1,5 @@
 local vim = vim
-local files_nesting = require("neo-tree.sources.common.file-nesting")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 
@@ -22,7 +22,7 @@ end
 ---Creates a sort function the will sort by the values returned by the field provider.
 ---@param field_provider function a function that takes an item and returns a value to
 --                        sort by.
----@param fallback_sort_function function a sort function to use if the field provider 
+---@param fallback_sort_function function a sort function to use if the field provider
 --                                returns the same value for both items.
 local function make_sort_function(field_provider, fallback_sort_function, direction)
   return function(a, b)
@@ -77,7 +77,7 @@ local function deep_sort(tbl, sort_func, field_provider, direction)
   end
   table.sort(tbl, sort_func)
   for _, item in pairs(tbl) do
-    if item.type == "directory" then
+    if item.type == "directory" or item.children ~= nil then
       deep_sort(item.children, sort_func)
     end
   end
@@ -101,8 +101,8 @@ function create_item(context, path, _type, bufnr)
     id = tostring(bufnr)
   else
     -- avoid creating duplicate items
-    if context.folders[path] or context.nesting[path] then
-      return context.folders[path] or context.nesting[path]
+    if context.folders[path] or context.nesting[path] or context.item_exists[path] then
+      return context.folders[path] or context.nesting[path] or context.item_exists[path]
     end
   end
 
@@ -135,9 +135,12 @@ function create_item(context, path, _type, bufnr)
     item.base = item.name:match("^([-_,()%s%w%i]+)%.")
     item.ext = item.name:match("%.([-_,()%s%w%i]+)$")
     item.exts = item.name:match("^[-_,()%s%w%i]+%.(.*)")
+    item.name_lcase = item.name:lower()
 
-    if files_nesting.can_have_nesting(item) then
+    local nesting_callback = file_nesting.get_nesting_callback(item)
+    if nesting_callback ~= nil then
       item.children = {}
+      item.nesting_callback = nesting_callback
       context.nesting[path] = item
     end
   end
@@ -190,7 +193,7 @@ function create_item(context, path, _type, bufnr)
 end
 
 -- function to set (or create) parent folder
-function set_parents(context, item)
+function set_parents(context, item, siblings)
   -- we can get duplicate items if we navigate up with open folders
   -- this is probably hacky, but it works
   if context.item_exists[item.id] then
@@ -200,26 +203,11 @@ function set_parents(context, item)
     return
   end
 
-  local nesting_parent_path = files_nesting.get_parent(item)
-  local nesting_parent = context.nesting[nesting_parent_path]
-
-  if
-    nesting_parent_path
-    and not nesting_parent
-    and utils.truthy(vim.loop.fs_stat(nesting_parent_path))
-  then
-    local success
-    success, nesting_parent = pcall(create_item, context, nesting_parent_path)
-    if not success then
-      log.error("error, creating item for ", nesting_parent_path)
-    end
-  end
-
   local parent = context.folders[item.parent_path]
   if not utils.truthy(item.parent_path) then
     return
   end
-  if parent == nil and nesting_parent == nil then
+  if parent == nil then
     local success
     success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
@@ -228,12 +216,7 @@ function set_parents(context, item)
     context.folders[parent.id] = parent
     set_parents(context, parent)
   end
-  if nesting_parent then
-    table.insert(nesting_parent.children, item)
-    item.is_nested = true
-  else
-    table.insert(parent.children, item)
-  end
+  table.insert(parent.children, item)
   context.item_exists[item.id] = true
 
   if item.filtered_by == nil and type(parent.filtered_by) == "table" then

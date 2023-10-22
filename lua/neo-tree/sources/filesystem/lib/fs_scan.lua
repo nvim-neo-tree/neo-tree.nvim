@@ -5,6 +5,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
@@ -124,6 +125,9 @@ end
 local job_complete_async = function(context)
   local state = context.state
   local parent_id = context.parent_id
+
+  file_nesting.nest_items(context)
+
   -- if state.search_pattern and #context.all_items > 50 then
   --   -- don't do git ignored/status lookups when searching unless we are down to a reasonable number of items
   --   return context
@@ -146,6 +150,9 @@ end
 local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
+
+  file_nesting.nest_items(context)
+
   if should_check_gitignore(context) then
     if require("neo-tree").config.git_status_async then
       git.mark_ignored(state, context.all_items, function(all_items)
