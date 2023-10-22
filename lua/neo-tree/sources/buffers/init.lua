@@ -82,7 +82,7 @@ end
 
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
-M.navigate = function(state, path, path_to_reveal)
+M.navigate = function(state, path, path_to_reveal, callback, async)
   state.dirty = false
   local path_changed = false
   if path == nil then
@@ -100,6 +100,10 @@ M.navigate = function(state, path, path_to_reveal)
 
   if path_changed and state.bind_to_cwd then
     vim.api.nvim_command("tcd " .. path)
+  end
+
+  if type(callback) == "function" then
+    vim.schedule(callback)
   end
 end
 
