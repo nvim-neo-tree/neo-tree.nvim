@@ -220,20 +220,6 @@ function get_parent(item, siblings)
   return nil
 end
 
---- Checks if `item` have a valid nesting lookup
----@return boolean
-function M.can_have_nesting(item)
-  for _, matcher in pairs(matchers) do
-    if matcher.enabled then
-      if matcher.can_have_nesting(item) then
-        return
-      end
-    end
-  end
-
-  return false
-end
-
 function M.get_nesting_callback(item)
   for _, matcher in pairs(matchers) do
     if matcher.enabled then
