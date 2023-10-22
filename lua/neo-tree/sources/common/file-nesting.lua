@@ -63,9 +63,9 @@ end
 pattern_matcher.get_nesting_callback = function(item)
   for _, rule_config in pairs(pattern_matcher.config) do
     if item.name:match(rule_config["pattern"]) then
-      return function(item, siblings)
+      return function(inner_item, siblings)
         local rule_config_helper = rule_config
-        return pattern_matcher.get_children(item, siblings, rule_config_helper)
+        return pattern_matcher.get_children(inner_item, siblings, rule_config_helper)
       end
     end
   end
