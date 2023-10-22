@@ -23,7 +23,7 @@ local function find_all_sources()
   return result
 end
 
-describe("Manager.navigate(...)", function()
+describe("sources.navigate(...: #<nparams>)", function()
   it("neo-tree.sources.filesystem.navigate exists", function()
     local ok, mod = pcall(require, "neo-tree.sources.filesystem")
     assert.is_true(ok)
@@ -31,7 +31,7 @@ describe("Manager.navigate(...)", function()
   end)
   local filesystem_navigate_nparams =
     debug.getinfo(require("neo-tree.sources.filesystem").navigate).nparams
-  it("neo-tree.sources.filesystem.navigate is_func and has args", function()
+  it("neo-tree.sources.filesystem.navigate is a func and has args", function()
     assert.is_not_nil(filesystem_navigate_nparams)
     assert.is_true(filesystem_navigate_nparams > 0)
   end)
@@ -43,7 +43,7 @@ describe("Manager.navigate(...)", function()
         assert.is_not_nil(mod.navigate)
       end)
       it(source .. ".navigate has same num of args as filesystem", function()
-        local nparams = debug.getinfo(require("neo-tree.sources.filesystem").navigate).nparams
+        local nparams = debug.getinfo(require("neo-tree.sources." .. source).navigate).nparams
         assert.are.equal(filesystem_navigate_nparams, nparams)
       end)
     end)
