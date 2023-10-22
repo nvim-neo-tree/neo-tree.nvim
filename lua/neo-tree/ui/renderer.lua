@@ -842,7 +842,7 @@ local set_buffer_mappings = function(state)
         if type(func) == "function" then
           resolved_mappings[cmd].handler = function()
             state.config = config
-            func(state)
+            return func(state)
           end
           keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
           if type(vfunc) == "function" then
