@@ -393,7 +393,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
           local open_mode = loop.constants.O_CREAT
             + loop.constants.O_WRONLY
             + loop.constants.O_TRUNC
-          local fd = loop.fs_open(destination, "w", open_mode)
+          local fd = loop.fs_open(destination, open_mode, 420)
           if not fd then
             if not loop.fs_stat(destination) then
               api.nvim_err_writeln("Could not create file " .. destination)
@@ -402,7 +402,6 @@ M.create_node = function(in_directory, callback, using_root_directory)
               log.warn("Failed to complete file creation of " .. destination)
             end
           else
-            loop.fs_chmod(destination, 420)
             loop.fs_close(fd)
           end
         end
