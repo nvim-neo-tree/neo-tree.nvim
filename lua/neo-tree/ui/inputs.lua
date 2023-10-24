@@ -62,6 +62,11 @@ M.input = function(message, default_value, callback, options, completion)
       prompt = message .. "\n",
       default = default_value,
     }
+    if vim.opt.cmdheight:get() == 0 then
+      -- NOTE: I really don't know why but letters before the first '\n' is not rendered execpt in noice.nvim
+      --       when vim.opt.cmdheight = 0 <2023-10-24, pysan3>
+      opts.prompt = "Neo-tree Popup\n" .. opts.prompt
+    end
     if completion then
       opts.completion = completion
     end
