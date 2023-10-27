@@ -53,7 +53,7 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
   local opts = {
     setup = function()
       local tpl =
-        ":lua require('neo-tree.events').fire_event('%s', { afile = vim.fn.expand('<afile>') })"
+        ":lua require('neo-tree.events').fire_event('%s', { afile = vim.F.npcall(vim.fn.expand, '<afile>') or '' })"
       local callback = string.format(tpl, event_name)
       if nested then
         callback = "++nested " .. callback
