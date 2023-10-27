@@ -851,8 +851,5 @@ The design is heavily inspired by these excellent plugins:
 - [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
 - [nvim-cokeline](https://github.com/noib3/nvim-cokeline)
 
-This plugin enables image support inside preview windows.
-- [image.nvim](https://github.com/3rd/image.nvim)
-
 Everything I know about writing a tree control in lua, I learned from:
 - [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua)

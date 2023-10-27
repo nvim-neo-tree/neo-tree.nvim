@@ -272,7 +272,7 @@ end
 
 ---@param winid number
 ---@param bufnr number
-local function load_image_nvim_buf(winid, bufnr)
+local function try_load_image_nvim_buf(winid, bufnr)
   if vim.bo[bufnr].filetype ~= "image_nvim" then
     return false
   end
@@ -292,7 +292,7 @@ function Preview:setBuffer(bufnr)
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
   vim.api.nvim_win_set_buf(self.winid, bufnr)
   if self.config.use_image_nvim then
-    load_image_nvim_buf(self.winid, bufnr)
+    try_load_image_nvim_buf(self.winid, bufnr)
   end
   if self.config.use_float then
     -- I'm not sufe why float windows won;t show numbers without this
