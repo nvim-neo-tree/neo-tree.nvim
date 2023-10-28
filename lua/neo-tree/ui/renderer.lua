@@ -834,7 +834,7 @@ local set_buffer_mappings = function(state)
         end
         if type(func) == "string" then
           resolved_mappings[cmd] = { text = func }
-          map_options.desc = func
+          map_options.desc = map_options.desc or func
           vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
         elseif type(func) == "function" then
