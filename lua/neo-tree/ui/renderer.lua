@@ -824,7 +824,7 @@ local set_buffer_mappings = function(state)
         local desc
         if type(func) == "table" then
           for key, value in pairs(func) do
-            if key ~= "command" and key ~= 1 and key ~= "config" and key ~= "desc" then
+            if key ~= "command" and key ~= 1 and key ~= "config" then
               map_options[key] = value
             end
           end
@@ -834,6 +834,7 @@ local set_buffer_mappings = function(state)
         end
         if type(func) == "string" then
           resolved_mappings[cmd] = { text = func }
+          map_options.desc = map_options.desc or func
           vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
         elseif type(func) == "function" then
