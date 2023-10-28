@@ -397,7 +397,7 @@ an existing split by configuring the command like this:
     require("neo-tree").setup({
       window = {
         mappings = {
-          ["P"] = { "toggle_preview", config = { use_float = false } },
+          ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
         }
       }
     })
@@ -414,6 +414,10 @@ variable `neo_tree_preview` set to `1` to indicate that it is being used as a
 preview window. You can refer to this in statusline and winbar configs to mark a
 window as being used as a preview.
 
+If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
+mode supports image rendering by default using kitty graphics protocol or ueberzug.
+However, if you do not want this feature, you can disable it by changing the option
+`use_image_nvim = false` in the mappings config mentioned above.
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 

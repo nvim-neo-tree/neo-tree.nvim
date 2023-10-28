@@ -65,6 +65,7 @@ so we can fix it.
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
+      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
     }
 }
 ```
@@ -78,6 +79,7 @@ use {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
+      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
     }
   }
 ```
@@ -102,6 +104,7 @@ use {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
+      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
       {
         's1n7ax/nvim-window-picker',
         version = '2.*',
@@ -240,7 +243,8 @@ use {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-            ["P"] = { "toggle_preview", config = { use_float = true } },
+            ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true } },
+            -- Read `# Preview Mode` for more information
             ["l"] = "focus_preview",
             ["S"] = "open_split",
             ["s"] = "open_vsplit",
@@ -664,6 +668,7 @@ There are more sources available as extensions that are managed outside of this 
 [wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for me information.
 
 ### Source Selector
+
 ![Neo-tree source selector](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-source-selector.png)
 
 You can enable a clickable source selector in either the winbar (requires neovim 0.8+) or the statusline.
@@ -681,6 +686,44 @@ To do so, set one of these options to `true`:
 There are many configuration options to change the style of these tabs. 
 See [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua) for details.
 
+### Preview Mode
+
+`:h neo-tree-preview-mode`
+
+Preview mode will temporarily show whatever file the cursor is on without
+switching focus from the Neo-tree window. By default, files will be previewed
+in a new floating window. This can also be configured to automatically choose
+an existing split by configuring the command like this:
+
+```lua
+require("neo-tree").setup({
+  window = {
+    mappings = {
+      ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+    }
+  }
+})
+```
+
+Anything that causes Neo-tree to lose focus will end preview mode. When
+`use_float = false`, the window that was taken over by preview mode will revert
+back to whatever was shown in that window before preview mode began.
+
+If you want to work with the floating preview mode window in autocmds or other
+custom code, the window will have the `neo-tree-preview` filetype.
+
+When preview mode is not using floats, the window will have the window local
+variable `neo_tree_preview` set to `1` to indicate that it is being used as a
+preview window. You can refer to this in statusline and winbar configs to mark a
+window as being used as a preview.
+
+#### Image Support in Preview Mode
+
+If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
+mode supports image rendering by default using kitty graphics protocol or ueberzug
+([Video](https://user-images.githubusercontent.com/41065736/277180763-b7152637-f310-43a5-b8c3-4bcba135629d.mp4)).
+However, if you do not want this feature, you can disable it by changing the option
+`use_image_nvim = false` in the mappings config mentioned above.
 
 ## Configuration and Customization
 
