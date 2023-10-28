@@ -12,7 +12,7 @@ This screenshot shows Neo-tree opened in the traditional sidebar layout:
 
 ### Neo-tree filesystem Netrw Style
 
-The below screenshot shows Neo-tree opened "netrw style" (`:Neo-tree position=current`). When opened in this way,
+The below screenshot shows Neo-tree opened "netrw style" (`:Neotree position=current`). When opened in this way,
 there is more room so the extra detail columns can be shown. This screenshot also shows how the contents can be
 sorted on any column. In this example, we are sorted on "Size" descending:
 
