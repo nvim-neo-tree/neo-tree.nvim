@@ -89,6 +89,35 @@ M.show = function(state, title, prefix_key)
     zindex = 50,
     relative = "editor",
   }
+
+  local popup_max_height = function()
+    local lines = vim.o.lines
+    local cmdheight = vim.o.cmdheight
+    -- statuscolumn
+    local statuscolumn_lines = 0
+    local laststatus = vim.o.laststatus
+    if laststatus ~= 0 then
+      local windows = vim.api.nvim_tabpage_list_wins(0)
+      if (laststatus == 1 and #windows > 1) or laststatus > 1 then
+        statuscolumn_lines = 1
+      end
+    end
+    -- tabs
+    local tab_lines = 0
+    local showtabline = vim.o.showtabline
+    if showtabline ~= 0 then
+      local tabs = vim.api.nvim_list_tabpages()
+      if (showtabline == 1 and #tabs > 1) or showtabline == 2 then
+        tab_lines = 1
+      end
+    end
+    return lines - cmdheight - statuscolumn_lines - tab_lines - 1
+  end
+  local max_height = popup_max_height()
+  if options.size.height > max_height then
+    options.size.height = max_height
+  end
+
   local title = title or "Neotree Help"
   local options = popups.popup_options(title, width, options)
   local popup = Popup(options)
