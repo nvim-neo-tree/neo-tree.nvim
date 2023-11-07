@@ -713,7 +713,8 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     if toggle_directory and node.type == "directory" then
       toggle_directory(node)
     elseif node:has_children() then
-      if node:is_expanded() and node.type ~= "directory" then
+      local no_expand_file = (state.config or {}).no_expand_file
+      if node.type ~= "directory" and (no_expand_file or node:is_expanded()) then
         return open()
       end
 
