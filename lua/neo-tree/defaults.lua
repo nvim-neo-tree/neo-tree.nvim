@@ -365,7 +365,7 @@ local config = {
       },
       ["<2-LeftMouse>"] = "open",
       ["<cr>"] = "open",
-      -- ["<cr>"] = { "open", config = { no_expand_file = true } }, -- open top file instead of expanding when nested
+      -- ["<cr>"] = { "open", config = { expand_nested_files = true } }, -- expand nested file takes precedence
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
       ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = false } },
       ["l"] = "focus_preview",
