@@ -39,6 +39,7 @@ extension_matcher.get_children = function(item, siblings)
         and sibling.is_nested ~= true
         and item.parent_path == sibling.parent_path
         and sibling.exts == ext
+        and item.base .. "." .. ext == sibling.name
       then
         table.insert(matching_files, sibling)
       end
