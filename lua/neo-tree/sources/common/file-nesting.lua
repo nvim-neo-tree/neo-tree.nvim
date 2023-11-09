@@ -47,20 +47,6 @@ extension_matcher.get_children = function(item, siblings)
   return matching_files
 end
 
-extension_matcher.get_parent = function(item)
-  for base_exts, nesting_exts in pairs(extension_matcher.config) do
-    for _, exts in ipairs(nesting_exts) do
-      if item.exts == exts then
-        local parent_id = utils.path_join(item.parent_path, item.base) .. "." .. base_exts
-        if Path:new(parent_id):exists() then
-          return parent_id
-        end
-      end
-    end
-  end
-  return nil
-end
-
 pattern_matcher.get_nesting_callback = function(item)
   for _, rule_config in pairs(pattern_matcher.config) do
     if item.name:match(rule_config["pattern"]) then
@@ -206,24 +192,6 @@ function M.nest_items(context)
   end
 
   flatten_nesting(context.nesting)
-end
-
---- Returns `item` nesting parent path if exists
----@return string?
-function get_parent(item, siblings)
-  if item.type ~= "file" then
-    return nil
-  end
-  for _, matcher in pairs(matchers) do
-    if matcher.enabled then
-      local parent = matcher.get_parent(item, siblings)
-      if parent ~= nil then
-        return parent
-      end
-    end
-  end
-
-  return nil
 end
 
 function M.get_nesting_callback(item)
