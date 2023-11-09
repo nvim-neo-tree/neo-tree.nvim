@@ -738,15 +738,40 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     end
   end
 
-  local config = state.config or {}
-  if node.type ~= "directory" and config.no_expand_file ~= nil then
-    log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
-    config.expand_nested_files = not config.no_expand_file
-  end
-  if node.type == "directory" then
-    M.toggle_node(state, toggle_directory)
-  elseif node:has_children() and config.expand_nested_files and not node:is_expanded() then
-    M.toggle_node(state, toggle_directory)
+  -- local config = state.config or {}
+  -- if node.type ~= "directory" and config.no_expand_file ~= nil then
+  --   log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
+  --   config.expand_nested_files = not config.no_expand_file
+  -- end
+  -- if node.type == "directory" then
+  --   M.toggle_node(state, toggle_directory)
+  -- elseif node:has_children() then
+  --   if config.expand_nested_files and not node:is_expanded() then
+  --     M.toggle_node(state, toggle_directory)
+  --   end
+  -- else
+  --   open()
+  -- end
+
+  if node.type == "directory" or node:has_children() then
+    if toggle_directory and node.type == "directory" then
+      toggle_directory(node)
+    elseif node:has_children() then
+      local no_expand_file = (state.config or {}).no_expand_file
+      if node.type ~= "directory" and (no_expand_file or node:is_expanded()) then
+        return open()
+      end
+
+      local updated = false
+      if node:is_expanded() then
+        updated = node:collapse()
+      else
+        updated = node:expand()
+      end
+      if updated then
+        renderer.redraw(state)
+      end
+    end
   else
     open()
   end
