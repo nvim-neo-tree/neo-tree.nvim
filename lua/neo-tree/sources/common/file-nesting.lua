@@ -83,8 +83,12 @@ pattern_matcher.get_children = function(item, siblings, rule_config)
   end
   for type, type_functions in pairs(pattern_matcher.pattern_types) do
     for _, pattern in pairs(rule_config[type]) do
+      local item_name = item.name
+      if rule_config["ignore_case"] ~= nil and item.name_lcase ~= nil then
+        item_name = item.name_lcase
+      end
       local success, replaced_pattern =
-        pcall(string.gsub, item.name, rule_config["pattern"], pattern)
+        pcall(string.gsub, item_name, rule_config["pattern"], pattern)
       if success then
         local glob_or_file = type_functions.get_pattern(replaced_pattern)
         for _, sibling in pairs(siblings) do
@@ -220,6 +224,9 @@ function M.setup(config)
       value["files_glob"] = {}
       value["files_exact"] = {}
       for _, glob in pairs(value["files"]) do
+        if value["ignore_case"] == true then
+          glob = glob:lower()
+        end
         local replaced = glob:gsub("%%%d+", "")
         if is_glob(replaced) then
           table.insert(value["files_glob"], glob)
