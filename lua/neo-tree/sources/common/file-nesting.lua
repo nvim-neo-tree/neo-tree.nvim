@@ -39,26 +39,13 @@ extension_matcher.get_children = function(item, siblings)
         and sibling.is_nested ~= true
         and item.parent_path == sibling.parent_path
         and sibling.exts == ext
+        and item.base .. "." .. ext == sibling.name
       then
         table.insert(matching_files, sibling)
       end
     end
   end
   return matching_files
-end
-
-extension_matcher.get_parent = function(item)
-  for base_exts, nesting_exts in pairs(extension_matcher.config) do
-    for _, exts in ipairs(nesting_exts) do
-      if item.exts == exts then
-        local parent_id = utils.path_join(item.parent_path, item.base) .. "." .. base_exts
-        if Path:new(parent_id):exists() then
-          return parent_id
-        end
-      end
-    end
-  end
-  return nil
 end
 
 pattern_matcher.get_nesting_callback = function(item)
@@ -96,8 +83,12 @@ pattern_matcher.get_children = function(item, siblings, rule_config)
   end
   for type, type_functions in pairs(pattern_matcher.pattern_types) do
     for _, pattern in pairs(rule_config[type]) do
+      local item_name = item.name
+      if rule_config["ignore_case"] ~= nil and item.name_lcase ~= nil then
+        item_name = item.name_lcase
+      end
       local success, replaced_pattern =
-        pcall(string.gsub, item.name, rule_config["pattern"], pattern)
+        pcall(string.gsub, item_name, rule_config["pattern"], pattern)
       if success then
         local glob_or_file = type_functions.get_pattern(replaced_pattern)
         for _, sibling in pairs(siblings) do
@@ -208,24 +199,6 @@ function M.nest_items(context)
   flatten_nesting(context.nesting)
 end
 
---- Returns `item` nesting parent path if exists
----@return string?
-function get_parent(item, siblings)
-  if item.type ~= "file" then
-    return nil
-  end
-  for _, matcher in pairs(matchers) do
-    if matcher.enabled then
-      local parent = matcher.get_parent(item, siblings)
-      if parent ~= nil then
-        return parent
-      end
-    end
-  end
-
-  return nil
-end
-
 function M.get_nesting_callback(item)
   for _, matcher in pairs(matchers) do
     if matcher.enabled then
@@ -251,6 +224,9 @@ function M.setup(config)
       value["files_glob"] = {}
       value["files_exact"] = {}
       for _, glob in pairs(value["files"]) do
+        if value["ignore_case"] == true then
+          glob = glob:lower()
+        end
         local replaced = glob:gsub("%%%d+", "")
         if is_glob(replaced) then
           table.insert(value["files_glob"], glob)
