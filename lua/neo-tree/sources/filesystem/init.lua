@@ -174,7 +174,7 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
-  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
+  end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
 end
 
 M.reset_search = function(state, refresh, open_current_node)
