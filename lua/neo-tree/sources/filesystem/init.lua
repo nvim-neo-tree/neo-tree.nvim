@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = " 󰉓 Files "
+  display_name = " 󰉓 Files ",
 }
 
 local wrap = function(func)
@@ -174,7 +174,7 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
-  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
+  end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
 end
 
 M.reset_search = function(state, refresh, open_current_node)
@@ -423,13 +423,13 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
 end
 
 M.prefetcher = {
-  prefetch = function (state, node)
+  prefetch = function(state, node)
     log.debug("Running fs prefetch for: " .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
   end,
-  should_prefetch = function (node)
+  should_prefetch = function(node)
     return not node.loaded
-  end
+  end,
 }
 
 return M
