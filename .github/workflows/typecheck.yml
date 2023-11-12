@@ -16,3 +16,5 @@ jobs:
 
       - name: Type Check Code Base
         uses: mrcjkb/lua-typecheck-action@v0.1.2
+        with:
+          configpath: ".luarc.json"
