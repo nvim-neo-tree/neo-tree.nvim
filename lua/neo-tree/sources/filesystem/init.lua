@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = " 󰉓 Files "
+  display_name = " 󰉓 Files ",
 }
 
 local wrap = function(func)
@@ -423,13 +423,13 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
 end
 
 M.prefetcher = {
-  prefetch = function (state, node)
+  prefetch = function(state, node)
     log.debug("Running fs prefetch for: " .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
   end,
-  should_prefetch = function (node)
+  should_prefetch = function(node)
     return not node.loaded
-  end
+  end,
 }
 
 return M

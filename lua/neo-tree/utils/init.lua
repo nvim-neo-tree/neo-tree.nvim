@@ -35,20 +35,25 @@ local diag_severity_to_string = function(severity)
 end
 
 local tracked_functions = {}
+---@enum NeotreeDebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
+---@enum NeotreeDebounceAction
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
   COMPLETE_ASYNC_JOB = 2,
 }
 
-local defer_function
--- Part of debounce. Moved out of the function to eliminate memory leaks.
-defer_function = function(id, frequency_in_ms, strategy, action)
+---Part of debounce. Moved out of the function to eliminate memory leaks.
+---@param id string Identifier for the debounce group, such as the function name.
+---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
+---@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
     local current_data = tracked_functions[id]
@@ -70,9 +75,10 @@ end
 
 ---Call fn, but not more than once every x milliseconds.
 ---@param id string Identifier for the debounce group, such as the function name.
----@param fn function Function to be executed.
+---@param fn function? Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -119,8 +125,8 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   if type(fn) == "function" then
     success, result = pcall(fn)
   end
-  fn_data.fn = nil
   fn = nil
+  fn_data.fn = fn
 
   if not success then
     log.error("debounce ", id, " error: ", result)
@@ -208,7 +214,7 @@ end
 ---Converts a filesize from libuv.stats into a human readable string with appropriate units.
 ---@param size any
 ---@return string
-M.human_size = function (size)
+M.human_size = function(size)
   local human = filesize(size, { output = "string" })
   ---@cast human string
   return human
@@ -355,12 +361,12 @@ M.get_inner_win_width = function(winid)
 end
 
 local stat_providers = {
-  default = function (node)
+  default = function(node)
     return vim.loop.fs_stat(node.path)
   end,
 }
 
---- Gets the statics for a node in the file system. The `stat` object will be cached 
+--- Gets the statics for a node in the file system. The `stat` object will be cached
 --- for the lifetime of the node.
 ---
 ---@param node table The Nui TreeNode node to get the stats for.
@@ -373,7 +379,7 @@ local stat_providers = {
 --- @field birthtime StatTime
 --- @field mtime StatTime
 --- @field size number
-M.get_stat = function (node)
+M.get_stat = function(node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]
     local success, stat = pcall(provider, node)
@@ -385,7 +391,7 @@ end
 ---Register a function to provide stats for a node.
 ---@param name string The name of the stat provider.
 ---@param func function The function to call to get the stats.
-M.register_stat_provider = function (name, func)
+M.register_stat_provider = function(name, func)
   stat_providers[name] = func
   log.debug("Registered stat provider", name)
 end
@@ -632,7 +638,7 @@ end
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
-    -- If the file is already open, switch to it.
+  -- If the file is already open, switch to it.
   bufnr = bufnr or M.find_buffer_by_name(path)
   if bufnr <= 0 then
     bufnr = nil
