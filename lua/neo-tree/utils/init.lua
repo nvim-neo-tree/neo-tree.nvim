@@ -75,7 +75,7 @@ end
 
 ---Call fn, but not more than once every x milliseconds.
 ---@param id string Identifier for the debounce group, such as the function name.
----@param fn function? Function to be executed.
+---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
 ---@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
 ---@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
