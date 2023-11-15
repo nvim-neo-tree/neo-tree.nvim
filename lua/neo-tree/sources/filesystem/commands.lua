@@ -29,7 +29,7 @@ M.clear_filter = function(state)
 end
 
 M.copy = function(state)
-  cc.copy(state, utils.wrap(refresh, state))
+  cc.copy(state, utils.wrap(fs.focus_destination_children, state))
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
@@ -51,7 +51,7 @@ M.cut_to_clipboard_visual = function(state, selected_nodes)
 end
 
 M.move = function(state)
-  cc.move(state, utils.wrap(refresh, state))
+  cc.move(state, utils.wrap(fs.focus_destination_children, state))
 end
 
 ---Pastes all items from the clipboard to the current directory.

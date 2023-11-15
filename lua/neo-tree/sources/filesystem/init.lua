@@ -254,6 +254,10 @@ M.show_new_children = function(state, node_or_path)
   M.navigate(state, nil, node_or_path)
 end
 
+M.focus_destination_children = function(state, move_from, destination)
+  return M.show_new_children(state, destination)
+end
+
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
