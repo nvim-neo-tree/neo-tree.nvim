@@ -254,8 +254,8 @@ M.show_new_children = function(state, node_or_path)
   M.navigate(state, nil, node_or_path)
 end
 
-M.focus_dst_children = function(state, src, dst)
-  return M.show_new_children(state, dst)
+M.focus_destination_children = function(state, move_from, destination)
+  return M.show_new_children(state, destination)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
