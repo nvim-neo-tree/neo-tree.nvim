@@ -54,6 +54,7 @@ local define_events = function()
 
   events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
+  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost" }, 200)
   events.define_autocmd_event(
     events.VIM_BUFFER_DELETED,
     { "BufDelete" },
