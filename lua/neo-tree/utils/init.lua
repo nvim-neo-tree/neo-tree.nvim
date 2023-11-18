@@ -248,14 +248,25 @@ M.get_diagnostic_counts = function()
 
           if #diagnostics > 0 then
             local severity_string = diag_severity_to_string(severity)
-            if lookup[file_name] == nil then
-              lookup[file_name] = {
+            -- Get or create the entry for this file
+            local entry = lookup[file_name]
+            if entry == nil then
+              entry = {
                 severity_number = severity,
                 severity_string = severity_string,
               }
+              lookup[file_name] = entry
             end
+            -- Set the count for this diagnostic type
             if severity_string ~= nil then
-              lookup[file_name][severity_string] = #diagnostics
+              entry[severity_string] = #diagnostics
+            end
+
+            -- Set the overall severity to the most severe so far
+            -- Error = 1, Warn = 2, Info = 3, Hint = 4
+            if severity < entry.severity_number then
+              entry.severity_number = severity
+              entry.severity_string = severity_string
             end
           end
         end
