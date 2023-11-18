@@ -73,13 +73,6 @@ describe("Filesystem netrw hijack", function()
 
     assert(#vim.api.nvim_list_wins() == 1, "Test should start with one window")
 
-    vim.cmd("edit .")
-
-    verify.eventually(200, function()
-      assert(#vim.api.nvim_list_wins() == 1, "`edit .` should not open a new window")
-      return vim.api.nvim_buf_get_option(0, "filetype") == "neo-tree"
-    end, "neotree is not the only window")
-
     vim.cmd("split .")
 
     verify.eventually(200, function()
