@@ -13,6 +13,7 @@ local config = {
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   -- popup_border_style is for input and confirmation dialogs.
+  -- popup_title_enabled = false to disable the title of all popups
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
   default_source = "filesystem", -- you can choose a specific source `last` here which indicates the last used source
@@ -31,7 +32,7 @@ local config = {
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   hide_root_node = false, -- Hide the root node.
-  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
+  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
@@ -211,8 +212,8 @@ local config = {
     },
     name = {
       trailing_slash = false,
-      highlight_opened_files = false, -- Requires `enable_opened_markers = true`. 
-                                      -- Take values in { false (no highlight), true (only loaded), 
+      highlight_opened_files = false, -- Requires `enable_opened_markers = true`.
+                                      -- Take values in { false (no highlight), true (only loaded),
                                       -- "all" (both loaded and unloaded)}. For more information,
                                       -- see the `show_unloaded` config of the `buffers` source.
       use_git_status_colors = true,

@@ -11,8 +11,13 @@ M.popup_options = function(title, min_width, override_options)
   local width = string.len(title) + 2
 
   local nt = require("neo-tree")
-  local popup_border_style = nt.config.popup_border_style
-  local popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
+  local popup_border_style = nt.config.popup_border_style or true
+  local popup_title_enabled = nt.config.popup_title_enabled ~= false
+  local popup_border_text = ""
+  if popup_title_enabled then
+    popup_border_text = NuiText(" " .. title .. " ", highlights.FLOAT_TITLE)
+  end
+
   local col = 0
   -- fix popup position when using multigrid
   local popup_last_col = vim.api.nvim_win_get_position(0)[2] + width + 2
@@ -49,7 +54,9 @@ M.popup_options = function(title, min_width, override_options)
 
   if popup_border_style == "NC" then
     local blank = NuiText(" ", highlights.TITLE_BAR)
-    popup_border_text = NuiText(" " .. title .. " ", highlights.TITLE_BAR)
+    if popup_title_enabled then
+        popup_border_text = NuiText(" " .. title .. " ", highlights.TITLE_BAR)
+    end
     popup_options.border = {
       style = { "▕", blank, "▏", "▏", " ", "▔", " ", "▕" },
       highlight = highlights.FLOAT_BORDER,
