@@ -13,7 +13,7 @@ local config = {
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   -- popup_border_style is for input and confirmation dialogs.
-  -- popup_title_enabled = false to disable the title of all popups
+  popup_title_enabled = true -- Set to false for disabling the title of all popups
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
   default_source = "filesystem", -- you can choose a specific source `last` here which indicates the last used source
