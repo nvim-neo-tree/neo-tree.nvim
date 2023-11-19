@@ -64,7 +64,7 @@ above can also be specified as:
 >vim
     :Neotree action=show source=buffers position=right toggle=true
 <
-These arguments can be specified in any order. Here is the full list of
+These arguments can be specified in any order. Here is the full list of 
 arguments you can use:
 
 action~
@@ -72,7 +72,7 @@ What to do. Can be one of:
 
     focus : Show and/or switch focus to the specified Neotree window. DEFAULT
     show  : Show the window, but keep focus on your current window.
-    close : Close the window(s) specified. Can be combined with "position"
+    close : Close the window(s) specified. Can be combined with "position" 
             and/or "source" to specify which window(s) to close.
 
 source~
@@ -105,13 +105,13 @@ git_base~
 The base that is used to calculate the git status for each dir/file.
 By default it uses `HEAD`, so it shows all changes that are not yet committed.
 You can for example work on a feature branch, and set it to `main`. It will
-show all changes that happened on the feature branch and main since you
+show all changes that happened on the feature branch and main since you 
 branched off.
 
 Any git ref, commit, tag, or sha will work.
 
 reveal~
-This is a boolean flag. Adding this will make Neotree automatically find and
+This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.
 
 reveal_path~
@@ -188,7 +188,7 @@ HELP                                                            *neo-tree-help*
 NAVIGATION                                                *neo-tree-navigation*
 
 Within the neo-tree window, for the filesystem source, the following mappings
-are defined by default. All built-in commands are listed here but some are not
+are defined by default. All built-in commands are listed here but some are not 
 mapped by default. See |neo-tree-custom-commands| for details on how to use them
 in a custom mapping.
 
@@ -200,7 +200,7 @@ Note: The "selected" item is the line the cursor is currently on.
 
 <bs>          = navigate_up: Moves the root directory up one level.
 
-.             = set_root:    Changes the root directory to the currently
+.             = set_root:    Changes the root directory to the currently 
                              selected folder.
 
 <space>       = toggle_node  Expand or collapse a node with children, which
@@ -220,7 +220,7 @@ z         = close_all_nodes: Close all nodes in the tree.
 
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
-P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode|
+P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode| 
 
 l           = focus_preview: Focus the active preview window
 
@@ -234,10 +234,10 @@ s             = open_vsplit: Same as open, but opens in a vertical split.
 
 t             = open_tabnew: Same as open, but opens in a new tab.
 
-                  open_drop: Same as open, but opens with the |:drop| command.
+                  open_drop: Same as open, but opens with the |:drop| command. 
 
-              open_tab_drop: Same as open, but opens in a new tab with the
-                             |:drop| command with the |:tab| modifier.
+              open_tab_drop: Same as open, but opens in a new tab with the 
+                             |:drop| command with the |:tab| modifier. 
 
 w = open_with_window_picker: Uses the `window-picker` plugin to select a window
                              to open the selected node in. Requires that
@@ -316,7 +316,7 @@ m    = move:                 Move the selected file or directory.
 VIEW CHANGES                                            *neo-tree-view-changes*
 H  = toggle_hidden:  Toggle whether hidden (filtered items) are shown or not.
 
-R  = refresh:        Rescan the filesystem and redraw the tree. Changes made
+R  = refresh:        Rescan the filesystem and redraw the tree. Changes made 
                      within nvim should be detected automatically, but this is
                      useful for changes made elsewhere.
 
@@ -344,7 +344,7 @@ option:
 >lua
     require("neo-tree").setup({
       filesystem = {
-        find_by_full_path_words = false,
+        find_by_full_path_words = false,  
       }
     })
 <
@@ -355,7 +355,7 @@ option:
 
 / = fuzzy_finder:           Filter the tree recursively, searching for
                             files and folders that contain the specified term as
-                            you type. This will use fd if it is installed, or
+                            you type. This will use fd if it is installed, or 
                             find, or which if you are on Windows.
 
                             As of v1.28, this acts like a fuzzy finder,
@@ -388,9 +388,9 @@ f = filter_on_submit:       Same as above, but does not search until you hit
 
 PREVIEW MODE                                             *neo-tree-preview-mode*
 
-Preview mode will temporarily show whatever file the cursor is on without
-switching focus from the Neo-tree window. By default, files will be previewed
-in a new floating window. This can also be configured to automatically choose
+Preview mode will temporarily show whatever file the cursor is on without 
+switching focus from the Neo-tree window. By default, files will be previewed 
+in a new floating window. This can also be configured to automatically choose 
 an existing split by configuring the command like this:
 
 >lua
@@ -407,7 +407,7 @@ Anything that causes Neo-tree to lose focus will end preview mode. When
 back to whatever was shown in that window before preview mode began.
 
 If you want to work with the floating preview mode window in autocmds or other
-custom code, the window will have the `neo-tree-preview` filetype.
+custom code, the window will have the `neo-tree-preview` filetype. 
 
 When preview mode is not using floats, the window will have the window local
 variable `neo_tree_preview` set to `1` to indicate that it is being used as a
@@ -424,7 +424,7 @@ CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 If you want to change the mappings, you can do so in two places. Mappings
 defined in `window.mappings` apply to all sources, and mappings defined at the
 source level, such as `filesystem.window.mappings` will override and extend
-those global mappings for that particular source.
+those global mappings for that particular source. 
 
 For example:
 >lua
@@ -744,7 +744,7 @@ NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!~
 Run `:lua require("neo-tree").paste_default_config()` to dump the fully
 commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
-lua file just to read it as documentation.
+lua file just to read it as documentation. 
 
 
 SOURCE SELECTOR                                       *neo-tree-source-selector*
@@ -902,7 +902,7 @@ The `filesystem` source has a `filtered_items` section in it's config that
 allows you to specify what files and folders should be hidden. By default, any
 item identified by these filters will not be visible, but that visibility can
 be toggled on and off with a command. Each type of filter has a corresponding
-highlight group which will be applied when they are visible, see
+highlight group which will be applied when they are visible, see 
 |neo-tree-highlights| for details. The following options are available:
 
 >lua
@@ -954,7 +954,7 @@ hidden. This is an exact match.
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
 patterns. No guarantees on how it handles advanced patterns.
 
-The `always_show` option is a list of file/folder names that will always be
+The `always_show` option is a list of file/folder names that will always be 
 visible, even if other settings would normally hide it. This section takes
 precedence over all other options except for `never_show`.
 
@@ -987,7 +987,7 @@ open_current           Netrw disabled, opening a directory opens within the
       filesystem = {
         hijack_netrw_behavior = "open_default",
                              -- "open_current",
-                             -- "disabled",
+                             -- "disabled", 
     })
 <
 
@@ -1245,10 +1245,10 @@ This will render:
         FILENAME.js.map
 
 A more advanced usage are rules with patterns. Those can be mixed with file
-extension based rules. In this case the rule key is not evaluated but a
-pattern which is defined in a subkey. The pattern is a Lua pattern and can
+extension based rules. In this case the rule key is not evaluated but a 
+pattern which is defined in a subkey. The pattern is a Lua pattern and can 
 have captures which can be used for file matching via globs.
-If the matching should be case insensitive, add an option ignore_case to the
+If the matching should be case insensitive, add an option ignore_case to the 
 config:
 >lua
     require("neo-tree").setup({
@@ -1268,7 +1268,7 @@ config:
         ["docker"] = {
             pattern = "^dockerfile$",
             ignore_case = true,
-            files = { ".dockerignore", "docker-compose.*", "dockerfile*" },
+            files = { ".dockerignore", "docker-compose.*", "dockerfile*" }, 
         }
       }
     })
@@ -1432,15 +1432,15 @@ The event argument for all window events is a table with the following keys:
     `position` = the position of the window, i.e. "left", "bottom", "right".
 
 "neo_tree_window_after_open"~
-Fired after opening a new Neo-tree window. Called with
+Fired after opening a new Neo-tree window. Called with 
 |neo-tree-window-event-args|.
 
 "neo_tree_window_before_close"~
-Fired before closing a Neo-tree window. Called with
+Fired before closing a Neo-tree window. Called with 
 |neo-tree-window-event-args|.
 
 "neo_tree_window_after_close"~
-Fired after closing a Neo-tree window. Called with
+Fired after closing a Neo-tree window. Called with 
 |neo-tree-window-event-args|.
 
 NOTE: The following events are used internally and not intended for end user
@@ -1603,13 +1603,13 @@ Each component in the content list can use these additional properties:
 >
   "1234efg"
 <
-
+  
   align~
   If align is right, then it will be pushed to the right edge of the available
   space. This makes the most sense when the container width is set to a number
   or `"100%"`. Components that are right aligned will automatically overlap left
   aligned components with the same zindex if there is not enough space.
-
+  
   Continuing with the example from above, if there was a `"right"` aligned
   component with a zindex of 20 that outputs:
 >
@@ -1675,7 +1675,7 @@ For example, here is the simplest possible component:
         components = {
 
           name = function(config, node)
-            return {
+            return { 
               text = node.name,
               highlight = "NeoTreeFileName"
             }
@@ -1741,13 +1741,13 @@ POPUPS                                                         *neo-tree-popups*
 
 Popups will be created with a |filetype| of `neo-tree-popup`. You can use this
 as the target for autocmds or to exclude them from being acted upon by other
-plugins.
+plugins. popup_title_enabled could be used to disable all popup titles.
 
 They can also be configured by setting the `popup_border_style` in your config,
 and the colors of that border are controlled by the `NeoTreeFloatBorder`
 highlight group. If you you use the special `NC` option for
 `popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
-highlight group. popup_title_enabled could be used to disable all popup titles.
+highlight group.
 
 
 ================================================================================
@@ -1803,7 +1803,7 @@ specific commands:
 DOCUMENT SYMBOLS                                     *neo-tree-document-symbols*
 
 The document_symbols source lists the symbols in the current document obtained
-by the LSP request "textDocument/documentSymbols".
+by the LSP request "textDocument/documentSymbols". 
 
 Its configuration includes the following options:
 
@@ -1812,15 +1812,15 @@ If set to `true`, will automatically focus on the symbol under the cursor.
 
 kinds~
 A table specifying how LSP kinds should be rendered. Each entry should map the
-LSP kind name to an icon and a highlight group, for example
+LSP kind name to an icon and a highlight group, for example 
   `Class = { icon = "󰌗", hl = "Include" }`
 
 custom_kinds~
 A table mapping the LSP kind id (an integer) to the LSP kind name that is used
-for `kinds`, for example
+for `kinds`, for example 
   `[252] = 'TypeAlias'`
 
-For the list of kinds (id and name), please refer to
+For the list of kinds (id and name), please refer to 
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentSymbol
 
 client_filters~
@@ -1837,7 +1837,7 @@ symbols. This accepts one of the following values
 
 For example: (NOTE: here only `fn` will be taken into account)
 >lua
-  {
+  { 
     fn = function(name) return name ~= "null-ls" end,
     allow_only = { "clangd", "lua_ls" },
     ignore = { "pyright" },
