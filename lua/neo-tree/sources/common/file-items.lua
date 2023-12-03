@@ -117,7 +117,12 @@ function create_item(context, path, _type, bufnr)
     path = path,
     type = _type,
   }
-  if vim.fn.getftype(path) == "link" then
+  if utils.is_windows then
+    if vim.fn.getftype(path) == "link" then
+      item.type = "link"
+    end
+  end
+  if item.type == "link" then
     item.is_link = true
     item.link_to = vim.loop.fs_realpath(path)
     if item.link_to ~= nil then
