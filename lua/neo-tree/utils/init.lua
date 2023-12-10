@@ -761,6 +761,11 @@ M.normalize_path = function(path)
   if M.is_windows then
     -- normalize the drive letter to uppercase
     path = path:sub(1, 1):upper() .. path:sub(2)
+    -- Turn mixed forward and back slashes into all forward slashes
+    -- using NeoVim's logic
+    path = vim.fs.normalize(path)
+    -- Now use backslashes, as expected by the rest of Neo-Tree's code
+    path = path:gsub("/", M.path_separator)
   end
   return path
 end
