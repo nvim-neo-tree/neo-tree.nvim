@@ -74,19 +74,10 @@ M.current_filter = function(config, node, state)
   }
 end
 
-M.diagnostics = function(config, node, state)
-  local diag = state.diagnostics_lookup or {}
-  local diag_state = diag[node:get_id()]
-  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
-    return {}
-  end
-  if not diag_state then
-    return {}
-  end
-  if config.errors_only and diag_state.severity_number > 1 then
-    return {}
-  end
-  local severity = diag_state.severity_string
+---`sign_getdefined` based wrapper with compatibility
+---@param severity string
+---@return vim.fn.sign_getdefined.ret.item
+local function get_defined_sign(severity)
   local defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
   if not defined then
     -- backwards compatibility...
@@ -102,6 +93,23 @@ M.diagnostics = function(config, node, state)
   if type(defined) ~= "table" then
     defined = {}
   end
+  return defined
+end
+
+M.diagnostics = function(config, node, state)
+  local diag = state.diagnostics_lookup or {}
+  local diag_state = diag[node:get_id()]
+  if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
+    return {}
+  end
+  if not diag_state then
+    return {}
+  end
+  if config.errors_only and diag_state.severity_number > 1 then
+    return {}
+  end
+  local severity = diag_state.severity_string
+  local defined = get_defined_sign(severity)
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
