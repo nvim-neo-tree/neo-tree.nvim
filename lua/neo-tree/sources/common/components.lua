@@ -94,7 +94,7 @@ local function get_defined_sign(severity)
     end
   else -- before 0.10
     defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
-    if not defined then
+    if vim.tbl_isempty(defined) then
       -- backwards compatibility...
       local old_severity = severity
       if severity == "Warning" then
