@@ -80,7 +80,7 @@ end
 local function get_defined_sign(severity)
   local defined
 
-  if vim.fn.has("nvim-0.10") then
+  if vim.fn.has("nvim-0.10") > 0 then
     local signs_config = vim.diagnostic.config().signs
     if type(signs_config) == "table" then
       local identifier = severity:sub(1, 1)
