@@ -643,8 +643,11 @@ M.position = {
       local success, node = pcall(state.tree.get_node, state.tree)
       if success and node then
         _, state.position.node_id = pcall(node.get_id, node)
-        local win_state = vim.fn.winsaveview()
+        local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
+        log.trace("win_state: " .. vim.inspect(win_state))
         state.position.topline = win_state.topline
+        log.debug("Saved cursor position with node_id: " .. state.position.node_id)
+        log.debug("Saved window position with topline: " .. state.position.topline)
       end
       -- Only need to restore the cursor state once per save, comes
       -- into play when some actions fire multiple times per "iteration"
@@ -665,10 +668,13 @@ M.position = {
       return
     end
     if state.position.is.restorable then
-      log.debug("Restoring position to node_id: " .. state.position.node_id)
+      log.debug("Restoring cursor position to node_id: " .. state.position.node_id)
       M.focus_node(state, state.position.node_id, true)
       if state.position.topline then
-        vim.fn.winrestview({ topline = state.position.topline })
+        log.debug("Restoring window position to topline: " .. state.position.topline)
+        vim.api.nvim_win_call(state.winid, function()
+          vim.fn.winrestview({ topline = state.position.topline })
+        end)
       end
     else
       log.debug("Position is not restorable")
@@ -1126,6 +1132,10 @@ render_tree = function(state)
   local add_blank_line_at_top = require("neo-tree").config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
+
+  log.debug("render_tree: Saving position")
+  M.position.save(state)
+
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
     state._in_pre_render = true
@@ -1149,6 +1159,9 @@ render_tree = function(state)
       state.tree:render()
     end
   end
+
+  log.debug("render_tree: Restoring position")
+  M.position.restore(state)
 end
 
 ---Draws the given nodes on the screen.
