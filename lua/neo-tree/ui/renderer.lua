@@ -641,7 +641,6 @@ M.position = {
   save = function(state)
     if state.tree and M.window_exists(state) then
       local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
-      log.trace("win_state: " .. vim.inspect(win_state))
       state.position.topline = win_state.topline
       state.position.lnum = win_state.lnum
       log.debug("Saved cursor position with lnum: " .. state.position.lnum)
