@@ -668,7 +668,11 @@ M.position = {
         end)
       end
       if state.position.node_id then
+        log.debug("Focusing on node_id: " .. state.position.node_id)
         M.focus_node(state, state.position.node_id, true)
+        -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
+        -- focus on it anymore
+        state.position.node_id = nil
       end
     else
       log.debug("Position is not restorable")
