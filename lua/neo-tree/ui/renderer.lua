@@ -112,6 +112,10 @@ end
 ---@param state table State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
 M.close = function(state, focus_prior_window)
+
+  log.debug("Closing window, but saving position first.")
+  M.position.save(state)
+
   if focus_prior_window == nil then
     focus_prior_window = true
   end
@@ -639,6 +643,11 @@ end
 ---Functions to save and restore the focused node.
 M.position = {
   save = function(state)
+    if state.position.topline and state.position.lnum then
+      log.debug("There's already a position saved to be restored. Cannot save another.")
+      return
+    end
+
     if state.tree and M.window_exists(state) then
       local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
       state.position.topline = win_state.topline
@@ -666,6 +675,9 @@ M.position = {
         vim.api.nvim_win_call(state.winid, function()
           vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
         end)
+        -- Clear saved position, so that we can save another position later.
+        state.position.topline = nil
+        state.position.lnum = nil
       end
       if state.position.node_id then
         log.debug("Focusing on node_id: " .. state.position.node_id)
@@ -1218,9 +1230,6 @@ draw = function(nodes, state, parent_id)
   -- draw winbar / statusbar
   require("neo-tree.ui.selector").set_source_selector(state)
 
-  -- Restore the cursor position/focused node in the tree based on the state
-  -- when it was last closed
-  M.position.restore(state)
   state._ready = true
 end
 
