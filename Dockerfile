@@ -13,6 +13,7 @@ RUN cd neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
 ARG PLUG_DIR="root/.local/share/nvim/site/pack/packer/start"
 RUN git clone https://github.com/nvim-lua/plenary.nvim $PLUG_DIR/plenary.nvim
 RUN git clone https://github.com/MunifTanjim/nui.nvim $PLUG_DIR/nui.nvim
+RUN git clone https://github.com/nvim-tree/nvim-web-devicons.git $PLUG_DIR/nvim-web-devicons
 COPY . $PLUG_DIR/neo-tree.nvim
 
 WORKDIR $PLUG_DIR/neo-tree.nvim

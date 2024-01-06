@@ -112,6 +112,10 @@ end
 ---@param state table State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
 M.close = function(state, focus_prior_window)
+
+  log.debug("Closing window, but saving position first.")
+  M.position.save(state)
+
   if focus_prior_window == nil then
     focus_prior_window = true
   end
@@ -639,13 +643,17 @@ end
 ---Functions to save and restore the focused node.
 M.position = {
   save = function(state)
+    if state.position.topline and state.position.lnum then
+      log.debug("There's already a position saved to be restored. Cannot save another.")
+      return
+    end
+
     if state.tree and M.window_exists(state) then
-      local success, node = pcall(state.tree.get_node, state.tree)
-      if success and node then
-        _, state.position.node_id = pcall(node.get_id, node)
-        local win_state = vim.fn.winsaveview()
-        state.position.topline = win_state.topline
-      end
+      local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
+      state.position.topline = win_state.topline
+      state.position.lnum = win_state.lnum
+      log.debug("Saved cursor position with lnum: " .. state.position.lnum)
+      log.debug("Saved window position with topline: " .. state.position.topline)
       -- Only need to restore the cursor state once per save, comes
       -- into play when some actions fire multiple times per "iteration"
       -- within the scope of where we need to perform the restore operation
@@ -660,15 +668,23 @@ M.position = {
     state.position.is.restorable = true
   end,
   restore = function(state)
-    if not state.position.node_id then
-      log.debug("No node_id to restore to")
-      return
-    end
     if state.position.is.restorable then
-      log.debug("Restoring position to node_id: " .. state.position.node_id)
-      M.focus_node(state, state.position.node_id, true)
-      if state.position.topline then
-        vim.fn.winrestview({ topline = state.position.topline })
+      if state.position.topline and state.position.lnum then
+        log.debug("Restoring window position to topline: " .. state.position.topline)
+        log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
+        vim.api.nvim_win_call(state.winid, function()
+          vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
+        end)
+        -- Clear saved position, so that we can save another position later.
+        state.position.topline = nil
+        state.position.lnum = nil
+      end
+      if state.position.node_id then
+        log.debug("Focusing on node_id: " .. state.position.node_id)
+        M.focus_node(state, state.position.node_id, true)
+        -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
+        -- focus on it anymore
+        state.position.node_id = nil
       end
     else
       log.debug("Position is not restorable")
@@ -1126,6 +1142,10 @@ render_tree = function(state)
   local add_blank_line_at_top = require("neo-tree").config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
+
+  log.debug("render_tree: Saving position")
+  M.position.save(state)
+
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
     state._in_pre_render = true
@@ -1149,6 +1169,9 @@ render_tree = function(state)
       state.tree:render()
     end
   end
+
+  log.debug("render_tree: Restoring position")
+  M.position.restore(state)
 end
 
 ---Draws the given nodes on the screen.
@@ -1207,9 +1230,6 @@ draw = function(nodes, state, parent_id)
   -- draw winbar / statusbar
   require("neo-tree.ui.selector").set_source_selector(state)
 
-  -- Restore the cursor position/focused node in the tree based on the state
-  -- when it was last closed
-  M.position.restore(state)
   state._ready = true
 end
 

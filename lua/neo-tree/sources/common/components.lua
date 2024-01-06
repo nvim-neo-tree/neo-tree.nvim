@@ -74,6 +74,45 @@ M.current_filter = function(config, node, state)
   }
 end
 
+---`sign_getdefined` based wrapper with compatibility
+---@param severity string
+---@return vim.fn.sign_getdefined.ret.item
+local function get_defined_sign(severity)
+  local defined
+
+  if vim.fn.has("nvim-0.10") > 0 then
+    local signs_config = vim.diagnostic.config().signs
+    if type(signs_config) == "table" then
+      local identifier = severity:sub(1, 1)
+      if identifier == "H" then
+        identifier = "N"
+      end
+      defined = {
+        text = signs_config.text[vim.diagnostic.severity[identifier]],
+        texthl = "DiagnosticSign" .. severity,
+      }
+    end
+  else -- before 0.10
+    defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
+    if vim.tbl_isempty(defined) then
+      -- backwards compatibility...
+      local old_severity = severity
+      if severity == "Warning" then
+        old_severity = "Warn"
+      elseif severity == "Information" then
+        old_severity = "Info"
+      end
+      defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
+    end
+    defined = defined and defined[1]
+  end
+
+  if type(defined) ~= "table" then
+    defined = {}
+  end
+  return defined
+end
+
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
@@ -87,21 +126,7 @@ M.diagnostics = function(config, node, state)
     return {}
   end
   local severity = diag_state.severity_string
-  local defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
-  if not defined then
-    -- backwards compatibility...
-    local old_severity = severity
-    if severity == "Warning" then
-      old_severity = "Warn"
-    elseif severity == "Information" then
-      old_severity = "Info"
-    end
-    defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
-  end
-  defined = defined and defined[1]
-  if type(defined) ~= "table" then
-    defined = {}
-  end
+  local defined = get_defined_sign(severity)
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()

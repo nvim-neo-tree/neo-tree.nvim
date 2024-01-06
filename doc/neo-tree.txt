@@ -1040,18 +1040,20 @@ the following properties:
 >lua
     require("neo-tree").setup({
       default_component_configs = {
-        symbols = {
-          -- Change type
-          added     = "✚",
-          deleted   = "✖",
-          modified  = "",
-          renamed   = "󰁕",
-          -- Status type
-          untracked = "",
-          ignored   = "",
-          unstaged  = "󰄱",
-          staged    = "",
-          conflict  = "",
+        git_status = {
+          symbols = {
+            -- Change type
+            added     = "✚",
+            deleted   = "✖",
+            modified  = "",
+            renamed   = "󰁕",
+            -- Status type
+            untracked = "",
+            ignored   = "",
+            unstaged  = "󰄱",
+            staged    = "",
+            conflict  = "",
+          }
         }
       }
     })
@@ -1073,18 +1075,20 @@ The following config will remove those change type symbols:
 >lua
     require("neo-tree").setup({
       default_component_configs = {
-        symbols = {
-          -- Change type
-          added     = "",
-          deleted   = "",
-          modified  = "",
-          renamed   = "",
-          -- Status type
-          untracked = "",
-          ignored   = "",
-          unstaged  = "󰄱",
-          staged    = "",
-          conflict  = "",
+        git_status = {
+          symbols = {
+            -- Change type
+            added     = "",
+            deleted   = "",
+            modified  = "",
+            renamed   = "",
+            -- Status type
+            untracked = "",
+            ignored   = "",
+            unstaged  = "󰄱",
+            staged    = "",
+            conflict  = "",
+          }
         }
       }
     })
