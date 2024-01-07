@@ -88,7 +88,7 @@ local function get_defined_sign(severity)
         identifier = "N"
       end
       defined = {
-        text = signs_config.text[vim.diagnostic.severity[identifier]],
+        text = (signs_config.text or {})[vim.diagnostic.severity[identifier]],
         texthl = "DiagnosticSign" .. severity,
       }
     end
