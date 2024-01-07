@@ -232,6 +232,12 @@ S             = open_split:  Same as open, but opens in a new horizontal split.
 
 s             = open_vsplit: Same as open, but opens in a vertical split.
 
+         open_rightbelow_vs: Same as open_vsplit, but opens in a right window
+                             of the vertical split.
+
+          open_leftabove_vs: Same as open_vsplit, but opens in a left window
+                             of the vertical split.
+
 t             = open_tabnew: Same as open, but opens in a new tab.
 
                   open_drop: Same as open, but opens with the |:drop| command. 
