@@ -186,6 +186,12 @@ end
 M.open_split = function(state)
   cc.open_split(state, utils.wrap(fs.toggle_directory, state))
 end
+M.open_rightbelow_vs = function(state)
+  cc.open_rightbelow_vs(state, utils.wrap(fs.toggle_directory, state))
+end
+M.open_leftabove_vs = function(state)
+  cc.open_leftabove_vs(state, utils.wrap(fs.toggle_directory, state))
+end
 M.open_vsplit = function(state)
   cc.open_vsplit(state, utils.wrap(fs.toggle_directory, state))
 end

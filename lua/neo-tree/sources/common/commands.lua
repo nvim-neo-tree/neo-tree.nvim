@@ -776,6 +776,22 @@ M.open_vsplit = function(state, toggle_directory)
   open_with_cmd(state, "vsplit", toggle_directory)
 end
 
+---Open file or directory in a right below vertical split of the closest window
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_rightbelow_vs = function(state, toggle_directory)
+  open_with_cmd(state, "rightbelow vs", toggle_directory)
+end
+
+---Open file or directory in a left above vertical split of the closest window
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_leftabove_vs = function(state, toggle_directory)
+  open_with_cmd(state, "leftabove vs", toggle_directory)
+end
+
 ---Open file or directory in a new tab
 ---@param state table The state of the source
 ---@param toggle_directory function The function to call to toggle a directory
