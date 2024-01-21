@@ -1,6 +1,6 @@
 local log = require("neo-tree.log")
 
-Node = {}
+local Node = {}
 function Node:new(value)
   local props = { prev = nil, next = nil, value = value }
   setmetatable(props, self)
@@ -8,7 +8,7 @@ function Node:new(value)
   return props
 end
 
-LinkedList = {}
+local LinkedList = {}
 function LinkedList:new()
   local props = { head = nil, tail = nil, size = 0 }
   setmetatable(props, self)
@@ -49,7 +49,7 @@ function LinkedList:remove_node(node)
 end
 
 -- First in Last Out
-Queue = {}
+local Queue = {}
 function Queue:new()
   local props = { _list = LinkedList:new() }
   setmetatable(props, self)

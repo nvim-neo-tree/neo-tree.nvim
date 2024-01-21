@@ -49,9 +49,7 @@ describe("ui/icons", function()
       req_switch.disable_package("nvim-web-devicons")
 
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -73,7 +71,7 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         string.format("  %s", fs_tree.abspath):sub(1, 42),
-        "   󰜌 baz",
+        "   󰉖 baz",
         "    foo",
         "   │  bar",
         "   └ * foo1.lua",
@@ -81,16 +79,14 @@ describe("ui/icons", function()
       })
 
       u.assert_highlight(bufnr, ns_id, 1, " ", "NeoTreeDirectoryIcon")
-      u.assert_highlight(bufnr, ns_id, 2, "󰜌 ", "NeoTreeDirectoryIcon")
+      u.assert_highlight(bufnr, ns_id, 2, "󰉖 ", "NeoTreeDirectoryIcon")
       u.assert_highlight(bufnr, ns_id, 4, " ", "NeoTreeDirectoryIcon")
       u.assert_highlight(bufnr, ns_id, 5, "* ", "NeoTreeFileIcon")
     end)
 
     it("works w/ nvim-web-devicons", function()
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -112,7 +108,7 @@ describe("ui/icons", function()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
-        "   󰜌 baz",
+        "   󰉖 baz",
         "    foo",
         "   │  bar",
         "   └  foo1.lua",
@@ -120,7 +116,7 @@ describe("ui/icons", function()
       })
 
       u.assert_highlight(bufnr, ns_id, 1, " ", "NeoTreeDirectoryIcon")
-      u.assert_highlight(bufnr, ns_id, 2, "󰜌 ", "NeoTreeDirectoryIcon")
+      u.assert_highlight(bufnr, ns_id, 2, "󰉖 ", "NeoTreeDirectoryIcon")
       u.assert_highlight(bufnr, ns_id, 4, " ", "NeoTreeDirectoryIcon")
 
       local extmarks = u.get_text_extmarks(bufnr, ns_id, 5, " ")
@@ -151,9 +147,7 @@ describe("ui/icons", function()
       req_switch.disable_package("nvim-web-devicons")
 
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -190,9 +184,7 @@ describe("ui/icons", function()
 
     it("works w/ nvim-web-devicons", function()
       vim.cmd([[:Neotree focus]])
-      u.wait_for(function()
-        return vim.bo.filetype == "neo-tree"
-      end)
+      u.wait_for_neo_tree()
 
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)

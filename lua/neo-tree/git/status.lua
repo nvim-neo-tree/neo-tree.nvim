@@ -237,7 +237,6 @@ M.status_async = function(path, base, opts)
     end
 
     local job_complete_callback = function()
-      utils.debounce(event_id, nil, nil, nil, utils.debounce_action.COMPLETE_ASYNC_JOB)
       vim.schedule(function()
         events.fire_event(events.GIT_STATUS_CHANGED, {
           git_root = context.git_root,

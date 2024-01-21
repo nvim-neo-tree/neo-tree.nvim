@@ -1,5 +1,4 @@
 local vim = vim
-local Input = require("nui.input")
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
 local highlights = require("neo-tree.ui.highlights")
@@ -8,7 +7,7 @@ local log = require("neo-tree.log")
 local M = {}
 
 M.popup_options = function(title, min_width, override_options)
-  local min_width = min_width or 30
+  min_width = min_width or 30
   local width = string.len(title) + 2
 
   local nt = require("neo-tree")

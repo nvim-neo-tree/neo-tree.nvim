@@ -5,6 +5,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local filter_external = require("neo-tree.sources.filesystem.lib.filter_external")
 local file_items = require("neo-tree.sources.common.file-items")
+local file_nesting = require("neo-tree.sources.common.file-nesting")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
@@ -85,7 +86,7 @@ local render_context = function(context)
   fs_watch.updated_watched()
 
   if root and root.children then
-    file_items.deep_sort(root.children, state.sort_function_override)
+    file_items.advanced_sort(root.children, state)
   end
   if parent_id then
     -- lazy loading a child folder
@@ -103,12 +104,35 @@ local render_context = function(context)
   context = nil
 end
 
+local should_check_gitignore = function (context)
+  local state = context.state
+  if #context.all_items == 0 then
+    log.info("No items, skipping git ignored/status lookups")
+    return false
+  end
+  if state.search_pattern and state.check_gitignore_in_search == false then
+    return false
+  end
+  if state.filtered_items.hide_gitignored then
+    return true
+  end
+  if state.enable_git_status == false then
+    return false
+  end
+  return true
+end
+
 local job_complete_async = function(context)
   local state = context.state
   local parent_id = context.parent_id
-  if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
-  elseif state.filtered_items.hide_gitignored or state.enable_git_status then
+
+  file_nesting.nest_items(context)
+
+  -- if state.search_pattern and #context.all_items > 50 then
+  --   -- don't do git ignored/status lookups when searching unless we are down to a reasonable number of items
+  --   return context
+  -- end
+  if should_check_gitignore(context) then
     local mark_ignored_async = async.wrap(function (_state, _all_items, _callback)
       git.mark_ignored(_state, _all_items, _callback)
     end, 3)
@@ -126,12 +150,10 @@ end
 local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
-  if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
-    render_context(context)
-    return
-  end
-  if state.filtered_items.hide_gitignored or state.enable_git_status then
+
+  file_nesting.nest_items(context)
+
+  if should_check_gitignore(context) then
     if require("neo-tree").config.git_status_async then
       git.mark_ignored(state, context.all_items, function(all_items)
         if parent_id then
@@ -152,6 +174,8 @@ local job_complete = function(context)
         state.git_ignored = all_items
       end
     end
+    render_context(context)
+  else
     render_context(context)
   end
 end
@@ -481,6 +505,7 @@ local handle_refresh_or_up = function (context, async)
 end
 
 M.get_items = function(state, parent_id, path_to_reveal, callback, async, recursive) 
+  renderer.acquire_window(state)
   if state.async_directory_scan == "always" then
     async = true
   elseif state.async_directory_scan == "never" then

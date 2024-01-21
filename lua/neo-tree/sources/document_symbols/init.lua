@@ -59,12 +59,16 @@ local follow_debounced = function(args)
 end
 
 ---Navigate to the given path.
-M.navigate = function(state)
+M.navigate = function(state, path, path_to_reveal, callback, async)
   state.lsp_winid, _ = utils.get_appropriate_window(state)
   state.lsp_bufnr = vim.api.nvim_win_get_buf(state.lsp_winid)
   state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
 
   symbols.render_symbols(state)
+
+  if type(callback) == "function" then
+    vim.schedule(callback)
+  end
 end
 
 ---Configures the plugin, should be called before the plugin is used.

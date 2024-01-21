@@ -270,12 +270,30 @@ function Preview:activate()
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)
 end
 
+---@param winid number
+---@param bufnr number
+local function try_load_image_nvim_buf(winid, bufnr)
+  if vim.bo[bufnr].filetype ~= "image_nvim" then
+    return false
+  end
+  local success, mod = pcall(require, "image")
+  if not success or not mod.hijack_buffer then
+    local image_nvim_url = "https://github.com/3rd/image.nvim"
+    log.debug("You'll need to install image.nvim to use this command: " .. image_nvim_url)
+    return false
+  end
+  return mod.hijack_buffer(vim.api.nvim_buf_get_name(bufnr), winid, bufnr)
+end
+
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
 --@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
   vim.api.nvim_win_set_buf(self.winid, bufnr)
+  if self.config.use_image_nvim then
+    try_load_image_nvim_buf(self.winid, bufnr)
+  end
   if self.config.use_float then
     -- I'm not sufe why float windows won;t show numbers without this
     vim.api.nvim_win_set_option(self.winid, "number", true)
@@ -393,7 +411,8 @@ Preview.toggle = function(state)
     local preview_event = {
       event = events.VIM_CURSOR_MOVED,
       handler = function()
-        if not toggle_state or vim.api.nvim_get_current_win() == instance.winid then
+        local did_enter_preview = vim.api.nvim_get_current_win() == instance.winid
+        if not toggle_state or (did_enter_preview and instance.config.use_float) then
           return
         end
         if vim.api.nvim_get_current_win() == winid then

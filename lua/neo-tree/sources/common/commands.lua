@@ -122,16 +122,13 @@ M.expand_all_nodes = function(state, node, prefetcher)
 
   renderer.position.set(state, nil)
 
-  local task = function ()
+  local task = function()
     node_expander.expand_directory_recursively(state, node, prefetcher)
   end
-  async.run(
-      task,
-      function ()
-        log.debug("All nodes expanded - redrawing")
-        renderer.redraw(state)
-      end
-    )
+  async.run(task, function()
+    log.debug("All nodes expanded - redrawing")
+    renderer.redraw(state)
+  end)
 end
 
 M.close_node = function(state, callback)
@@ -153,6 +150,12 @@ M.close_node = function(state, callback)
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
+    if
+      state.explicitly_opened_directories
+      and state.explicitly_opened_directories[target_node:get_id()]
+    then
+      state.explicitly_opened_directories[target_node:get_id()] = false
+    end
   end
 end
 
@@ -171,9 +174,16 @@ M.close_all_subnodes = function(state)
   renderer.collapse_all_nodes(tree, target_node:get_id())
   renderer.redraw(state)
   renderer.focus_node(state, target_node:get_id())
+  if
+    state.explicitly_opened_directories
+    and state.explicitly_opened_directories[target_node:get_id()]
+  then
+    state.explicitly_opened_directories[target_node:get_id()] = false
+  end
 end
 
 M.close_all_nodes = function(state)
+  state.explicitly_opened_directories = {}
   renderer.collapse_all_nodes(state.tree)
   renderer.redraw(state)
 end
@@ -407,8 +417,131 @@ M.prev_source = function(state)
   })
 end
 
+local function set_sort(state, label)
+  local sort = state.sort or { label = "Name", direction = -1 }
+  if sort.label == label then
+    sort.direction = sort.direction * -1
+  else
+    sort.label = label
+    sort.direction = -1
+  end
+  state.sort = sort
+end
+
+M.order_by_created = function(state)
+  set_sort(state, "Created")
+  state.sort_field_provider = function(node)
+    local stat = utils.get_stat(node)
+    return stat.birthtime and stat.birthtime.sec or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_modified = function(state)
+  set_sort(state, "Last Modified")
+  state.sort_field_provider = function(node)
+    local stat = utils.get_stat(node)
+    return stat.mtime and stat.mtime.sec or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_name = function(state)
+  set_sort(state, "Name")
+  state.sort_field_provider = nil
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_size = function(state)
+  set_sort(state, "Size")
+  state.sort_field_provider = function(node)
+    local stat = utils.get_stat(node)
+    return stat.size or 0
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_type = function(state)
+  set_sort(state, "Type")
+  state.sort_field_provider = function(node)
+    return node.ext or node.type
+  end
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_git_status = function(state)
+  set_sort(state, "Git Status")
+
+  state.sort_field_provider = function(node)
+    local git_status_lookup = state.git_status_lookup or {}
+    local git_status = git_status_lookup[node.path]
+    if git_status then
+      return git_status
+    end
+
+    if node.filtered_by and node.filtered_by.gitignored then
+      return "!!"
+    else
+      return ""
+    end
+  end
+
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
+M.order_by_diagnostics = function(state)
+  set_sort(state, "Diagnostics")
+
+  state.sort_field_provider = function(node)
+    local diag = state.diagnostics_lookup or {}
+    local diagnostics = diag[node.path]
+    if not diagnostics then
+      return 0
+    end
+    if not diagnostics.severity_number then
+      return 0
+    end
+    -- lower severity number means higher severity
+    return 5 - diagnostics.severity_number
+  end
+
+  require("neo-tree.sources.manager").refresh(state.name)
+end
+
 M.show_debug_info = function(state)
   print(vim.inspect(state))
+end
+
+M.show_file_details = function(state)
+  local node = state.tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  local stat = utils.get_stat(node)
+  local left = {}
+  local right = {}
+  table.insert(left, "Name")
+  table.insert(right, node.name)
+  table.insert(left, "Path")
+  table.insert(right, node:get_id())
+  table.insert(left, "Type")
+  table.insert(right, node.type)
+  if stat.size then
+    table.insert(left, "Size")
+    table.insert(right, utils.human_size(stat.size))
+    table.insert(left, "Created")
+    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.birthtime.sec))
+    table.insert(left, "Modified")
+    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.mtime.sec))
+  end
+
+  local lines = {}
+  for i, v in ipairs(left) do
+    local line = string.format("%9s: %s", v, right[i])
+    table.insert(lines, line)
+  end
+
+  popups.alert("File Details", lines)
 end
 
 ---Pastes all items from the clipboard to the current directory.
@@ -535,6 +668,38 @@ M.focus_preview = function()
   Preview.focus()
 end
 
+---Expands or collapses the current node.
+M.toggle_node = function(state, toggle_directory)
+  local tree = state.tree
+  local node = tree:get_node()
+  if not utils.is_expandable(node) then
+    return
+  end
+  if node.type == "directory" and toggle_directory then
+    toggle_directory(node)
+  elseif node:has_children() then
+    local updated = false
+    if node:is_expanded() then
+      updated = node:collapse()
+    else
+      updated = node:expand()
+    end
+    if updated then
+      renderer.redraw(state)
+    end
+  end
+end
+
+---Expands or collapses the current node.
+M.toggle_directory = function(state, toggle_directory)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type ~= "directory" then
+    return
+  end
+  M.toggle_node(state, toggle_directory)
+end
+
 ---Open file or directory
 ---@param state table The state of the source
 ---@param open_cmd string The vim command to use to open the file
@@ -573,24 +738,15 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     end
   end
 
-  if utils.is_expandable(node) then
-    if toggle_directory and node.type == "directory" then
-      toggle_directory(node)
-    elseif node:has_children() then
-      if node:is_expanded() and node.type ~= "directory" then
-        return open()
-      end
-
-      local updated = false
-      if node:is_expanded() then
-        updated = node:collapse()
-      else
-        updated = node:expand()
-      end
-      if updated then
-        renderer.redraw(state)
-      end
-    end
+  local config = state.config or {}
+  if node.type ~= "directory" and config.no_expand_file ~= nil then
+    log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
+    config.expand_nested_files = not config.no_expand_file
+  end
+  if node.type == "directory" then
+    M.toggle_node(state, toggle_directory)
+  elseif node:has_children() and config.expand_nested_files and not node:is_expanded() then
+    M.toggle_node(state, toggle_directory)
   else
     open()
   end
@@ -618,6 +774,22 @@ end
 ---open/closed
 M.open_vsplit = function(state, toggle_directory)
   open_with_cmd(state, "vsplit", toggle_directory)
+end
+
+---Open file or directory in a right below vertical split of the closest window
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_rightbelow_vs = function(state, toggle_directory)
+  open_with_cmd(state, "rightbelow vs", toggle_directory)
+end
+
+---Open file or directory in a left above vertical split of the closest window
+---@param state table The state of the source
+---@param toggle_directory function The function to call to toggle a directory
+---open/closed
+M.open_leftabove_vs = function(state, toggle_directory)
+  open_with_cmd(state, "leftabove vs", toggle_directory)
 end
 
 ---Open file or directory in a new tab
@@ -651,38 +823,6 @@ M.rename = function(state, callback)
     return
   end
   fs_actions.rename_node(node.path, callback)
-end
-
----Expands or collapses the current node.
-M.toggle_node = function(state, toggle_directory)
-  local tree = state.tree
-  local node = tree:get_node()
-  if not utils.is_expandable(node) then
-    return
-  end
-  if node.type == "directory" and toggle_directory then
-    toggle_directory(node)
-  elseif node:has_children() then
-    local updated = false
-    if node:is_expanded() then
-      updated = node:collapse()
-    else
-      updated = node:expand()
-    end
-    if updated then
-      renderer.redraw(state)
-    end
-  end
-end
-
----Expands or collapses the current node.
-M.toggle_directory = function(state, toggle_directory)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type ~= "directory" then
-    return
-  end
-  M.toggle_node(state, toggle_directory)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
@@ -737,7 +877,9 @@ M.vsplit_with_window_picker = function(state, toggle_directory)
 end
 
 M.show_help = function(state)
-  help.show(state)
+  local title = state.config and state.config.title or nil
+  local prefix_key = state.config and state.config.prefix_key or nil
+  help.show(state, title, prefix_key)
 end
 
 return M

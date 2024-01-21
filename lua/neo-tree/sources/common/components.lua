@@ -74,6 +74,45 @@ M.current_filter = function(config, node, state)
   }
 end
 
+---`sign_getdefined` based wrapper with compatibility
+---@param severity string
+---@return vim.fn.sign_getdefined.ret.item
+local function get_defined_sign(severity)
+  local defined
+
+  if vim.fn.has("nvim-0.10") > 0 then
+    local signs_config = vim.diagnostic.config().signs
+    if type(signs_config) == "table" then
+      local identifier = severity:sub(1, 1)
+      if identifier == "H" then
+        identifier = "N"
+      end
+      defined = {
+        text = (signs_config.text or {})[vim.diagnostic.severity[identifier]],
+        texthl = "DiagnosticSign" .. severity,
+      }
+    end
+  else -- before 0.10
+    defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
+    if vim.tbl_isempty(defined) then
+      -- backwards compatibility...
+      local old_severity = severity
+      if severity == "Warning" then
+        old_severity = "Warn"
+      elseif severity == "Information" then
+        old_severity = "Info"
+      end
+      defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
+    end
+    defined = defined and defined[1]
+  end
+
+  if type(defined) ~= "table" then
+    defined = {}
+  end
+  return defined
+end
+
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
@@ -87,21 +126,7 @@ M.diagnostics = function(config, node, state)
     return {}
   end
   local severity = diag_state.severity_string
-  local defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
-  if not defined then
-    -- backwards compatibility...
-    local old_severity = severity
-    if severity == "Warning" then
-      old_severity = "Warn"
-    elseif severity == "Information" then
-      old_severity = "Info"
-    end
-    defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
-  end
-  defined = defined and defined[1]
-  if type(defined) ~= "table" then
-    defined = {}
-  end
+  local defined = get_defined_sign(severity)
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
@@ -279,8 +304,9 @@ M.icon = function(config, node, state)
     end
   elseif node.type == "file" or node.type == "terminal" then
     local success, web_devicons = pcall(require, "nvim-web-devicons")
+    local name = node.type == "terminal" and "terminal" or node.name
     if success then
-      local devicon, hl = web_devicons.get_icon(node.name)
+      local devicon, hl = web_devicons.get_icon(name)
       icon = devicon or icon
       highlight = hl or highlight
     end
@@ -433,6 +459,75 @@ M.indent = function(config, node, state)
   return indent
 end
 
+local get_header = function (state, label, size)
+  if state.sort and state.sort.label == label then
+    local icon = state.sort.direction == 1 and "▲" or "▼"
+    size = size - 2
+    return string.format("%" .. size .. "s %s  ", label, icon)
+  end
+  return string.format("%" .. size .. "s  ", label)
+end
+
+M.file_size = function (config, node, state)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = get_header(state, "Size", 12),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  local text = "-"
+  if node.type == "file" then
+    local stat = utils.get_stat(node)
+    local size = stat and stat.size or nil
+    if size then
+      local success, human = pcall(utils.human_size, size)
+      if success then
+        text = human or text
+      end
+    end
+  end
+
+  return {
+    text = string.format("%12s  ", text),
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
+local file_time = function(config, node, state, stat_field)
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    local label = stat_field
+    if stat_field == "mtime" then
+      label = "Last Modified"
+    elseif stat_field == "birthtime" then
+      label = "Created"
+    end
+    return {
+      text = get_header(state, label, 20),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  local stat = utils.get_stat(node)
+  local value = stat and stat[stat_field]
+  local seconds = value and value.sec or nil
+  local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
+  return {
+    text = string.format("%20s  ", display),
+    highlight = config.highlight or highlights.FILE_STATS
+  }
+end
+
+M.last_modified = function(config, node, state)
+  return file_time(config, node, state, "mtime")
+end
+
+M.created = function(config, node, state)
+  return file_time(config, node, state, "birthtime")
+end
+
 M.symlink_target = function(config, node, state)
   if node.is_link then
     return {
@@ -442,6 +537,22 @@ M.symlink_target = function(config, node, state)
   else
     return {}
   end
+end
+
+M.type = function (config, node, state)
+  local text = node.ext or node.type
+  -- Root node gets column labels
+  if node:get_depth() == 1 then
+    return {
+      text = get_header(state, "Type", 10),
+      highlight = highlights.FILE_STATS_HEADER
+    }
+  end
+
+  return {
+    text = string.format("%10s  ", text),
+    highlight = highlights.FILE_STATS
+  }
 end
 
 return M

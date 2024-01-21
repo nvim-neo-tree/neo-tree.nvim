@@ -41,7 +41,7 @@ M.get_git_status = function(state)
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
   end
-  file_items.deep_sort(root.children, state.sort_function_override)
+  file_items.advanced_sort(root.children, state)
   renderer.show_nodes({ root }, state)
   state.loading = false
 end

@@ -55,6 +55,7 @@ local define_events = function()
 
   events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
   events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
+  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost" }, 200)
   events.define_autocmd_event(
     events.VIM_BUFFER_DELETED,
     { "BufDelete" },
@@ -643,7 +644,7 @@ M.merge_config = function(user_config, is_auto_config)
         break
       end
   end
-  if not match then
+  if not match and M.config.default_source ~= "last" then
     M.config.default_source = M.config.sources[1]
     log.warn(string.format("Invalid default source found in configuration. Using first available source: %s", M.config.default_source))
   end

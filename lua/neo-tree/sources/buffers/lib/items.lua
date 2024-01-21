@@ -94,13 +94,17 @@ M.get_opened_buffers = function(state)
       search_pattern = state.search_pattern,
     }
     context.folders["Terminals"] = terminal_root
-    root_folders[2] = terminal_root
+    if state.terminals_first then
+      table.insert(root_folders, 1, terminal_root)
+    else
+      table.insert(root_folders, terminal_root)
+    end
   end
   state.default_expanded_nodes = {}
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
   end
-  file_items.deep_sort(root.children)
+  file_items.advanced_sort(root.children, state)
   renderer.show_nodes(root_folders, state)
   state.loading = false
 end

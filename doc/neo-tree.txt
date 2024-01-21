@@ -9,7 +9,8 @@ Mappings .................... |neo-tree-mappings|
   View Changes .............. |neo-tree-view-changes|
   File Actions .............. |neo-tree-file-actions|
   Filter .................... |neo-tree-filter|
-  Global custom commands .... |neo-tree-custom-commands-global|
+  Custom Mappings ........... |neo-tree-custom-mappings|
+  Custom Commands ........... |neo-tree-custom-commands|
 Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
@@ -127,25 +128,46 @@ want to change the current working directory. If you include this flag, it will
 automatically change the directory without prompting. This option implies
 "reveal", so you do not need to specify both.
 
-DEPRECATED_COMMANDS
+selector~
+This is a boolean flag. When you specifically set this to false (`selector=false`)
+neo-tree will disable the |neo-tree-source-selector| for that neo-tree
+instance. Otherwise, the source selector will depend on what you specified in
+the configuration (`config.source_selector.{winbar,statusline}`).
 
-The following commands from Neotree v1.x will remain until v3.0 for backwards
-compatibility. You should not use them if you are a new user, and existing users
-should change their mapping to the new |:Neotree| command specified above.
+CALLING_FROM_LUA
 
-    :NeoTreeFocus         -> :Neotree
-    :NeoTreeShow          -> :Neotree show
-    :NeoTreeShowInSplit   -> :Neotree show current
-    :NeoTreeReveal        -> :Neotree reveal
-    :NeoTreeRevealInSplit -> :Neotree reveal current
-    :NeoTreeFloat         -> :Neotree float
-    :NeoTreeClose         -> :Neotree close
-    :NeoTreePasteConfig   -> :lua require("neo-tree").paste_default_config()
+You can call Neotree commands from your Lua scripts as follows:
 
-Once you have migrated your mappings, it is recommended that you remove the old
-commands by adding this option before the Neotree config is run:
->vim
-  let g:neo_tree_remove_legacy_commands = 1
+>lua
+  require('neo-tree.command').execute({ ... })
+<
+
+For example, you could use the following keymap to make the `-` key reveal the
+current file, or if in an unsaved file, the current working directory.
+
+>lua
+  vim.keymap.set('n', '-', function()
+    local reveal_file = vim.fn.expand('%:p')
+    if (reveal_file == '') then
+      reveal_file = vim.fn.getcwd()
+    else
+      local f = io.open(reveal_file, "r")
+      if (f) then
+        f.close(f)
+      else
+        reveal_file = vim.fn.getcwd()
+      end
+    end
+    require('neo-tree.command').execute({
+      action = "focus",          -- OPTIONAL, this is the default value
+      source = "filesystem",     -- OPTIONAL, this is the default value
+      position = "left",         -- OPTIONAL, this is the default value
+      reveal_file = reveal_file, -- path to file or folder to reveal
+      reveal_force_cwd = true,   -- change cwd without asking if needed
+    })
+    end,
+    {description: "Open neo-tree at current file or working directory"}
+  );
 <
 
 ===============================================================================
@@ -210,6 +232,12 @@ S             = open_split:  Same as open, but opens in a new horizontal split.
 
 s             = open_vsplit: Same as open, but opens in a vertical split.
 
+         open_rightbelow_vs: Same as open_vsplit, but opens in a right window
+                             of the vertical split.
+
+          open_leftabove_vs: Same as open_vsplit, but opens in a left window
+                             of the vertical split.
+
 t             = open_tabnew: Same as open, but opens in a new tab.
 
                   open_drop: Same as open, but opens with the |:drop| command. 
@@ -269,6 +297,9 @@ A    = add_directory:        Create a new directory, in this mode it does not
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
 
+i    = show_file_details     Show file details in popup window, such as size
+                             and last modified date.
+
 r    = rename:               Rename the selected file or directory.
 
 y    = copy_to_clipboard:    Mark file to be copied.
@@ -289,11 +320,27 @@ m    = move:                 Move the selected file or directory.
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
-H = toggle_hidden: Toggle whether hidden (filtered items) are shown or not.
+H  = toggle_hidden:  Toggle whether hidden (filtered items) are shown or not.
 
-R = refresh:       Rescan the filesystem and redraw the tree. Changes made 
-                   within nvim should be detected automatically, but this is
-                   useful for changes made elsewhere.
+R  = refresh:        Rescan the filesystem and redraw the tree. Changes made 
+                     within nvim should be detected automatically, but this is
+                     useful for changes made elsewhere.
+
+o  = order_by...     Show help menu for order by choices.
+
+oc = ...created:     Sort the tree by created date.
+
+od = ...diagnostics: Sort by diagnostic severity.
+
+og = ...git_status:  Sort by git status.
+
+om = ...modified:    Sort by last modified date.
+
+on = ...name:        Sort by name (default sort).
+
+os = ...size:        Sort by size.
+
+ot = ...type:        Sort by type.
 
 
 FILTER                                                        *neo-tree-filter*
@@ -356,7 +403,7 @@ an existing split by configuring the command like this:
     require("neo-tree").setup({
       window = {
         mappings = {
-          ["P"] = { "toggle_preview", config = { use_float = false } },
+          ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
         }
       }
     })
@@ -373,6 +420,10 @@ variable `neo_tree_preview` set to `1` to indicate that it is being used as a
 preview window. You can refer to this in statusline and winbar configs to mark a
 window as being used as a preview.
 
+If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
+mode supports image rendering by default using kitty graphics protocol or ueberzug.
+However, if you do not want this feature, you can disable it by changing the option
+`use_image_nvim = false` in the mappings config mentioned above.
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 
@@ -386,7 +437,14 @@ For example:
    require("neo-tree").setup({
      window = {
        mappings = {
-         ["A"] = "command_a"
+         ["A"] = "command_a",
+         ["i"] = {
+           function(state)
+             local node = state.tree:get_node()
+             print(node.path)
+           end,
+           desc = "print path",
+         },
        }
      },
      filesystem = {
@@ -400,6 +458,8 @@ For example:
 <
 The above config will map `A` to command_a for all sources except for
 filesystem, which will use command_b instead.
+
+The desc is used to display in the help popup.
 
 If you don't want to use *any* default mappings, you can set
 `use_default_mappings = false` in your config.
@@ -426,6 +486,116 @@ NOTE: Not all commands work for all sources. If it is defined in the source
 section in the default config instead of at the root level, that means it is
 specific to that source and will not work for others.
 
+
+CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
+
+If you want to create a mapping that supports visual mode, the way to do that
+is to add a second command where the name is the same as the normal mode
+command, but with `_visual` added to the end. Any mapping for this command will
+then work in either normal or visual mode.
+
+The `_visual` version of the command will be called with a second argument
+which is a list of the nodes that were selected when the command was called.
+
+For example, this is how the built-in `delete` command is defined:
+
+>lua
+    M.delete = function(state, callback)
+      local tree = state.tree
+      local node = tree:get_node()
+      fs_actions.delete_node(node.path, callback)
+    end
+
+    M.delete_visual = function(state, selected_nodes, callback)
+      local paths_to_delete = {}
+      for _, node_to_delete in pairs(selected_nodes) do
+        table.insert(paths_to_delete, node_to_delete.path)
+      end
+      fs_actions.delete_nodes(paths_to_delete, callback)
+    end
+<
+
+CUSTOM MAPPINGS WITH ARGUMENTS               *neo-tree-custom-mappings-args*
+
+If you want to include options for your mappings, such as `nowait`, you can
+set this for all mappings using the `mapping_options` key, or on individual
+mappings by specifying them as a table that consists of the command and any
+options you want to use. If both are specified, the mapping merges with and
+overrides the global `mapping_options`
+
+The command can be either the string name of a built-in command, or a
+function, and is specified either as the first element in the table or by
+assigning it to the `command` key:
+>lua
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mapping_options = {
+            noremap = true,
+            nowait = false,
+         },
+         mappings = {
+           ["?"] = {
+             function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             desc = "print name",
+             nowait = true
+           },
+           ["i"] = {
+             command = function(state)
+               local node = state.tree:get_node()
+               print(node.name)
+             end,
+             desc = "print name",
+             nowait = true,
+           },
+           ["o"] = {
+             command = "open",
+             nowait = true
+           },
+           ["O"] = {
+             "open",
+             nowait = true
+           },
+         }
+       }
+     }
+   })
+<
+See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
+are enabled by default.
+
+CUSTOM MAPPINGS WITH CONFIG               *neo-tree-custom-mappings-config*
+
+Some mappings may accept an optional `config` table to control it's behavior.
+When that is the case, the command is specified using the table syntax, and
+the config options are in a table bound to the `config` key:
+>lua
+   require("neo-tree").setup({
+     filesystem = {
+       window = {
+         mappings = {
+           ["a"] = {
+             "add",
+             nowait = true
+             config = {
+               show_path = "none" -- "none", "relative", "absolute"
+             }
+           },
+         }
+       }
+     }
+   })
+<
+When the `config` key is used, it is added to the `state` argument that is
+passed to the command function:
+>lua
+    M.add = function(state, callback)
+      local show_path = state.config.show_path
+      ...
+<
 
 CUSTOM COMMANDS                                       *neo-tree-custom-commands*
 
@@ -516,113 +686,6 @@ sources. If you need it you can then override it in a specific source.
 Now when pressing `<C-c>` in 'buffers' or 'git_status' it will print "Hello world",
 but in 'filesystem' it will print "Hello inside filesystem".
 
-CUSTOM MAPPINGS WITH VISUAL MODE
-
-If you want to create a mapping that supports visual mode, the way to do that
-is to add a second command where the name is the same as the normal mode
-command, but with `_visual` added to the end. Any mapping for this command will
-then work in either normal or visual mode.
-
-The `_visual` version of the command will be called with a second argument
-which is a list of the nodes that were selected when the command was called.
-
-For example, this is how the built-in `delete` command is defined:
-
->lua
-    M.delete = function(state, callback)
-      local tree = state.tree
-      local node = tree:get_node()
-      fs_actions.delete_node(node.path, callback)
-    end
-
-    M.delete_visual = function(state, selected_nodes, callback)
-      local paths_to_delete = {}
-      for _, node_to_delete in pairs(selected_nodes) do
-        table.insert(paths_to_delete, node_to_delete.path)
-      end
-      fs_actions.delete_nodes(paths_to_delete, callback)
-    end
-<
-
-CUSTOM MAPPINGS WITH ARGUMENTS
-
-If you want to include options for your mappings, such as `nowait`, you can
-set this for all mappings using the `mapping_options` key, or on individual
-mappings by specifying them as a table that consists of the command and any
-options you want to use. If both are specified, the mapping merges with and
-overrides the global `mapping_options`
-
-The command can be either the string name of a built-in command, or a
-function, and is specified either as the first element in the table or by
-assigning it to the `command` key:
->lua
-   require("neo-tree").setup({
-     filesystem = {
-       window = {
-         mapping_options = {
-            noremap = true,
-            nowait = false,
-         },
-         mappings = {
-           ["?"] = {
-             function(state)
-               local node = state.tree:get_node()
-               print(node.name)
-             end,
-             nowait = true
-           },
-           ["i"] = {
-             command = function(state)
-               local node = state.tree:get_node()
-               print(node.name)
-             end,
-             nowait = true
-           },
-           ["o"] = {
-             command = "open",
-             nowait = true
-           },
-           ["O"] = {
-             "open",
-             nowait = true
-           },
-         }
-       }
-     }
-   })
-<
-See |:map-arguments| for possible values to include. "buffer" and "nnoremap"
-are enabled by default.
-
-CUSTOM MAPPINGS WITH CONFIG
-
-Some mappings may accept an optional `config` table to control it's behavior.
-When that is the case, the command is specified using the table syntax, and
-the config options are in a table bound to the `config` key:
->lua
-   require("neo-tree").setup({
-     filesystem = {
-       window = {
-         mappings = {
-           ["a"] = {
-             "add",
-             nowait = true
-             config = {
-               show_path = "none" -- "none", "relative", "absolute"
-             }
-           },
-         }
-       }
-     }
-   })
-<
-When the `config` key is used, it is added to the `state` argument that is
-passed to the command function:
->lua
-    M.add = function(state, callback)
-      local show_path = state.config.show_path
-      ...
-<
 
 ================================================================================
 CONFIGURATION                                                                  ~
@@ -983,18 +1046,20 @@ the following properties:
 >lua
     require("neo-tree").setup({
       default_component_configs = {
-        symbols = {
-          -- Change type
-          added     = "✚",
-          deleted   = "✖",
-          modified  = "",
-          renamed   = "󰁕",
-          -- Status type
-          untracked = "",
-          ignored   = "",
-          unstaged  = "󰄱",
-          staged    = "",
-          conflict  = "",
+        git_status = {
+          symbols = {
+            -- Change type
+            added     = "✚",
+            deleted   = "✖",
+            modified  = "",
+            renamed   = "󰁕",
+            -- Status type
+            untracked = "",
+            ignored   = "",
+            unstaged  = "󰄱",
+            staged    = "",
+            conflict  = "",
+          }
         }
       }
     })
@@ -1016,18 +1081,20 @@ The following config will remove those change type symbols:
 >lua
     require("neo-tree").setup({
       default_component_configs = {
-        symbols = {
-          -- Change type
-          added     = "",
-          deleted   = "",
-          modified  = "",
-          renamed   = "",
-          -- Status type
-          untracked = "",
-          ignored   = "",
-          unstaged  = "󰄱",
-          staged    = "",
-          conflict  = "",
+        git_status = {
+          symbols = {
+            -- Change type
+            added     = "",
+            deleted   = "",
+            modified  = "",
+            renamed   = "",
+            -- Status type
+            untracked = "",
+            ignored   = "",
+            unstaged  = "󰄱",
+            staged    = "",
+            conflict  = "",
+          }
         }
       }
     })
@@ -1174,7 +1241,7 @@ FILE NESTING                                             *neo-tree-file-nesting*
 
 By default, file nesting is disabled since the `nesting_rules` table is empty.
 To enable this feature, fill in the `nesting_rules` table with the following
-structure:
+structure to match files based on their extensions:
 >lua
     require("neo-tree").setup({
       nesting_rules = {
@@ -1187,7 +1254,54 @@ This will render:
     FILENAME.js
         FILENAME.js.map
 
+A more advanced usage are rules with patterns. Those can be mixed with file
+extension based rules. In this case the rule key is not evaluated but a 
+pattern which is defined in a subkey. The pattern is a Lua pattern and can 
+have captures which can be used for file matching via globs.
+If the matching should be case insensitive, add an option ignore_case to the 
+config:
+>lua
+    require("neo-tree").setup({
+      nesting_rules = {
+        ["package.json"] = {
+          pattern = "^package%.json$",             -- <-- Lua pattern
+          files = { "package-lock.json", "yarn*" } -- <-- glob pattern
+        },
+        ["go"] = {
+          pattern = "(.*)%.go$",    -- <-- Lua pattern with capture
+          files = { "%1_test.go" }, -- <-- glob pattern with capture
+        },
+        ["js-extended"] = {
+          pattern = "(.+)%.js$",
+          files = { "%1.js.map", "%1.min.js", "%1.d.ts" },
+        },
+        ["docker"] = {
+            pattern = "^dockerfile$",
+            ignore_case = true,
+            files = { ".dockerignore", "docker-compose.*", "dockerfile*" }, 
+        }
+      }
+    })
 <
+This will render:
+>
+    FILENAME.js
+        FILENAME.js.map
+        FILENAME.min.js
+        FILENAME.d.ts
+
+    FILENAME.go
+        FILENAME_test.go
+
+    package.json
+        package-lock.json
+        yarn.lock
+
+    Dockerfile
+        .dockerignore
+        docker-compose.yml
+<
+
 The default mapping to expand/collapse nested files is <space>.
 
 
@@ -1228,6 +1342,8 @@ NeoTreeExpander           Used for collapsed/expanded icons.
 NeoTreeNormal             |hl-Normal| override in Neo-tree window.
 NeoTreeNormalNC           |hl-NormalNC| override in Neo-tree window.
 NeoTreeSignColumn         |hl-SignColumn| override in Neo-tree window.
+NeoTreeStats              Used for "stat" columns like size, last modified, etc.
+NeoTreeStatsHeader        Used for the header (top line) of the above columns.
 NeoTreeStatusLine         |hl-StatusLine| override in Neo-tree window.
 NeoTreeStatusLineNC       |hl-StatusLineNC| override in Neo-tree window.
 NeoTreeVertSplit          |hl-VertSplit| override in Neo-tree window.

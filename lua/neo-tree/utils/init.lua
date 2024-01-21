@@ -1,13 +1,16 @@
 local vim = vim
 local log = require("neo-tree.log")
+local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
-local ffi = require("ffi")
+local ffi_available, ffi = pcall(require, "ffi")
 
 local FILE_ATTRIBUTE_HIDDEN = 0x2
 
-ffi.cdef([[
-int GetFileAttributesA(const char *path);
-]])
+if ffi_available then
+  ffi.cdef([[
+  int GetFileAttributesA(const char *path);
+  ]])
+end
 
 -- Backwards compatibility
 table.pack = table.pack or function(...)
@@ -32,20 +35,25 @@ local diag_severity_to_string = function(severity)
 end
 
 local tracked_functions = {}
+---@enum NeotreeDebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
+---@enum NeotreeDebounceAction
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
   COMPLETE_ASYNC_JOB = 2,
 }
 
-local defer_function
--- Part of debounce. Moved out of the function to eliminate memory leaks.
-defer_function = function(id, frequency_in_ms, strategy, action)
+---Part of debounce. Moved out of the function to eliminate memory leaks.
+---@param id string Identifier for the debounce group, such as the function name.
+---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
+---@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
     local current_data = tracked_functions[id]
@@ -69,7 +77,8 @@ end
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy number The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -116,8 +125,8 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   if type(fn) == "function" then
     success, result = pcall(fn)
   end
-  fn_data.fn = nil
   fn = nil
+  fn_data.fn = fn
 
   if not success then
     log.error("debounce ", id, " error: ", result)
@@ -202,39 +211,89 @@ M.find_buffer_by_name = function(name)
   return -1
 end
 
----Gets diagnostic severity counts for all files
----@return table table { file_path = { Error = int, Warning = int, Information = int, Hint = int, Unknown = int } }
+---Converts a filesize from libuv.stats into a human readable string with appropriate units.
+---@param size any
+---@return string
+M.human_size = function(size)
+  local human = filesize(size, { output = "string" })
+  ---@cast human string
+  return human
+end
+
+---Gets non-zero diagnostics counts for each open file and each ancestor directory.
+---severity_number and severity_string refer to the highest severity with
+---non-zero diagnostics count.
+---Entry is nil if all counts are 0
+---@return table table
+---{ [file_path] = {
+---    severity_number = int,
+---    severity_string = string,
+---    Error = int or nil,
+---    Warn = int or nil,
+---    Info = int or nil
+---    Hint = int or nil,
+---  } or nil }
 M.get_diagnostic_counts = function()
-  local d = vim.diagnostic.get()
   local lookup = {}
-  for _, diag in ipairs(d) do
-    if diag.source == "Lua Diagnostics." and diag.message == "Undefined global `vim`." then
-      -- ignore this diagnostic
-    else
-      local success, file_name = pcall(vim.api.nvim_buf_get_name, diag.bufnr)
-      if success then
-        local sev = diag_severity_to_string(diag.severity)
-        if sev then
-          local entry = lookup[file_name] or { severity_number = 4 }
-          entry[sev] = (entry[sev] or 0) + 1
-          entry.severity_number = math.min(entry.severity_number, diag.severity)
-          entry.severity_string = diag_severity_to_string(entry.severity_number)
-          lookup[file_name] = entry
+
+  for ns, _ in pairs(vim.diagnostic.get_namespaces()) do
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      local success, file_name = pcall(vim.api.nvim_buf_get_name, bufnr)
+      -- TODO, remove is_disabled nil check when dropping support for 0.8
+      if
+        success and vim.diagnostic.is_disabled == nil or not vim.diagnostic.is_disabled(bufnr, ns)
+      then
+        for severity, _ in ipairs(vim.diagnostic.severity) do
+          local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
+
+          if #diagnostics > 0 then
+            local severity_string = diag_severity_to_string(severity)
+            -- Get or create the entry for this file
+            local entry = lookup[file_name]
+            if entry == nil then
+              entry = {
+                severity_number = severity,
+                severity_string = severity_string,
+              }
+              lookup[file_name] = entry
+            end
+            -- Set the count for this diagnostic type
+            if severity_string ~= nil then
+              entry[severity_string] = #diagnostics
+            end
+
+            -- Set the overall severity to the most severe so far
+            -- Error = 1, Warn = 2, Info = 3, Hint = 4
+            if severity < entry.severity_number then
+              entry.severity_number = severity
+              entry.severity_string = severity_string
+            end
+          end
         end
       end
     end
   end
 
-  for file_name, entry in pairs(lookup) do
+  for file_name, file_entry in pairs(lookup) do
     -- Now bubble this status up to the parent directories
     local parts = M.split(file_name, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
     M.reduce(parts, "", function(acc, part)
       local path = (M.is_windows and acc == "") and part or M.path_join(acc, part)
-      local path_entry = lookup[path] or { severity_number = 4 }
-      path_entry.severity_number = math.min(path_entry.severity_number, entry.severity_number)
-      path_entry.severity_string = diag_severity_to_string(path_entry.severity_number)
-      lookup[path] = path_entry
+
+      if file_entry.severity_number then
+        if not lookup[path] then
+          lookup[path] = {
+            severity_number = file_entry.severity_number,
+            severity_string = file_entry.severity_string,
+          }
+        else -- lookup[path].severity_number ~= nil
+          local min_severity = math.min(lookup[path].severity_number, file_entry.severity_number)
+          lookup[path].severity_number = min_severity
+          lookup[path].severity_string = diag_severity_to_string(min_severity)
+        end
+      end
+
       return path
     end)
   end
@@ -310,6 +369,42 @@ M.get_inner_win_width = function(winid)
   else
     log.error("Could not get window info for window", winid)
   end
+end
+
+local stat_providers = {
+  default = function(node)
+    return vim.loop.fs_stat(node.path)
+  end,
+}
+
+--- Gets the statics for a node in the file system. The `stat` object will be cached
+--- for the lifetime of the node.
+---
+---@param node table The Nui TreeNode node to get the stats for.
+---@return StatTable | table
+---
+---@class StatTime
+--- @field sec number
+---
+---@class StatTable
+--- @field birthtime StatTime
+--- @field mtime StatTime
+--- @field size number
+M.get_stat = function(node)
+  if node.stat == nil then
+    local provider = stat_providers[node.stat_provider or "default"]
+    local success, stat = pcall(provider, node)
+    node.stat = success and stat or {}
+  end
+  return node.stat
+end
+
+---Register a function to provide stats for a node.
+---@param name string The name of the stat provider.
+---@param func function The function to call to get the stats.
+M.register_stat_provider = function(name, func)
+  stat_providers[name] = func
+  log.debug("Registered stat provider", name)
 end
 
 ---Handles null coalescing into a table at any depth.
@@ -554,7 +649,7 @@ end
 ---@param bufnr number|nil The buffer number to open
 M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
-    -- If the file is already open, switch to it.
+  -- If the file is already open, switch to it.
   bufnr = bufnr or M.find_buffer_by_name(path)
   if bufnr <= 0 then
     bufnr = nil
@@ -666,6 +761,11 @@ M.normalize_path = function(path)
   if M.is_windows then
     -- normalize the drive letter to uppercase
     path = path:sub(1, 1):upper() .. path:sub(2)
+    -- Turn mixed forward and back slashes into all forward slashes
+    -- using NeoVim's logic
+    path = vim.fs.normalize(path)
+    -- Now use backslashes, as expected by the rest of Neo-Tree's code
+    path = path:gsub("/", M.path_separator)
   end
   return path
 end
@@ -903,7 +1003,7 @@ end
 M.escape_path = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    escaped_path = escaped_path:gsub("\\", "/")
+    escaped_path = escaped_path:gsub("\\", "/"):gsub("/ ", " ")
   end
   return escaped_path
 end
@@ -923,10 +1023,11 @@ end
 ---@param path string
 ---@return boolean
 function M.is_hidden(path)
-  if not M.is_windows then
+  if ffi_available and M.is_windows then
+    return bit.band(ffi.C.GetFileAttributesA(path), FILE_ATTRIBUTE_HIDDEN) ~= 0
+  else
     return false
   end
-  return bit.band(ffi.C.GetFileAttributesA(path), FILE_ATTRIBUTE_HIDDEN) ~= 0
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.

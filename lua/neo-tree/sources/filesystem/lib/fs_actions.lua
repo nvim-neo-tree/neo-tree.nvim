@@ -16,12 +16,36 @@ local Path = require("plenary").path
 
 local M = {}
 
+local function find_replacement_buffer(for_buf)
+  local bufs = vim.api.nvim_list_bufs()
+
+  -- make sure the alternate buffer is at the top of the list
+  local alt = vim.fn.bufnr("#")
+  if alt ~= -1 and alt ~= for_buf then
+    table.insert(bufs, 1, alt)
+  end
+
+  -- find the first valid real file buffer
+  for _, buf in ipairs(bufs) do
+    if buf ~= for_buf then
+      local is_valid = vim.api.nvim_buf_is_valid(buf)
+      if is_valid then
+        local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+        if buftype == "" then
+          return buf
+        end
+      end
+    end
+  end
+  return -1
+end
+
 local function clear_buffer(path)
   local buf = utils.find_buffer_by_name(path)
   if buf < 1 then
     return
   end
-  local alt = vim.fn.bufnr("#")
+  local alt = find_replacement_buffer(buf)
   -- Check all windows to see if they are using the buffer
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
@@ -369,7 +393,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
           local open_mode = loop.constants.O_CREAT
             + loop.constants.O_WRONLY
             + loop.constants.O_TRUNC
-          local fd = loop.fs_open(destination, "w", open_mode)
+          local fd = loop.fs_open(destination, open_mode, 420)
           if not fd then
             if not loop.fs_stat(destination) then
               api.nvim_err_writeln("Could not create file " .. destination)
@@ -378,7 +402,6 @@ M.create_node = function(in_directory, callback, using_root_directory)
               log.warn("Failed to complete file creation of " .. destination)
             end
           else
-            loop.fs_chmod(destination, 420)
             loop.fs_close(fd)
           end
         end

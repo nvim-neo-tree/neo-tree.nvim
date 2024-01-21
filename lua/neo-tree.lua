@@ -1,163 +1,20 @@
 local vim = vim
 local utils = require("neo-tree.utils")
-local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
-local manager = require("neo-tree.sources.manager")
-local setup = require("neo-tree.setup")
-
--- If you add a new source, you need to add it to the sources table.
--- Each source should have a defaults module that contains the default values
--- for the source config, and a setup function that takes that config.
-local sources = {
-  "filesystem",
-  "buffers",
-  "git_status",
-}
-
 local M = {}
 
-local check_source = function(source_name)
-  if not utils.truthy(source_name) then
-    source_name = M.config.default_source
-  end
-  local success, result = pcall(require, "neo-tree.sources." .. source_name)
-  if not success then
-    error("Source " .. source_name .. " could not be loaded: ", result)
-  end
-  return source_name
-end
-
-local get_position = function(source_name)
-  local pos = utils.get_value(M, "config." .. source_name .. ".window.position", "left", false)
-  return pos
+-- DEPRECATED: to be removed in a future release, use this instead:
+-- ```
+-- require("neo-tree.command").execute({ action = "close" })
+-- ```
+M.close_all = function()
+  require("neo-tree.command").execute({ action = "close" })
 end
 
 M.ensure_config = function()
   if not M.config then
     M.setup({ log_to_file = false }, true)
   end
-end
-
---DEPRECATED in v2.x
-M.close_all_except = function(source_name)
-  -- this entire function is faulty now that position can be overriden at runtime
-  source_name = check_source(source_name)
-  local target_pos = get_position(source_name)
-  for _, name in ipairs(sources) do
-    if name ~= source_name then
-      local pos = utils.get_value(M, "config." .. name .. ".window.position", "left", false)
-      if pos == target_pos then
-        manager.close(name)
-      end
-    end
-  end
-  renderer.close_all_floating_windows()
-end
-
---DEPRECATED in v2.x
-M.close = manager.close
-
---DEPRECATED in v2.x, use manager.close_all()
-M.close_all = function(at_position)
-  renderer.close_all_floating_windows()
-  if type(at_position) == "string" and at_position > "" then
-    for _, name in ipairs(sources) do
-      local pos = get_position(name)
-      if pos == at_position then
-        manager.close(name)
-      end
-    end
-  else
-    for _, name in ipairs(sources) do
-      manager.close(name)
-    end
-  end
-end
-
---DEPRECATED in v2.x, use commands.execute()
-M.float = function(source_name, toggle_if_open)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if toggle_if_open then
-    if renderer.close_floating_window(source_name) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-  renderer.close_all_floating_windows()
-  manager.close(source_name) -- in case this source is open in a sidebar
-  manager.float(source_name)
-end
-
---DEPRECATED in v2.x, use commands.execute()
-M.focus = function(source_name, close_others, toggle_if_open)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if get_position(source_name) == "current" then
-    M.show_in_split(source_name, toggle_if_open)
-    return
-  end
-
-  if toggle_if_open then
-    if manager.close(source_name) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-  if close_others == nil then
-    close_others = true
-  end
-  if close_others then
-    M.close_all_except(source_name)
-  end
-  manager.focus(source_name)
-end
-
---DEPRECATED in v2.x, use commands.execute()
-M.reveal_current_file = function(source_name, toggle_if_open, force_cwd)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if get_position(source_name) == "current" then
-    M.reveal_in_split(source_name, toggle_if_open)
-    return
-  end
-  if toggle_if_open then
-    if manager.close(source_name) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-  manager.reveal_current_file(source_name, nil, force_cwd)
-end
-
---DEPRECATED in v2.x, use commands.execute()
-M.reveal_in_split = function(source_name, toggle_if_open)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if toggle_if_open then
-    local state = manager.get_state(source_name, nil, vim.api.nvim_get_current_win())
-    if renderer.close(state) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-  --TODO: if we are currently in a sidebar, don't replace it with a split style
-  manager.reveal_in_split(source_name)
-end
-
---DEPRECATED in v2.x, use commands.execute()
-M.show_in_split = function(source_name, toggle_if_open)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if toggle_if_open then
-    local state = manager.get_state(source_name, nil, vim.api.nvim_get_current_win())
-    if renderer.close(state) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-  --TODO: if we are currently in a sidebar, don't replace it with a split style
-  manager.show_in_split(source_name)
 end
 
 M.get_prior_window = function(ignore_filetypes)
@@ -190,7 +47,7 @@ M.get_prior_window = function(ignore_filetypes)
 end
 
 M.paste_default_config = function()
-  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils.lua$")
+  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$")
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
   local lines = vim.fn.readfile(config_path)
   if lines == nil then
@@ -210,31 +67,6 @@ M.paste_default_config = function()
   vim.schedule(function()
     vim.cmd("normal! `[v`]=")
   end)
-end
-
-M.buffer_enter_event = setup.buffer_enter_event
-M.win_enter_event = setup.win_enter_event
-
---DEPRECATED in v2.x
---BREAKING CHANGE: Removed the do_not_focus and close_others options in 2.0
---M.show = function(source_name, do_not_focus, close_others, toggle_if_open)
-M.show = function(source_name, toggle_if_open)
-  M.ensure_config()
-  source_name = check_source(source_name)
-  if get_position(source_name) == "current" then
-    M.show_in_split(source_name, toggle_if_open)
-    return
-  end
-
-  if toggle_if_open then
-    if manager.close(source_name) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-
-  M.close_all_except(source_name)
-  manager.show(source_name)
 end
 
 M.set_log_level = function(level)

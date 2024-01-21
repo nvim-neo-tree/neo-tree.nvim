@@ -13,7 +13,7 @@ local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
 local M = {
   name = "filesystem",
-  display_name = " 󰉓 Files "
+  display_name = " 󰉓 Files ",
 }
 
 local wrap = function(func)
@@ -24,15 +24,9 @@ local get_state = function(tabid)
   return manager.get_state(M.name, tabid)
 end
 
--- TODO: DEPRECATED in 1.19, remove in 2.0
--- Leaving this here for now because it was mentioned in the help file.
-M.reveal_current_file = function()
-  log.warn("DEPRECATED: use `neotree.sources.manager.reveal_current_file('filesystem')` instead")
-  return manager.reveal_current_file(M.name)
-end
-
 local follow_internal = function(callback, force_show, async)
   log.trace("follow called")
+  local state = get_state()
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return false
   end
@@ -42,7 +36,6 @@ local follow_internal = function(callback, force_show, async)
   end
   ---@cast path_to_reveal string
 
-  local state = get_state()
   if state.current_position == "float" then
     return false
   end
@@ -177,10 +170,11 @@ end
 ---@param path_to_reveal string Node to focus after the items are loaded.
 ---@param callback function Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
+  state._ready = false
   log.trace("navigate", path, path_to_reveal, async)
   utils.debounce("filesystem_navigate", function()
     M._navigate_internal(state, path, path_to_reveal, callback, async)
-  end, utils.debounce_strategy.CALL_FIRST_AND_LAST, 100)
+  end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
 end
 
 M.reset_search = function(state, refresh, open_current_node)
@@ -258,6 +252,10 @@ M.show_new_children = function(state, node_or_path)
   end
 
   M.navigate(state, nil, node_or_path)
+end
+
+M.focus_destination_children = function(state, move_from, destination)
+  return M.show_new_children(state, destination)
 end
 
 ---Configures the plugin, should be called before the plugin is used.
@@ -429,13 +427,13 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
 end
 
 M.prefetcher = {
-  prefetch = function (state, node)
+  prefetch = function(state, node)
     log.debug("Running fs prefetch for: " .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
   end,
-  should_prefetch = function (node)
+  should_prefetch = function(node)
     return not node.loaded
-  end
+  end,
 }
 
 return M

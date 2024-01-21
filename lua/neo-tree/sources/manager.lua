@@ -517,7 +517,11 @@ M.refresh = function(source_name, callback)
   end
 end
 
+--- DEPRECATED: To be removed in 4.0
+--- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
 M.reveal_current_file = function(source_name, callback, force_cwd)
+  log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]])
+
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
   state.current_position = nil
@@ -527,7 +531,6 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   -- (potentially) different position/node
   state.position.is.restorable = false
 
-  require("neo-tree").close_all_except(source_name)
   local path = M.get_path_to_reveal()
   if not path then
     M.focus(source_name)
@@ -560,7 +563,11 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   end
 end
 
+--- DEPRECATED: To be removed in 4.0
+--- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
 M.reveal_in_split = function(source_name, callback)
+  log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]])
+
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "current"
   local path_to_reveal = M.get_path_to_reveal()

@@ -11,6 +11,9 @@ M.setup = function(all_source_names)
   local source_names = utils.table_copy(all_source_names)
   table.insert(source_names, "migrations")
 
+  -- A special source referring to the last used source.
+  table.insert(source_names, "last")
+
   -- For lists, the first value is the default value.
   local arguments = {
     action = {
@@ -42,6 +45,7 @@ M.setup = function(all_source_names)
     toggle = { type = M.FLAG },
     reveal = { type = M.FLAG },
     reveal_force_cwd = { type = M.FLAG },
+    selector = { type = M.FLAG },
   }
 
   local arg_type_lookup = {}
@@ -79,6 +83,7 @@ M.setup = function(all_source_names)
 end
 
 M.resolve_path = function(path, validate_type)
+  path = vim.fs.normalize(path)
   local expanded = vim.fn.expand(path)
   local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
