@@ -30,7 +30,7 @@ local follow_internal = function(callback, force_show, async)
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return false
   end
-  local path_to_reveal = manager.get_path_to_reveal()
+  local path_to_reveal = utils.normalize_path(manager.get_path_to_reveal())
   if not utils.truthy(path_to_reveal) then
     return false
   end
@@ -41,6 +41,8 @@ local follow_internal = function(callback, force_show, async)
   end
   if not state.path then
     return false
+  else
+    state.path = utils.normalize_path(state.path)
   end
   local window_exists = renderer.window_exists(state)
   if window_exists then
