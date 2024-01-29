@@ -91,12 +91,7 @@ M.confirm = function(message, callback)
     input.prompt_type = "confirm"
     M.show_input(input)
   else
-    local opts = {
-      prompt = message .. " y/n: ",
-    }
-    vim.ui.input(opts, function(value)
-      callback(value == "y" or value == "Y")
-    end)
+    callback(vim.fn.confirm(message, "&y[Y]\n&n[N]"))
   end
 end
 
