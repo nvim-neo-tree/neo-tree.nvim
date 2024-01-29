@@ -41,8 +41,6 @@ local follow_internal = function(callback, force_show, async)
   end
   if not state.path then
     return false
-  else
-    state.path = utils.normalize_path(state.path)
   end
   local window_exists = renderer.window_exists(state)
   if window_exists then
@@ -122,6 +120,8 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     log.debug("navigate_internal: path is nil, using cwd")
     path = manager.get_cwd(state)
   end
+  path = utils.normalize_path(path)
+  state.path = utils.normalize_path(state.path)
   if path ~= state.path then
     log.debug("navigate_internal: path changed from ", state.path, " to ", path)
     state.path = path
