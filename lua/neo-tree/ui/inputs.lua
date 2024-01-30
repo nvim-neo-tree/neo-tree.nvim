@@ -91,7 +91,7 @@ M.confirm = function(message, callback)
     input.prompt_type = "confirm"
     M.show_input(input)
   else
-    callback(vim.fn.confirm(message, "&y[Y]\n&n[N]"))
+    callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
   end
 end
 
