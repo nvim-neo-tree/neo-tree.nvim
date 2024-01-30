@@ -30,7 +30,7 @@ local follow_internal = function(callback, force_show, async)
   if vim.bo.filetype == "neo-tree" or vim.bo.filetype == "neo-tree-popup" then
     return false
   end
-  local path_to_reveal = manager.get_path_to_reveal()
+  local path_to_reveal = utils.normalize_path(manager.get_path_to_reveal())
   if not utils.truthy(path_to_reveal) then
     return false
   end
@@ -120,6 +120,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     log.debug("navigate_internal: path is nil, using cwd")
     path = manager.get_cwd(state)
   end
+  path = utils.normalize_path(path)
   if path ~= state.path then
     log.debug("navigate_internal: path changed from ", state.path, " to ", path)
     state.path = path
