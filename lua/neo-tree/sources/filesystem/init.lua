@@ -121,7 +121,6 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     path = manager.get_cwd(state)
   end
   path = utils.normalize_path(path)
-  state.path = utils.normalize_path(state.path)
   if path ~= state.path then
     log.debug("navigate_internal: path changed from ", state.path, " to ", path)
     state.path = path
