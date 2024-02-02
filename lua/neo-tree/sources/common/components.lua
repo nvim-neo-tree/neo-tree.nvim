@@ -459,7 +459,7 @@ M.indent = function(config, node, state)
   return indent
 end
 
-local get_header = function (state, label, size)
+local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
@@ -468,12 +468,12 @@ local get_header = function (state, label, size)
   return string.format("%" .. size .. "s  ", label)
 end
 
-M.file_size = function (config, node, state)
+M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Size", 12),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -491,7 +491,7 @@ M.file_size = function (config, node, state)
 
   return {
     text = string.format("%12s  ", text),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -506,7 +506,7 @@ local file_time = function(config, node, state, stat_field)
     end
     return {
       text = get_header(state, label, 20),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -516,7 +516,7 @@ local file_time = function(config, node, state, stat_field)
   local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
   return {
     text = string.format("%20s  ", display),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -539,19 +539,19 @@ M.symlink_target = function(config, node, state)
   end
 end
 
-M.type = function (config, node, state)
+M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Type", 10),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
   return {
     text = string.format("%10s  ", text),
-    highlight = highlights.FILE_STATS
+    highlight = highlights.FILE_STATS,
   }
 end
 

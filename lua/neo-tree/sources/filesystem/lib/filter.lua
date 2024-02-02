@@ -78,7 +78,9 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     local a_score = result_scores[a.path]
     local b_score = result_scores[b.path]
     if a_score == nil or b_score == nil then
-      log.debug(string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score))
+      log.debug(
+        string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score)
+      )
       local config = require("neo-tree").config
       if config.sort_function ~= nil then
         return config.sort_function(a, b)
@@ -222,9 +224,14 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
       local cmd = cmds[cmd_name]
       if cmd then
-        input:map("i", lhs, create_input_mapping_handle(cmd, state, scroll_padding), { noremap = true })
+        input:map(
+          "i",
+          lhs,
+          create_input_mapping_handle(cmd, state, scroll_padding),
+          { noremap = true }
+        )
       else
-        log.warn(string.format('Invalid command in fuzzy_finder_mappings: %s = %s', lhs, cmd_name))
+        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
       end
     end
   end
