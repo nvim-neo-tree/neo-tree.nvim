@@ -1,5 +1,5 @@
----@class NeotreeTypes.state
+---@class NeotreeState
 ---@field TODO nil # Figure out the fields
 
----@class NeotreeTypes.node
+---@class NeotreeNode
 ---@field TODO nil # Figure out the fields

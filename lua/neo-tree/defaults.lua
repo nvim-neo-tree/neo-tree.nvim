@@ -1,4 +1,4 @@
----@class NeotreeTypes.config
+---@class NeotreeConfig
 ---If a user has a sources list it will replace this one.
 ---Only sources listed here will be loaded.
 ---You can also add an external source by adding it's name to this list.
@@ -20,7 +20,7 @@
 ---@field enable_cursor_hijack boolean|nil (false) If enabled neotree will keep the cursor on the first letter of the filename when moving in the tree.
 ---@field enable_normal_mode_for_inputs boolean|nil (false) Enable normal mode for input dialogs.
 ---@field git_status_async boolean|nil (true)
----@field git_status_async_options NeotreeTypes.config.git_status_async_options|nil ({}) These options are for people with VERY large git repos
+---@field git_status_async_options NeotreeConfig.git_status_async_options|nil ({}) These options are for people with VERY large git repos
 ---@field hide_root_node boolean|nil (false) Hide the root node.
 ---IF the root node is hidden, keep the indentation anyhow.
 ---This is needed if you use expanders because they render in the indent.
@@ -40,31 +40,31 @@
 ---@field sort_function NeotreeTypes.sort_function|nil (nil) uses a custom function for sorting files and directories in the tree
 ---@field use_popups_for_input boolean|nil (true) If false, inputs will use vim.ui.input() instead of custom floats.
 ---@field use_default_mappings boolean|nil (true)
----@field source_selector NeotreeTypes.config.source_selector|nil -- provides clickable tabs to switch between sources.
----@field default_component_configs NeotreeTypes.config.components|nil
+---@field source_selector NeotreeConfig.source_selector|nil -- provides clickable tabs to switch between sources.
+---@field default_component_configs NeotreeConfig.components|nil
 -- The renderer section provides the renderers that will be used to render the tree.
 -- The first level is the node type.
 -- For each node type, you can specify a list of components to render.
 -- Components are rendered in the order they are specified.
 -- The first field in each component is the name of the function to call.
 -- The rest of the fields are passed to the function as the "config" argument.
----@field renderers NeotreeTypes.config.renderers|nil
----@field commands NeotreeTypes.config.mappings|nil
----@field window NeotreeTypes.config.window|nil
----@field filesystem NeotreeTypes.config.filesystem|nil
----@field buffers NeotreeTypes.config.buffers|nil
----@field git_status NeotreeTypes.config.git_status|nil
----@field document_symbols NeotreeTypes.config.document_symbols|nil
----@field nesting_rules table<string, NeotreeTypes.config.nesting_rule>|nil
----@field event_handlers NeotreeTypes.config.event_handler[]|nil
+---@field renderers NeotreeConfig.renderers|nil
+---@field commands NeotreeConfig.mappings|nil
+---@field window NeotreeConfig.window|nil
+---@field filesystem NeotreeConfig.filesystem|nil
+---@field buffers NeotreeConfig.buffers|nil
+---@field git_status NeotreeConfig.git_status|nil
+---@field document_symbols NeotreeConfig.document_symbols|nil
+---@field nesting_rules table<string, NeotreeConfig.nesting_rule>|nil
+---@field event_handlers NeotreeConfig.event_handler[]|nil
 
----@alias NeotreeTypes.sort_function fun(a: NeotreeTypes.node, b: NeotreeTypes.node): boolean
----@alias NeotreeTypes.config.highlight string # Name of a highlight group
----@alias NeotreeTypes.config.wh integer|string|nil
----@alias NeotreeTypes.config.diagnostics_keys "hint"|"info"|"warn"|"error"
----@alias NeotreeTypes.config.components.align "left"|"right"
+---@alias NeotreeTypes.sort_function fun(a: NeotreeNode, b: NeotreeNode): boolean
+---@alias NeotreeConfig.highlight string # Name of a highlight group
+---@alias NeotreeConfig.wh integer|string|nil
+---@alias NeotreeConfig.diagnostics_keys "hint"|"info"|"warn"|"error"
+---@alias NeotreeConfig.components.align "left"|"right"
 
----@class NeotreeTypes.config.git_status_async_options
+---@class NeotreeConfig.git_status_async_options
 ---@field batch_size integer|nil (1000) how many lines of git status results to process at a time
 ---@field batch_delay integer|nil (10) delay in ms between batches. Spreads out the workload to let other processes run.
 ---How many lines of git status results to process. Anything after this will be dropped.
@@ -72,7 +72,7 @@
 ---@field max_lines integer|nil (10000)
 
 ---source_selector provides clickable tabs to switch between sources.
----@class NeotreeTypes.config.source_selector
+---@class NeotreeConfig.source_selector
 ---@field winbar boolean|nil (false) toggle to show selector on winbar
 ---@field statusline boolean|nil (false) toggle to show selector on statusline
 ---@field show_scrolled_off_parent_node boolean|nil (false) this will replace the tabs with the parent path of the top visible node when scrolled down.
@@ -98,11 +98,11 @@
 ----true  : |/    a    \/    b    \/    c    \|
 ----false : |     a    \/    b    \/    c     |
 ---@field show_separator_on_edge boolean|nil (false)
----@field highlight_tab NeotreeTypes.config.highlight|nil ("NeoTreeTabInactive")
----@field highlight_tab_active NeotreeTypes.config.highlight|nil ("NeoTreeTabActive")
----@field highlight_background NeotreeTypes.config.highlight|nil ("NeoTreeTabInactive")
----@field highlight_separator NeotreeTypes.config.highlight|nil ("NeoTreeTabSeparatorInactive")
----@field highlight_separator_active NeotreeTypes.config.highlight|nil ("NeoTreeTabSeparatorActive")
+---@field highlight_tab NeotreeConfig.highlight|nil ("NeoTreeTabInactive")
+---@field highlight_tab_active NeotreeConfig.highlight|nil ("NeoTreeTabActive")
+---@field highlight_background NeotreeConfig.highlight|nil ("NeoTreeTabInactive")
+---@field highlight_separator NeotreeConfig.highlight|nil ("NeoTreeTabSeparatorInactive")
+---@field highlight_separator_active NeotreeConfig.highlight|nil ("NeoTreeTabSeparatorActive")
 
 ---@alias NeotreeTypes.selector.content_layout
 ---|"start"  : |/ 󰓩 bufname     \/...
@@ -122,17 +122,17 @@
 ---@alias NeotreeTypes.selector.separator string|NeotreeTypes.selector.separator.table|nil
 ---@alias NeotreeTypes.selector.separator.table { left: string|nil, right: string|nil, override: string|nil }
 
----@class NeotreeTypes.config.components
----@field container NeotreeTypes.config.components.container|nil
----@field diagnostics NeotreeTypes.config.components.diagnostics|nil
----@field indent NeotreeTypes.config.components.indent|nil
----@field icon NeotreeTypes.config.components.icon|nil
----@field modified NeotreeTypes.config.components.modified|nil
----@field name NeotreeTypes.config.components.name|nil
----@field git_status NeotreeTypes.config.components.git_status|nil
----@field [NeotreeTypes.config.components.enum] NeotreeTypes.config.components.base|nil
+---@class NeotreeConfig.components
+---@field container NeotreeConfig.components.container|nil
+---@field diagnostics NeotreeConfig.components.diagnostics|nil
+---@field indent NeotreeConfig.components.indent|nil
+---@field icon NeotreeConfig.components.icon|nil
+---@field modified NeotreeConfig.components.modified|nil
+---@field name NeotreeConfig.components.name|nil
+---@field git_status NeotreeConfig.components.git_status|nil
+---@field [NeotreeConfig.components.enum] NeotreeConfig.components.base|nil
 
----@alias NeotreeTypes.config.components.enum
+---@alias NeotreeConfig.components.enum
 ---|"container"
 ---|"diagnostics"
 ---|"indent"
@@ -151,66 +151,66 @@
 ---|"kind_icon"
 ---|"kind_name"
 
----@class NeotreeTypes.config.components.base : { [1]: NeotreeTypes.config.components.enum }
+---@class NeotreeConfig.components.base : { [1]: NeotreeConfig.components.enum }
 ---@field enabled boolean|nil (true) You can set `enabled = false` for each of them individually
 ---@field required_width integer|nil (64) min width of window required to show this column
 ---@field zindex integer|nil
----@field content NeotreeTypes.config.components.base[]|nil
+---@field content NeotreeConfig.components.base[]|nil
 
----@class NeotreeTypes.config.components.container : NeotreeTypes.config.components.base
+---@class NeotreeConfig.components.container : NeotreeConfig.components.base
 ---@field enable_character_fade boolean|nil (true)
----@field width NeotreeTypes.config.wh|nil ("100%")
+---@field width NeotreeConfig.wh|nil ("100%")
 ---@field right_padding integer|nil (0)
 
----@class NeotreeTypes.config.components.diagnostics : NeotreeTypes.config.components.base
----@field symbols { [NeotreeTypes.config.diagnostics_keys]: string }|nil
----@field highlights { [NeotreeTypes.config.diagnostics_keys]: NeotreeTypes.config.highlight }|nil
+---@class NeotreeConfig.components.diagnostics : NeotreeConfig.components.base
+---@field symbols { [NeotreeConfig.diagnostics_keys]: string }|nil
+---@field highlights { [NeotreeConfig.diagnostics_keys]: NeotreeConfig.highlight }|nil
 
----@class NeotreeTypes.config.components.indent : NeotreeTypes.config.components.base
+---@class NeotreeConfig.components.indent : NeotreeConfig.components.base
 ---@field indent_size integer|nil (2)
 ---@field padding integer|nil (1)
 ---@field with_markers boolean|nil (true) indent guides
 ---@field indent_marker string|nil ("│")
 ---@field last_indent_marker string|nil ("└")
----@field highlight NeotreeTypes.config.highlight|nil ("NeoTreeIndentMarker")
+---@field highlight NeotreeConfig.highlight|nil ("NeoTreeIndentMarker")
 ---@field with_expanders boolean|nil (nil) expander config, needed for nesting files if nil and file nesting is enabled, will enable expanders
 ---@field expander_collapsed string|nil ("")
 ---@field expander_expanded string|nil ("")
----@field expander_highlight NeotreeTypes.config.highlight|nil ("NeoTreeExpander")
+---@field expander_highlight NeotreeConfig.highlight|nil ("NeoTreeExpander")
 
----@class NeotreeTypes.config.components.icon : NeotreeTypes.config.components.base
+---@class NeotreeConfig.components.icon : NeotreeConfig.components.base
 ---@field folder_closed string|nil ("")
 ---@field folder_open string|nil ("")
 ---@field folder_empty string|nil ("󰉖")
 ---@field folder_empty_open string|nil ("󰷏")
 ---@field default string|nil ("*") # Used as a fallback.
----@field highlight NeotreeTypes.config.highlight|nil ("NeoTreeFileIcon") # Used as a fallback.
+---@field highlight NeotreeConfig.highlight|nil ("NeoTreeFileIcon") # Used as a fallback.
 
----@class NeotreeTypes.config.components.modified : NeotreeTypes.config.components.base
+---@class NeotreeConfig.components.modified : NeotreeConfig.components.base
 ---@field symbol string|nil ("[+] ")
----@field highlight NeotreeTypes.config.highlight|nil ("NeoTreeModified")
+---@field highlight NeotreeConfig.highlight|nil ("NeoTreeModified")
 
----@class NeotreeTypes.config.components.name : NeotreeTypes.config.components.base
+---@class NeotreeConfig.components.name : NeotreeConfig.components.base
 ---@field trailing_slash boolean|nil (false)
----@field highlight_opened_files NeotreeTypes.config.components.name.highlight_opened_files|nil (false) Requires `enable_opened_markers = true`.
+---@field highlight_opened_files NeotreeConfig.components.name.highlight_opened_files|nil (false) Requires `enable_opened_markers = true`.
 ---@field use_git_status_colors boolean|nil (true)
----@field highlight NeotreeTypes.config.highlight|nil ("NeoTreeFileName")
+---@field highlight NeotreeConfig.highlight|nil ("NeoTreeFileName")
 
----@alias NeotreeTypes.config.components.name.highlight_opened_files
+---@alias NeotreeConfig.components.name.highlight_opened_files
 ---|true  # Hightlight only loaded files
 ---|false # Do nothing
 ---|"all" # Highlight both loaded and unloaded files
 
----@class NeotreeTypes.config.components.git_status : NeotreeTypes.config.components.base
----@field symbols { [NeotreeTypes.config.components.git_status.symbol_change|NeotreeTypes.config.components.git_status.symbol_status]: string }|nil
----@field align NeotreeTypes.config.components.align|nil ("right")
+---@class NeotreeConfig.components.git_status : NeotreeConfig.components.base
+---@field symbols { [NeotreeConfig.components.git_status.symbol_change|NeotreeConfig.components.git_status.symbol_status]: string }|nil
+---@field align NeotreeConfig.components.align|nil ("right")
 
----@alias NeotreeTypes.config.components.git_status.symbol_change "added" | "deleted" | "modified" | "renamed"
----@alias NeotreeTypes.config.components.git_status.symbol_status "untracked" | "ignored" | "unstaged" | "staged" | "conflict"
+---@alias NeotreeConfig.components.git_status.symbol_change "added" | "deleted" | "modified" | "renamed"
+---@alias NeotreeConfig.components.git_status.symbol_status "untracked" | "ignored" | "unstaged" | "staged" | "conflict"
 
----@alias NeotreeTypes.config.renderers { [string]: NeotreeTypes.config.components.base[] }
+---@alias NeotreeConfig.renderers { [string]: NeotreeConfig.components.base[] }
 
----@alias NeotreeTypes.config.window.position
+---@alias NeotreeConfig.window.position
 ---|"left"
 ---|"right"
 ---|"top"
@@ -218,10 +218,10 @@
 ---|"float"
 ---|"current"
 
----@class NeotreeTypes.config.window
----@field position NeotreeTypes.config.window.position|nil ("left") left, right, top, bottom, float, current
----@field width NeotreeTypes.config.wh|nil (40) applies to left and right positions
----@field height NeotreeTypes.config.wh|nil (15) applies to top and bottom positions
+---@class NeotreeConfig.window
+---@field position NeotreeConfig.window.position|nil ("left") left, right, top, bottom, float, current
+---@field width NeotreeConfig.wh|nil (40) applies to left and right positions
+---@field height NeotreeConfig.wh|nil (15) applies to top and bottom positions
 ---@field auto_expand_width boolean|nil (false) expand the window when file exceeds the window width. does not work with position = "float"
 ---@field same_level boolean|nil (false) Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
 ---Affects how nodes get inserted into the tree during creation/pasting/moving of files if the node under the cursor is a directory:
@@ -238,24 +238,24 @@
 ---  position = "50%", -- 50% means center it
 ---@field popup nui_popup_options|nil
 ---Mappings for tree window. See `:h neo-tree-mappings` for a list of built-in commands.
----@field mappings NeotreeTypes.config.mappings|nil
----@field fuzzy_finder_mappings NeotreeTypes.config.mappings|nil ({}) define keymaps for filter popup window in fuzzy_finder_mode
+---@field mappings NeotreeConfig.mappings|nil
+---@field fuzzy_finder_mappings NeotreeConfig.mappings|nil ({}) define keymaps for filter popup window in fuzzy_finder_mode
 
----@class NeotreeTypes.config.mapping_options
+---@class NeotreeConfig.mapping_options
 ---@field nowait boolean|nil (true) disable `nowait` if you have existing combos starting with this char that you want to use
 ---@field noremap boolean|nil (true)
 
----@alias NeotreeTypes.config.mapping_table { [1]: string, config: table<string, any> } | NeotreeTypes.config.mapping_options
----@alias NeotreeTypes.config.mapping_function fun(state: NeotreeTypes.state)
----@alias NeotreeTypes.config.mappings table<string, string | NeotreeTypes.config.mapping_table | NeotreeTypes.config.mapping_function>
+---@alias NeotreeConfig.mapping_table { [1]: string, config: table<string, any> } | NeotreeConfig.mapping_options
+---@alias NeotreeConfig.mapping_function fun(state: NeotreeState)
+---@alias NeotreeConfig.mappings table<string, string | NeotreeConfig.mapping_table | NeotreeConfig.mapping_function>
 
----@class NeotreeTypes.config.filesystem
----@field window NeotreeTypes.config.window|nil
----@field renderers NeotreeTypes.config.renderers|nil
----@field async_directory_scan NeotreeTypes.config.filesystem.async_directory_scan|nil ("auto")
----@field scan_mode NeotreeTypes.config.filesystem.scan_mode|nil ("shallow")
+---@class NeotreeConfig.filesystem
+---@field window NeotreeConfig.window|nil
+---@field renderers NeotreeConfig.renderers|nil
+---@field async_directory_scan NeotreeConfig.filesystem.async_directory_scan|nil ("auto")
+---@field scan_mode NeotreeConfig.filesystem.scan_mode|nil ("shallow")
 ---@field bind_to_cwd boolean|nil (true) true creates a 2-way binding between vim's cwd and neo-tree's root
----@field cwd_target NeotreeTypes.config.filesystem.cwd_target|nil ({})
+---@field cwd_target NeotreeConfig.filesystem.cwd_target|nil ({})
 ---check gitignore status for files/directories when searching
 ---setting this to `false` will speed up searches, but gitignored
 ---items won't be marked if they are visible.
@@ -265,27 +265,27 @@
 ---so `fi init` will match: `./sources/filesystem/init.lua`
 ---@field find_by_full_path_words boolean|nil (false)
 ---@field find_command string|nil (nil) this is determined automatically, you probably don't need to set it
----@field find_args NeotreeTypes.config.filesystem.find_args|nil (nil) List or a func that returns args for `find_command`
+---@field find_args NeotreeConfig.filesystem.find_args|nil (nil) List or a func that returns args for `find_command`
 ---@field group_empty_dirs boolean|nil (false) when true, empty folders will be grouped together
 ---@field search_limit integer|nil (50) max number of search results when using filters
----@field follow_current_file NeotreeTypes.config.filesystem.follow_current_file|nil
----@field hijack_netrw_behavior NeotreeTypes.config.filesystem.hijack_netrw_behavior|nil ("open_default")
+---@field follow_current_file NeotreeConfig.filesystem.follow_current_file|nil
+---@field hijack_netrw_behavior NeotreeConfig.filesystem.hijack_netrw_behavior|nil ("open_default")
 ---@field use_libuv_file_watcher boolean|nil (false) This will use the OS level file watchers to detect changes instead of relying on nvim autocmd events.
 
----@alias NeotreeTypes.config.filesystem.async_directory_scan
+---@alias NeotreeConfig.filesystem.async_directory_scan
 ---|"auto"   # means refreshes are async, but it's synchronous when called from the Neotree commands.
 ---|"always" # means directory scans are always async.
 ---|"never"  # means directory scans are never async.
 
----@alias NeotreeTypes.config.filesystem.scan_mode
+---@alias NeotreeConfig.filesystem.scan_mode
 ---|"shallow" # Don't scan into directories to detect possible empty directory a priori
 ---|"deep"    # Scan into directories to detect empty or grouped empty directories a priori.
 
----@class NeotreeTypes.config.filesystem.cwd_target
+---@class NeotreeConfig.filesystem.cwd_target
 ---@field sidebar string|nil ("tab") sidebar is when position = left or right
 ---@field current string|nil ("window") current is when position = current
 
----@class NeotreeTypes.config.filesystem.filtered_items
+---@class NeotreeConfig.filesystem.filtered_items
 ---@field visible boolean|nil (false) when true, they will just be displayed differently than normal items
 ---@field force_visible_in_empty_folder boolean|nil (false) when true, hidden files will be shown if the root folder is otherwise empty
 ---@field show_hidden_count boolean|nil (true) when true, the number of hidden items in each folder will be shown as the last entry
@@ -298,18 +298,18 @@
 ---@field never_show string[]|nil ({}) remains hidden even if visible is toggled to true, this overrides always_show
 ---@field never_show_by_pattern string[]|nil ({}) uses glob style patterns
 
----@class NeotreeTypes.config.filesystem.follow_current_file
+---@class NeotreeConfig.filesystem.follow_current_file
 ---This will find and focus the file in the active buffer every time
 ---the current file is changed while the tree is open.
 ---@field enabled boolean|nil (false)
 ---@field leave_dirs_open boolean|nil (false) `false` closes auto expanded dirs, such as with `:Neotree reveal`
 
----@alias NeotreeTypes.config.filesystem.hijack_netrw_behavior
+---@alias NeotreeConfig.filesystem.hijack_netrw_behavior
 ---|"open_default" # netrw disabled, opening a directory opens neo-tree in whatever position is specified in window.position
 ---|"open_current" # netrw disabled, opening a directory opens within the window like netrw would, regardless of window.position
 ---|"disabled"     # netrw left alone, neo-tree does not handle opening dirs
 
----@alias NeotreeTypes.config.filesystem.find_args
+---@alias NeotreeConfig.filesystem.find_args
 ---You can specify extra args to pass to the find command.
 ---```lua
 ---find_args = {
@@ -332,87 +332,87 @@
 ---```
 ---|fun(cmd: string, path: string, search_term: string, args: string[]): string[])
 
----@class NeotreeTypes.config.buffers
----@field window NeotreeTypes.config.window|nil
----@field renderers NeotreeTypes.config.renderers|nil
+---@class NeotreeConfig.buffers
+---@field window NeotreeConfig.window|nil
+---@field renderers NeotreeConfig.renderers|nil
 ---@field bind_to_cwd boolean|nil (true) true creates a 2-way binding between vim's cwd and neo-tree's root
 ---@field group_empty_dirs boolean|nil (false) when true, empty folders will be grouped together
----@field follow_current_file NeotreeTypes.config.filesystem.follow_current_file|nil
+---@field follow_current_file NeotreeConfig.filesystem.follow_current_file|nil
 ---When working with sessions, for example, restored but unfocused buffers
 ---are mark as "unloaded". Turn this on to view these unloaded buffer.
 ---@field show_unloaded boolean|nil (false)
 ---@field terminals_first boolean|nil (false) when true, terminals will be listed before file buffers
 
----@class NeotreeTypes.config.document_symbols.kinds
+---@class NeotreeConfig.document_symbols.kinds
 ---@field icon string|nil
----@field hl NeotreeTypes.config.highlight|nil
+---@field hl NeotreeConfig.highlight|nil
 
----@class NeotreeTypes.config.document_symbols
----@field window NeotreeTypes.config.window|nil
----@field renderers NeotreeTypes.config.renderers|nil
+---@class NeotreeConfig.document_symbols
+---@field window NeotreeConfig.window|nil
+---@field renderers NeotreeConfig.renderers|nil
 ---@field follow_cursor boolean|nil (false)
 ---@field client_filters string|nil ("first")
----@field kinds table<string, NeotreeTypes.config.document_symbols.kinds>|nil
----@field custom_kinds table<integer|string, string|NeotreeTypes.config.document_symbols.kinds>|nil
+---@field kinds table<string, NeotreeConfig.document_symbols.kinds>|nil
+---@field custom_kinds table<integer|string, string|NeotreeConfig.document_symbols.kinds>|nil
 
----@class NeotreeTypes.config.git_status
----@field window NeotreeTypes.config.window|nil
----@field renderers NeotreeTypes.config.renderers|nil
+---@class NeotreeConfig.git_status
+---@field window NeotreeConfig.window|nil
+---@field renderers NeotreeConfig.renderers|nil
 
----@class NeotreeTypes.config.nesting_rule
+---@class NeotreeConfig.nesting_rule
 ---@field pattern string # Filename match regex pattern
 ---@field ignore_case boolean|nil # Whether to Match `files` names case insensitive
 ---@field files string[] # List of file names that will be nested under `pattern` file.
 
----@alias NeotreeTypes.config.event_handler
----|NeotreeTypes.config.event_handler.file_path
----|NeotreeTypes.config.event_handler.file_operation
----|NeotreeTypes.config.event_handler.state
----|NeotreeTypes.config.event_handler.buffer
----|NeotreeTypes.config.event_handler.window
+---@alias NeotreeConfig.event_handler
+---|NeotreeConfig.event_handler.file_path
+---|NeotreeConfig.event_handler.file_operation
+---|NeotreeConfig.event_handler.state
+---|NeotreeConfig.event_handler.buffer
+---|NeotreeConfig.event_handler.window
 
----@alias NeotreeTypes.config.event_handler.file_path.enum
+---@alias NeotreeConfig.event_handler.file_path.enum
 ---|"file_opened"
----@class NeotreeTypes.config.event_handler.file_path
----@field event NeotreeTypes.config.event_handler.file_path.enum
+---@class NeotreeConfig.event_handler.file_path
+---@field event NeotreeConfig.event_handler.file_path.enum
 ---@field handler fun(args: { source: string, destination: string }): any
 
----@alias NeotreeTypes.config.event_handler.file_operation.enum
+---@alias NeotreeConfig.event_handler.file_operation.enum
 ---|"file_renamed"
 ---|"file_moved"
----@class NeotreeTypes.config.event_handler.file_operation
----@field event NeotreeTypes.config.event_handler.file_operation.enum
+---@class NeotreeConfig.event_handler.file_operation
+---@field event NeotreeConfig.event_handler.file_operation.enum
 ---@field handler fun(file_operation: string): any
 
----@alias NeotreeTypes.config.event_handler.state.enum
+---@alias NeotreeConfig.event_handler.state.enum
 ---|"before_render"
----@class NeotreeTypes.config.event_handler.state
----@field event NeotreeTypes.config.event_handler.state.enum
----@field handler fun(state: NeotreeTypes.state): any
+---@class NeotreeConfig.event_handler.state
+---@field event NeotreeConfig.event_handler.state.enum
+---@field handler fun(state: NeotreeState): any
 
----@alias NeotreeTypes.config.event_handler.buffer.enum
+---@alias NeotreeConfig.event_handler.buffer.enum
 ---|"neo_tree_buffer_enter"
 ---|"neo_tree_buffer_leave"
----@class NeotreeTypes.config.event_handler.buffer
----@field event NeotreeTypes.config.event_handler.buffer.enum
+---@class NeotreeConfig.event_handler.buffer
+---@field event NeotreeConfig.event_handler.buffer.enum
 ---@field handler fun(): any
 
----@alias NeotreeTypes.config.event_handler.window.enum
+---@alias NeotreeConfig.event_handler.window.enum
 ---|"neo_tree_window_before_open"
 ---|"neo_tree_window_after_open"
 ---|"neo_tree_window_before_close"
 ---|"neo_tree_window_after_close"
----@class NeotreeTypes.config.event_handler.window
----@field event NeotreeTypes.config.event_handler.window.enum
----@field handler fun(args: NeotreeTypes.config.event_handler.window.args): any
+---@class NeotreeConfig.event_handler.window
+---@field event NeotreeConfig.event_handler.window.enum
+---@field handler fun(args: NeotreeConfig.event_handler.window.args): any
 ---
----@class NeotreeTypes.config.event_handler.window.args
----@field position NeotreeTypes.config.window.position
+---@class NeotreeConfig.event_handler.window.args
+---@field position NeotreeConfig.window.position
 ---@field source string
 ---@field tabnr integer|nil
 ---@field tabid integer|nil
 
----@type NeotreeTypes.config
+---@type NeotreeConfig
 local config = {
   sources = {
     "filesystem",
@@ -451,7 +451,7 @@ local config = {
   use_default_mappings = true,
 }
 
----@type NeotreeTypes.config.source_selector
+---@type NeotreeConfig.source_selector
 config.source_selector = {
   winbar = false,
   statusline = false,
@@ -477,7 +477,7 @@ config.source_selector = {
   highlight_separator_active = "NeoTreeTabSeparatorActive",
 }
 
----@type NeotreeTypes.config.components
+---@type NeotreeConfig.components
 config.default_component_configs = {
   container = {
     enable_character_fade = true,
@@ -564,7 +564,7 @@ config.default_component_configs = {
   },
 }
 
----@type NeotreeTypes.config.renderers
+---@type NeotreeConfig.renderers
 config.renderers = {
   directory = {
     { "indent" },
@@ -634,7 +634,7 @@ config.renderers = {
   },
 }
 
----@type table<string, NeotreeTypes.config.nesting_rule>
+---@type table<string, NeotreeConfig.nesting_rule>
 config.nesting_rules = {}
 
 ---Global custom commands that will be available in all sources (if not overridden in `opts[source_name].commands`)
@@ -650,10 +650,10 @@ config.nesting_rules = {}
 ---}                         |  }                        |      end
 ---
 ---see `:h neo-tree-custom-commands-global`
----@type NeotreeTypes.config.mappings
+---@type NeotreeConfig.mappings
 config.commands = {}
 
----@type NeotreeTypes.config.window
+---@type NeotreeConfig.window
 config.window = {
   -- see https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup for
   -- possible options. These can also be functions that return these options.
@@ -721,7 +721,7 @@ config.window = {
   },
 }
 
----@type NeotreeTypes.config.filesystem
+---@type NeotreeConfig.filesystem
 config.filesystem = {
   window = {
     mappings = {
@@ -806,7 +806,7 @@ config.filesystem = {
   use_libuv_file_watcher = false,
 }
 
----@type NeotreeTypes.config.buffers
+---@type NeotreeConfig.buffers
 config.buffers = {
   bind_to_cwd = true,
   follow_current_file = {
@@ -833,7 +833,7 @@ config.buffers = {
   },
 }
 
----@type NeotreeTypes.config.git_status
+---@type NeotreeConfig.git_status
 config.git_status = {
   window = {
     mappings = {
@@ -856,7 +856,7 @@ config.git_status = {
   },
 }
 
----@type NeotreeTypes.config.document_symbols
+---@type NeotreeConfig.document_symbols
 config.document_symbols = {
   follow_cursor = false,
   client_filters = "first",
@@ -927,7 +927,7 @@ config.document_symbols = {
   custom_kinds = {},
 }
 
----@type NeotreeTypes.config.event_handler[]
+---@type NeotreeConfig.event_handler[]
 -- TODO: Move event_handler examples to wiki
 -- See http://TODO/make/wiki/page for examples.
 config.event_handlers = {}
