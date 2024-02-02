@@ -1,11 +1,9 @@
 name: lua_ls-typecheck
 
 on:
-  workflow_run:
-    workflows:
-      - stylua
-    types:
-      - complete
+  push:
+    branches:
+      - '*'
 
 jobs:
   build:
