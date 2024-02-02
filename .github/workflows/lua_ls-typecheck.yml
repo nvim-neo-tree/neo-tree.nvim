@@ -26,13 +26,13 @@ jobs:
           repository: "nvim-lua/plenary.nvim"
           path: "deps/plenary.nvim"
 
-      - name: Checkout dependency plenary
+      - name: Checkout dependency nvim-web-devicons
         uses: actions/checkout@v3
         with:
           repository: "nvim-tree/nvim-web-devicons" # not strictly required, but recommended
           path: "deps/nvim-web-devicons"
 
-      - name: Checkout dependency plenary
+      - name: Checkout dependency nui
         uses: actions/checkout@v3
         with:
           repository: "MunifTanjim/nui.nvim"
