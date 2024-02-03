@@ -6,7 +6,7 @@
     "lua/?/init.lua"
   ],
   "workspace.library": [
-    "/github/workspace/lua",
+    "/github/workspace/lua/neo-tree/types",
     "/github/workspace/deps/neodev.nvim/types/stable",
     "/github/workspace/deps/plenary.nvim/lua",
     "/github/workspace/deps/nui.nvim/lua",
