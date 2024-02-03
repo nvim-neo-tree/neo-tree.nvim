@@ -25,7 +25,7 @@
 ---IF the root node is hidden, keep the indentation anyhow.
 ---This is needed if you use expanders because they render in the indent.
 ---@field retain_hidden_root_indent boolean|nil (false)
----@field log_level string|nil ("info") "trace", "debug", "info", "warn", "error", "fatal"
+---@field log_level NeotreeConfig.log_level|nil ("info") "trace", "debug", "info", "warn", "error", "fatal"
 ---@field log_to_file boolean|nil (false) true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
 ---@field open_files_in_last_window boolean|nil (true) false = open files in top left window
 ---@field open_files_do_not_replace_types string[]|nil ({ "terminal", "Trouble", "qf", "edgy" }) when opening files, do not use windows containing these filetypes or buftypes
@@ -57,12 +57,6 @@
 ---@field document_symbols NeotreeConfig.document_symbols|nil
 ---@field nesting_rules table<string, NeotreeConfig.nesting_rule>|nil
 ---@field event_handlers NeotreeConfig.event_handler[]|nil
-
----@alias NeotreeTypes.sort_function fun(a: NeotreeNode, b: NeotreeNode): boolean
----@alias NeotreeConfig.highlight string # Name of a highlight group
----@alias NeotreeConfig.wh integer|string|nil
----@alias NeotreeConfig.diagnostics_keys "hint"|"info"|"warn"|"error"
----@alias NeotreeConfig.components.align "left"|"right"
 
 ---@class NeotreeConfig.git_status_async_options
 ---@field batch_size integer|nil (1000) how many lines of git status results to process at a time
