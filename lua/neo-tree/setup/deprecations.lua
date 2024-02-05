@@ -30,6 +30,9 @@ M.show_migrations = function()
   end
 end
 
+---Check for deprecated options and alert the user to update their config.
+---@param config NeotreeConfig
+---@return string[] # List of migration messages user must update.
 M.migrate = function(config)
   migrations = {}
 

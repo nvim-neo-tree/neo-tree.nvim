@@ -1,9 +1,9 @@
-local vim = vim
 local q = require("neo-tree.events.queue")
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 
-local M = {
+---@enum NeotreeEventEnum
+local enum = {
   -- Well known event names, you can make up your own
   STATE_CREATED = "state_created",
   BEFORE_RENDER = "before_render",
@@ -49,6 +49,13 @@ local M = {
   VIM_WIN_ENTER = "vim_win_enter",
 }
 
+local M = enum
+
+---@param event_name NeotreeEventEnum
+---@param autocmds string[]
+---@param debounce_frequency integer|nil
+---@param seed_fn (fun(args: table): table)|nil
+---@param nested boolean|nil
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   local opts = {
     setup = function()

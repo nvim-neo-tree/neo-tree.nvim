@@ -73,6 +73,9 @@ M.set_log_level = function(level)
   log.set_level(level)
 end
 
+---Entry point for Neotree. Welcome to Neotree!
+---@param config NeotreeConfig
+---@param is_auto_config boolean|nil # When true, this function is called for testing. Skip changes to vim state.
 M.setup = function(config, is_auto_config)
   M.config = require("neo-tree.setup").merge_config(config, is_auto_config)
   local netrw = require("neo-tree.setup.netrw")

@@ -109,7 +109,7 @@ log.new = function(config, standalone)
   ---@class NeotreeLogConfig
   obj.config = vim.tbl_deep_extend("force", default_config, config)
   obj.levels = {}
-  for i, v in ipairs(config.modes) do
+  for i, v in ipairs(obj.config.modes) do
     obj.levels[v.name] = i
   end
   obj.use_file = function(file, quiet)
@@ -133,7 +133,7 @@ log.new = function(config, standalone)
         obj.config.level = level
       end
     else
-      notify("Invalid log level: " .. level, config.modes[5])
+      notify("Invalid log level: " .. level, obj.config.modes[5])
     end
   end
 
@@ -177,7 +177,7 @@ log.new = function(config, standalone)
     local msg = message_maker(...)
     local info = debug.getinfo(2, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
-    if config.use_file then
+    if obj.config.use_file then
       local str = string.format("[%-6s%s] %s: %s\n", nameupper, os.date(), lineinfo, msg)
       local fp = io.open(obj.outfile, "a")
       if fp then
@@ -187,14 +187,14 @@ log.new = function(config, standalone)
         print("[neo-tree] Could not open log file: " .. obj.outfile)
       end
     end
-    if config.use_console and level > 2 then
+    if obj.config.use_console and level > 2 then
       vim.schedule(function()
         notify(msg, level_config)
       end)
     end
   end
 
-  for i, x in ipairs(config.modes) do
+  for i, x in ipairs(obj.config.modes) do
     obj[x.name] = function(...)
       return log_at_level(i, x, make_string, ...)
     end

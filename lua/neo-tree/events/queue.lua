@@ -2,10 +2,23 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local Queue = require("neo-tree.collections").Queue
 
+---@type table<NeotreeEventEnum, NeotreeQueue<NeotreeConfig.event_handler>>
 local event_queues = {}
+
+---@class NeotreeEventOpts
+---@field debounce_frequency number|nil
+---@field debounce_strategy NeotreeDebounceStrategy|nil
+---@field setup function|nil
+---@field setup_was_run boolean|nil
+---@field teardown function|nil
+
+---@type table<NeotreeEventEnum, NeotreeEventOpts>
 local event_definitions = {}
+
+---@class NeotreeEventQueue
 local M = {}
 
+---@param event_handler NeotreeConfig.event_handler
 local validate_event_handler = function(event_handler)
   if type(event_handler) ~= "table" then
     error("Event handler must be a table")
@@ -19,12 +32,15 @@ local validate_event_handler = function(event_handler)
 end
 
 M.clear_all_events = function()
-  for event_name, queue in pairs(event_queues) do
+  for event_name, _ in pairs(event_queues) do
     M.destroy_event(event_name)
   end
   event_queues = {}
 end
 
+---Assign new event. Skips if event already exists.
+---@param event_name NeotreeEventEnum
+---@param opts NeotreeEventOpts
 M.define_event = function(event_name, opts)
   local existing = event_definitions[event_name]
   if existing ~= nil then
@@ -33,6 +49,8 @@ M.define_event = function(event_name, opts)
   event_definitions[event_name] = opts
 end
 
+---Delete event.
+---@param event_name NeotreeEventEnum
 M.destroy_event = function(event_name)
   local existing = event_definitions[event_name]
   if existing == nil then
@@ -45,19 +63,24 @@ M.destroy_event = function(event_name)
     end
     existing.setup_was_run = false
   end
+  if event_queues[event_name] then
+    Queue.clear(event_queues[event_name])
+  end
   event_queues[event_name] = nil
   return true
 end
 
+---Fire event.
+---@param event NeotreeEventEnum
+---@param args table|nil # Additional args passed to the handler.
+---@return table|nil # result of event_handler or nil
 local fire_event_internal = function(event, args)
   local queue = event_queues[event]
   if queue == nil then
     return nil
   end
-  --log.trace("Firing event: ", event, " with args: ", args)
 
-  if queue:is_empty() then
-    --log.trace("Event queue is empty")
+  if Queue.is_empty(queue) then
     return nil
   end
   local seed = utils.get_value(event_definitions, event .. ".seed")
@@ -72,9 +95,9 @@ local fire_event_internal = function(event, args)
     end
   end
 
-  return queue:for_each(function(event_handler)
-    local remove_node = event_handler == nil or event_handler.cancelled
-    if not remove_node then
+  ---@param event_handler NeotreeConfig.event_handler|nil
+  local run_each_handler = function(event_handler)
+    if event_handler and not event_handler.cancelled then
       local success, result = pcall(event_handler.handler, args)
       local id = event_handler.id or event_handler
       if success then
@@ -88,28 +111,38 @@ local fire_event_internal = function(event, args)
       end
       return result
     end
-  end)
+    return false
+  end
+  return Queue.for_each(queue, run_each_handler)
 end
 
-M.fire_event = function(event, args)
-  local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
-  local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
-  log.trace("Firing event: ", event, " with args: ", args)
+---Fire events assigned to event_name.
+---@param event_name NeotreeEventEnum
+---@param args table|nil # Additional args passed to the handler.
+---@return table|nil
+M.fire_event = function(event_name, args)
+  local def = event_definitions[event_name]
+  local freq = def and def.debounce_frequency or 0
+  local strategy = def and def.debounce_strategy or 0
+  log.trace("Firing event: ", event_name, " with args: ", args)
   if freq > 0 then
-    utils.debounce("EVENT_FIRED: " .. event, function()
-      fire_event_internal(event, args or {})
+    utils.debounce("EVENT_FIRED: " .. event_name, function()
+      fire_event_internal(event_name, args or {})
     end, freq, strategy)
   else
-    return fire_event_internal(event, args or {})
+    return fire_event_internal(event_name, args or {})
   end
 end
 
+---Add a new event_handler
+---@param event_handler NeotreeConfig.event_handler
 M.subscribe = function(event_handler)
   validate_event_handler(event_handler)
 
   local queue = event_queues[event_handler.event]
   if queue == nil then
     log.debug("Creating queue for event: " .. event_handler.event)
+    ---@type NeotreeQueue<NeotreeConfig.event_handler>
     queue = Queue:new()
     local def = event_definitions[event_handler.event]
     if def and type(def.setup) == "function" then
@@ -124,7 +157,7 @@ M.subscribe = function(event_handler)
     event_queues[event_handler.event] = queue
   end
   log.debug("Adding event handler [", event_handler.id, "] for event: ", event_handler.event)
-  queue:add(event_handler)
+  Queue.add(queue, event_handler)
 end
 
 M.unsubscribe = function(event_handler)
@@ -132,12 +165,9 @@ M.unsubscribe = function(event_handler)
   if queue == nil then
     return nil
   end
-  queue:remove_by_id(event_handler.id or event_handler)
-  if queue:is_empty() then
+  Queue.remove_by_id(queue, event_handler.id or event_handler)
+  if Queue.is_empty(queue) then
     M.destroy_event(event_handler.event)
-    event_queues[event_handler.event] = nil
-  else
-    event_queues[event_handler.event] = queue
   end
 end
 

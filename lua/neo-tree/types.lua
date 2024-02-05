@@ -8,6 +8,7 @@
 
 ---@class NeotreeAutocmdArg
 ---@field id number # autocommand id
+---@field afile string|number|nil # related buffer/window/tab
 ---@field event string # name of the triggered event `autocmd-events`
 ---@field group number`nil # autocommand group id, if any
 ---@field match string # expanded value of `<amatch>`
@@ -21,3 +22,6 @@
 ---@alias NeotreeConfig.log_level "trace"|"debug"|"info"|"warn"|"error"|"fatal"
 ---@alias NeotreeConfig.diagnostics_keys "hint"|"info"|"warn"|"error"
 ---@alias NeotreeConfig.components.align "left"|"right"
+
+---@alias NeotreeSourceName string
+---@alias NeotreeSource table # TODO: Define what is required to be a neo-tree source

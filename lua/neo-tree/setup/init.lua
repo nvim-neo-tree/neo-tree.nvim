@@ -1,5 +1,5 @@
 local utils = require("neo-tree.utils")
-local defaults = require("neo-tree.defaults")
+local e = require("neo-tree.types.enums")
 local mapping_helper = require("neo-tree.setup.mapping-helper")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
@@ -9,7 +9,21 @@ local manager = require("neo-tree.sources.manager")
 local netrw = require("neo-tree.setup.netrw")
 local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
-local M = {}
+local M = {
+  ---Store user specified config here.
+  ---@type NeotreeConfig
+  config = {},
+  ---Block define events twice. Toggled at `M.define_events`.
+  ---@protected
+  events_setup = false,
+  ---Store filetype of last visited buffer to avoid multiple neo-tree buffesr.
+  ---@protected
+  ---@type string|nil
+  last_buffer_enter_filetype = nil,
+  ---Cache old window options
+  ---@type table<string, table>
+  prior_window_options = {},
+}
 
 local normalize_mappings = function(config)
   if config == nil then
@@ -25,13 +39,17 @@ local normalize_mappings = function(config)
   end
 end
 
-local events_setup = false
-local define_events = function()
-  if events_setup then
+---Define events
+---@private
+function M.define_events()
+  if M.events_setup then
     return
   end
 
-  events.define_event(events.FS_EVENT, {
+  local defev = events.define_event
+  local defauc = events.define_autocmd_event
+
+  defev(events.FS_EVENT, {
     debounce_frequency = 100,
     debounce_strategy = utils.debounce_strategy.CALL_LAST_ONLY,
   })
@@ -41,47 +59,36 @@ local define_events = function()
   if v.major < 1 and v.minor < 6 then
     diag_autocmd = "User LspDiagnosticsChanged"
   end
-  events.define_autocmd_event(events.VIM_DIAGNOSTIC_CHANGED, { diag_autocmd }, 500, function(args)
+  defauc(events.VIM_DIAGNOSTIC_CHANGED, { diag_autocmd }, 500, function(args)
     args.diagnostics_lookup = utils.get_diagnostic_counts()
     return args
   end)
 
-  local update_opened_buffers = function(args)
+  local update_buffer = function(args)
     args.opened_buffers = utils.get_opened_buffers()
     return args
   end
+  defauc(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
+  defauc(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_buffer)
+  defauc(events.VIM_BUFFER_CHANGED, { "BufWritePost" }, 200)
+  defauc(events.VIM_BUFFER_DELETED, { "BufDelete" }, 200, update_buffer)
+  defauc(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
+  defauc(events.VIM_BUFFER_MODIFIED_SET, { "BufModifiedSet" }, 0, update_buffer)
+  defauc(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
+  defauc(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
+  defauc(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
+  defauc(events.VIM_INSERT_LEAVE, { "InsertLeave" }, 200)
+  defauc(events.VIM_LEAVE, { "VimLeavePre" })
+  defauc(events.VIM_RESIZED, { "VimResized" }, 100)
+  defauc(events.VIM_TAB_CLOSED, { "TabClosed" })
+  defauc(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
+  defauc(events.VIM_TEXT_CHANGED_NORMAL, { "TextChanged" }, 200)
+  defauc(events.VIM_WIN_CLOSED, { "WinClosed" })
+  defauc(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
 
-  events.define_autocmd_event(events.VIM_AFTER_SESSION_LOAD, { "SessionLoadPost" }, 200)
-  events.define_autocmd_event(events.VIM_BUFFER_ADDED, { "BufAdd" }, 200, update_opened_buffers)
-  events.define_autocmd_event(events.VIM_BUFFER_CHANGED, { "BufWritePost" }, 200)
-  events.define_autocmd_event(
-    events.VIM_BUFFER_DELETED,
-    { "BufDelete" },
-    200,
-    update_opened_buffers
-  )
-  events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
-  events.define_autocmd_event(
-    events.VIM_BUFFER_MODIFIED_SET,
-    { "BufModifiedSet" },
-    0,
-    update_opened_buffers
-  )
-  events.define_autocmd_event(events.VIM_COLORSCHEME, { "ColorScheme" }, 0)
-  events.define_autocmd_event(events.VIM_CURSOR_MOVED, { "CursorMoved" }, 100)
-  events.define_autocmd_event(events.VIM_DIR_CHANGED, { "DirChanged" }, 200, nil, true)
-  events.define_autocmd_event(events.VIM_INSERT_LEAVE, { "InsertLeave" }, 200)
-  events.define_autocmd_event(events.VIM_LEAVE, { "VimLeavePre" })
-  events.define_autocmd_event(events.VIM_RESIZED, { "VimResized" }, 100)
-  events.define_autocmd_event(events.VIM_TAB_CLOSED, { "TabClosed" })
-  events.define_autocmd_event(events.VIM_TERMINAL_ENTER, { "TermEnter" }, 0)
-  events.define_autocmd_event(events.VIM_TEXT_CHANGED_NORMAL, { "TextChanged" }, 200)
-  events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
-  events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
-
-  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
-  events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
-  events_setup = true
+  defauc(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
+  defev(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
+  M.events_setup = true
 
   events.subscribe({
     event = events.VIM_LEAVE,
@@ -98,19 +105,17 @@ local define_events = function()
   })
 end
 
-local prior_window_options = {}
-
 --- Store the current window options so we can restore them when we close the tree.
 --- @param winid number | nil The window id to store the options for, defaults to current window
 local store_local_window_settings = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
-  local neo_tree_settings_applied, _ =
-    pcall(vim.api.nvim_win_get_var, winid, "neo_tree_settings_applied")
+  local neo_tree_settings_applied =
+    utils.neo_tree_get_win_var(winid, e.win_vars.neo_tree_settings_applied, "boolean")
   if neo_tree_settings_applied then
     -- don't store our own window settings
     return
   end
-  prior_window_options[tostring(winid)] = {
+  M.prior_window_options[tostring(winid)] = {
     cursorline = vim.wo.cursorline,
     cursorlineopt = vim.wo.cursorlineopt,
     foldcolumn = vim.wo.foldcolumn,
@@ -123,12 +128,12 @@ local store_local_window_settings = function(winid)
   }
 end
 
---- Restore the window options for the current window
---- @param winid number | nil The window id to restore the options for, defaults to current window
+---Restore the window options for the current window
+---@param winid number|nil # The window id to restore the options for, defaults to current window
 local restore_local_window_settings = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   -- return local window settings to their prior values
-  local wo = prior_window_options[tostring(winid)]
+  local wo = M.prior_window_options[tostring(winid)]
   if wo then
     vim.wo.cursorline = wo.cursorline
     vim.wo.cursorlineopt = wo.cursorlineopt
@@ -140,17 +145,26 @@ local restore_local_window_settings = function(winid)
     vim.wo.relativenumber = wo.relativenumber
     vim.wo.winhighlight = wo.winhighlight
     log.debug("Window settings restored")
-    vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
+    utils.neo_tree_set_win_var(0, e.win_vars.neo_tree_settings_applied, false)
   else
     log.debug("No window settings to restore")
   end
 end
 
-local last_buffer_enter_filetype = nil
+---Vim patterns in autocmds are not quite precise enough
+---so we are doing a second stage filter in lua
+---@param data NeotreeAutocmdArg
+local bufleave_autocmd = function(data)
+  local pattern = "neo%-tree [^ ]+ %[1%d%d%d%]"
+  if string.match(data.file, pattern) then
+    restore_local_window_settings()
+  end
+end
+
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
-    if last_buffer_enter_filetype == "neo-tree" then
+    if M.last_buffer_enter_filetype == "neo-tree" then
       -- we've switched to another neo-tree window
       events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
     else
@@ -172,7 +186,7 @@ M.buffer_enter_event = function()
     end
 
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
-    last_buffer_enter_filetype = vim.bo.filetype
+    M.last_buffer_enter_filetype = vim.bo.filetype
     vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", true)
     return
   end
@@ -183,17 +197,17 @@ M.buffer_enter_event = function()
     setlocal nolist nospell nonumber norelativenumber
     ]])
     events.fire_event(events.NEO_TREE_POPUP_BUFFER_ENTER)
-    last_buffer_enter_filetype = vim.bo.filetype
+    M.last_buffer_enter_filetype = vim.bo.filetype
     return
   end
 
-  if last_buffer_enter_filetype == "neo-tree" then
+  if M.last_buffer_enter_filetype == "neo-tree" then
     events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
   end
-  if last_buffer_enter_filetype == "neo-tree-popup" then
+  if M.last_buffer_enter_filetype == "neo-tree-popup" then
     events.fire_event(events.NEO_TREE_POPUP_BUFFER_LEAVE)
   end
-  last_buffer_enter_filetype = vim.bo.filetype
+  M.last_buffer_enter_filetype = vim.bo.filetype
 
   -- there is nothing more we want to do with floating windows
   if utils.is_floating() then
@@ -211,29 +225,23 @@ M.buffer_enter_event = function()
   if prior_buf < 1 then
     return
   end
-  local winid = vim.api.nvim_get_current_win()
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
-    local success, position = pcall(vim.api.nvim_buf_get_var, prior_buf, "neo_tree_position")
-    if not success then
-      -- just bail out now, the rest of these lookups will probably fail too.
-      return
-    end
-
-    if position == "current" then
+    local position = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_position, "string")
+    if not position or position == "current" then
       -- nothing to do here, files are supposed to open in same window
       return
     end
 
     local current_tabid = vim.api.nvim_get_current_tabpage()
-    local neo_tree_tabid = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_tabid")
-    if neo_tree_tabid ~= current_tabid then
+    local old_tabid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_tabid, "integer")
+    if not old_tabid or old_tabid ~= current_tabid then
       -- This a new tab, so the alternate being neo-tree doesn't matter.
       return
     end
-    local neo_tree_winid = vim.api.nvim_buf_get_var(prior_buf, "neo_tree_winid")
     local current_winid = vim.api.nvim_get_current_win()
-    if neo_tree_winid ~= current_winid then
+    local old_winid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_winid, "integer")
+    if not old_winid or old_winid ~= current_winid then
       -- This is not the neo-tree window, so the alternate being neo-tree doesn't matter.
       return
     end
@@ -247,7 +255,7 @@ M.buffer_enter_event = function()
     vim.schedule(function()
       -- try to delete the buffer, only because if it was new it would take
       -- on options from the neo-tree window that are undesirable.
-      pcall(vim.cmd, "bdelete " .. bufname)
+      pcall(vim.cmd, "bdelete " .. bufname) ---@diagnostic disable-line
       local fake_state = {
         window = {
           position = position,
@@ -279,8 +287,8 @@ M.win_enter_event = function()
     log.trace("prior window exists = ", prior_exists)
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
-      local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
-      local source = vim.api.nvim_buf_get_var(0, "neo_tree_source")
+      local position = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_position, "string")
+      local source = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_source, "string")
       if position ~= "current" then
         -- close_if_last_window just doesn't make sense for a split style
         log.trace("last window, closing")
@@ -319,19 +327,19 @@ M.win_enter_event = function()
   end
 
   if vim.o.filetype == "neo-tree" then
-    local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
+    local position = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_position, "string")
     if position == "current" then
       -- make sure the buffer wasn't moved to a new window
-      local neo_tree_winid = vim.api.nvim_buf_get_var(0, "neo_tree_winid")
+      local old_winid = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_winid, "integer")
       local current_winid = vim.api.nvim_get_current_win()
       local current_bufnr = vim.api.nvim_get_current_buf()
-      if neo_tree_winid ~= current_winid then
+      if old_winid ~= current_winid then
         -- At this point we know that either the neo-tree window was split,
         -- or the neo-tree buffer is being shown in another window for some other reason.
         -- Sometime the split is just the first step in the process of opening somethig else,
         -- so instead of fixing this right away, we add a short delay and check back again to see
         -- if the buffer is still in this window.
-        local old_state = manager.get_state("filesystem", nil, neo_tree_winid)
+        local old_state = manager.get_state("filesystem", nil, old_winid)
         vim.schedule(function()
           local bufnr = vim.api.nvim_get_current_buf()
           if bufnr ~= current_bufnr then
@@ -354,7 +362,9 @@ M.win_enter_event = function()
     return
   end
 
-  M.config.prior_windows = M.config.prior_windows or {}
+  if not M.config.prior_windows then
+    M.config.prior_windows = {} ---@diagnostic disable-line
+  end
 
   local tabid = vim.api.nvim_get_current_tabpage()
   local tab_windows = M.config.prior_windows[tabid]
@@ -375,16 +385,12 @@ M.win_enter_event = function()
   end
 end
 
-M.set_log_level = function(level)
-  log.set_level(level)
-end
-
+---@param components NeotreeConfig.components.base
+---@param config NeotreeConfig
 local function merge_global_components_config(components, config)
   local indent_exists = false
   local merged_components = {}
-  local do_merge
-
-  do_merge = function(component)
+  local function do_merge(component)
     local name = component[1]
     if type(name) == "string" then
       if name == "indent" then
@@ -410,12 +416,10 @@ local function merge_global_components_config(components, config)
       log.error("component name is the wrong type", component)
     end
   end
-
   for _, component in ipairs(components) do
     local merged = do_merge(component)
     table.insert(merged_components, merged)
   end
-
   -- If the indent component is not specified, then add it.
   -- We do this because it used to be implicitly added, so we don't want to
   -- break any existing configs.
@@ -469,9 +473,14 @@ local merge_renderers = function(default_config, source_default_config, user_con
   end
 end
 
+---Merge user config with default values,
+---@param user_config NeotreeConfig
+---@param is_auto_config boolean|nil # When true, this function is called for testing. Skip changes to vim state.
+---@return NeotreeConfig
 M.merge_config = function(user_config, is_auto_config)
-  local default_config = vim.deepcopy(defaults)
+  local default_config = vim.deepcopy(require("neo-tree.defaults"))
   user_config = vim.deepcopy(user_config or {})
+  log.trace("merge_config called: %s", is_auto_config)
 
   local migrations = require("neo-tree.setup.deprecations").migrate(user_config)
   if #migrations > 0 then
@@ -484,13 +493,13 @@ M.merge_config = function(user_config, is_auto_config)
   end
 
   if user_config.log_level ~= nil then
-    M.set_log_level(user_config.log_level)
+    log.set_level(user_config.log_level)
   end
   log.use_file(user_config.log_to_file, true)
   log.debug("setup")
 
   events.clear_all_events()
-  define_events()
+  M.define_events()
 
   -- Prevent accidentally opening another file in the neo-tree window.
   events.subscribe({
@@ -501,19 +510,10 @@ M.merge_config = function(user_config, is_auto_config)
   -- Setup autocmd for neo-tree BufLeave, to restore window settings.
   -- This is set to happen just before leaving the window.
   -- The patterns used should ensure it only runs in neo-tree windows where position = "current"
-  local augroup = vim.api.nvim_create_augroup("NeoTree_BufLeave", { clear = true })
-  local bufleave = function(data)
-    -- Vim patterns in autocmds are not quite precise enough
-    -- so we are doing a second stage filter in lua
-    local pattern = "neo%-tree [^ ]+ %[1%d%d%d%]"
-    if string.match(data.file, pattern) then
-      restore_local_window_settings()
-    end
-  end
   vim.api.nvim_create_autocmd({ "BufWinLeave" }, {
-    group = augroup,
+    group = vim.api.nvim_create_augroup("NeoTree_BufLeave", { clear = true }),
     pattern = "neo-tree *",
-    callback = bufleave,
+    callback = bufleave_autocmd,
   })
 
   if user_config.event_handlers ~= nil then
@@ -524,10 +524,12 @@ M.merge_config = function(user_config, is_auto_config)
 
   highlights.setup()
 
-  -- used to either limit the sources that or loaded, or add extra external sources
+  -- used to either limit the sources that are loaded, or add extra external sources
+  ---@type table<string, NeotreeSourceName>
   local all_sources = {}
+  ---@type NeotreeSourceName[]
   local all_source_names = {}
-  for _, source in ipairs(user_config.sources or default_config.sources) do
+  for _, source in ipairs(user_config.sources or default_config.sources or {}) do
     local parts = utils.split(source, ".")
     local name = parts[#parts]
     local is_internal_ns, is_external_ns = false, false
@@ -558,8 +560,9 @@ M.merge_config = function(user_config, is_auto_config)
     end
   end
   log.debug("Sources to load: ", vim.inspect(all_sources))
-  require("neo-tree.command.parser").setup(all_source_names)
 
+  -- TODO: Add type annots
+  require("neo-tree.command.parser").setup(all_source_names)
   -- setup the default values for all sources
   normalize_mappings(default_config)
   normalize_mappings(user_config)
@@ -567,12 +570,9 @@ M.merge_config = function(user_config, is_auto_config)
 
   for source_name, mod_root in pairs(all_sources) do
     local module = require(mod_root)
-    default_config[source_name] = default_config[source_name]
-      or {
-        renderers = {},
-        components = {},
-      }
+    default_config[source_name] = default_config[source_name] or { renderers = {}, components = {} }
     local source_default_config = default_config[source_name]
+    ---@cast source_default_config NeotreeConfig.source_config
     source_default_config.components = module.components or require(mod_root .. ".components")
     source_default_config.commands = module.commands or require(mod_root .. ".commands")
     source_default_config.name = source_name
@@ -595,26 +595,17 @@ M.merge_config = function(user_config, is_auto_config)
 
     merge_renderers(default_config, source_default_config, user_config)
 
-    --validate the window.position
+    -- validate the window.position
     local pos_key = source_name .. ".window.position"
-    local position = utils.get_value(user_config, pos_key, "left", true)
-    local valid_positions = {
-      left = true,
-      right = true,
-      top = true,
-      bottom = true,
-      float = true,
-      current = true,
-    }
-    if not valid_positions[position] then
+    local position = utils.get_value(user_config, pos_key, e.valid_window_positions.left, true)
+    if not e.valid_window_positions[position] then
       log.error("Invalid value for ", pos_key, ": ", position)
-      user_config[source_name].window.position = "left"
+      user_config[source_name].window.position = e.valid_window_positions.left
     end
   end
-  --print(vim.inspect(default_config.filesystem))
 
   -- Moving user_config.sources to user_config.orig_sources
-  user_config.orig_sources = user_config.sources and user_config.sources or {}
+  user_config.orig_sources = user_config.sources or {} ---@diagnostic disable-line
 
   -- apply the users config
   M.config = vim.tbl_deep_extend("force", default_config, user_config)
@@ -660,8 +651,7 @@ M.merge_config = function(user_config, is_auto_config)
     M.config.git_status_async = false
   end
 
-  -- Validate that the source_selector.sources are all available and if any
-  -- aren't, remove them
+  -- Validate that the source_selector.sources are all available and if any aren't, remove them
   local source_selector_sources = {}
   for _, ss_source in ipairs(M.config.source_selector.sources or {}) do
     local source_match = false
@@ -679,8 +669,11 @@ M.merge_config = function(user_config, is_auto_config)
   end
   M.config.source_selector.sources = source_selector_sources
 
+  -- TODO: type annotations
   file_nesting.setup(M.config.nesting_rules)
 
+  -- TODO: deal with this later
+  ---@diagnostic disable
   for source_name, mod_root in pairs(all_sources) do
     for name, rndr in pairs(M.config[source_name].renderers) do
       M.config[source_name].renderers[name] = merge_global_components_config(rndr, M.config)
@@ -693,8 +686,10 @@ M.merge_config = function(user_config, is_auto_config)
     manager.setup(source_name, M.config[source_name], M.config, module)
     manager.redraw(source_name)
   end
+  ---@diagnostic enable
 
   if M.config.auto_clean_after_session_restore then
+    -- TODO: type annotations
     require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(false)
     events.subscribe({
       event = events.VIM_AFTER_SESSION_LOAD,
@@ -729,10 +724,11 @@ M.merge_config = function(user_config, is_auto_config)
     end,
   })
 
-  --Dispose ourselves if the tab closes
+  -- Dispose ourselves if the tab closes
   events.subscribe({
     event = events.VIM_WIN_CLOSED,
     handler = function(args)
+      -- TODO: this function is called many times. Optimize if possible.
       local winid = tonumber(args.afile)
       log.debug("VIM_WIN_CLOSED: disposing state for window", winid)
       manager.dispose_window(winid)

@@ -204,16 +204,8 @@
 
 ---@alias NeotreeConfig.renderers { [string]: NeotreeConfig.components.base[] }
 
----@alias NeotreeConfig.window.position
----|"left"
----|"right"
----|"top"
----|"bottom"
----|"float"
----|"current"
-
 ---@class NeotreeConfig.window
----@field position NeotreeConfig.window.position|nil ("left") left, right, top, bottom, float, current
+---@field position NeotreeWindowPosition|nil ("left") left, right, top, bottom, float, current
 ---@field width NeotreeConfig.wh|nil (40) applies to left and right positions
 ---@field height NeotreeConfig.wh|nil (15) applies to top and bottom positions
 ---@field auto_expand_width boolean|nil (false) expand the window when file exceeds the window width. does not work with position = "float"
@@ -243,9 +235,15 @@
 ---@alias NeotreeConfig.mapping_function fun(state: NeotreeState)
 ---@alias NeotreeConfig.mappings table<string, string | NeotreeConfig.mapping_table | NeotreeConfig.mapping_function>
 
----@class NeotreeConfig.filesystem
+---@class NeotreeConfig.source_config
+---@field name string
+---@field display_name string
 ---@field window NeotreeConfig.window|nil
 ---@field renderers NeotreeConfig.renderers|nil
+---@field commands NeotreeConfig.mappings|nil
+---@field components NeotreeConfig.components|nil
+
+---@class NeotreeConfig.filesystem : NeotreeConfig.source_config
 ---@field async_directory_scan NeotreeConfig.filesystem.async_directory_scan|nil ("auto")
 ---@field scan_mode NeotreeConfig.filesystem.scan_mode|nil ("shallow")
 ---@field bind_to_cwd boolean|nil (true) true creates a 2-way binding between vim's cwd and neo-tree's root
@@ -326,9 +324,7 @@
 ---```
 ---|fun(cmd: string, path: string, search_term: string, args: string[]): string[])
 
----@class NeotreeConfig.buffers
----@field window NeotreeConfig.window|nil
----@field renderers NeotreeConfig.renderers|nil
+---@class NeotreeConfig.buffers : NeotreeConfig.source_config
 ---@field bind_to_cwd boolean|nil (true) true creates a 2-way binding between vim's cwd and neo-tree's root
 ---@field group_empty_dirs boolean|nil (false) when true, empty folders will be grouped together
 ---@field follow_current_file NeotreeConfig.filesystem.follow_current_file|nil
@@ -337,21 +333,17 @@
 ---@field show_unloaded boolean|nil (false)
 ---@field terminals_first boolean|nil (false) when true, terminals will be listed before file buffers
 
----@class NeotreeConfig.document_symbols.kinds
+---@class NeotreeConfig.document_symbols.kinds : NeotreeConfig.source_config
 ---@field icon string|nil
 ---@field hl NeotreeConfig.highlight|nil
 
----@class NeotreeConfig.document_symbols
----@field window NeotreeConfig.window|nil
----@field renderers NeotreeConfig.renderers|nil
+---@class NeotreeConfig.document_symbols : NeotreeConfig.source_config
 ---@field follow_cursor boolean|nil (false)
 ---@field client_filters string|nil ("first")
 ---@field kinds table<string, NeotreeConfig.document_symbols.kinds>|nil
 ---@field custom_kinds table<integer|string, string|NeotreeConfig.document_symbols.kinds>|nil
 
----@class NeotreeConfig.git_status
----@field window NeotreeConfig.window|nil
----@field renderers NeotreeConfig.renderers|nil
+---@class NeotreeConfig.git_status : NeotreeConfig.source_config
 
 ---@class NeotreeConfig.nesting_rule
 ---@field pattern string # Filename match regex pattern
@@ -359,35 +351,43 @@
 ---@field files string[] # List of file names that will be nested under `pattern` file.
 
 ---@alias NeotreeConfig.event_handler
+---|NeotreeConfig.event_handler.base
 ---|NeotreeConfig.event_handler.file_path
 ---|NeotreeConfig.event_handler.file_operation
 ---|NeotreeConfig.event_handler.state
 ---|NeotreeConfig.event_handler.buffer
 ---|NeotreeConfig.event_handler.window
 
+---@class NeotreeConfig.event_handler.base
+---@field id string|nil
+---@field cancelled boolean|nil
+---@field once boolean|nil
+---@field event NeotreeEventEnum
+---@field handler fun(args: NeotreeAutocmdArg): any
+
 ---@alias NeotreeConfig.event_handler.file_path.enum
 ---|"file_opened"
----@class NeotreeConfig.event_handler.file_path
+---@class NeotreeConfig.event_handler.file_path : NeotreeConfig.event_handler.base
 ---@field event NeotreeConfig.event_handler.file_path.enum
 ---@field handler fun(args: { source: string, destination: string }): any
 
 ---@alias NeotreeConfig.event_handler.file_operation.enum
 ---|"file_renamed"
 ---|"file_moved"
----@class NeotreeConfig.event_handler.file_operation
+---@class NeotreeConfig.event_handler.file_operation : NeotreeConfig.event_handler.base
 ---@field event NeotreeConfig.event_handler.file_operation.enum
 ---@field handler fun(file_operation: string): any
 
 ---@alias NeotreeConfig.event_handler.state.enum
 ---|"before_render"
----@class NeotreeConfig.event_handler.state
+---@class NeotreeConfig.event_handler.state : NeotreeConfig.event_handler.base
 ---@field event NeotreeConfig.event_handler.state.enum
 ---@field handler fun(state: NeotreeState): any
 
 ---@alias NeotreeConfig.event_handler.buffer.enum
 ---|"neo_tree_buffer_enter"
 ---|"neo_tree_buffer_leave"
----@class NeotreeConfig.event_handler.buffer
+---@class NeotreeConfig.event_handler.buffer : NeotreeConfig.event_handler.base
 ---@field event NeotreeConfig.event_handler.buffer.enum
 ---@field handler fun(): any
 
@@ -396,12 +396,12 @@
 ---|"neo_tree_window_after_open"
 ---|"neo_tree_window_before_close"
 ---|"neo_tree_window_after_close"
----@class NeotreeConfig.event_handler.window
+---@class NeotreeConfig.event_handler.window : NeotreeConfig.event_handler.base
 ---@field event NeotreeConfig.event_handler.window.enum
 ---@field handler fun(args: NeotreeConfig.event_handler.window.args): any
 ---
 ---@class NeotreeConfig.event_handler.window.args
----@field position NeotreeConfig.window.position
+---@field position NeotreeWindowPosition
 ---@field source string
 ---@field tabnr integer|nil
 ---@field tabid integer|nil
