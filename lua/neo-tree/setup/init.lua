@@ -221,7 +221,7 @@ M.buffer_enter_event = function()
 
   -- For all others, make sure another buffer is not hijacking our window
   -- ..but not if the position is "current"
-  local prior_buf = vim.fn.bufnr("#")
+  local prior_buf = vim.fn.bufnr("#") ---@diagnostic disable-line
   if prior_buf < 1 then
     return
   end

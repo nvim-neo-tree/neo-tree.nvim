@@ -86,13 +86,13 @@ end
 ---Set or unset file to output logs.
 ---@param file NeotreePathString|boolean # If false, unsets file, or set to file. If true, uses default path.
 ---@param quiet boolean|nil # If true, logs when file is set.
-log.use_file = function(file, quiet)
+log.use_file = function(file, quiet) ---@diagnostic disable-line
   error(string.format("Neotree log: call `log.new` first. %s, %s", file, quiet))
 end
 
 ---Set log level.
 ---@param level string # Any messages above this level will be logged.
-log.set_level = function(level)
+log.set_level = function(level) ---@diagnostic disable-line
   error(string.format("Neotree log: call `log.new` first. %s", level))
 end
 

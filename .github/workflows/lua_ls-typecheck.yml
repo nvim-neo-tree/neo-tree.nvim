@@ -48,6 +48,5 @@ jobs:
           directories: |
             lua/neo-tree/defaults.lua
             lua/neo-tree/log.lua
-            lua/neo-tree/collections.lua
             lua/neo-tree/setup/deprecations.lua
             lua/neo-tree/setup/init.lua
