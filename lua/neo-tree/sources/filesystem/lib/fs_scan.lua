@@ -207,6 +207,13 @@ end
 
 local function get_children_async(path, callback)
   uv.fs_opendir(path, function(_, dir)
+    if err then
+      if dir then
+        uv.fs_closedir(dir)
+      end
+      callback({})
+      return
+    end
     uv.fs_readdir(dir, function(_, stats)
       local children = {}
       if stats then
