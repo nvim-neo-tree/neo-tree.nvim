@@ -40,7 +40,8 @@ local default_config = {
   float_precision = 0.01,
 }
 
-local unpack = unpack or table.unpack
+local unpack = unpack or table.unpack ---@diagnostic disable-line
+
 ---Round float at a certain precision
 ---@param x number
 ---@param increment number # The smallest digit where `x` will be rounded. `0.1` will output `nn.n`.
@@ -112,7 +113,7 @@ log.new = function(config, standalone)
   for i, v in ipairs(obj.config.modes) do
     obj.levels[v.name] = i
   end
-  obj.use_file = function(file, quiet)
+  obj.use_file = function(file, quiet) ---@diagnostic disable-line
     obj.config.use_file = file ~= false ---@diagnostic disable-line
     if file == false then
       if not quiet then
@@ -127,7 +128,7 @@ log.new = function(config, standalone)
       end
     end
   end
-  obj.set_level = function(level)
+  obj.set_level = function(level) ---@diagnostic disable-line
     if obj.levels[level] then
       if obj.config.level ~= level then
         obj.config.level = level
