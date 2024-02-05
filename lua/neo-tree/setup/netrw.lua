@@ -1,7 +1,6 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
-local command = require("neo-tree.command")
 local M = {}
 
 local get_position = function(source_name)
