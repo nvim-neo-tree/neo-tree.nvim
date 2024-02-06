@@ -206,7 +206,7 @@ local function get_children_sync(path)
 end
 
 local function get_children_async(path, callback)
-  uv.fs_opendir(path, function(_, dir)
+  uv.fs_opendir(path, function(err, dir)
     if err then
       callback({})
       return
