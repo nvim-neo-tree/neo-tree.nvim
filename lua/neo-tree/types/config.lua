@@ -252,6 +252,7 @@
 ---setting this to `false` will speed up searches, but gitignored
 ---items won't be marked if they are visible.
 ---@field check_gitignore_in_search boolean|nil (true)
+---@field filtered_items NeotreeConfig.filesystem.filtered_items|nil ({})
 ---`false` means it only searches the tail of a path.
 ---`true` will change the filter into a full path search with space as an implicit ".*",
 ---so `fi init` will match: `./sources/filesystem/init.lua`
