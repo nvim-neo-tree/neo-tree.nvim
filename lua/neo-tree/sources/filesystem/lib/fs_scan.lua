@@ -212,7 +212,7 @@ local function get_children_async(path, callback)
       -- so we will just log them for now.
       local _, permission_err_name = uv.translate_sys_error(uv.errno.EPERM)
       if vim.startswith(err, permission_err_name) then
-        log.debug(err)
+        log.debug("get_children_async:", err)
         callback({})
         return
       end
