@@ -208,8 +208,14 @@ end
 local function get_children_async(path, callback)
   uv.fs_opendir(path, function(err, dir)
     if err then
-      callback({})
-      return
+      -- Permission errors may be common when scanning over lots of folders,
+      -- so we will just log them for now.
+      local _, permission_err_name = uv.translate_sys_error(uv.errno.EPERM)
+      if vim.startswith(err, permission_err_name) then
+        log.debug(err)
+        callback({})
+        return
+      end
     end
     uv.fs_readdir(dir, function(_, stats)
       local children = {}
