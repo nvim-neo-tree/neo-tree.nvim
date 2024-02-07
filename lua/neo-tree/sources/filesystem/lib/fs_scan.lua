@@ -210,7 +210,7 @@ local function get_children_async(path, callback)
     if err then
       -- Permission errors may be common when scanning over lots of folders,
       -- so we will just log them for now.
-      if vim.startswith(err, "EPERM") then
+      if vim.startswith(err, "EPERM") or vim.startswith(err, "EACCES") then
         log.debug("get_children_async:", err)
         callback({})
         return
