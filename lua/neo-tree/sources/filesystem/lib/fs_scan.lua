@@ -188,36 +188,49 @@ local function process_node(context, path)
   on_directory_loaded(context, path)
 end
 
+---@param err string libuv error
+---@return boolean is_permission_error
+local function is_permission_error(err)
+  -- Permission errors may be common when scanning over lots of folders;
+  -- this is used to check for them and log to `debug` instead of `error`.
+  return vim.startswith(err, "EPERM") or vim.startswith(err, "EACCES")
+end
+
 local function get_children_sync(path)
   local children = {}
-  local success, dir = pcall(vim.loop.fs_opendir, path, nil, 1000)
-  if not success then
-    log.error("Error opening dir:", dir)
+  local dir, dir_err = vim.loop.fs_opendir(path, nil, 1000)
+  if dir_err then
+    if is_permission_error(dir_err) then
+      log.debug(dir_err)
+    else
+      log.error(dir_err)
+    end
+    return children
   end
-  local success2, stats = pcall(vim.loop.fs_readdir, dir)
-  if success2 and stats then
+  local stats = vim.loop.fs_readdir(dir)
+  if stats then
     for _, stat in ipairs(stats) do
       local child_path = utils.path_join(path, stat.name)
       table.insert(children, { path = child_path, type = stat.type })
     end
   end
-  pcall(vim.loop.fs_closedir, dir)
+  vim.loop.fs_closedir(dir)
   return children
 end
 
 local function get_children_async(path, callback)
+  local children = {}
   uv.fs_opendir(path, function(err, dir)
     if err then
-      -- Permission errors may be common when scanning over lots of folders,
-      -- so we will just log them for now.
-      if vim.startswith(err, "EPERM") or vim.startswith(err, "EACCES") then
-        log.debug("get_children_async:", err)
-        callback({})
-        return
+      if is_permission_error(err) then
+        log.debug(err)
+      else
+        log.error(err)
       end
+      callback(children)
+      return
     end
     uv.fs_readdir(dir, function(_, stats)
-      local children = {}
       if stats then
         for _, stat in ipairs(stats) do
           local child_path = utils.path_join(path, stat.name)
