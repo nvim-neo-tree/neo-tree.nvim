@@ -198,7 +198,7 @@ end
 
 local function get_children_sync(path)
   local children = {}
-  local dir, err = vim.loop.fs_opendir(path, nil, 1000)
+  local dir, err = uv.fs_opendir(path, nil, 1000)
   if err then
     if is_permission_error(err) then
       log.debug(err)
@@ -207,14 +207,14 @@ local function get_children_sync(path)
     end
     return children
   end
-  local stats = vim.loop.fs_readdir(dir)
+  local stats = uv.fs_readdir(dir)
   if stats then
     for _, stat in ipairs(stats) do
       local child_path = utils.path_join(path, stat.name)
       table.insert(children, { path = child_path, type = stat.type })
     end
   end
-  vim.loop.fs_closedir(dir)
+  uv.fs_closedir(dir)
   return children
 end
 
