@@ -198,12 +198,12 @@ end
 
 local function get_children_sync(path)
   local children = {}
-  local dir, dir_err = vim.loop.fs_opendir(path, nil, 1000)
-  if dir_err then
-    if is_permission_error(dir_err) then
-      log.debug(dir_err)
+  local dir, err = vim.loop.fs_opendir(path, nil, 1000)
+  if err then
+    if is_permission_error(err) then
+      log.debug(err)
     else
-      log.error(dir_err)
+      log.error(err)
     end
     return children
   end
