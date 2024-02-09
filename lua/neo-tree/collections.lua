@@ -2,13 +2,10 @@ local log = require("neo-tree.log")
 ---@class NeotreeCollections
 local M = {}
 
----@class NeotreeListNode<T> : { prev: NeotreeListNode<T>|nil, next: NeotreeListNode<T>|nil, value: T }
+---@class NeotreeListNode
 M.Node = {}
 
 ---Create new NeotreeListNode of type <T>
----@generic T
----@param value T
----@return NeotreeListNode<T>
 function M.Node:new(value)
   local props = { prev = nil, next = nil, value = value }
   setmetatable(props, self)
@@ -16,7 +13,7 @@ function M.Node:new(value)
   return props
 end
 
----@class NeotreeLinkedList<T> : { head: NeotreeListNode<T>, tail: NeotreeListNode<T>, size: integer }
+---@class NeotreeLinkedList
 M.LinkedList = {}
 function M.LinkedList:new()
   local props = { head = nil, tail = nil, size = 0 }
@@ -26,9 +23,6 @@ function M.LinkedList:new()
 end
 
 ---Add NeotreeListNode into linked list
----@generic T
----@param node NeotreeListNode<T>
----@return NeotreeListNode<T>
 function M.LinkedList:add_node(node)
   if self.head == nil then
     self.head = node
@@ -43,8 +37,6 @@ function M.LinkedList:add_node(node)
 end
 
 ---Remove NeotreeListNode from a linked list
----@generic T
----@param node NeotreeListNode<T>
 function M.LinkedList:remove_node(node)
   if node.prev ~= nil then
     node.prev.next = node.next
@@ -74,7 +66,7 @@ function M.LinkedList:clear()
   end
 end
 
----@class (exact) NeotreeQueue<T> : { _list: NeotreeLinkedList<T> }
+---@class NeotreeQueue
 ---@field _list NeotreeLinkedList
 M.Queue = {}
 
@@ -87,16 +79,12 @@ function M.Queue:new()
 end
 
 ---Add an element to the end of the queue.
----@generic T
----@param value T The value to add.
 function M.Queue:add(value)
   self._list:add_node(M.Node:new(value))
 end
 
 ---Iterates over the entire list, running func(value) on each element.
 ---If func returns true, the element is removed from the list.
----@generic T
----@param func fun(node: T): boolean|{ handled: boolean } # The function to run on each element.
 function M.Queue:for_each(func)
   local node = self._list.head
   while node ~= nil do
