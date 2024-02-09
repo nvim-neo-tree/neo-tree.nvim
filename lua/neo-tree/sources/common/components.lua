@@ -1,22 +1,24 @@
--- This file contains the built-in components. Each componment is a function
--- that takes the following arguments:
---      config: A table containing the configuration provided by the user
---              when declaring this component in their renderer config.
---      node:   A NuiNode object for the currently focused node.
---      state:  The current state of the source providing the items.
---
--- The function should return either a table, or a list of tables, each of which
--- contains the following keys:
---    text:      The text to display for this item.
---    highlight: The highlight group to apply to this text.
-
 local highlights = require("neo-tree.ui.highlights")
 local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local log = require("neo-tree.log")
 
+---This file contains the built-in components. Each componment is a function
+---that takes the following arguments:
+---     config: A table containing the configuration provided by the user
+---             when declaring this component in their renderer config.
+---     node:   A NuiNode object for the currently focused node.
+---     state:  The current state of the source providing the items.
+---
+---The function should return either a table, or a list of tables, each of which
+---contains the following keys:
+---   text:      The text to display for this item.
+---   highlight: The highlight group to apply to this text.
+---@type table<string, NeotreeComponentFunc>
 local M = {}
+---@alias NeotreeComponentFunc fun(config: NeotreeComponentBase, node: NuiTreeNode|NeotreeSourceItem, state: NeotreeState): NeotreeComponentResult|NeotreeComponentResult[]
+---@alias NeotreeComponentResult { text: string, highlight: NeotreeHighlightGroupName }
 
 local make_two_char = function(symbol)
   if vim.fn.strchars(symbol) == 1 then
@@ -79,7 +81,6 @@ end
 ---@return vim.fn.sign_getdefined.ret.item
 local function get_defined_sign(severity)
   local defined
-
   if vim.fn.has("nvim-0.10") > 0 then
     local signs_config = vim.diagnostic.config().signs
     if type(signs_config) == "table" then
@@ -106,13 +107,13 @@ local function get_defined_sign(severity)
     end
     defined = defined and defined[1]
   end
-
   if type(defined) ~= "table" then
     defined = {}
   end
   return defined
 end
 
+---@param config NeotreeComponent.diagnostics
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = diag[node:get_id()]
@@ -127,7 +128,6 @@ M.diagnostics = function(config, node, state)
   end
   local severity = diag_state.severity_string
   local defined = get_defined_sign(severity)
-
   -- check for overrides in the component config
   local severity_lower = severity:lower()
   if config.symbols and config.symbols[severity_lower] then
@@ -138,7 +138,6 @@ M.diagnostics = function(config, node, state)
     defined.text = defined.text or severity:sub(1, 1)
     defined.texthl = config.highlights[severity_lower]
   end
-
   if defined.text and defined.texthl then
     return {
       text = make_two_char(defined.text),
@@ -152,6 +151,7 @@ M.diagnostics = function(config, node, state)
   end
 end
 
+---@param config NeotreeComponent.git_status
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
   if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
@@ -168,7 +168,6 @@ M.git_status = function(config, node, state)
       return {}
     end
   end
-
   local symbols = config.symbols or {}
   local change_symbol
   local change_highlt = highlights.FILE_NAME
@@ -177,12 +176,10 @@ M.git_status = function(config, node, state)
   if node.type == "directory" and git_status:len() == 1 then
     status_symbol = nil
   end
-
   if git_status:sub(1, 1) == " " then
     status_symbol = symbols.unstaged
     status_highlt = highlights.GIT_UNSTAGED
   end
-
   if git_status:match("?$") then
     status_symbol = nil
     status_highlt = highlights.GIT_UNTRACKED
@@ -231,7 +228,6 @@ M.git_status = function(config, node, state)
     change_symbol = symbols.deleted
     change_highlt = highlights.GIT_DELETED
   end
-
   if change_symbol or status_symbol then
     local components = {}
     if type(change_symbol) == "string" and #change_symbol > 0 then
@@ -290,13 +286,14 @@ M.filtered_by = function(config, node, state)
   return result
 end
 
+---@param config NeotreeComponent.icon
 M.icon = function(config, node, state)
   local icon = config.default or " "
   local highlight = config.highlight or highlights.FILE_ICON
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_ICON
     if node.loaded and not node:has_children() then
-      icon = not node.empty_expanded and config.folder_empty or config.folder_empty_open
+      icon = not node.empty_expanded and config.folder_empty or config.folder_empty_open or icon
     elseif node:is_expanded() then
       icon = config.folder_open or "-"
     else
@@ -311,19 +308,17 @@ M.icon = function(config, node, state)
       highlight = hl or highlight
     end
   end
-
   local filtered_by = M.filtered_by(config, node, state)
-
   return {
     text = icon .. " ",
     highlight = filtered_by.highlight or highlight,
   }
 end
 
+---@param config NeotreeComponent.modified
 M.modified = function(config, node, state)
   local opened_buffers = state.opened_buffers or {}
   local buf_info = opened_buffers[node.path]
-
   if buf_info and buf_info.modified then
     return {
       text = (make_two_char(config.symbol) or "[+]"),
@@ -334,6 +329,7 @@ M.modified = function(config, node, state)
   end
 end
 
+---@param config NeotreeComponent.name
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME
   local text = node.name
@@ -343,7 +339,6 @@ M.name = function(config, node, state)
       text = text .. "/"
     end
   end
-
   if node:get_depth() == 1 and node.type ~= "message" then
     highlight = highlights.ROOT_NAME
   else
@@ -356,7 +351,6 @@ M.name = function(config, node, state)
       end
     end
   end
-
   local hl_opened = config.highlight_opened_files
   if hl_opened then
     local opened_buffers = state.opened_buffers or {}
@@ -367,7 +361,6 @@ M.name = function(config, node, state)
       highlight = highlights.FILE_NAME_OPENED
     end
   end
-
   if type(config.right_padding) == "number" then
     if config.right_padding > 0 then
       text = text .. string.rep(" ", config.right_padding)
@@ -375,18 +368,17 @@ M.name = function(config, node, state)
   else
     text = text
   end
-
   return {
     text = text,
     highlight = highlight,
   }
 end
 
+---@param config NeotreeComponent.indent
 M.indent = function(config, node, state)
   if not state.skip_marker_at_level then
     state.skip_marker_at_level = {}
   end
-
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
   local indent_size = config.indent_size or 2
@@ -397,14 +389,12 @@ M.indent = function(config, node, state)
     or config.with_expanders
   local marker_highlight = config.highlight or highlights.INDENT_MARKER
   local expander_highlight = config.expander_highlight or config.highlight or highlights.EXPANDER
-
   local function get_expander()
     if with_expanders and utils.is_expandable(node) then
       return node:is_expanded() and (config.expander_expanded or "")
         or (config.expander_collapsed or "")
     end
   end
-
   if indent_size == 0 or level < 2 or not with_markers then
     local len = indent_size * level + padding
     local expander = get_expander()
@@ -418,21 +408,17 @@ M.indent = function(config, node, state)
       highlight = expander_highlight,
     }
   end
-
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
-
   skip_marker[level] = node.is_last_child
   local indent = {}
   if padding > 0 then
     table.insert(indent, { text = string.rep(" ", padding) })
   end
-
   for i = 1, level do
     local char = ""
     local spaces_count = indent_size
     local highlight = nil
-
     if i > 1 and not skip_marker[i] or i == level then
       spaces_count = spaces_count - 1
       char = indent_marker
@@ -448,14 +434,12 @@ M.indent = function(config, node, state)
         end
       end
     end
-
     table.insert(indent, {
       text = char .. string.rep(" ", spaces_count),
       highlight = highlight,
       no_next_padding = true,
     })
   end
-
   return indent
 end
 
@@ -476,7 +460,6 @@ M.file_size = function(config, node, state)
       highlight = highlights.FILE_STATS_HEADER,
     }
   end
-
   local text = "-"
   if node.type == "file" then
     local stat = utils.get_stat(node)
@@ -488,7 +471,6 @@ M.file_size = function(config, node, state)
       end
     end
   end
-
   return {
     text = string.format("%12s  ", text),
     highlight = config.highlight or highlights.FILE_STATS,
@@ -509,7 +491,6 @@ local file_time = function(config, node, state, stat_field)
       highlight = highlights.FILE_STATS_HEADER,
     }
   end
-
   local stat = utils.get_stat(node)
   local value = stat and stat[stat_field]
   local seconds = value and value.sec or nil
@@ -548,7 +529,6 @@ M.type = function(config, node, state)
       highlight = highlights.FILE_STATS_HEADER,
     }
   end
-
   return {
     text = string.format("%10s  ", text),
     highlight = highlights.FILE_STATS,
