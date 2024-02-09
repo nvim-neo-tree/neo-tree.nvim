@@ -1,8 +1,5 @@
 ---@alias NeotreePathString string # Special type for string which represents a file path
 
----@class NeotreeState
----@field TODO nil # Figure out the fields
-
 ---@class NeotreeNode
 ---@field TODO nil # Figure out the fields
 
@@ -23,5 +20,5 @@
 ---@alias NeotreeConfig.diagnostics_keys "hint"|"info"|"warn"|"error"
 ---@alias NeotreeConfig.components.align "left"|"right"
 
----@alias NeotreeSourceName string
+---@alias NeotreeSourceName string # Unique name for each registered source.
 ---@alias NeotreeSource table # TODO: Define what is required to be a neo-tree source

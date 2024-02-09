@@ -40,6 +40,7 @@
 ---@field sort_function NeotreeTypes.sort_function|nil (nil) uses a custom function for sorting files and directories in the tree
 ---@field use_popups_for_input boolean|nil (true) If false, inputs will use vim.ui.input() instead of custom floats.
 ---@field use_default_mappings boolean|nil (true)
+---@field share_state_among_tabs boolean|nil (false) If true, neotree state is shared across all tabpagesglobal_config.
 ---@field source_selector NeotreeConfig.source_selector|nil -- provides clickable tabs to switch between sources.
 ---@field default_component_configs NeotreeConfig.components|nil
 -- The renderer section provides the renderers that will be used to render the tree.
@@ -116,93 +117,7 @@
 ---@alias NeotreeTypes.selector.separator string|NeotreeTypes.selector.separator.table|nil
 ---@alias NeotreeTypes.selector.separator.table { left: string|nil, right: string|nil, override: string|nil }
 
----@class NeotreeConfig.components
----@field container NeotreeConfig.components.container|nil
----@field diagnostics NeotreeConfig.components.diagnostics|nil
----@field indent NeotreeConfig.components.indent|nil
----@field icon NeotreeConfig.components.icon|nil
----@field modified NeotreeConfig.components.modified|nil
----@field name NeotreeConfig.components.name|nil
----@field git_status NeotreeConfig.components.git_status|nil
----@field [NeotreeConfig.components.enum] NeotreeConfig.components.base|nil
-
----@alias NeotreeConfig.components.enum
----|"container"
----|"diagnostics"
----|"indent"
----|"icon"
----|"modified"
----|"name"
----|"git_status"
----|"file_size"
----|"type"
----|"last_modified"
----|"created"
----|"symlink_target"
----|"bufnr"
----|"clipboard"
----|"current_filter"
----|"kind_icon"
----|"kind_name"
-
----@class NeotreeConfig.components.base : { [1]: NeotreeConfig.components.enum }
----@field enabled boolean|nil (true) You can set `enabled = false` for each of them individually
----@field required_width integer|nil (64) min width of window required to show this column
----@field zindex integer|nil
----@field content NeotreeConfig.components.base[]|nil
-
----@class NeotreeConfig.components.container : NeotreeConfig.components.base
----@field enable_character_fade boolean|nil (true)
----@field width NeotreeConfig.wh|nil ("100%")
----@field right_padding integer|nil (0)
-
----@class NeotreeConfig.components.diagnostics : NeotreeConfig.components.base
----@field symbols { [NeotreeConfig.diagnostics_keys]: string }|nil
----@field highlights { [NeotreeConfig.diagnostics_keys]: NeotreeConfig.highlight }|nil
-
----@class NeotreeConfig.components.indent : NeotreeConfig.components.base
----@field indent_size integer|nil (2)
----@field padding integer|nil (1)
----@field with_markers boolean|nil (true) indent guides
----@field indent_marker string|nil ("│")
----@field last_indent_marker string|nil ("└")
----@field highlight NeotreeConfig.highlight|nil ("NeoTreeIndentMarker")
----@field with_expanders boolean|nil (nil) expander config, needed for nesting files if nil and file nesting is enabled, will enable expanders
----@field expander_collapsed string|nil ("")
----@field expander_expanded string|nil ("")
----@field expander_highlight NeotreeConfig.highlight|nil ("NeoTreeExpander")
-
----@class NeotreeConfig.components.icon : NeotreeConfig.components.base
----@field folder_closed string|nil ("")
----@field folder_open string|nil ("")
----@field folder_empty string|nil ("󰉖")
----@field folder_empty_open string|nil ("󰷏")
----@field default string|nil ("*") # Used as a fallback.
----@field highlight NeotreeConfig.highlight|nil ("NeoTreeFileIcon") # Used as a fallback.
-
----@class NeotreeConfig.components.modified : NeotreeConfig.components.base
----@field symbol string|nil ("[+] ")
----@field highlight NeotreeConfig.highlight|nil ("NeoTreeModified")
-
----@class NeotreeConfig.components.name : NeotreeConfig.components.base
----@field trailing_slash boolean|nil (false)
----@field highlight_opened_files NeotreeConfig.components.name.highlight_opened_files|nil (false) Requires `enable_opened_markers = true`.
----@field use_git_status_colors boolean|nil (true)
----@field highlight NeotreeConfig.highlight|nil ("NeoTreeFileName")
-
----@alias NeotreeConfig.components.name.highlight_opened_files
----|true  # Hightlight only loaded files
----|false # Do nothing
----|"all" # Highlight both loaded and unloaded files
-
----@class NeotreeConfig.components.git_status : NeotreeConfig.components.base
----@field symbols { [NeotreeConfig.components.git_status.symbol_change|NeotreeConfig.components.git_status.symbol_status]: string }|nil
----@field align NeotreeConfig.components.align|nil ("right")
-
----@alias NeotreeConfig.components.git_status.symbol_change "added" | "deleted" | "modified" | "renamed"
----@alias NeotreeConfig.components.git_status.symbol_status "untracked" | "ignored" | "unstaged" | "staged" | "conflict"
-
----@alias NeotreeConfig.renderers { [string]: NeotreeConfig.components.base[] }
+---@alias NeotreeConfig.renderers { [string]: NeotreeComponentBase[] }
 
 ---@class NeotreeConfig.window
 ---@field position NeotreeWindowPosition|nil ("left") left, right, top, bottom, float, current
@@ -289,6 +204,19 @@
 ---@field hide_by_pattern string[]|nil ({}) uses glob style patterns
 ---@field always_show string[]|nil ({}) remains visible even if other settings would normally hide it
 ---@field never_show string[]|nil ({}) remains hidden even if visible is toggled to true, this overrides always_show
+---@field never_show_by_pattern string[]|nil ({}) uses glob style patterns
+
+---@class NeotreeConfig.filesystem.filtered_items_optimized
+---@field visible boolean|nil (false) when true, they will just be displayed differently than normal items
+---@field force_visible_in_empty_folder boolean|nil (false) when true, hidden files will be shown if the root folder is otherwise empty
+---@field show_hidden_count boolean|nil (true) when true, the number of hidden items in each folder will be shown as the last entry
+---@field hide_dotfiles boolean|nil (true)
+---@field hide_gitignored boolean|nil (true)
+---@field hide_hidden boolean|nil (true) only works on Windows for hidden files/directories
+---@field hide_by_name table<string, boolean>|nil ({ ".DS_Store", "thumbs.db" })
+---@field hide_by_pattern string[]|nil ({}) uses glob style patterns
+---@field always_show table<string, boolean>|nil ({}) remains visible even if other settings would normally hide it
+---@field never_show table<string, boolean>|nil ({}) remains hidden even if visible is toggled to true, this overrides always_show
 ---@field never_show_by_pattern string[]|nil ({}) uses glob style patterns
 
 ---@class NeotreeConfig.filesystem.follow_current_file
