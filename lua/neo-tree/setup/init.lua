@@ -110,7 +110,7 @@ end
 local store_local_window_settings = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   local neo_tree_settings_applied =
-    utils.neo_tree_get_win_var(winid, e.win_vars.neo_tree_settings_applied, "boolean")
+    utils.neo_tree_get_win_var(winid, e.win_vars.NEO_TREE_SETTINGS_APPLIED, "boolean")
   if neo_tree_settings_applied then
     -- don't store our own window settings
     return
@@ -145,7 +145,7 @@ local restore_local_window_settings = function(winid)
     vim.wo.relativenumber = wo.relativenumber
     vim.wo.winhighlight = wo.winhighlight
     log.debug("Window settings restored")
-    utils.neo_tree_set_win_var(0, e.win_vars.neo_tree_settings_applied, false)
+    utils.neo_tree_set_win_var(0, e.win_vars.NEO_TREE_SETTINGS_APPLIED, false)
   else
     log.debug("No window settings to restore")
   end
@@ -227,20 +227,20 @@ M.buffer_enter_event = function()
   end
   local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
-    local position = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_position, "string")
+    local position = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.NEO_TREE_POSITION, "string")
     if not position or position == "current" then
       -- nothing to do here, files are supposed to open in same window
       return
     end
 
     local current_tabid = vim.api.nvim_get_current_tabpage()
-    local old_tabid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_tabid, "integer")
+    local old_tabid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.NEO_TREE_TABID, "integer")
     if not old_tabid or old_tabid ~= current_tabid then
       -- This a new tab, so the alternate being neo-tree doesn't matter.
       return
     end
     local current_winid = vim.api.nvim_get_current_win()
-    local old_winid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.neo_tree_winid, "integer")
+    local old_winid = utils.neo_tree_get_buf_var(prior_buf, e.buf_vars.NEO_TREE_WINID, "integer")
     if not old_winid or old_winid ~= current_winid then
       -- This is not the neo-tree window, so the alternate being neo-tree doesn't matter.
       return
@@ -287,8 +287,8 @@ M.win_enter_event = function()
     log.trace("prior window exists = ", prior_exists)
     log.trace("win_count: ", win_count)
     if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
-      local position = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_position, "string")
-      local source = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_source, "string")
+      local position = utils.neo_tree_get_buf_var(0, e.buf_vars.NEO_TREE_POSITION, "string")
+      local source = utils.neo_tree_get_buf_var(0, e.buf_vars.NEO_TREE_SOURCE, "string")
       if position ~= "current" then
         -- close_if_last_window just doesn't make sense for a split style
         log.trace("last window, closing")
@@ -327,10 +327,10 @@ M.win_enter_event = function()
   end
 
   if vim.o.filetype == "neo-tree" then
-    local position = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_position, "string")
+    local position = utils.neo_tree_get_buf_var(0, e.buf_vars.NEO_TREE_POSITION, "string")
     if position == "current" then
       -- make sure the buffer wasn't moved to a new window
-      local old_winid = utils.neo_tree_get_buf_var(0, e.buf_vars.neo_tree_winid, "integer")
+      local old_winid = utils.neo_tree_get_buf_var(0, e.buf_vars.NEO_TREE_WINID, "integer")
       local current_winid = vim.api.nvim_get_current_win()
       local current_bufnr = vim.api.nvim_get_current_buf()
       if old_winid ~= current_winid then
@@ -385,7 +385,7 @@ M.win_enter_event = function()
   end
 end
 
----@param components NeotreeConfig.components.base
+---@param components NeotreeComponentBase
 ---@param config NeotreeConfig
 local function merge_global_components_config(components, config)
   local indent_exists = false
@@ -597,10 +597,10 @@ M.merge_config = function(user_config, is_auto_config)
 
     -- validate the window.position
     local pos_key = source_name .. ".window.position"
-    local position = utils.get_value(user_config, pos_key, e.valid_window_positions.left, true)
+    local position = utils.get_value(user_config, pos_key, e.valid_window_positions.LEFT, true)
     if not e.valid_window_positions[position] then
       log.error("Invalid value for ", pos_key, ": ", position)
-      user_config[source_name].window.position = e.valid_window_positions.left
+      user_config[source_name].window.position = e.valid_window_positions.LEFT
     end
   end
 
