@@ -307,7 +307,7 @@ M.win_enter_event = function()
               log.warn(message)
               vim.cmd("rightbelow vertical split")
               vim.api.nvim_win_set_width(win_id, state.window.width or 40)
-              vim.cmd("b" .. buf_name)
+              vim.cmd("b " .. buf_name)
             end)
             return
           end
