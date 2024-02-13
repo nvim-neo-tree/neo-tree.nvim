@@ -642,8 +642,11 @@ end
 
 ---Functions to save and restore the focused node.
 M.position = {
-  save = function(state)
-    if state.position.topline and state.position.lnum then
+  save = function(state, overwritable)
+    overwritable = overwritable or false
+
+    -- Save from render_tree can be overwritten.
+    if state.position.topline and state.position.lnum and not state.position.is.overwritable then
       log.debug("There's already a position saved to be restored. Cannot save another.")
       return
     end
@@ -652,6 +655,7 @@ M.position = {
       local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
       state.position.topline = win_state.topline
       state.position.lnum = win_state.lnum
+      state.position.is.overwritable = overwritable
       log.debug("Saved cursor position with lnum: " .. state.position.lnum)
       log.debug("Saved window position with topline: " .. state.position.topline)
       -- Only need to restore the cursor state once per save, comes
@@ -678,6 +682,7 @@ M.position = {
         -- Clear saved position, so that we can save another position later.
         state.position.topline = nil
         state.position.lnum = nil
+        state.position.is.overwritable = nil
       end
       if state.position.node_id then
         log.debug("Focusing on node_id: " .. state.position.node_id)
@@ -1144,7 +1149,7 @@ render_tree = function(state)
   local should_pre_render = should_auto_expand or state.current_position == "current"
 
   log.debug("render_tree: Saving position")
-  M.position.save(state)
+  M.position.save(state, true)
 
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
