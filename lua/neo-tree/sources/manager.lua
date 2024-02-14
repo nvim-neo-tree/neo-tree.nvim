@@ -520,7 +520,9 @@ end
 --- DEPRECATED: To be removed in 4.0
 --- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
 M.reveal_current_file = function(source_name, callback, force_cwd)
-  log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]])
+  log.warn(
+    [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]]
+  )
 
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
@@ -566,7 +568,9 @@ end
 --- DEPRECATED: To be removed in 4.0
 --- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
 M.reveal_in_split = function(source_name, callback)
-  log.warn([[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]])
+  log.warn(
+    [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]]
+  )
 
   local state = M.get_state(source_name, nil, vim.api.nvim_get_current_win())
   state.current_position = "current"

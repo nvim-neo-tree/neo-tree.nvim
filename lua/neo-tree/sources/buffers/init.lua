@@ -11,7 +11,7 @@ local git = require("neo-tree.git")
 
 local M = {
   name = "buffers",
-  display_name = " 󰈚 Buffers "
+  display_name = " 󰈚 Buffers ",
 }
 
 local wrap = function(func)

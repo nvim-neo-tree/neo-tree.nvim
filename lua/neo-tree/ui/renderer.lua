@@ -112,7 +112,6 @@ end
 ---@param state table State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
 M.close = function(state, focus_prior_window)
-
   log.debug("Closing window, but saving position first.")
   M.position.save(state)
 
@@ -699,7 +698,7 @@ M.position = {
 M.redraw = function(state)
   if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
-    -- every now and then this will fail because the window was closed in 
+    -- every now and then this will fail because the window was closed in
     -- betweeen the start of an async refresh and the redraw call.
     -- This is not a problem, so we just ignore the error.
     local success = pcall(render_tree, state)
@@ -885,39 +884,39 @@ local set_buffer_mappings = function(state)
 end
 
 local function create_floating_window(state, win_options, bufname)
-    local win
-    state.force_float = nil
-    -- First get the default options for floating windows.
-    local sourceTitle = state.name:gsub("^%l", string.upper)
-    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
-    win_options.win_options = nil
-    win_options.zindex = 40
+  local win
+  state.force_float = nil
+  -- First get the default options for floating windows.
+  local sourceTitle = state.name:gsub("^%l", string.upper)
+  win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+  win_options.win_options = nil
+  win_options.zindex = 40
 
-    -- Then override with source specific options.
-    local b = win_options.border
-    win_options.size = utils.resolve_config_option(state, "window.popup.size", default_popup_size)
-    win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
-    win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
+  -- Then override with source specific options.
+  local b = win_options.border
+  win_options.size = utils.resolve_config_option(state, "window.popup.size", default_popup_size)
+  win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
+  win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
 
-    win = NuiPopup(win_options)
-    win:mount()
-    win.source_name = state.name
-    win.original_options = state.window
-    table.insert(floating_windows, win)
+  win = NuiPopup(win_options)
+  win:mount()
+  win.source_name = state.name
+  win.original_options = state.window
+  table.insert(floating_windows, win)
 
-    win:on({ "BufHidden" }, function()
-      vim.schedule(function()
-        win:unmount()
-      end)
-    end, { once = true })
-    state.winid = win.winid
-    state.bufnr = win.bufnr
-    log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
-    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+  win:on({ "BufHidden" }, function()
+    vim.schedule(function()
+      win:unmount()
+    end)
+  end, { once = true })
+  state.winid = win.winid
+  state.bufnr = win.bufnr
+  log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
+  vim.api.nvim_buf_set_name(state.bufnr, bufname)
 
-    -- why is this necessary?
-    vim.api.nvim_set_current_win(win.winid)
-    return win
+  -- why is this necessary?
+  vim.api.nvim_set_current_win(win.winid)
+  return win
 end
 
 local get_buffer = function(bufname, state)

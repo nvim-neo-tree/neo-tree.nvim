@@ -1,11 +1,4 @@
 local vim = vim
-local log = require("neo-tree.log")
-local filesize = require("neo-tree.utils.filesize.filesize")
-local bit = require("bit")
-local ffi_available, ffi = pcall(require, "ffi")
-
-local FILE_ATTRIBUTE_HIDDEN = 0x2
-
 if ffi_available then
   ffi.cdef([[
   int GetFileAttributesA(const char *path);
@@ -459,6 +452,58 @@ M.set_value = function(sourceObject, valuePath, value)
   end
 end
 
+---Call `vim.api.nvim_buf_get_var` to capture buf var.
+---@generic T
+---@param bufnr integer
+---@param key NeotreeBufVar
+---@param validate_type `T`
+---@return `T`|nil
+M.neo_tree_get_buf_var = function(bufnr, key, validate_type)
+  local success, value = pcall(vim.api.nvim_buf_get_var, bufnr, key)
+  if validate_type == "integer" then -- "integer" is not a _real_ lua type
+    validate_type = "number"
+  end
+  if success and type(value) == validate_type then
+    return value
+  end
+  return nil
+end
+
+---Call `vim.api.nvim_buf_set_var` to set a buf var.
+---@generic T
+---@param bufnr integer
+---@param key NeotreeBufVar
+---@param value T
+M.neo_tree_set_buf_var = function(bufnr, key, value)
+  pcall(vim.api.nvim_buf_set_var, bufnr, key, value)
+end
+
+---Call `vim.api.nvim_win_get_var` to capture win var.
+---@generic T
+---@param winid integer
+---@param key NeotreeWinVar
+---@param validate_type `T`
+---@return `T`|nil
+M.neo_tree_get_win_var = function(winid, key, validate_type)
+  local success, value = pcall(vim.api.nvim_win_get_var, winid, key)
+  if validate_type == "integer" then -- "integer" is not a _real_ lua type
+    validate_type = "number"
+  end
+  if success and type(value) == validate_type then
+    return value
+  end
+  return nil
+end
+
+---Call `vim.api.nvim_win_set_var` to set a win var.
+---@generic T
+---@param winid integer
+---@param key NeotreeWinVar
+---@param value T
+M.neo_tree_set_win_var = function(winid, key, value)
+  pcall(vim.api.nvim_win_set_var, winid, key, value)
+end
+
 ---Groups an array of items by a key.
 ---@param array table The array to group.
 ---@param key string The key to group by.
@@ -654,7 +699,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
   if bufnr <= 0 then
     bufnr = nil
   else
-    local buf_cmd_lookup = { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
+    local buf_cmd_lookup =
+      { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
     local cmd_for_buf = buf_cmd_lookup[open_cmd]
     if cmd_for_buf then
       open_cmd = cmd_for_buf

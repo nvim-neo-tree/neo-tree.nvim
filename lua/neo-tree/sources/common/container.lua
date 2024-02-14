@@ -85,7 +85,7 @@ local render_content = function(config, node, state, context)
         vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
-        ::continue::
+      ::continue::
     end
 
     max_width = math.max(max_width, rendered_width)

@@ -60,24 +60,24 @@ function M.has_match(needle, haystack, case_sensitive)
 end
 
 local function is_lower(c)
-  return c:match('%l')
+  return c:match("%l")
 end
 
 local function is_upper(c)
-  return c:match('%u')
+  return c:match("%u")
 end
 
 local function precompute_bonus(haystack)
   local match_bonus = {}
 
-  local last_char = '/'
+  local last_char = "/"
   for i = 1, string.len(haystack) do
     local this_char = haystack:sub(i, i)
-    if last_char == '/' or last_char == '\\' then
+    if last_char == "/" or last_char == "\\" then
       match_bonus[i] = SCORE_MATCH_SLASH
-    elseif last_char == '-' or last_char == '_' or last_char == ' ' then
+    elseif last_char == "-" or last_char == "_" or last_char == " " then
       match_bonus[i] = SCORE_MATCH_WORD
-    elseif last_char == '.' then
+    elseif last_char == "." then
       match_bonus[i] = SCORE_MATCH_DOT
     elseif is_lower(last_char) and is_upper(this_char) then
       match_bonus[i] = SCORE_MATCH_CAPITAL
@@ -200,7 +200,9 @@ function M.score_and_positions(needle, haystack, case_sensitive)
   for i = n, 1, -1 do
     while j >= 1 do
       if D[i][j] ~= SCORE_MIN and (match_required or D[i][j] == T[i][j]) then
-        match_required = (i ~= 1) and (j ~= 1) and (T[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
+        match_required = (i ~= 1)
+          and (j ~= 1)
+          and (T[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
         positions[i] = j
         j = j - 1
         break
@@ -240,7 +242,7 @@ function M.get_score_ceiling()
 end
 
 function M.get_implementation_name()
-  return 'lua'
+  return "lua"
 end
 
 return M
