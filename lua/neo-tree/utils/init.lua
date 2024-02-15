@@ -1220,4 +1220,33 @@ M.brace_expand = function(s)
   return result
 end
 
+---Indexes a table that uses paths as keys. Case-insensitive logic is used when
+---running on Windows.
+---
+---Consideration should be taken before using this function, because it is a
+---bit expensive on Windows. However, this function helps when trying to index
+---with absolute path keys, which can have inconsistent casing on Windows (such
+---as with drive letters).
+---@param tbl table
+---@param key string
+---@return unknown
+M.index_by_path = function(tbl, key)
+  local value = tbl[key]
+  if value ~= nil then
+    return value
+  end
+
+  -- on windows, paths that differ only by case are considered equal
+  if M.is_windows then
+    local key_lower = key:lower()
+    for k, v in pairs(tbl) do
+      if key_lower == k:lower() then
+        return v
+      end
+    end
+  end
+
+  return value
+end
+
 return M
