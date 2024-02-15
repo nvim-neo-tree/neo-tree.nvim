@@ -699,7 +699,7 @@ M.position = {
 M.redraw = function(state)
   if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
-    -- every now and then this will fail because the window was closed in 
+    -- every now and then this will fail because the window was closed in
     -- betweeen the start of an async refresh and the redraw call.
     -- This is not a problem, so we just ignore the error.
     local success = pcall(render_tree, state)
@@ -938,6 +938,9 @@ local get_buffer = function(bufname, state)
     vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
     vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
     vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+    autocmd.buf.define(bufnr, "BufDelete", function()
+      M.position.save(state)
+    end)
   end
   return bufnr
 end
@@ -1036,6 +1039,10 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabid", state.tabid)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_position", state.current_position)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
+    -- Used to track the position of the cursor within the tree as it gains and loses focus
+    win:on({ "BufDelete" }, function()
+      M.position.save(state)
+    end)
   end
 
   if win ~= nil then
