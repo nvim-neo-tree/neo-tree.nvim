@@ -1039,15 +1039,15 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabid", state.tabid)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_position", state.current_position)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
-    -- Used to track the position of the cursor within the tree as it gains and loses focus
-    win:on({ "BufDelete" }, function()
-      M.position.save(state)
-    end)
   end
 
   if win ~= nil then
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
+    -- Used to track the position of the cursor within the tree as it gains and loses focus
+    win:on({ "BufDelete" }, function()
+      M.position.save(state)
+    end)
     win:on({ "BufDelete" }, function()
       win:unmount()
     end, { once = true })
