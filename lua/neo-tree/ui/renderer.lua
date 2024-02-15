@@ -938,9 +938,6 @@ local get_buffer = function(bufname, state)
     vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
     vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
     vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
-    autocmd.buf.define(bufnr, "WinLeave", function()
-      M.position.save(state)
-    end)
   end
   return bufnr
 end
@@ -1044,16 +1041,6 @@ M.acquire_window = function(state)
   if win ~= nil then
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
-    -- Used to track the position of the cursor within the tree as it gains and loses focus
-    --
-    -- Note `WinEnter` is often too early to restore the cursor position so we do not set
-    -- that up here, and instead trigger those events manually after drawing the tree (not
-    -- to mention that it would be too late to register `WinEnter` here for the first
-    -- iteration of that event on the tree window)
-    win:on({ "WinLeave" }, function()
-      M.position.save(state)
-    end)
-
     win:on({ "BufDelete" }, function()
       win:unmount()
     end, { once = true })
