@@ -351,12 +351,13 @@ M.set_cwd = function(state)
 
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
+    local path = utils.escape_path_for_cmd(state.path)
     if winid > 0 then
-      vim.cmd("lcd " .. state.path)
+      vim.cmd("lcd " .. path)
     elseif tabnr > 0 then
-      vim.cmd("tcd " .. state.path)
+      vim.cmd("tcd " .. path)
     else
-      vim.cmd("cd " .. state.path)
+      vim.cmd("cd " .. path)
     end
   end
 end
