@@ -1237,6 +1237,7 @@ M.index_by_path = function(tbl, key)
   end
 
   -- on windows, paths that differ only by case are considered equal
+  -- TODO: we should optimize this, see discussion in #1353
   if M.is_windows then
     local key_lower = key:lower()
     for k, v in pairs(tbl) do
