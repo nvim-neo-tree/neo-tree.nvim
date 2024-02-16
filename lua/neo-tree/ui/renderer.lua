@@ -522,8 +522,10 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
     end
     local success, err = pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
 
-    -- now ensure that the window is scrolled correctly
     if success then
+      -- forget about cursor position as it is overwritten
+      M.position.clear(state)
+      -- now ensure that the window is scrolled correctly
       local execute_win_command = function(cmd)
         if vim.api.nvim_get_current_win() == state.winid then
           vim.cmd(cmd)
@@ -667,6 +669,16 @@ M.position = {
     state.position.node_id = node_id
     state.position.is.restorable = true
   end,
+  clear = function (state)
+    log.debug("Forget about cursor position.")
+    -- Clear saved position, so that we can save another position later.
+    state.position.topline = nil
+    state.position.lnum = nil
+    -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
+    -- focus on it anymore
+    state.position.node_id = nil
+    state.position.is.restorable = false
+  end,
   restore = function(state)
     if state.position.is.restorable then
       if state.position.topline and state.position.lnum then
@@ -675,21 +687,15 @@ M.position = {
         vim.api.nvim_win_call(state.winid, function()
           vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
         end)
-        -- Clear saved position, so that we can save another position later.
-        state.position.topline = nil
-        state.position.lnum = nil
       end
       if state.position.node_id then
         log.debug("Focusing on node_id: " .. state.position.node_id)
         M.focus_node(state, state.position.node_id, true)
-        -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
-        -- focus on it anymore
-        state.position.node_id = nil
       end
     else
       log.debug("Position is not restorable")
     end
-    state.position.is.restorable = false
+    M.position.clear(state)
   end,
   is = { restorable = true },
 }
