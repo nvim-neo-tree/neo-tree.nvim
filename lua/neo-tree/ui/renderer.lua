@@ -649,17 +649,12 @@ M.position = {
       log.debug("There's already a position saved to be restored. Cannot save another.")
       return
     end
-
     if state.tree and M.window_exists(state) then
       local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
       state.position.topline = win_state.topline
       state.position.lnum = win_state.lnum
       log.debug("Saved cursor position with lnum: " .. state.position.lnum)
       log.debug("Saved window position with topline: " .. state.position.topline)
-      -- Only need to restore the cursor state once per save, comes
-      -- into play when some actions fire multiple times per "iteration"
-      -- within the scope of where we need to perform the restore operation
-      state.position.is.restorable = true
     end
   end,
   set = function(state, node_id)
@@ -667,7 +662,6 @@ M.position = {
       return
     end
     state.position.node_id = node_id
-    state.position.is.restorable = true
   end,
   clear = function (state)
     log.debug("Forget about cursor position.")
@@ -677,27 +671,21 @@ M.position = {
     -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
     -- focus on it anymore
     state.position.node_id = nil
-    state.position.is.restorable = false
   end,
   restore = function(state)
-    if state.position.is.restorable then
-      if state.position.topline and state.position.lnum then
-        log.debug("Restoring window position to topline: " .. state.position.topline)
-        log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
-        vim.api.nvim_win_call(state.winid, function()
-          vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
-        end)
-      end
-      if state.position.node_id then
-        log.debug("Focusing on node_id: " .. state.position.node_id)
-        M.focus_node(state, state.position.node_id, true)
-      end
-    else
-      log.debug("Position is not restorable")
+    if state.position.topline and state.position.lnum then
+      log.debug("Restoring window position to topline: " .. state.position.topline)
+      log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
+      vim.api.nvim_win_call(state.winid, function()
+        vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
+      end)
+    end
+    if state.position.node_id then
+      log.debug("Focusing on node_id: " .. state.position.node_id)
+      M.focus_node(state, state.position.node_id, true)
     end
     M.position.clear(state)
   end,
-  is = { restorable = true },
 }
 
 ---Redraw the tree without relaoding from the source.

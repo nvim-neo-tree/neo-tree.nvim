@@ -39,9 +39,7 @@ local function create_state(tabid, sd, winid)
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
-  state.position = {
-    is = { restorable = false },
-  }
+  state.position = {}
   state.git_base = "HEAD"
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
