@@ -85,7 +85,6 @@ local follow_internal = function(callback, force_show, async)
     end
   end
 
-  state.position.is.restorable = false -- we will handle setting cursor position here
   fs_scan.get_items(state, nil, path_to_reveal, function()
     show_only_explicitly_opened()
     renderer.focus_node(state, path_to_reveal, true)
@@ -129,12 +128,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 
   if path_to_reveal then
     renderer.position.set(state, path_to_reveal)
-    log.debug(
-      "navigate_internal: in path_to_reveal, state.position is ",
-      state.position.node_id,
-      ", restorable = ",
-      state.position.is.restorable
-    )
+    log.debug("navigate_internal: in path_to_reveal, state.position=", state.position.node_id)
     fs_scan.get_items(state, nil, path_to_reveal, callback)
   else
     local is_current = state.current_position == "current"
