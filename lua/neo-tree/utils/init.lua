@@ -759,9 +759,6 @@ end
 ---@return string string The normalized path.
 M.normalize_path = function(path)
   if M.is_windows then
-    if not M.truthy(path) then
-      return path
-    end
     -- normalize the drive letter to uppercase
     path = path:sub(1, 1):upper() .. path:sub(2)
     -- Turn mixed forward and back slashes into all forward slashes
