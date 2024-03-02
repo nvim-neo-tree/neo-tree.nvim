@@ -17,6 +17,13 @@ M.show_input = function(input, callback)
   if config.enable_normal_mode_for_inputs and input.prompt_type ~= "confirm" then
     vim.schedule(function()
       vim.cmd("stopinsert")
+      if type(config.enable_normal_mode_for_inputs) == "function" then
+        config.enable_normal_mode_for_inputs(input)
+      elseif type(config.enable_normal_mode_for_inputs) == "string" then
+        vim.cmd(config.enable_normal_mode_for_inputs)
+      elseif type(config.enable_normal_mode_for_inputs) == "table" then
+        vim.cmd(config.enable_normal_mode_for_inputs)
+      end
     end)
   end
 
