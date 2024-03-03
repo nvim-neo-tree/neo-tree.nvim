@@ -24,6 +24,7 @@ local M = {
   NEO_TREE_LSP_UPDATE = "neo_tree_lsp_update",
   NEO_TREE_POPUP_BUFFER_ENTER = "neo_tree_popup_buffer_enter",
   NEO_TREE_POPUP_BUFFER_LEAVE = "neo_tree_popup_buffer_leave",
+  NEO_TREE_POPUP_INPUT_READY = "neo_tree_popup_input_ready",
   NEO_TREE_WINDOW_AFTER_CLOSE = "neo_tree_window_after_close",
   NEO_TREE_WINDOW_AFTER_OPEN = "neo_tree_window_after_open",
   NEO_TREE_WINDOW_BEFORE_CLOSE = "neo_tree_window_before_close",

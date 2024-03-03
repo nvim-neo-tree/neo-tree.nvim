@@ -1431,6 +1431,21 @@ have.
 "neo_tree_popup_buffer_leave"~
 Fired after leaving a neo-tree popup buffer.
 
+"neo_tree_popup_input_ready"~
+Fired after NuiInput is ready. Use this event to default to normal mode etc.
+This is fired inside a vim.schedule.
+
+>lua
+    {
+      event = "neo_tree_popup_input_ready",
+      ---@param input NuiInput
+      handler = function(input)
+        -- enter input popup with normal mode by default.
+        vim.cmd("stopinsert")
+      end,
+    }
+<
+
 "neo_tree_window_before_open"~
 Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
