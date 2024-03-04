@@ -111,6 +111,8 @@ M.migrate = function(config)
     "enable_normal_mode_for_inputs",
     [[
 Please use `neo_tree_popup_input_ready` event instead and call `stopinsert` inside the handler.
+<https://github.com/nvim-neo-tree/neo-tree.nvim/pull/1372>
+
 See instructions in `:h neo-tree-events` for more details.
 
 ```lua
