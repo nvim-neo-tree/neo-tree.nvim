@@ -664,7 +664,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = M.escape_path(path)
+    local escaped_path = M.escape_path_for_cmd(path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
@@ -1000,10 +1000,29 @@ M.windowize_path = function(path)
   return path:gsub("/", "\\")
 end
 
-M.escape_path = function(path)
+---Escapes a path primarily relying on `vim.fn.fnameescape`. This function should
+---only be used when preparing a path to be used in a vim command, such as `:e`.
+---
+---For Windows systems, this function handles punctuation characters that will
+---be escaped, but may appear at the beginning of a path segment. For example,
+---the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
+---will remain unchanged when escaped by `fnaemescape` on a Windows system.
+---However, if that string is used to edit a file with `:e`, `:b`, etc., the open
+---parenthesis will be treated as an escaped character and the path separator will
+---be lost.
+---
+---For more details, see issue #889 when this function was introduced, and further
+---discussions in #1264 and #1352.
+---@param path string
+---@return string
+M.escape_path_for_cmd = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    escaped_path = escaped_path:gsub("\\", "/"):gsub("/ ", " ")
+    -- on windows, any punctuation preceeded by a `\` needs to have a second `\`
+    -- added to preserve the path separator. this is a naive replacement and
+    -- definitely not bullet proof. if we start finding issues with opening files
+    -- or changing directories, look here first.
+    escaped_path = escaped_path:gsub("\\%p", "\\%1")
   end
   return escaped_path
 end
@@ -1199,6 +1218,36 @@ M.brace_expand = function(s)
     end
   end
   return result
+end
+
+---Indexes a table that uses paths as keys. Case-insensitive logic is used when
+---running on Windows.
+---
+---Consideration should be taken before using this function, because it is a
+---bit expensive on Windows. However, this function helps when trying to index
+---with absolute path keys, which can have inconsistent casing on Windows (such
+---as with drive letters).
+---@param tbl table
+---@param key string
+---@return unknown
+M.index_by_path = function(tbl, key)
+  local value = tbl[key]
+  if value ~= nil then
+    return value
+  end
+
+  -- on windows, paths that differ only by case are considered equal
+  -- TODO: we should optimize this, see discussion in #1353
+  if M.is_windows then
+    local key_lower = key:lower()
+    for k, v in pairs(tbl) do
+      if key_lower == k:lower() then
+        return v
+      end
+    end
+  end
+
+  return value
 end
 
 return M

@@ -39,9 +39,7 @@ local function create_state(tabid, sd, winid)
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
-  state.position = {
-    is = { restorable = false },
-  }
+  state.position = {}
   state.git_base = "HEAD"
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
@@ -351,12 +349,13 @@ M.set_cwd = function(state)
 
   local _, cwd = pcall(vim.fn.getcwd, winid, tabnr)
   if state.path ~= cwd then
+    local path = utils.escape_path_for_cmd(state.path)
     if winid > 0 then
-      vim.cmd("lcd " .. state.path)
+      vim.cmd("lcd " .. path)
     elseif tabnr > 0 then
-      vim.cmd("tcd " .. state.path)
+      vim.cmd("tcd " .. path)
     else
-      vim.cmd("cd " .. state.path)
+      vim.cmd("cd " .. path)
     end
   end
 end
@@ -525,11 +524,6 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   log.trace("Revealing current file")
   local state = M.get_state(source_name)
   state.current_position = nil
-
-  -- When events trigger that try to restore the position of the cursor in the tree window,
-  -- we want them to ignore this "iteration" as the user is trying to explicitly focus a
-  -- (potentially) different position/node
-  state.position.is.restorable = false
 
   local path = M.get_path_to_reveal()
   if not path then

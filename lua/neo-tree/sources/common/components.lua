@@ -115,7 +115,7 @@ end
 
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
-  local diag_state = diag[node:get_id()]
+  local diag_state = utils.index_by_path(diag, node:get_id())
   if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
     return {}
   end
@@ -322,7 +322,7 @@ end
 
 M.modified = function(config, node, state)
   local opened_buffers = state.opened_buffers or {}
-  local buf_info = opened_buffers[node.path]
+  local buf_info = utils.index_by_path(opened_buffers, node.path)
 
   if buf_info and buf_info.modified then
     return {
