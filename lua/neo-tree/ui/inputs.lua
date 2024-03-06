@@ -2,6 +2,7 @@ local vim = vim
 local Input = require("nui.input")
 local popups = require("neo-tree.ui.popups")
 local utils = require("neo-tree.utils")
+local events = require("neo-tree.events")
 
 local M = {}
 
@@ -14,9 +15,13 @@ M.show_input = function(input, callback)
   local config = require("neo-tree").config
   input:mount()
 
-  if config.enable_normal_mode_for_inputs and input.prompt_type ~= "confirm" then
+  if input.prompt_type ~= "confirm" then
     vim.schedule(function()
-      vim.cmd("stopinsert")
+      -- deprecate this option in next version
+      if config.enable_normal_mode_for_inputs then
+        vim.cmd("stopinsert")
+      end
+      events.fire_event(events.NEO_TREE_POPUP_INPUT_READY)
     end)
   end
 

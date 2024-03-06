@@ -6,17 +6,16 @@ local migrations = {}
 
 M.show_migrations = function()
   if #migrations > 0 then
-    for i, message in ipairs(migrations) do
-      migrations[i] = "  * " .. message
+    local content = {}
+    for _, message in ipairs(migrations) do
+      vim.list_extend(content, vim.split("\n## " .. message, "\n", { trimempty = false }))
     end
-    table.insert(
-      migrations,
-      1,
-      "# Neo-tree configuration has been updated. Please review the changes below."
-    )
+    local header = "# Neo-tree configuration has been updated. Please review the changes below."
+    table.insert(content, 1, header)
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, migrations)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
     vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
+    vim.api.nvim_buf_set_option(buf, "wrap", true)
     vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(buf, "buflisted", false)
     vim.api.nvim_buf_set_option(buf, "swapfile", false)
@@ -24,7 +23,7 @@ M.show_migrations = function()
     vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
     vim.api.nvim_buf_set_name(buf, "Neo-tree migrations")
     vim.defer_fn(function()
-      vim.cmd(string.format("%ssplit", #migrations))
+      vim.cmd(string.format("%ssplit", #content))
       vim.api.nvim_win_set_buf(0, buf)
     end, 100)
   end
@@ -60,11 +59,12 @@ M.migrate = function(config)
     end
   end
 
-  local removed = function(key)
+  local removed = function(key, desc)
     local value = utils.get_value(config, key)
     if type(value) ~= "nil" then
       utils.set_value(config, key, nil)
-      migrations[#migrations + 1] = string.format("The `%s` option has been removed.", key)
+      migrations[#migrations + 1] =
+        string.format("The `%s` option has been removed.\n%s", key, desc or "")
     end
   end
 
@@ -105,6 +105,30 @@ M.migrate = function(config)
 
   -- v3.x
   removed("close_floats_on_escape_key")
+
+  -- v4.x
+  removed(
+    "enable_normal_mode_for_inputs",
+    [[
+Please use `neo_tree_popup_input_ready` event instead and call `stopinsert` inside the handler.
+<https://github.com/nvim-neo-tree/neo-tree.nvim/pull/1372>
+
+See instructions in `:h neo-tree-events` for more details.
+
+```lua
+event_handlers = {
+  {
+    event = "neo_tree_popup_input_ready",
+    ---@param input NuiInput
+    handler = function(input)
+      -- enter input popup with normal mode by default.
+      vim.cmd("stopinsert")
+    end,
+  }
+}
+```
+]]
+  )
 
   return migrations
 end
