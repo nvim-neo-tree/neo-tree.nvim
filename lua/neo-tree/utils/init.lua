@@ -1018,11 +1018,19 @@ end
 M.escape_path_for_cmd = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    -- on windows, any punctuation preceeded by a `\` needs to have a second `\`
-    -- added to preserve the path separator. this is a naive replacement and
+    -- on windows, some punctuation preceeded by a `\` needs to have a second
+    -- `\` added to preserve the path separator. this is a naive replacement and
     -- definitely not bullet proof. if we start finding issues with opening files
-    -- or changing directories, look here first.
-    escaped_path = escaped_path:gsub("\\%p", "\\%1")
+    -- or changing directories, look here first. #1382 was the first regression
+    -- from the implementation that used lua's %p to match punctuation, which
+    -- did not quite work. the following characters were tested on windows to
+    -- be known to require an extra escape character.
+    for _, c in ipairs({ "&", "(", ")", ";", "^", "`" }) do
+      -- lua doesn't seem to have a problem with an unnecessary `%` escape
+      -- (e.g., `%;`), so we can use it to ensure we match the punctuation
+      -- for the ones that do (e.g., `%(` and `%^`)
+      escaped_path = escaped_path:gsub("\\%" .. c, "\\%1")
+    end
   end
   return escaped_path
 end
