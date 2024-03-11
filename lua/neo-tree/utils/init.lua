@@ -508,6 +508,14 @@ M.is_floating = function(win_id)
   return false
 end
 
+M.is_winfixbuf = function(win_id)
+  if vim.fn.exists("&winfixbuf") == 1 then
+    win_id = win_id or vim.api.nvim_get_current_win()
+    return vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
+  end
+  return false
+end
+
 ---Evaluates the value of <afile>, which comes from an autocmd event, and determines if it
 ---is a valid file or some sort of utility buffer like quickfix or neo-tree itself.
 ---@param afile string The path or relative path to the file.
@@ -598,7 +606,7 @@ M.get_appropriate_window = function(state)
   local attempts = 0
   while attempts < 5 and not suitable_window_found do
     local bt = vim.bo.buftype or "normal"
-    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() then
+    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() or M.is_winfixbuf() then
       attempts = attempts + 1
       vim.cmd("wincmd w")
     else
@@ -654,7 +662,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
   if bufnr <= 0 then
     bufnr = nil
   else
-    local buf_cmd_lookup = { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
+    local buf_cmd_lookup =
+      { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
     local cmd_for_buf = buf_cmd_lookup[open_cmd]
     if cmd_for_buf then
       open_cmd = cmd_for_buf
