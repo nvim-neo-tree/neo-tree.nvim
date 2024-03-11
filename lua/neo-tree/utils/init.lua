@@ -573,7 +573,7 @@ M.map = function(tbl, fn)
   return t
 end
 
-M.get_appropriate_window = function(state)
+M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- Avoid triggering autocommands when switching windows
   local eventignore = vim.o.eventignore
   vim.o.eventignore = "all"
@@ -587,7 +587,7 @@ M.get_appropriate_window = function(state)
   local ignore = M.list_to_dict(ignore_ft)
   ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
-    local prior_window = nt.get_prior_window(ignore)
+    local prior_window = nt.get_prior_window(ignore, ignore_winfixbuf)
     if prior_window > 0 then
       local success = pcall(vim.api.nvim_set_current_win, prior_window)
       if success then
@@ -606,7 +606,10 @@ M.get_appropriate_window = function(state)
   local attempts = 0
   while attempts < 5 and not suitable_window_found do
     local bt = vim.bo.buftype or "normal"
-    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() or M.is_winfixbuf() then
+    if ignore[vim.bo.filetype] or ignore[bt] or M.is_floating() then
+      attempts = attempts + 1
+      vim.cmd("wincmd w")
+    elseif ignore_winfixbuf and M.is_winfixbuf() then
       attempts = attempts + 1
       vim.cmd("wincmd w")
     else
@@ -648,6 +651,28 @@ M.resolve_width = function(width)
   end
 
   return math.floor(width)
+end
+
+M.force_new_split = function(current_position, escaped_path)
+  local result, err
+  local split_command = "vsplit"
+  -- respect window position in user config when Neo-tree is the only window
+  if current_position == "left" then
+    split_command = "rightbelow vs"
+  elseif current_position == "right" then
+    split_command = "leftabove vs"
+  end
+  if escaped_path == M.escape_path_for_cmd("[No Name]") then
+    -- vim's default behavior is to overwrite [No Name] buffers.
+    -- We need to split first and then open the path to workaround this behavior.
+    result, err = pcall(vim.cmd, split_command)
+    if result then
+      vim.cmd.edit(escaped_path)
+    end
+  else
+    result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
+  end
+  return result, err
 end
 
 ---Open file in the appropriate window.
@@ -701,26 +726,22 @@ M.open_file = function(state, path, open_cmd, bufnr)
           width = M.get_value(state, "window.width", 40, false)
           width = M.resolve_width(width)
         end
-
-        local split_command = "vsplit"
-        -- respect window position in user config when Neo-tree is the only window
-        if state.current_position == "left" then
-          split_command = "rightbelow vs"
-        elseif state.current_position == "right" then
-          split_command = "leftabove vs"
-        end
-        if path == "[No Name]" then
-          result, err = pcall(vim.cmd, split_command)
-          if result then
-            vim.cmd("b" .. bufnr)
-          end
-        else
-          result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
-        end
-
+        result, err = M.force_new_split(state.current_position, escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
+      end
+    end
+    if not result and string.find(err or "", "winfixbuf") and M.is_winfixbuf() then
+      local winid, is_neo_tree_window = M.get_appropriate_window(state, true)
+      -- Rescan window list to find a window that is not winfixbuf.
+      -- If found, retry executing command in that window,
+      -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
+      if not is_neo_tree_window and not M.is_winfixbuf(winid) then
+        vim.api.nvim_set_current_win(winid)
+        result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
+      else
+        result, err = M.force_new_split(state.current_position, escaped_path)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
