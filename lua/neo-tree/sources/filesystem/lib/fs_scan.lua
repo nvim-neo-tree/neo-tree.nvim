@@ -501,6 +501,20 @@ local handle_refresh_or_up = function (context, async)
         end)
         context.paths_to_load = utils.unique(context.paths_to_load)
       end
+      -- Ensure parents of all expanded nodes are also scanned
+      local seen = {}
+      for _, p in ipairs(context.paths_to_load) do
+        local current = p
+        while current do
+          if seen[current] then
+            break
+          end
+          seen[current] = true
+          local current_node = state.tree:get_node(current)
+          current = current_node and current_node:get_parent_id()
+        end
+      end
+      context.paths_to_load = vim.tbl_keys(seen)
     end
 
     local filtered_items = state.filtered_items or {}
