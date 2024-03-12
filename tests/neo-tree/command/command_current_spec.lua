@@ -15,6 +15,11 @@ local run_in_current_command = function(command, expected_tree_node)
   end
 end
 
+local run_close_command = function(command)
+  vim.cmd(command)
+  u.wait_for(function() end, { interval = 200, timeout = 200 })
+end
+
 describe("Command", function()
   local test = u.fs.init_test({
     items = {
@@ -71,7 +76,7 @@ describe("Command", function()
       run_in_current_command(cmd, testfile)
 
       -- toggle CLOSE
-      vim.cmd(cmd)
+      run_close_command(cmd)
       verify.window_handle_is(tree_winid)
       verify.buf_name_is(testfile)
     end)
