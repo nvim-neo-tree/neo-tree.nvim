@@ -292,22 +292,11 @@ M.get_selector = function(state, width)
   local trunc_char = config.source_selector.truncation_character or "…"
   local remaining_width = width - length_separators
   local return_string = text_with_hl(add_padding(padding.left), hl_background)
-  if width < length_sum and config.source_selector.text_trunc_to_fit then -- not enough width
-    local each_width = math.floor(remaining_width / #tabs)
-    local remaining = remaining_width % each_width
-    tabs_layout = "start"
-    length_sum = width
-    for _, tab in ipairs(tabs) do
-      tab.text = text_layout( -- truncate text and pass it to "start"
-        tab.text,
-        "center",
-        each_width + (tab.is_active and remaining or 0),
-        trunc_char
-      )
-    end
+  if width < length_sum then -- not enough width
+    tabs_layout = "equal" -- other methods cannot handle this
   end
   if tabs_layout == "active" then
-    local active_tab_length = width - length_sum + length_active
+    local active_tab_length = width - length_sum + length_active - 1
     for _, tab in ipairs(tabs) do
       return_string = return_string
         .. render_tab(
