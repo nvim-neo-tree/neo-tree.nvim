@@ -164,15 +164,12 @@ M.close = function(state, focus_prior_window)
     state.winid = nil
   end
   local bufnr = utils.get_value(state, "bufnr", 0, true)
-  if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
-    state.bufnr = nil
-    local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
-    if not success and err:match("E523") then
-      vim.schedule_wrap(function()
-        vim.api.nvim_buf_delete(bufnr, { force = true })
-      end)()
+  state.bufnr = nil
+  vim.schedule(function()
+    if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_delete(bufnr, { force = true })
     end
-  end
+  end)
   return window_existed
 end
 
@@ -1040,7 +1037,9 @@ M.acquire_window = function(state)
       M.position.save(state)
     end)
     win:on({ "BufDelete" }, function()
-      win:unmount()
+      vim.schedule(function ()
+        win:unmount()
+      end)
     end, { once = true })
   end
 

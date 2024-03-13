@@ -197,8 +197,17 @@ M.buffer_enter_event = function()
   end
   last_buffer_enter_filetype = vim.bo.filetype
 
+  -- For all others, make sure another buffer is not hijacking our window
+  -- ..but not if the position is "current"
+  local prior_buf = vim.fn.bufnr("#")
+  if prior_buf < 1 then
+    return
+  end
+  local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
+
   -- there is nothing more we want to do with floating windows
-  if utils.is_floating() then
+  -- but when prior_type is neo-tree we might need to redirect buffer somewhere else.
+  if utils.is_floating() and prior_type ~= "neo-tree" then
     return
   end
 
@@ -207,14 +216,6 @@ M.buffer_enter_event = function()
     return
   end
 
-  -- For all others, make sure another buffer is not hijacking our window
-  -- ..but not if the position is "current"
-  local prior_buf = vim.fn.bufnr("#")
-  if prior_buf < 1 then
-    return
-  end
-  local winid = vim.api.nvim_get_current_win()
-  local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
   if prior_type == "neo-tree" then
     local success, position = pcall(vim.api.nvim_buf_get_var, prior_buf, "neo_tree_position")
     if not success then

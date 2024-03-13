@@ -39,6 +39,11 @@ local run_show_command = function(command, expected_tree_node)
   end, "Expected to see a new window without focusing it.")
 end
 
+local run_close_command = function(command)
+  vim.cmd(command)
+  u.wait_for(function() end, { interval = 200, timeout = 200 })
+end
+
 describe("Command", function()
   local test = u.fs.init_test({
     items = {
@@ -87,7 +92,7 @@ describe("Command", function()
       local tree_winid = vim.api.nvim_get_current_win()
 
       -- toggle CLOSE
-      vim.cmd(cmd)
+      run_close_command(cmd)
       verify.window_handle_is_not(tree_winid)
       verify.buf_name_is(testfile)
 
@@ -109,7 +114,7 @@ describe("Command", function()
         local tree_winid = vim.api.nvim_get_current_win()
 
         -- toggle CLOSE
-        vim.cmd("Neotree float reveal toggle")
+        run_close_command("Neotree float reveal toggle")
         verify.window_handle_is_not(tree_winid)
         verify.buf_name_is(testfile)
 
@@ -158,7 +163,7 @@ describe("Command", function()
 
           verify.after(500, function()
             -- toggle CLOSE
-            vim.cmd(cmd)
+            run_close_command(cmd)
 
             -- toggle OPEN
             u.editfile(topfile)
@@ -189,7 +194,7 @@ describe("Command", function()
           run_focus_command("Neotree reveal", baz)
           local expected_tree_node = baz
           -- toggle CLOSE
-          vim.cmd(cmd)
+          run_close_command(cmd)
 
           verify.after(500, function()
             -- toggle OPEN

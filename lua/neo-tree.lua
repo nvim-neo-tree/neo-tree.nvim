@@ -17,7 +17,7 @@ M.ensure_config = function()
   end
 end
 
-M.get_prior_window = function(ignore_filetypes)
+M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   ignore_filetypes = ignore_filetypes or {}
   local ignore = utils.list_to_dict(ignore_filetypes)
   ignore["neo-tree"] = true
@@ -32,7 +32,7 @@ M.get_prior_window = function(ignore_filetypes)
     local last_win = wins[win_index]
     if type(last_win) == "number" then
       local success, is_valid = pcall(vim.api.nvim_win_is_valid, last_win)
-      if success and is_valid then
+      if success and is_valid and not (ignore_winfixbuf and utils.is_winfixbuf(last_win)) then
         local buf = vim.api.nvim_win_get_buf(last_win)
         local ft = vim.api.nvim_buf_get_option(buf, "filetype")
         local bt = vim.api.nvim_buf_get_option(buf, "buftype") or "normal"
