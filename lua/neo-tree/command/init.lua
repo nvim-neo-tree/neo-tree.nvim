@@ -156,6 +156,7 @@ M.execute = function(args)
   --  manager.close(args.source)
   --end
   if do_reveal then
+    args.reveal_file = utils.normalize_path(args.reveal_file)
     handle_reveal(args, state)
   else
     do_show_or_focus(args, state, force_navigate)
