@@ -497,7 +497,6 @@ M.delete_node = function(path, callback, noconfirm)
       local success = false
       if utils.is_windows then
         local result = vim.fn.system({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
-
         local error = vim.v.shell_error
         if error ~= 0 then
           log.debug("Could not delete directory '", path, "' with rmdir: ", result)
