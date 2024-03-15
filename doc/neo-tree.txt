@@ -1440,11 +1440,13 @@ This is fired inside a vim.schedule.
       event = "neo_tree_popup_input_ready",
       ---@param args { input: NuiInput }
       handler = function(args)
-        -- enter input popup with normal mode by default.
+        -- Example Usages:
+
+        -- 1. enter input popup with normal mode by default.
         vim.cmd("stopinsert")
-        -- map <esc> to enter normal mode (closes prompt by default)
+        -- 2. map <esc> to enter normal mode (closes prompt by default)
         args.input:map("i", "<esc>", vim.cmd.stopinsert, { noremap = true })
-        -- unmap <esc> in normal mode to do nothing (closes prompt by default) (`q` still works)
+        -- 3. unmap <esc> in normal mode to do nothing (closes prompt by default) (`q` still works)
         args.input:map("n", "<esc>", function() end, { noremap = true })
       end,
     }
