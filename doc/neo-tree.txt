@@ -166,7 +166,7 @@ current file, or if in an unsaved file, the current working directory.
       reveal_force_cwd = true,   -- change cwd without asking if needed
     })
     end,
-    {description: "Open neo-tree at current file or working directory"}
+    { desc = "Open neo-tree at current file or working directory" }
   );
 <
 
