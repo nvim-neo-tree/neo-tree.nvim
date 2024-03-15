@@ -118,8 +118,8 @@ See instructions in `:h neo-tree-events` for more details.
 event_handlers = {
   {
     event = "neo_tree_popup_input_ready",
-    ---@param input NuiInput
-    handler = function(input)
+    ---@param args { bufnr: integer, winid: integer }
+    handler = function(args)
       -- enter input popup with normal mode by default.
       vim.cmd("stopinsert")
     end,

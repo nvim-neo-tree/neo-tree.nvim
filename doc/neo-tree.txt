@@ -1438,16 +1438,18 @@ This is fired inside a vim.schedule.
 >lua
     {
       event = "neo_tree_popup_input_ready",
-      ---@param args { input: NuiInput }
-      handler = function(args)
-        -- Example Usages:
-
-        -- 1. enter input popup with normal mode by default.
+      handler = function()
+        -- enter input popup with normal mode by default.
         vim.cmd("stopinsert")
-        -- 2. map <esc> to enter normal mode (closes prompt by default)
-        args.input:map("i", "<esc>", vim.cmd.stopinsert, { noremap = true })
-        -- 3. unmap <esc> in normal mode to do nothing (closes prompt by default) (`q` still works)
-        args.input:map("n", "<esc>", function() end, { noremap = true })
+      end,
+    },
+    {
+      event = "neo_tree_popup_input_ready",
+      ---@param args { bufnr: integer, winid: integer }
+      handler = function(args)
+        -- map <esc> to enter normal mode (by default closes prompt)
+        -- don't forget `opts.buffer` to specify the buffer of the popup.
+        vim.keymap.set("i", "<esc>", vim.cmd.stopinsert, { noremap = true, buffer = args.bufnr })
       end,
     }
 <

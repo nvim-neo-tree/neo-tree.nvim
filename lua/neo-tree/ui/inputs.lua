@@ -39,7 +39,10 @@ M.show_input = function(input, callback)
 
   if input.prompt_type ~= "confirm" then
     vim.schedule(function()
-      events.fire_event(events.NEO_TREE_POPUP_INPUT_READY, { input = input })
+      events.fire_event(events.NEO_TREE_POPUP_INPUT_READY, {
+        bufnr = input.bufnr,
+        winid = input.winid,
+      })
     end)
   end
 end
