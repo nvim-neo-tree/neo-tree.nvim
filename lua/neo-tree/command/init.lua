@@ -150,6 +150,8 @@ M.execute = function(args)
     do_reveal = utils.truthy(args.reveal_file)
   end
 
+  args.reveal_file = utils.normalize_path(args.reveal_file)
+
   -- All set, now show or focus the window
   local force_navigate = path_changed or do_reveal or git_base_changed or state.dirty
   --if position_changed and args.position ~= "current" and current_position ~= "current" then
