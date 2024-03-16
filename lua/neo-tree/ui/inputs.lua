@@ -12,24 +12,11 @@ local should_use_popup_input = function()
 end
 
 M.show_input = function(input, callback)
-  local config = require("neo-tree").config
   input:mount()
-
-  if input.prompt_type ~= "confirm" then
-    vim.schedule(function()
-      -- deprecate this option in next version
-      if config.enable_normal_mode_for_inputs then
-        vim.cmd("stopinsert")
-      end
-      events.fire_event(events.NEO_TREE_POPUP_INPUT_READY)
-    end)
-  end
 
   input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
-    if not config.enable_normal_mode_for_inputs or input.prompt_type == "confirm" then
-      input:unmount()
-    end
+    input:unmount()
   end, { noremap = true })
 
   input:map("n", "<esc>", function()
@@ -49,6 +36,15 @@ M.show_input = function(input, callback)
       callback()
     end
   end, { once = true })
+
+  if input.prompt_type ~= "confirm" then
+    vim.schedule(function()
+      events.fire_event(events.NEO_TREE_POPUP_INPUT_READY, {
+        bufnr = input.bufnr,
+        winid = input.winid,
+      })
+    end)
+  end
 end
 
 M.input = function(message, default_value, callback, options, completion)
