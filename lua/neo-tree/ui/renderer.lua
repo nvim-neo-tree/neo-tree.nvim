@@ -1087,7 +1087,7 @@ M.window_exists = function(state)
     window_exists = false
   elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
-      and vim.api.nvim_buf_is_valid(bufnr)
+      and vim.api.nvim_buf_is_loaded(bufnr)
       and vim.api.nvim_win_get_buf(winid) == bufnr
   else
     local isvalid = M.is_window_valid(winid)
