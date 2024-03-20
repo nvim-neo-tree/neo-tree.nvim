@@ -778,6 +778,7 @@ create_tree = function(state)
   state.tree = NuiTree({
     ns_id = highlights.ns_id,
     winid = state.winid,
+    bufnr = state.bufnr,
     get_node_id = function(node)
       return node.id
     end,
