@@ -481,6 +481,22 @@ local handle_refresh_or_up = function (context, async)
       elseif state.tree then
         context.paths_to_load = renderer.get_expanded_nodes(state.tree, state.path)
       end
+      -- Ensure parents of all expanded nodes are also scanned
+      if #context.paths_to_load > 0 and state.tree then
+        local seen = {}
+        for _, p in ipairs(context.paths_to_load) do
+          local current = p
+          while current do
+            if seen[current] then
+              break
+            end
+            seen[current] = true
+            local current_node = state.tree:get_node(current)
+            current = current_node and current_node:get_parent_id()
+          end
+        end
+        context.paths_to_load = vim.tbl_keys(seen)
+      end
       -- Ensure that there are no nested files in the list of folders to load
       context.paths_to_load = vim.tbl_filter(function(p)
         local stats = vim.loop.fs_stat(p)
