@@ -163,15 +163,14 @@ M.close = function(state, focus_prior_window)
     end
     state.winid = nil
   end
-  local bufnr = utils.get_value(state, "bufnr", 0, true)
-  if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+  if window_existed then
+    local bufnr = utils.get_value(state, "bufnr", 0, true)
     state.bufnr = nil
-    local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
-    if not success and err:match("E523") then
-      vim.schedule_wrap(function()
+    vim.schedule(function()
+      if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
         vim.api.nvim_buf_delete(bufnr, { force = true })
-      end)()
-    end
+      end
+    end)
   end
   return window_existed
 end
@@ -781,6 +780,7 @@ create_tree = function(state)
   state.tree = NuiTree({
     ns_id = highlights.ns_id,
     winid = state.winid,
+    bufnr = state.bufnr,
     get_node_id = function(node)
       return node.id
     end,
@@ -1090,7 +1090,7 @@ M.window_exists = function(state)
     window_exists = false
   elseif position == "current" then
     window_exists = vim.api.nvim_win_is_valid(winid)
-      and vim.api.nvim_buf_is_valid(bufnr)
+      and vim.api.nvim_buf_is_loaded(bufnr)
       and vim.api.nvim_win_get_buf(winid) == bufnr
   else
     local isvalid = M.is_window_valid(winid)
