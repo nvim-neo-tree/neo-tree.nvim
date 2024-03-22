@@ -11,6 +11,7 @@ local config = {
   },
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
+  auto_restore_session_experimental = false, -- Try best to restore neo-tree from invalid buffers restored by auto-session plugins
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   default_source = "filesystem", -- you can choose a specific source `last` here which indicates the last used source
   enable_diagnostics = true,
