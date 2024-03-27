@@ -1013,6 +1013,9 @@ M.acquire_window = function(state)
       vim.api.nvim_win_set_buf(state.winid, state.bufnr)
     else
       close_old_window()
+      if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
+        vim.api.nvim_buf_delete(state.bufnr, { force = true })
+      end
       win = NuiSplit(win_options)
       win:mount()
       state.bufnr = win.bufnr
