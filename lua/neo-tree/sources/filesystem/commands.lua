@@ -222,14 +222,13 @@ M.rename = function(state)
 end
 
 M.set_root = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type == "directory" then
-    if state.search_pattern then
-      fs.reset_search(state, false)
-    end
-    fs._navigate_internal(state, node.id, nil, nil, false)
+  if state.search_pattern then
+    fs.reset_search(state, false)
   end
+
+  local node = state.tree:get_node()
+  local id = node.type == "directory" and node.id or node._parent_id
+  fs._navigate_internal(state, id, nil, nil, false)
 end
 
 ---Toggles whether hidden files are shown or not.

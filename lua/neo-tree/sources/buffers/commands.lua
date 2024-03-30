@@ -80,11 +80,9 @@ M.rename = function(state)
 end
 
 M.set_root = function(state)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type == "directory" then
-    buffers.navigate(state, node.id)
-  end
+  local node = state.tree:get_node()
+  local id = node.type == "directory" and node.id or node._parent_id
+  buffers.navigate(state, id)
 end
 
 cc._add_common_commands(M)
