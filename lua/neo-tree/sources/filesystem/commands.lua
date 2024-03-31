@@ -227,9 +227,12 @@ M.set_root = function(state)
   end
 
   local node = state.tree:get_node()
-  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
+  if not node then
+    return
+  end
 
   -- "node:get_parent_id()" and "node:get_id()" may return nil in some cases
+  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
   if not id then
     return
   end
