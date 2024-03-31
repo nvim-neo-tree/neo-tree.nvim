@@ -81,7 +81,7 @@ end
 
 M.set_root = function(state)
   local node = state.tree:get_node()
-  local id = node.type == "directory" and node.id or node._parent_id
+  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
   buffers.navigate(state, id)
 end
 

@@ -227,7 +227,7 @@ M.set_root = function(state)
   end
 
   local node = state.tree:get_node()
-  local id = node.type == "directory" and node.id or node._parent_id
+  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
   fs._navigate_internal(state, id, nil, nil, false)
 end
 
