@@ -227,16 +227,16 @@ M.set_root = function(state)
   end
 
   local node = state.tree:get_node()
+  while node and node.type ~= "directory" do
+    local parent_id = node:get_parent_id()
+    node = parent_id and state.tree:get_node(parent_id) or nil
+  end
+
   if not node then
     return
   end
 
-  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
-  if not id then
-    return
-  end
-
-  fs._navigate_internal(state, id, nil, nil, false)
+  fs._navigate_internal(state, node:get_id(), nil, nil, false)
 end
 
 ---Toggles whether hidden files are shown or not.

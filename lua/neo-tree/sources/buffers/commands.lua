@@ -81,16 +81,16 @@ end
 
 M.set_root = function(state)
   local node = state.tree:get_node()
+  while node and node.type ~= "directory" do
+    local parent_id = node:get_parent_id()
+    node = parent_id and state.tree:get_node(parent_id) or nil
+  end
+
   if not node then
     return
   end
 
-  local id = node.type == "directory" and node:get_id() or node:get_parent_id()
-  if not id then
-    return
-  end
-
-  buffers.navigate(state, id)
+  buffers.navigate(state, node:get_id())
 end
 
 cc._add_common_commands(M)
