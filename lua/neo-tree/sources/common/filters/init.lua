@@ -213,9 +213,16 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
 
   local config = require("neo-tree").config
   for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
-    local cmd = cmds[cmd_name]
-    if cmd then
-      input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
+    local t = type(cmd_name)
+    if t == "string" then
+      local cmd = cmds[cmd_name]
+      if cmd then
+        input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
+      else
+        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+      end
+    elseif t == "function" then
+      input:map("i", lhs, utils.wrap(cmd_name, state, scroll_padding), { noremap = true })
     else
       log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
     end
