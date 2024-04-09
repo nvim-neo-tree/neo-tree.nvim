@@ -1033,7 +1033,16 @@ M.acquire_window = function(state)
   end
 
   if win ~= nil then
-    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    local bufnameExists = false
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(bufnr) or vim.api.nvim_buf_get_name(bufnr) == bufname then
+        bufnameExists = true
+        break
+      end
+    end
+    if not bufnameExists then
+      vim.api.nvim_buf_set_name(state.bufnr, bufname)
+    end
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
     win:on({ "BufDelete" }, function()
