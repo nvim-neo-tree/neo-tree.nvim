@@ -1037,7 +1037,6 @@ M.acquire_window = function(state)
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       if vim.api.nvim_buf_is_loaded(bufnr) or vim.api.nvim_buf_get_name(bufnr) == bufname then
         bufnameExists = true
-        break
       end
     end
     if not bufnameExists then
