@@ -136,16 +136,16 @@ M.close = function(state, focus_prior_window)
           end
           vim.api.nvim_win_set_buf(state.winid, new_buf)
         else
+          local args = {
+            position = state.current_position,
+            source = state.name,
+            winid = state.winid,
+            tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
+            tabid = state.tabid,
+          }
           events.fire_event(events.NEO_TREE_WINDOW_BEFORE_CLOSE, args)
           local win_list = vim.api.nvim_tabpage_list_wins(0)
           if focus_prior_window and #win_list > 1 then
-            local args = {
-              position = state.current_position,
-              source = state.name,
-              winid = state.winid,
-              tabnr = tabid_to_tabnr(state.tabid), -- for compatibility
-              tabid = state.tabid,
-            }
             -- focus the prior used window if we are closing the currently focused window
             local current_winid = vim.api.nvim_get_current_win()
             if current_winid == state.winid then
@@ -163,14 +163,15 @@ M.close = function(state, focus_prior_window)
     end
     state.winid = nil
   end
-  if window_existed then
-    local bufnr = utils.get_value(state, "bufnr", 0, true)
+  local bufnr = utils.get_value(state, "bufnr", 0, true)
+  if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
     state.bufnr = nil
-    vim.schedule(function()
-      if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
+    local success, err = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+    if not success and err and err:match("E523") then
+      vim.schedule_wrap(function()
         vim.api.nvim_buf_delete(bufnr, { force = true })
-      end
-    end)
+      end)()
+    end
   end
   return window_existed
 end
