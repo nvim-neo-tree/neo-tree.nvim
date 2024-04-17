@@ -531,7 +531,7 @@ end
 M.symlink_target = function(config, node, state)
   if node.is_link then
     return {
-      text = string.format(" ➛ %s", node.link_to),
+      text = string.format(config.text_format, node.link_to),
       highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
     }
   else
