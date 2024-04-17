@@ -253,6 +253,7 @@ local config = {
     },
     symlink_target = {
       enabled = false,
+      text_format = " ➛ %s",
     },
   },
   renderers = {
