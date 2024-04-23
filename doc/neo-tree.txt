@@ -1546,7 +1546,7 @@ configs for each source, look at the default config by pasting it with
     :lua require("neo-tree").paste_default_config()
 <
 or view it online at:
-https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
+https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v3.x/lua/neo-tree/defaults.lua
 
 A default `renderers` config is specified at the root level and will be used
 by each source unless another renderer is defined. If you just want to
