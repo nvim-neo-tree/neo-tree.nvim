@@ -1053,11 +1053,10 @@ M.escape_path_for_cmd = function(path)
     -- character in a path segment. see #1264, #1352, and #1448 for more info.
     local need_extra_esc = path:find("[%[%]`%$~]")
     local esc = need_extra_esc and "\\\\" or "\\"
-    -- this punctuation does not get escaped by fnaemescape
     escaped_path = escaped_path:gsub("\\[%(%)%^&;]", esc .. "%1")
-    -- this punctuation gets escaped by fnameescape and always needs an extra
-    -- escape if it is the start of a path segment
-    escaped_path = escaped_path:gsub("\\\\['` ]", "\\%1")
+    if need_extra_esc then
+      escaped_path = escaped_path:gsub("\\\\['` ]", "\\%1")
+    end
   end
   return escaped_path
 end
