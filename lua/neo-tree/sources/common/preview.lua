@@ -437,6 +437,7 @@ end
 
 Preview.scroll = function(state)
   local direction = state.config.direction
+  -- NOTE: Chars below are raw escape codes for <Ctrl-E>/<Ctrl-Y>
   local input = direction < 0 and [[]] or [[]]
   local count = math.abs(direction)
 
