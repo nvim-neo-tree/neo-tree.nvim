@@ -224,6 +224,12 @@ P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode|
 
 l           = focus_preview: Focus the active preview window
 
+<C-f>      = scroll_preview: Scrolls preview window down (without focusing it)
+                             see |neo-tree-preview-mode| for params 
+
+<C-b>      = scroll_preview: Scrolls preview window up (without focusing it)
+                             see |neo-tree-preview-mode| for params 
+
 <esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
                              any preview windows to what was being shown before
                              preview mode began.
@@ -404,6 +410,9 @@ an existing split by configuring the command like this:
       window = {
         mappings = {
           ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+          ["l"] = "focus_preview",
+          ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
+          ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
         }
       }
     })
