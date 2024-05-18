@@ -123,6 +123,11 @@ M.show = function(state, title, prefix_key)
   local popup = Popup(options)
   popup:mount()
 
+  -- Disable folding to avoid display issues from foldlevel
+  vim.api.nvim_set_option_value("foldenable", false, {
+    win = popup.winid,
+  })
+
   popup:map("n", "<esc>", function()
     popup:unmount()
   end, { noremap = true })
