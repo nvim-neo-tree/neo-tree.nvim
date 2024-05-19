@@ -667,7 +667,7 @@ add `"document_symbols"` to `config.sources` and open it with the command
 ### External Sources
 
 There are more sources available as extensions that are managed outside of this repository. See the
-[wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for me information.
+[wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for more information.
 
 ### Source Selector
 
