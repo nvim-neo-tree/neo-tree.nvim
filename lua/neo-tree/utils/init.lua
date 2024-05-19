@@ -1042,24 +1042,20 @@ end
 ---be lost.
 ---
 ---For more details, see issue #889 when this function was introduced, and further
----discussions in #1264 and #1352.
+---discussions in #1264, #1352, and #1448.
 ---@param path string
 ---@return string
 M.escape_path_for_cmd = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    -- on windows, some punctuation preceeded by a `\` needs to have a second
-    -- `\` added to preserve the path separator. this is a naive replacement and
-    -- definitely not bullet proof. if we start finding issues with opening files
-    -- or changing directories, look here first. #1382 was the first regression
-    -- from the implementation that used lua's %p to match punctuation, which
-    -- did not quite work. the following characters were tested on windows to
-    -- be known to require an extra escape character.
-    for _, c in ipairs({ "&", "(", ")", ";", "^", "`" }) do
-      -- lua doesn't seem to have a problem with an unnecessary `%` escape
-      -- (e.g., `%;`), so we can use it to ensure we match the punctuation
-      -- for the ones that do (e.g., `%(` and `%^`)
-      escaped_path = escaped_path:gsub("\\%" .. c, "\\%1")
+    -- there is too much history to this logic to capture in a reasonable comment.
+    -- essentially, the following logic adds a number of `\` depending on the leading
+    -- character in a path segment. see #1264, #1352, and #1448 for more info.
+    local need_extra_esc = path:find("[%[%]`%$~]")
+    local esc = need_extra_esc and "\\\\" or "\\"
+    escaped_path = escaped_path:gsub("\\[%(%)%^&;]", esc .. "%1")
+    if need_extra_esc then
+      escaped_path = escaped_path:gsub("\\\\['` ]", "\\%1")
     end
   end
   return escaped_path
