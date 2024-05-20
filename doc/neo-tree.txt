@@ -1017,7 +1017,7 @@ for a deeper dive into customizing this aspect. If you wish to configure those
 components in a universal way, the best place to do that is in the
 `default_component_configs` section of the config.
 
-For example, to add indent markers, you can apply your settings in each renderer
+For example, to configure indent markers, you can apply your settings in each renderer
 for each source, or just do it once in the default_component_configs section:
 
 >lua
@@ -1174,8 +1174,8 @@ config when calling the setup function.
 
 INDENT MARKERS                                      *neo-tree-indent-markers*
 
-By default, indent markers (aka indent guides) are disabled. In Neo-tree
-indent is a component, so to enable indent markers, you need configure the
+By default, indent markers (aka indent guides) are enabled. In Neo-tree
+indent is a component, so to edit indent markers, you can configure the
 `indent` component:
 
 ...at the global level:
@@ -1555,7 +1555,7 @@ configs for each source, look at the default config by pasting it with
     :lua require("neo-tree").paste_default_config()
 <
 or view it online at:
-https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
+https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v3.x/lua/neo-tree/defaults.lua
 
 A default `renderers` config is specified at the root level and will be used
 by each source unless another renderer is defined. If you just want to
