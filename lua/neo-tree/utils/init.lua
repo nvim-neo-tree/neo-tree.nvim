@@ -239,34 +239,43 @@ M.get_diagnostic_counts = function()
   for ns, _ in pairs(vim.diagnostic.get_namespaces()) do
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       local success, file_name = pcall(vim.api.nvim_buf_get_name, bufnr)
-      -- TODO, remove is_disabled nil check when dropping support for 0.8
-      if
-        success and vim.diagnostic.is_disabled == nil or not vim.diagnostic.is_disabled(bufnr, ns)
-      then
-        for severity, _ in ipairs(vim.diagnostic.severity) do
-          local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
+      if success then
+        -- TODO: remove is_disabled check when dropping support for 0.8
+        local enabled
+        if vim.diagnostic.is_enabled then
+          enabled = vim.diagnostic.is_enabled({ bufnr = bufnr, ns_id = ns })
+        elseif vim.diagnostic.is_disabled then
+          enabled = not vim.diagnostic.is_disabled(bufnr, ns)
+        else
+          enabled = true
+        end
 
-          if #diagnostics > 0 then
-            local severity_string = diag_severity_to_string(severity)
-            -- Get or create the entry for this file
-            local entry = lookup[file_name]
-            if entry == nil then
-              entry = {
-                severity_number = severity,
-                severity_string = severity_string,
-              }
-              lookup[file_name] = entry
-            end
-            -- Set the count for this diagnostic type
-            if severity_string ~= nil then
-              entry[severity_string] = #diagnostics
-            end
+        if enabled then
+          for severity, _ in ipairs(vim.diagnostic.severity) do
+            local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
 
-            -- Set the overall severity to the most severe so far
-            -- Error = 1, Warn = 2, Info = 3, Hint = 4
-            if severity < entry.severity_number then
-              entry.severity_number = severity
-              entry.severity_string = severity_string
+            if #diagnostics > 0 then
+              local severity_string = diag_severity_to_string(severity)
+              -- Get or create the entry for this file
+              local entry = lookup[file_name]
+              if entry == nil then
+                entry = {
+                  severity_number = severity,
+                  severity_string = severity_string,
+                }
+                lookup[file_name] = entry
+              end
+              -- Set the count for this diagnostic type
+              if severity_string ~= nil then
+                entry[severity_string] = #diagnostics
+              end
+
+              -- Set the overall severity to the most severe so far
+              -- Error = 1, Warn = 2, Info = 3, Hint = 4
+              if severity < entry.severity_number then
+                entry.severity_number = severity
+                entry.severity_string = severity_string
+              end
             end
           end
         end
