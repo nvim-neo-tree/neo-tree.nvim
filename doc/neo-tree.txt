@@ -593,7 +593,7 @@ the config options are in a table bound to the `config` key:
             } 
            },
            ["a"] = {
-            "add",
+             "add",
              nowait = true
              config = {
                show_path = "none" -- "none", "relative", "absolute"
