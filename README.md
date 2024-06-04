@@ -573,7 +573,7 @@ See `:h neo-tree-commands` for details and a full listing of available arguments
 
 ### File Nesting
 
-See `:h neo-tree-file-nesting` for more details about file nesting.
+See `:h neo-tree-file-nesting` for more details about file nesting. Here Some pre-defined nesting rules [neotree-file-nesting-config](https://github.com/saifulapm/neotree-file-nesting-config)
 
 
 ### Netrw Hijack
