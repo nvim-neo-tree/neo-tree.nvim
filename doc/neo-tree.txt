@@ -940,6 +940,9 @@ highlight group which will be applied when they are visible, see
           always_show = { -- remains visible even if other settings would normally hide it
             --".gitignored",
           },
+          always_show_by_pattern = { -- uses glob style patterns
+            --".env*",
+          },
           never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
             --".DS_Store",
             --"thumbs.db",
@@ -972,6 +975,10 @@ patterns. No guarantees on how it handles advanced patterns.
 The `always_show` option is a list of file/folder names that will always be 
 visible, even if other settings would normally hide it. This section takes
 precedence over all other options except for `never_show`.
+
+the `always_show_by_pattern` option is a list of file/folder patterns that 
+always will be visible. This section takes precedence over all other options
+except `never_show`.
 
 The `never_show` option is the same as `hide_by_name`, except that those items
 will remain hidden even if you toggle `visible` to true. This section takes
