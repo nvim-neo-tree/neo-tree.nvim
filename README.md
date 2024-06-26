@@ -141,7 +141,6 @@ use {
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
-        enable_normal_mode_for_inputs = false, -- Enable normal mode for input dialogs.
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
         sort_function = nil , -- use a custom function for sorting files and directories in the tree 
@@ -305,6 +304,9 @@ use {
             },
             always_show = { -- remains visible even if other settings would normally hide it
               --".gitignored",
+            },
+            always_show_by_pattern = { -- uses glob style patterns
+              --".env*",
             },
             never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
               --".DS_Store",

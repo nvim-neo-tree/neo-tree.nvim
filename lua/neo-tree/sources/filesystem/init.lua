@@ -260,7 +260,7 @@ M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
   config.enable_git_status = global_config.enable_git_status
 
-  for _, key in ipairs({ "hide_by_pattern", "never_show_by_pattern" }) do
+  for _, key in ipairs({ "hide_by_pattern", "always_show_by_pattern", "never_show_by_pattern" }) do
     local list = config.filtered_items[key]
     if type(list) == "table" then
       for i, pattern in ipairs(list) do
