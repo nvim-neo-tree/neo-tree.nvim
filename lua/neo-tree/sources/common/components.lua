@@ -293,22 +293,31 @@ end
 M.icon = function(config, node, state)
   local icon = config.default or " "
   local highlight = config.highlight or highlights.FILE_ICON
+  local _, mini_icons = pcall(require, "mini.icons")
+  ---@diagnostic disable-next-line: global_usage
+  local has_mini_icons = _G.MiniIcons ~= nil
   if node.type == "directory" then
     highlight = highlights.DIRECTORY_ICON
+    icon = config.folder_closed or "+"
+    if has_mini_icons then
+      icon, highlight = mini_icons.get("directory", node.name)
+    end
     if node.loaded and not node:has_children() then
       icon = not node.empty_expanded and config.folder_empty or config.folder_empty_open
     elseif node:is_expanded() then
       icon = config.folder_open or "-"
-    else
-      icon = config.folder_closed or "+"
     end
   elseif node.type == "file" or node.type == "terminal" then
-    local success, web_devicons = pcall(require, "nvim-web-devicons")
     local name = node.type == "terminal" and "terminal" or node.name
-    if success then
-      local devicon, hl = web_devicons.get_icon(name)
-      icon = devicon or icon
-      highlight = hl or highlight
+    if has_mini_icons then
+      icon, highlight = mini_icons.get("file", name)
+    else -- fallback to nvim-web-devicons for file icons
+      local success, web_devicons = pcall(require, "nvim-web-devicons")
+      if success then
+        local devicon, hl = web_devicons.get_icon(name)
+        icon = devicon or icon
+        highlight = hl or highlight
+      end
     end
   end
 
@@ -459,7 +468,7 @@ M.indent = function(config, node, state)
   return indent
 end
 
-local get_header = function (state, label, size)
+local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
@@ -468,12 +477,12 @@ local get_header = function (state, label, size)
   return string.format("%" .. size .. "s  ", label)
 end
 
-M.file_size = function (config, node, state)
+M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Size", 12),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -491,7 +500,7 @@ M.file_size = function (config, node, state)
 
   return {
     text = string.format("%12s  ", text),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -506,7 +515,7 @@ local file_time = function(config, node, state, stat_field)
     end
     return {
       text = get_header(state, label, 20),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -516,7 +525,7 @@ local file_time = function(config, node, state, stat_field)
   local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
   return {
     text = string.format("%20s  ", display),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -539,19 +548,19 @@ M.symlink_target = function(config, node, state)
   end
 end
 
-M.type = function (config, node, state)
+M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Type", 10),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
   return {
     text = string.format("%10s  ", text),
-    highlight = highlights.FILE_STATS
+    highlight = highlights.FILE_STATS,
   }
 end
 
