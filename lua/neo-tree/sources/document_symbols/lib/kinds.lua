@@ -39,11 +39,17 @@ local kinds_map = {}
 ---@return table res of the form { name = kind_display_name, icon = kind_icon, hl = kind_hl }
 M.get_kind = function(kind_id)
   local kind_name = kinds_id_to_name[kind_id]
-  return vim.tbl_extend(
-    "force",
-    { name = kind_name or ("Unknown: " .. kind_id), icon = "?", hl = "" },
-    kind_name and (kinds_map[kind_name] or {}) or kinds_map["Unknown"]
-  )
+  local name, icon, hl = kind_name or ("Unknown: " .. kind_id), "?", ""
+  if kind_name then
+    local _, mini_icons = pcall(require, "mini.icons")
+    if _G.MiniIcons ~= nil then
+      icon, hl = mini_icons.get("lsp", kind_name)
+    else
+      local kind = kinds_map[kind_name]
+      icon, hl = kind.icon or icon, kind.hl or hl
+    end
+  end
+  return { name = name, icon = icon, hl = hl }
 end
 
 ---Setup the module with custom kinds
