@@ -15,14 +15,18 @@ local common = require("neo-tree.sources.common.components")
 
 local M = {}
 
-M.icon = function(config, node, state)
-  return {
+M.kind_icon = function(config, node, state)
+  local icon = {
     text = node:get_depth() == 1 and "" or node.extra.kind.icon,
-    highlight = node.extra and node.extra.kind.hl or highlights.FILE_NAME,
+    highlight = node.extra.kind.hl,
   }
-end
 
-M.kind_icon = M.icon
+  if config.provider then
+    icon = config.provider(icon, node, state) or icon
+  end
+
+  return icon
+end
 
 M.kind_name = function(config, node, state)
   return {
