@@ -291,33 +291,31 @@ M.filtered_by = function(config, node, state)
 end
 
 M.icon = function(config, node, state)
-  local icon = config.default or " "
-  local highlight = config.highlight or highlights.FILE_ICON
+  -- calculate default icon
+  local icon =
+    { text = config.default or " ", highlight = config.highlight or highlights.FILE_ICON }
   if node.type == "directory" then
-    highlight = highlights.DIRECTORY_ICON
+    icon.highlight = highlights.DIRECTORY_ICON
     if node.loaded and not node:has_children() then
-      icon = not node.empty_expanded and config.folder_empty or config.folder_empty_open
+      icon.text = not node.empty_expanded and config.folder_empty or config.folder_empty_open
     elseif node:is_expanded() then
-      icon = config.folder_open or "-"
+      icon.text = config.folder_open or "-"
     else
-      icon = config.folder_closed or "+"
+      icon.text = config.folder_closed or "+"
     end
-  elseif node.type == "file" or node.type == "terminal" then
-    local success, web_devicons = pcall(require, "nvim-web-devicons")
-    local name = node.type == "terminal" and "terminal" or node.name
-    if success then
-      local devicon, hl = web_devicons.get_icon(name)
-      icon = devicon or icon
-      highlight = hl or highlight
-    end
+  end
+
+  -- use icon provider if available
+  if config.provider then
+    icon = config.provider(icon, node, state) or icon
   end
 
   local filtered_by = M.filtered_by(config, node, state)
 
-  return {
-    text = icon .. " ",
-    highlight = filtered_by.highlight or highlight,
-  }
+  icon.text = icon.text .. " " -- add padding
+  icon.highlight = filtered_by.highlight or icon.highlight --  prioritize filtered highlighting
+
+  return icon
 end
 
 M.modified = function(config, node, state)

@@ -203,7 +203,18 @@ local config = {
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
       default = "*",
-      highlight = "NeoTreeFileIcon"
+      highlight = "NeoTreeFileIcon",
+      provider = function(icon, node, state) -- default icon provider utilizes nvim-web-devicons if available
+        if node.type == "file" or node.type == "terminal" then
+          local success, web_devicons = pcall(require, "nvim-web-devicons")
+          local name = node.type == "terminal" and "terminal" or node.name
+          if success then
+            local devicon, hl = web_devicons.get_icon(name)
+            icon.text = devicon or icon.text
+            icon.highlight = hl or icon.highlight
+          end
+        end
+      end
     },
     modified = {
       symbol = "[+] ",
