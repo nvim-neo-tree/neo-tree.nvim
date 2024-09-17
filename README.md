@@ -714,7 +714,14 @@ an existing split by configuring the command like this:
 require("neo-tree").setup({
   window = {
     mappings = {
-      ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+      ["P"] = {
+        "toggle_preview",
+        config = {
+          use_float = false,
+          use_image_nvim = true,
+          title = 'Neo-tree Preview',
+        },
+      },
     }
   }
 })
@@ -723,6 +730,8 @@ require("neo-tree").setup({
 Anything that causes Neo-tree to lose focus will end preview mode. When
 `use_float = false`, the window that was taken over by preview mode will revert
 back to whatever was shown in that window before preview mode began.
+
+You can choose a custom title for the floating window by setting the `title` option in its config.
 
 If you want to work with the floating preview mode window in autocmds or other
 custom code, the window will have the `neo-tree-preview` filetype.

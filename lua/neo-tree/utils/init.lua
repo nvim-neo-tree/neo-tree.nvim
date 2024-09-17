@@ -1009,6 +1009,49 @@ M.table_merge = function(base_table, override_table)
   return table_merge_internal(merged_table, override_table)
 end
 
+---Find a table containing a specific value in a nested table structure.
+---@param tbl table The table to search.
+---@param target_value any The value to search for.
+---@param max_depth number? Maximum depth to search (default: 10).
+---@param max_items number? Maximum number of items to check (default: 1000).
+---@return table? parent_table The table containing the value, or nil if not found.
+---@return string[]? path The path to the found value, or nil if not found.
+M.table_find_by_value = function(tbl, target_value, max_depth, max_items)
+  max_depth = max_depth or 10
+  max_items = max_items or 1000
+  local items_checked = 0
+
+  local function search(t, depth, current_path)
+    items_checked = items_checked + 1
+
+    if items_checked > max_items then
+      return nil, nil
+    end
+    if depth > max_depth then
+      return nil, nil
+    end
+    if type(t) == "table" then
+      for k, v in pairs(t) do
+        if v == target_value then
+          return t, current_path
+        end
+        if type(v) == "table" then
+          local new_path = vim.deepcopy(current_path)
+          table.insert(new_path, k)
+          local found, path = search(v, depth + 1, new_path)
+          if found then
+            return found, path
+          end
+        end
+      end
+    end
+    return nil, nil
+  end
+
+  local result, path = search(tbl, 0, {})
+  return result, path
+end
+
 ---Evaluate the truthiness of a value, according to js/python rules.
 ---@param value any
 ---@return boolean
