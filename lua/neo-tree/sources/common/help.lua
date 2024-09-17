@@ -68,7 +68,7 @@ M.show = function(state, title, prefix_key)
   end
 
   local width = math.min(60, max_width + 1)
-
+  local col
   if state.current_position == "right" then
     col = vim.o.columns - tree_width - width - 1
   else
