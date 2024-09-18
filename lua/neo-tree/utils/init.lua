@@ -1009,47 +1009,51 @@ M.table_merge = function(base_table, override_table)
   return table_merge_internal(merged_table, override_table)
 end
 
----Find a table containing a specific value in a nested table structure.
+---Find the parent table to a target value inside a nested table structure.
+---
 ---@param tbl table The table to search.
 ---@param target_value any The value to search for.
----@param max_depth number? Maximum depth to search (default: 10).
----@param max_items number? Maximum number of items to check (default: 1000).
+---@param max_depth number? Maximum depth to search (default: 5).
+---@param max_items number? Maximum number of items to check (default: 555).
 ---@return table? parent_table The table containing the value, or nil if not found.
----@return string[]? path The path to the found value, or nil if not found.
 M.table_find_by_value = function(tbl, target_value, max_depth, max_items)
-  max_depth = max_depth or 10
-  max_items = max_items or 1000
+  max_depth = max_depth or 5
+  max_items = max_items or 555
+
+  local stack = { { tbl, 0 } }
   local items_checked = 0
 
-  local function search(t, depth, current_path)
-    items_checked = items_checked + 1
+  while #stack > 0 and items_checked <= max_items do
+    local current, depth = unpack(table.remove(stack))
 
-    if items_checked > max_items then
-      return nil, nil
-    end
     if depth > max_depth then
-      return nil, nil
+      goto continue
     end
-    if type(t) == "table" then
-      for k, v in pairs(t) do
-        if v == target_value then
-          return t, current_path
-        end
-        if type(v) == "table" then
-          local new_path = vim.deepcopy(current_path)
-          table.insert(new_path, k)
-          local found, path = search(v, depth + 1, new_path)
-          if found then
-            return found, path
-          end
-        end
+
+    if type(current) ~= "table" then
+      goto continue
+    end
+
+    for _, v in pairs(current) do
+      items_checked = items_checked + 1
+
+      if v == target_value then
+        return current
+      end
+
+      if type(v) == "table" then
+        table.insert(stack, { v, depth + 1 })
+      end
+
+      if items_checked > max_items then
+        break
       end
     end
-    return nil, nil
+
+    ::continue::
   end
 
-  local result, path = search(tbl, 0, {})
-  return result, path
+  return nil
 end
 
 ---Evaluate the truthiness of a value, according to js/python rules.

@@ -12,8 +12,7 @@ local function create_floating_preview_window(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
 
-  local toggle_preview_mapping, _ =
-    utils.table_find_by_value(state.window.mappings, "toggle_preview")
+  local toggle_preview_mapping = utils.table_find_by_value(state.window.mappings, "toggle_preview")
 
   local title = toggle_preview_mapping and toggle_preview_mapping.config.title or "Neo-tree Preview"
   local winwidth = vim.api.nvim_win_get_width(state.winid)
