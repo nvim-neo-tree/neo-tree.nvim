@@ -448,6 +448,7 @@ local config = {
         ["<C-n>"] = "move_cursor_down",
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
+        ["<esc>"] = "close"
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
