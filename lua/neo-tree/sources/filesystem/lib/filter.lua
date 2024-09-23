@@ -78,7 +78,9 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     local a_score = result_scores[a.path]
     local b_score = result_scores[b.path]
     if a_score == nil or b_score == nil then
-      log.debug(string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score))
+      log.debug(
+        string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score)
+      )
       local config = require("neo-tree").config
       if config.sort_function ~= nil then
         return config.sort_function(a, b)
@@ -194,18 +196,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       vim.api.nvim_win_set_height(winid, height)
     end
   end)
-  input:map("i", "<esc>", function(bufnr)
-    vim.cmd("stopinsert")
-    input:unmount()
-    if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
-      fs.reset_search(state, true)
-    end
-    restore_height()
-  end, { noremap = true })
-
-  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-
-  input:on({ event.BufLeave, event.BufDelete }, function()
+  local close_input = function()
     vim.cmd("stopinsert")
     input:unmount()
     -- If this was closed due to submit, that function will handle the reset_search
@@ -215,22 +206,41 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       end
     end, 100)
     restore_height()
-  end, { once = true })
+  end
+
+  input:on({ event.BufLeave, event.BufDelete }, close_input, { once = true })
+
+  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
 
   if fuzzy_finder_mode then
     local config = require("neo-tree").config
     for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
       local t = type(cmd_name)
       if t == "string" then
-        local cmd = cmds[cmd_name]
-        if cmd then
-          input:map("i", lhs, create_input_mapping_handle(cmd, state, scroll_padding), { noremap = true })
+        if cmd_name == "close" then
+          input:map("i", lhs, close_input, { noremap = true })
         else
-          log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+          local cmd = cmds[cmd_name]
+          if cmd then
+            input:map(
+              "i",
+              lhs,
+              create_input_mapping_handle(cmd, state, scroll_padding),
+              { noremap = true }
+            )
+          else
+            log.warn(
+              string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name)
+            )
+          end
         end
       elseif t == "function" then
-        input:map("i", lhs, create_input_mapping_handle(cmd_name, state, scroll_padding),
-          { noremap = true })
+        input:map(
+          "i",
+          lhs,
+          create_input_mapping_handle(cmd_name, state, scroll_padding),
+          { noremap = true }
+        )
       else
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
       end
