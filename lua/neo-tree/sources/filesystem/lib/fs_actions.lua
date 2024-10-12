@@ -356,65 +356,62 @@ M.create_node = function(in_directory, callback, using_root_directory)
   end
 
   local dir_ending = '"/"'
-  if utils.path_separator ~= '/' then
+  if utils.path_separator ~= "/" then
     dir_ending = dir_ending .. string.format(' or "%s"', utils.path_separator)
   end
-  local msg = 'Enter name for new file or directory (dirs end with a ' .. dir_ending .. '):'
-  inputs.input(
-    msg,
-    base,
-    function(destinations)
-      if not destinations then
+  local msg = "Enter name for new file or directory (dirs end with a " .. dir_ending .. "):"
+  inputs.input(msg, base, function(destinations)
+    if not destinations then
+      return
+    end
+
+    for _, destination in ipairs(utils.brace_expand(destinations)) do
+      if not destination or destination == base then
+        return
+      end
+      local is_dir = vim.endswith(destination, "/")
+        or vim.endswith(destination, utils.path_separator)
+
+      if using_root_directory then
+        destination = utils.path_join(using_root_directory, destination)
+      else
+        destination = vim.fn.fnamemodify(destination, ":p")
+      end
+
+      if utils.is_windows then
+        destination = utils.windowize_path(destination)
+      end
+      if loop.fs_stat(destination) then
+        log.warn("File already exists")
         return
       end
 
-      for _, destination in ipairs(utils.brace_expand(destinations)) do
-        if not destination or destination == base then
-          return
-        end
-        local is_dir = vim.endswith(destination, "/") or vim.endswith(destination, utils.path_separator)
-
-        if using_root_directory then
-          destination = utils.path_join(using_root_directory, destination)
-        else
-          destination = vim.fn.fnamemodify(destination, ":p")
-        end
-
-        if utils.is_windows then destination = utils.windowize_path(destination) end
-        if loop.fs_stat(destination) then
-          log.warn("File already exists")
-          return
-        end
-
-        create_all_parents(destination)
-        if is_dir then
-          loop.fs_mkdir(destination, 493)
-        else
-          local open_mode = loop.constants.O_CREAT
-            + loop.constants.O_WRONLY
-            + loop.constants.O_TRUNC
-          local fd = loop.fs_open(destination, open_mode, 420)
-          if not fd then
-            if not loop.fs_stat(destination) then
-              api.nvim_err_writeln("Could not create file " .. destination)
-              return
-            else
-              log.warn("Failed to complete file creation of " .. destination)
-            end
+      create_all_parents(destination)
+      if is_dir then
+        loop.fs_mkdir(destination, 493)
+      else
+        local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
+        local fd = loop.fs_open(destination, open_mode, 420)
+        if not fd then
+          if not loop.fs_stat(destination) then
+            api.nvim_err_writeln("Could not create file " .. destination)
+            return
           else
-            loop.fs_close(fd)
+            log.warn("Failed to complete file creation of " .. destination)
           end
+        else
+          loop.fs_close(fd)
         end
-
-        vim.schedule(function()
-          events.fire_event(events.FILE_ADDED, destination)
-          if callback then
-            callback(destination)
-          end
-        end)
       end
+
+      vim.schedule(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
     end
-  )
+  end)
 end
 
 -- Delete Node
@@ -496,7 +493,8 @@ M.delete_node = function(path, callback, noconfirm)
       -- first try using native system commands, which are recursive
       local success = false
       if utils.is_windows then
-        local result = vim.fn.system({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
+        local result =
+          vim.fn.system({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
         local error = vim.v.shell_error
         if error ~= 0 then
           log.debug("Could not delete directory '", path, "' with rmdir: ", result)
@@ -563,11 +561,7 @@ M.delete_nodes = function(paths_to_delete, callback)
   end)
 end
 
--- Rename Node
-M.rename_node = function(path, callback)
-  local parent_path, name = utils.split_path(path)
-  local msg = string.format('Enter new name for "%s":', name)
-
+local rename_node = function(msg, name, get_destination, path, callback)
   inputs.input(msg, name, function(new_name)
     -- If cancelled
     if not new_name or new_name == "" then
@@ -575,8 +569,8 @@ M.rename_node = function(path, callback)
       return
     end
 
-    local destination = parent_path .. utils.path_separator .. new_name
-    -- If aleady exists
+    local destination = get_destination(new_name)
+    -- If already exists
     if loop.fs_stat(destination) then
       log.warn(destination, " already exists")
       return
@@ -615,6 +609,36 @@ M.rename_node = function(path, callback)
     end
     fs_rename()
   end)
+end
+
+-- Rename Node
+M.rename_node = function(path, callback)
+  local parent_path, name = utils.split_path(path)
+  local msg = string.format('Enter new name for "%s":', name)
+
+  local get_destination = function(new_name)
+    return parent_path .. utils.path_separator .. new_name
+  end
+
+  rename_node(msg, name, get_destination, path, callback)
+end
+
+-- Rename Node Base Name
+M.rename_node_basename = function(path, callback)
+  local parent_path, _ = utils.split_path(path)
+  local name = vim.fn.fnamemodify(path, ":t:r")
+  local extension = vim.fn.fnamemodify(path, ":e")
+
+  local msg = string.format('Enter new name for "%s":', name)
+
+  local get_destination = function(new_name)
+    return parent_path
+      .. utils.path_separator
+      .. new_name
+      .. (extension:len() == 0 and "" or "." .. extension)
+  end
+
+  rename_node(msg, name, get_destination, path, callback)
 end
 
 return M

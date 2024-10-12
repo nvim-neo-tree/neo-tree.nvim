@@ -308,6 +308,9 @@ i    = show_file_details     Show file details in popup window, such as size
 
 r    = rename:               Rename the selected file or directory.
 
+E    = rename_basename:      Rename the selected file or directory without the
+                             extension.
+
 y    = copy_to_clipboard:    Mark file to be copied.
                              Supports visual selection.~
 
