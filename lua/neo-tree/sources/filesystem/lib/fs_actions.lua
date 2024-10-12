@@ -625,8 +625,8 @@ end
 
 -- Rename Node Base Name
 M.rename_node_basename = function(path, callback)
-  local parent_path, _ = utils.split_path(path)
-  local name = vim.fn.fnamemodify(path, ":t:r")
+  local parent_path, name = utils.split_path(path)
+  local base_name = vim.fn.fnamemodify(path, ":t:r")
   local extension = vim.fn.fnamemodify(path, ":e")
 
   local msg = string.format('Enter new name for "%s":', name)
@@ -638,7 +638,7 @@ M.rename_node_basename = function(path, callback)
       .. (extension:len() == 0 and "" or "." .. extension)
   end
 
-  rename_node(msg, name, get_destination, path, callback)
+  rename_node(msg, base_name, get_destination, path, callback)
 end
 
 return M
