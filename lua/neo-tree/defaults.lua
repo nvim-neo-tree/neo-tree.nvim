@@ -453,6 +453,7 @@ local config = {
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
                                    -- "always" means directory scans are always async.
                                    -- "never"  means directory scans are never async.
+    shared_clipboard = false,      -- Enabling this feature allows you to copy and cut files over different instances of neovim
     scan_mode = "shallow", -- "shallow": Don't scan into directories to detect possible empty directory a priori
                            -- "deep": Scan into directories to detect empty or grouped empty directories a priori.
     bind_to_cwd = true, -- true creates a 2-way binding between vim's cwd and neo-tree's root
