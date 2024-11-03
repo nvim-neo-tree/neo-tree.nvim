@@ -2,13 +2,13 @@ local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local renderer = require("neo-tree.ui.renderer")
+local log = require("neo-tree.log")
 
 local M = {}
 
 local clipboard_state_dir_path = vim.fn.stdpath("state") .. "/neo-tree/"
 local clipboard_file_path = clipboard_state_dir_path .. "filesystem-clipboard.json"
 local clipboard_file_last_mtime = nil
-
 
 M.save_clipboard = function(clipboard)
   local file = io.open(clipboard_file_path, "w+")
@@ -17,7 +17,12 @@ M.save_clipboard = function(clipboard)
     return
   end
 
-  file:write(vim.json.encode(clipboard))
+  local is_success, data = pcall(vim.json.encode, clipboard)
+  if not is_success then
+    log.error("Failed to save clipboard. JSON serialization error")
+    return
+  end
+  file:write(data)
   file:flush()
   clipboard_file_last_mtime = vim.uv.fs_stat(clipboard_file_path).mtime
 end
