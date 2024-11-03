@@ -8,7 +8,7 @@ local M = {}
 
 local clipboard_state_dir_path = vim.fn.stdpath("state") .. "/neo-tree/"
 local clipboard_file_path = clipboard_state_dir_path .. "filesystem-clipboard.json"
-local clipboard_file_last_mtime = nil
+local clipboard_file_change_triggered_by_cur_neovim_instance = false
 
 M.save_clipboard = function(clipboard)
   local file = io.open(clipboard_file_path, "w+")
@@ -24,7 +24,8 @@ M.save_clipboard = function(clipboard)
   end
   file:write(data)
   file:flush()
-  clipboard_file_last_mtime = vim.uv.fs_stat(clipboard_file_path).mtime
+  M._update_all_cilpboards(clipboard)
+  clipboard_file_change_triggered_by_cur_neovim_instance = true
 end
 
 M._load_clipboard = function()
@@ -40,35 +41,13 @@ M._load_clipboard = function()
   return clipboard
 end
 
-M._update_cilpboard = function()
-  if not vim.fn.filereadable(clipboard_file_path) then
-    return
-  end
-  local cur_mtime = vim.uv.fs_stat(clipboard_file_path).mtime
-  if
-    not clipboard_file_last_mtime
-    -- We need exactly >= because it allows us to synchronize the clipboard
-    -- even with trees openned in another window (in the current Neovim instance)
-    or M._is_left_mtime_greater_or_equal(cur_mtime, clipboard_file_last_mtime)
-  then
-    local clipboard = M._load_clipboard()
-    manager._for_each_state("filesystem", function(state)
-      state.clipboard = clipboard
-      vim.schedule(function()
-        renderer.redraw(state)
-      end)
+M._update_all_cilpboards = function(clipboard)
+  manager._for_each_state("filesystem", function(state)
+    state.clipboard = clipboard
+    vim.schedule(function()
+      renderer.redraw(state)
     end)
-    clipboard_file_last_mtime = cur_mtime
-  end
-end
-
-M._is_left_mtime_greater_or_equal = function(a, b)
-  if a.sec > b.sec then
-    return true
-  elseif a.sec == b.sec and a.nsec >= b.nsec then
-    return true
-  end
-  return false
+  end)
 end
 
 M.init = function()
@@ -83,14 +62,17 @@ M.init = function()
         return
       end
       vim.schedule(function()
-        M._update_cilpboard()
+        M._update_all_cilpboards(M._load_clipboard())
       end)
     end,
   })
 
   -- Using watch_folder because we haven't "watch_file" :)
   fs_watch.watch_folder(clipboard_state_dir_path, function()
-    M._update_cilpboard()
+    if not clipboard_file_change_triggered_by_cur_neovim_instance then
+      M._update_all_cilpboards(M._load_clipboard())
+    end
+    clipboard_file_change_triggered_by_cur_neovim_instance = false
   end, true)
 end
 
