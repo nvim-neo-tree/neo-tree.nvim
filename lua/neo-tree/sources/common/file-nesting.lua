@@ -49,12 +49,30 @@ extension_matcher.get_children = function(item, siblings)
 end
 
 pattern_matcher.get_nesting_callback = function(item)
+  local matching_rules = {}
   for _, rule_config in pairs(pattern_matcher.config) do
     if item.name:match(rule_config["pattern"]) then
-      return function(inner_item, siblings)
-        local rule_config_helper = rule_config
-        return pattern_matcher.get_children(inner_item, siblings, rule_config_helper)
+      table.insert(matching_rules, rule_config)
+    end
+  end
+
+  if #matching_rules > 0 then
+    return function(inner_item, siblings)
+      local all_matching_files = {}
+      for _, rule_config in ipairs(matching_rules) do
+        local matches = pattern_matcher.get_children(inner_item, siblings, rule_config)
+        for _, match in ipairs(matches) do
+          -- Use file path as key to prevent duplicates
+          all_matching_files[match.id] = match
+        end
       end
+
+      -- Convert table to array
+      local result = {}
+      for _, file in pairs(all_matching_files) do
+        table.insert(result, file)
+      end
+      return result
     end
   end
   return nil
@@ -81,12 +99,14 @@ pattern_matcher.get_children = function(item, siblings, rule_config)
   if siblings == nil then
     return matching_files
   end
+
   for type, type_functions in pairs(pattern_matcher.pattern_types) do
-    for _, pattern in pairs(rule_config[type]) do
+    for _, pattern in pairs(rule_config[type] or {}) do
       local item_name = item.name
       if rule_config["ignore_case"] ~= nil and item.name_lcase ~= nil then
         item_name = item.name_lcase
       end
+
       local success, replaced_pattern =
         pcall(string.gsub, item_name, rule_config["pattern"], pattern)
       if success then
@@ -179,24 +199,39 @@ function M.nest_items(context)
   if M.is_enabled() == false or table_is_empty(context.nesting) then
     return
   end
+
+  -- First collect all nesting relationships
+  local all_nesting_relationships = {}
   for _, config in pairs(context.nesting) do
     local files = config.nesting_callback(config, context.all_items)
-    local folder = context.folders[config.parent_path]
-    for _, to_be_nested in ipairs(files) do
-      table.insert(config.children, to_be_nested)
-      to_be_nested.is_nested = true
-      to_be_nested.nesting_parent = config
-      if folder ~= nil then
-        for index, file_to_check in ipairs(folder.children) do
-          if file_to_check.id == to_be_nested.id then
-            table.remove(folder.children, index)
+    if files and #files > 0 then
+      table.insert(all_nesting_relationships, {
+        parent = config,
+        children = files,
+      })
+    end
+  end
+
+  -- Then apply them in order
+  for _, relationship in ipairs(all_nesting_relationships) do
+    local folder = context.folders[relationship.parent.parent_path]
+    for _, to_be_nested in ipairs(relationship.children) do
+      if not to_be_nested.is_nested then
+        table.insert(relationship.parent.children, to_be_nested)
+        to_be_nested.is_nested = true
+        to_be_nested.nesting_parent = relationship.parent
+
+        if folder ~= nil then
+          for index, file_to_check in ipairs(folder.children) do
+            if file_to_check.id == to_be_nested.id then
+              table.remove(folder.children, index)
+              break
+            end
           end
         end
       end
     end
   end
-
-  flatten_nesting(context.nesting)
 end
 
 function M.get_nesting_callback(item)
