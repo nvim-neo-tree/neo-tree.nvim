@@ -356,6 +356,9 @@ local config = {
         width = "50%",
       },
       position = "50%", -- 50% means center it
+      title = function (state) -- format the text that appears at the top of a popup window
+        return "Neo-tree " .. state.name:gsub("^%l", string.upper)
+      end,
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },

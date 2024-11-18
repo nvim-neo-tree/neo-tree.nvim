@@ -1792,9 +1792,11 @@ Popups will be created with a |filetype| of `neo-tree-popup`. You can use this
 as the target for autocmds or to exclude them from being acted upon by other
 plugins.
 
-They can also be configured by setting the `popup_border_style` in your config,
-and the colors of that border are controlled by the `NeoTreeFloatBorder`
-highlight group. If you you use the special `NC` option for
+They can also be configured by setting the `popup_border_style` in your config.
+To modify the title bar text that appears on a popup window, use
+the `window.popup.title` config option to define a function mapping the window
+state to a string. The colors of the popup border are controlled by the
+`NeoTreeFloatBorder` highlight group.If you you use the special `NC` option for
 `popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
 highlight group.
 
