@@ -193,9 +193,6 @@ M.filter_files_external = function(
     if types.executable then
       append("-executable")
     end
-    if not ignore.dotfiles then
-      append("-not", "-path", "*/.*")
-    end
     if glob ~= nil and not full_path then
       append("-iname", glob)
     elseif glob ~= nil and full_path then
