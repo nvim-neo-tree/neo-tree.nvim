@@ -880,8 +880,14 @@ local function create_floating_window(state, win_options, bufname)
     local win
     state.force_float = nil
     -- First get the default options for floating windows.
-    local sourceTitle = state.name:gsub("^%l", string.upper)
-    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+    local title = utils.resolve_config_option(
+        state,
+        "window.popup.title",
+        function (current_state)
+            return "Neo-tree " .. current_state.name:gsub("^%l", string.upper)
+        end
+    )
+    win_options = popups.popup_options(title, 40, win_options)
     win_options.win_options = nil
     win_options.zindex = 40
 
