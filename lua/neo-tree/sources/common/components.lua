@@ -16,6 +16,7 @@ local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local git = require("neo-tree.git")
 local git_parser = require("neo-tree.git.parser")
+local Path = require("plenary.path")
 
 ---@alias neotree.Component.Common._Key
 ---|"bufnr"
@@ -746,18 +747,69 @@ M.created = function(config, node, state)
   return file_time(config, node, state, "birthtime")
 end
 
+-- Compute relative path between two absolute paths
+-- Workaround for https://github.com/nvim-lua/plenary.nvim/issues/411
+local relative_path = function(original_path, reference_path)
+  local o_path = Path:new(original_path)
+  local ref_path = Path:new(reference_path)
+
+  if o_path.path.root ~= ref_path.path.root then
+    return o_path:absolute()
+  end
+
+  local parents = o_path:parents()
+  local ref_parents = ref_path:parents()
+  local sep = o_path.path.sep
+
+  local i, j = #parents, #ref_parents
+  while parents[i] == ref_parents[j] and math.min(j, i) > 0 do
+    i = i - 1
+    j = j - 1
+  end
+
+  local common_dir = parents[i + 1]
+  local steps_out = string.rep(".." .. sep, j)
+  return steps_out .. original_path:sub(#common_dir + 2)
+end
+
+local get_relative_target = function(node, state)
+  local cwd = Path:new(state.path):absolute()
+  local target = Path:new(node.link_to):absolute()
+  local node_dir = Path:new(node.path):parent():absolute()
+
+  -- If target is inside cwd, make it relative
+  if target:find(cwd, 1, true) == 1 then
+    return relative_path(target, node_dir)
+  end
+
+  return node.link_to
+end
+
 ---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Component
 ---@field [1] "symlink_target"?
 ---@field text_format string?
+---@field target_display "auto"|"force_relative"|"force_absolute"?
 
 ---@param config neotree.Component.Common.SymlinkTarget
-M.symlink_target = function(config, node, _)
+M.symlink_target = function(config, node, state)
   if not node.is_link then
     return {}
   end
 
+  local target_display = config.target_display or "auto"
+  local target
+
+  if target_display == "force_absolute" then
+    target = Path:new(node.link_to):absolute()
+  elseif target_display == "force_relative" then
+    target = get_relative_target(node, state)
+  else -- "auto"
+    -- node.link_to already comes from uv.fs_readlink() in file-items.lua
+    target = node.link_to
+  end
+
   return {
-    text = (config.text_format or "-> %s"):format(node.link_to),
+    text = (config.text_format or "-> %s"):format(target),
     highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
   }
 end
