@@ -511,7 +511,15 @@ local file_time = function(config, node, state, stat_field)
   local stat = utils.get_stat(node)
   local value = stat and stat[stat_field]
   local seconds = value and value.sec or nil
-  local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
+  local display = "-"
+  if seconds ~= nil then
+    if type(config.format) == "function" then
+      display = config.format(seconds)
+    else
+      display = os.date(config.format, seconds)
+    end
+  end
+
   return {
     text = string.format("%20s  ", display),
     highlight = config.highlight or highlights.FILE_STATS
