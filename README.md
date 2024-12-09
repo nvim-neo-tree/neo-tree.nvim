@@ -368,6 +368,7 @@ use {
               ["<C-n>"] = "move_cursor_down",
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
+              ["<esc>"] = "close",
               -- ['<key>'] = function(state, scroll_padding) ... end,
             },
           },
