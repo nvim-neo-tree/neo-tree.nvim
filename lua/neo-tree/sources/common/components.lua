@@ -15,8 +15,53 @@ local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local log = require("neo-tree.log")
+local path = require("plenary.path")
 
 local M = {}
+
+-- Workaround for https://github.com/nvim-lua/plenary.nvim/issues/411
+local relative_path = function(original_path, reference_path)
+  -- Use plenary's make_relative to clean paths
+  original_path = path:new(original_path):make_relative(".")
+  reference_path = path:new(reference_path):make_relative(".")
+  local o_path = path:new(original_path)
+  local ref_path = path:new(reference_path)
+  local parents = o_path:parents()
+  local ref_parents = ref_path:parents()
+
+  local path_elements = vim.split(o_path.filename, "/")
+  table.insert(parents, 1, original_path)
+  table.insert(ref_parents, 1, reference_path)
+
+  local result = ""
+  for i, ref_parent in ipairs(ref_parents) do
+    for j, par in ipairs(parents) do
+      if ref_parent == par then
+        if i == 1 and j == 1 then
+          return ""
+        end
+
+        result = result .. table.concat(path_elements, "/", #path_elements - j + 2)
+        return result
+      end
+    end
+
+    result = "../" .. result
+  end
+end
+
+local get_relative_target = function(node, state)
+  local cwd = path:new(state.path):absolute()
+  local target = path:new(node.link_to):absolute()
+  local node_dir = path:new(node.path):parent():absolute()
+
+  -- If target is inside cwd, make it relative
+  if target:find(cwd, 1, true) == 1 then
+    return relative_path(target, node_dir)
+  end
+
+  return node.link_to
+end
 
 local make_two_char = function(symbol)
   if vim.fn.strchars(symbol) == 1 then
@@ -528,8 +573,9 @@ end
 
 M.symlink_target = function(config, node, state)
   if node.is_link then
+    local target = get_relative_target(node, state)
     return {
-      text = string.format(" ➛ %s", node.link_to),
+      text = string.format(" ➛ %s", target),
       highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
     }
   else
