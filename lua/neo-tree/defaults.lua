@@ -248,18 +248,22 @@ local config = {
     -- If you don't want to use these columns, you can set `enabled = false` for each of them individually
     file_size = {
       enabled = true,
+      width = 12, -- width of the column
       required_width = 64, -- min width of window required to show this column
     },
     type = {
       enabled = true,
+      width = 10, -- width of the column
       required_width = 110, -- min width of window required to show this column
     },
     last_modified = {
       enabled = true,
+      width = 20, -- width of the column
       required_width = 88, -- min width of window required to show this column
     },
     created = {
       enabled = false,
+      width = 20, -- width of the column
       required_width = 120, -- min width of window required to show this column
     },
     symlink_target = {
