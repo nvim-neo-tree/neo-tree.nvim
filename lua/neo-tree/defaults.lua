@@ -257,10 +257,14 @@ local config = {
     last_modified = {
       enabled = true,
       required_width = 88, -- min width of window required to show this column
+      format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see ISO C function `strftime`, `format` parameter)
+                                    -- or use a function that takes in the date in seconds and returns a string
     },
     created = {
       enabled = false,
       required_width = 120, -- min width of window required to show this column
+      format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see ISO C function `strftime`, `format` parameter)
+                                    -- or use a function that takes in the date in seconds and returns a string
     },
     symlink_target = {
       enabled = false,
