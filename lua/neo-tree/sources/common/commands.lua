@@ -829,6 +829,15 @@ M.rename = function(state, callback)
   fs_actions.rename_node(node.path, callback)
 end
 
+M.rename_basename = function(state, callback)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  fs_actions.rename_node_basename(node.path, callback)
+end
+
 ---Marks potential windows with letters and will open the give node in the picked window.
 ---@param state table The state of the source
 ---@param path string The path to open
