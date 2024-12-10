@@ -457,20 +457,27 @@ M.indent = function(config, node, state)
   return indent
 end
 
+local truncate_string = function(str, max_length)
+  if #str <= max_length then
+    return str
+  end
+  return str:sub(1, max_length - 1) .. "…"
+end
+
 local get_header = function (state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
-    return string.format("%" .. size .. "s %s  ", label, icon)
+    return vim.fn.printf("%" .. size .. "s %s  ", truncate_string(label, size), icon)
   end
-  return string.format("%" .. size .. "s  ", label)
+  return vim.fn.printf("%" .. size .. "s  ", truncate_string(label, size))
 end
 
 M.file_size = function (config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
-      text = get_header(state, "Size", 12),
+      text = get_header(state, "Size", config.width),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
@@ -488,7 +495,7 @@ M.file_size = function (config, node, state)
   end
 
   return {
-    text = string.format("%12s  ", text),
+    text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(text, config.width)),
     highlight = config.highlight or highlights.FILE_STATS
   }
 end
@@ -503,7 +510,7 @@ local file_time = function(config, node, state, stat_field)
       label = "Created"
     end
     return {
-      text = get_header(state, label, 20),
+      text = get_header(state, label, config.width),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
@@ -513,7 +520,7 @@ local file_time = function(config, node, state, stat_field)
   local seconds = value and value.sec or nil
   local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
   return {
-    text = string.format("%20s  ", display),
+    text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(display, config.width)),
     highlight = config.highlight or highlights.FILE_STATS
   }
 end
@@ -542,13 +549,13 @@ M.type = function (config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
-      text = get_header(state, "Type", 10),
+      text = get_header(state, "Type", config.width),
       highlight = highlights.FILE_STATS_HEADER
     }
   end
 
   return {
-    text = string.format("%10s  ", text),
+    text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(text, config.width)),
     highlight = highlights.FILE_STATS
   }
 end
