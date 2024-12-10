@@ -440,7 +440,7 @@ local config = {
         ["."] = "set_root",
         ["[g"] = "prev_git_modified",
         ["]g"] = "next_git_modified",
-        ["i"] = { "show_file_details", created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" }, -- (see `:h neo-tree-mappings`)
+        ["i"] = { "show_file_details", config = { created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" } }, -- (see `:h neo-tree-mappings`)
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -570,7 +570,7 @@ local config = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
         ["bd"] = "buffer_delete",
-        ["i"] = { "show_file_details", created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" }, -- (see `:h neo-tree-mappings`)
+        ["i"] = { "show_file_details", config = { created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" } }, -- (see `:h neo-tree-mappings`)
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -591,7 +591,7 @@ local config = {
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
-        ["i"] = { "show_file_details", created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" }, -- (see `:h neo-tree-mappings`)
+        ["i"] = { "show_file_details", config = { created_format = "%Y-%m-%d %I:%M %p", modified_format = "%Y-%m-%d %I:%M %p" } }, -- (see `:h neo-tree-mappings`)
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
