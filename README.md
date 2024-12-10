@@ -297,6 +297,13 @@ use {
             ["<"] = "prev_source",
             [">"] = "next_source",
             ["i"] = "show_file_details",
+            -- ["i"] = {
+            --   "show_file_details",
+            --   -- format strings of the timestamps shown for date created and last modified (see `:h os.date()`)
+            --   -- both options accept a string or a function that takes in the date in seconds and returns a string to display
+            --   created_format = "%Y-%m-%d %I:%M %p",
+            --   modified_format = function(seconds) ... end,
+            -- },
           }
         },
         nesting_rules = {},
