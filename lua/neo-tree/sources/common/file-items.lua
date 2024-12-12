@@ -93,7 +93,7 @@ end
 local create_item, set_parents
 
 function create_item(context, path, _type, bufnr)
-  local parent_path, name = utils.split_path(path)
+  local parent_path, name = utils.split_path(utils.normalize_path(path))
   local id = path
   if path == "[No Name]" and bufnr then
     parent_path = context.state.path
