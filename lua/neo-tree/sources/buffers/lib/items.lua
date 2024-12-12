@@ -72,7 +72,7 @@ M.get_opened_buffers = function(state)
       if #state.path > 1 then
         local rootsub = path:sub(1, #state.path)
         -- make sure this is within the root path
-        if rootsub == state.path then
+        if utils.normalize_path(rootsub) == utils.normalize_path(state.path) then
           add_buffer(b, path)
         end
       else
