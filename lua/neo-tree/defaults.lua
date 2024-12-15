@@ -253,7 +253,7 @@ local config = {
     },
     symlink_target = {
       enabled = false,
-      text_format = " ➛ %s",
+      text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
   renderers = {
