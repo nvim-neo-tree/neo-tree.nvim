@@ -530,9 +530,21 @@ M.show_file_details = function(state)
     table.insert(left, "Size")
     table.insert(right, utils.human_size(stat.size))
     table.insert(left, "Created")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.birthtime.sec))
+    local created_format = state.config.created_format
+      or require("neo-tree").config.default_component_configs.created.format
+    if type(created_format) == "function" then
+      table.insert(right, created_format(stat.birthtime.sec))
+    else
+      table.insert(right, os.date(created_format, stat.birthtime.sec))
+    end
     table.insert(left, "Modified")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.mtime.sec))
+    local modified_format = state.config.modified_format
+      or require("neo-tree").config.default_component_configs.modified.format
+    if type(modified_format) == "function" then
+      table.insert(right, modified_format(stat.mtime.sec))
+    else
+      table.insert(right, os.date(modified_format, stat.mtime.sec))
+    end
   end
 
   local lines = {}
