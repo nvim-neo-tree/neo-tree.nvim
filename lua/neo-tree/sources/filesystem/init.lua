@@ -383,6 +383,10 @@ M.setup = function(config, global_config)
       end,
     })
   end
+
+  if config.shared_clipboard then
+    require("neo-tree.sources.filesystem.lib.shared_clipboard").init()
+  end
 end
 
 ---Expands or collapses the current node.
