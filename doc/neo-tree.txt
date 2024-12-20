@@ -306,6 +306,22 @@ d    = delete:               Delete the selected file or directory.
 i    = show_file_details     Show file details in popup window, such as size
                              and last modified date.
 
+                             This command supports two optional options to
+                             change the format string for timestamps,
+                             `config.created_format` for date created and
+                             `config.modified_format` for last modified (see
+                             `:h os.date()`). Both options also accept a
+                             function that takes in the date in seconds and
+                             returns a string to display, which can be used to
+                             implement custom features like relative
+                             timestamps.
+
+                             If the options are not set, they default to the
+                             value of `default_component_configs.created.format`
+                             and `default_component_configs.modified.format` in
+                             the root config, which in turn defaults to
+                             "%Y-%m-%d %I:%M %p".
+
 r    = rename:               Rename the selected file or directory.
 
 y    = copy_to_clipboard:    Mark file to be copied.
