@@ -210,26 +210,19 @@ handle_reveal = function(args, state)
   -- Deal with cwd if we need to
   local cwd = state.path
   local path = args.reveal_file
-  local dir = args.dir
   if cwd == nil then
     cwd = manager.get_cwd(state)
   end
-
-  if dir == nil then
-    dir, _ = utils.split_path(path)
-  elseif not utils.is_subpath(dir, path) then
-    error(string.format('%s is not a subpath of %s', path, args.dir))
-  end
-
   if args.reveal_force_cwd and not utils.is_subpath(cwd, path) then
-    args.dir = dir
+    args.dir, _ = utils.split_path(path)
     do_show_or_focus(args, state, true)
     return
   elseif not utils.is_subpath(cwd, path) then
     -- force was not specified, so we need to ask the user
-    inputs.confirm("File not in cwd. Change cwd to " .. dir .. "?", function(response)
+    cwd, _ = utils.split_path(path)
+    inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
       if response == true then
-        args.dir = dir
+        args.dir = cwd
       else
         args.reveal_file = nil
       end
