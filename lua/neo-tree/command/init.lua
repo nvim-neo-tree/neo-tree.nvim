@@ -227,7 +227,7 @@ handle_reveal = function(args, state)
     return
   elseif not utils.is_subpath(cwd, path) then
     -- force was not specified, so we need to ask the user
-    inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
+    inputs.confirm("File not in cwd. Change cwd to " .. dir .. "?", function(response)
       if response == true then
         args.dir = dir
       else
