@@ -114,7 +114,7 @@ reveal~
 This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.
 
-reveal_file~
+reveal_path~
 A path to a file to reveal. This supersedes the "reveal" flag so there is no
 need to specify both. Use this if you want to reveal something other than the
 current file. If you include a path to a file as one of the arguments, it will
