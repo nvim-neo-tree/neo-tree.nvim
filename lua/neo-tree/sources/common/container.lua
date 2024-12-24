@@ -53,7 +53,7 @@ local render_content = function(config, node, state, context)
   local add_padding = function(rendered_item, should_pad)
     for _, data in ipairs(rendered_item) do
       if data.text then
-        local padding = (should_pad and #data.text > 0 and data.text:sub(1, 1) ~= " ") and " " or ""
+        local padding = (should_pad and data.text:sub(1, 1) ~= " ") and " " or ""
         data.text = padding .. data.text
         should_pad = data.text:sub(#data.text) ~= " "
       end
