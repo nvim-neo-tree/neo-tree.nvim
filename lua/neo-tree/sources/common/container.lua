@@ -10,7 +10,7 @@ local calc_rendered_width = function(rendered_item)
 
   for _, item in ipairs(rendered_item) do
     if item.text then
-      width = width + vim.fn.strchars(item.text)
+      width = width + vim.api.nvim_strwidth(item.text)
     end
   end
 
@@ -85,7 +85,7 @@ local render_content = function(config, node, state, context)
         vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
-        ::continue::
+      ::continue::
     end
 
     max_width = math.max(max_width, rendered_width)
@@ -105,27 +105,29 @@ local truncate_layer_keep_left = function(layer, skip_count, max_length)
   local result = {}
   local taken = 0
   local skipped = 0
+  local width = vim.api.nvim_strwidth
   for _, item in ipairs(layer) do
     local remaining_to_skip = skip_count - skipped
     if remaining_to_skip > 0 then
-      if #item.text <= remaining_to_skip then
-        skipped = skipped + vim.fn.strchars(item.text)
+      if width(item.text) <= remaining_to_skip then
+        skipped = skipped + width(item.text)
         item.text = ""
       else
         item.text = item.text:sub(remaining_to_skip)
-        if #item.text + taken > max_length then
-          item.text = item.text:sub(1, max_length - taken)
+        if width(item.text) + taken > max_length then
+          -- item.text = item.text:sub(1, max_length - taken)
+          item.text = utils.truncate_by_cell(item.text, max_length - taken)
         end
         table.insert(result, item)
-        taken = taken + #item.text
+        taken = taken + width(item.text)
         skipped = skipped + remaining_to_skip
       end
     elseif taken <= max_length then
-      if #item.text + taken > max_length then
-        item.text = item.text:sub(1, max_length - taken)
+      if width(item.text) + taken > max_length then
+        item.text = utils.truncate_by_cell(item.text, max_length - taken)
       end
       table.insert(result, item)
-      taken = taken + vim.fn.strchars(item.text)
+      taken = taken + width(item.text)
     end
   end
   return result

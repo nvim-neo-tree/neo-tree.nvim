@@ -1293,4 +1293,41 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+-- Function below provided by @akinsho
+-- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
+
+-- truncate a string based on number of display columns/cells it occupies
+-- so that multibyte characters are not broken up mid-character
+---@param str string
+---@param col_limit number
+---@param align 'left'|'right'
+---@return string
+M.truncate_by_cell = function(str, col_limit, align)
+  align = align or "left"
+  local api = vim.api
+  local fn = vim.fn
+  if str and str:len() == api.nvim_strwidth(str) then
+    if align == "left" then
+      return str:sub(1, col_limit)
+    elseif align == "right" then
+      return str:sub(#str - col_limit + 1)
+    end
+  end
+  local short = fn.strcharpart(str, 0, col_limit)
+  if align == "left" then
+    if api.nvim_strwidth(short) > col_limit then
+      while api.nvim_strwidth(short) > col_limit do
+        short = fn.strcharpart(short, 0, fn.strchars(short) - 1)
+      end
+    end
+  elseif align == "right" then
+    if api.nvim_strwidth(short) > col_limit then
+      while api.nvim_strwidth(short) > col_limit do
+        short = fn.strcharpart(short, 1)
+      end
+    end
+  end
+  return short
+end
+
 return M

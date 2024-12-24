@@ -112,7 +112,6 @@ end
 ---@param state table State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
 M.close = function(state, focus_prior_window)
-
   log.debug("Closing window, but saving position first.")
   M.position.save(state)
 
