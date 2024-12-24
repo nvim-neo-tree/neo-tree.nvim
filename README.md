@@ -141,7 +141,6 @@ use {
         popup_border_style = "rounded",
         enable_git_status = true,
         enable_diagnostics = true,
-        enable_normal_mode_for_inputs = false, -- Enable normal mode for input dialogs.
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
         sort_function = nil , -- use a custom function for sorting files and directories in the tree 
@@ -174,6 +173,17 @@ use {
             folder_closed = "",
             folder_open = "",
             folder_empty = "󰜌",
+            provider = function(icon, node, state) -- default icon provider utilizes nvim-web-devicons if available
+              if node.type == "file" or node.type == "terminal" then
+                local success, web_devicons = pcall(require, "nvim-web-devicons")
+                local name = node.type == "terminal" and "terminal" or node.name
+                if success then
+                  local devicon, hl = web_devicons.get_icon(name)
+                  icon.text = devicon or icon.text
+                  icon.highlight = hl or icon.highlight
+                end
+              end
+            end,
             -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
             -- then these will never be used.
             default = "*",
@@ -206,18 +216,22 @@ use {
           -- If you don't want to use these columns, you can set `enabled = false` for each of them individually
           file_size = {
             enabled = true,
+            width = 12, -- width of the column
             required_width = 64, -- min width of window required to show this column
           },
           type = {
             enabled = true,
+            width = 10, -- width of the column
             required_width = 122, -- min width of window required to show this column
           },
           last_modified = {
             enabled = true,
+            width = 20, -- width of the column
             required_width = 88, -- min width of window required to show this column
           },
           created = {
             enabled = true,
+            width = 20, -- width of the column
             required_width = 110, -- min width of window required to show this column
           },
           symlink_target = {
@@ -270,6 +284,7 @@ use {
             ["A"] = "add_directory", -- also accepts the optional config.show_path option like "add". this also supports BASH style brace expansion.
             ["d"] = "delete",
             ["r"] = "rename",
+            ["b"] = "rename_basename",
             ["y"] = "copy_to_clipboard",
             ["x"] = "cut_to_clipboard",
             ["p"] = "paste_from_clipboard",
@@ -305,6 +320,9 @@ use {
             },
             always_show = { -- remains visible even if other settings would normally hide it
               --".gitignored",
+            },
+            always_show_by_pattern = { -- uses glob style patterns
+              --".env*",
             },
             never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
               --".DS_Store",
@@ -348,12 +366,14 @@ use {
               ["on"] = { "order_by_name", nowait = false },
               ["os"] = { "order_by_size", nowait = false },
               ["ot"] = { "order_by_type", nowait = false },
+              -- ['<key>'] = function(state) ... end,
             },
             fuzzy_finder_mappings = { -- define keymaps for filter popup window in fuzzy_finder_mode
               ["<down>"] = "move_cursor_down",
               ["<C-n>"] = "move_cursor_down",
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
+              -- ['<key>'] = function(state, scroll_padding) ... end,
             },
           },
 
@@ -665,7 +685,7 @@ add `"document_symbols"` to `config.sources` and open it with the command
 ### External Sources
 
 There are more sources available as extensions that are managed outside of this repository. See the
-[wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for me information.
+[wiki](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/External-Sources) for more information.
 
 ### Source Selector
 

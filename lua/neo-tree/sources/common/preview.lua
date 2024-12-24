@@ -435,4 +435,18 @@ Preview.focus = function()
   end
 end
 
+Preview.scroll = function(state)
+  local direction = state.config.direction
+  -- NOTE: Chars below are raw escape codes for <Ctrl-E>/<Ctrl-Y>
+  local input = direction < 0 and [[]] or [[]]
+  local count = math.abs(direction)
+
+  if Preview:is_active() then
+    vim.api.nvim_win_call(instance.winid, function()
+      vim.cmd([[normal! ]] .. count .. input)
+    end)
+  end
+
+end
+
 return Preview

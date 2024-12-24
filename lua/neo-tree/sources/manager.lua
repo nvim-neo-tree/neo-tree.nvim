@@ -51,6 +51,7 @@ M._get_all_states = function()
 end
 
 M._for_each_state = function(source_name, action)
+  M.dispose_invalid_tabs()
   for _, state in ipairs(all_states) do
     if source_name == nil or state.name == source_name then
       action(state)
@@ -369,7 +370,9 @@ local dispose_state = function(state)
 end
 
 M.dispose = function(source_name, tabid)
-  for i, state in ipairs(all_states) do
+  -- Iterate in reverse because we are removing items during loop
+  for i = #all_states, 1, -1 do
+    local state = all_states[i]
     if source_name == nil or state.name == source_name then
       if not tabid or tabid == state.tabid then
         log.trace(state.name, " disposing of tab: ", tabid)
@@ -384,7 +387,9 @@ M.dispose_tab = function(tabid)
   if not tabid then
     error("dispose_tab: tabid cannot be nil")
   end
-  for i, state in ipairs(all_states) do
+  -- Iterate in reverse because we are removing items during loop
+  for i = #all_states, 1, -1 do
+    local state = all_states[i]
     if tabid == state.tabid then
       log.trace(state.name, " disposing of tab: ", tabid, state.name)
       dispose_state(state)
@@ -410,7 +415,9 @@ M.dispose_window = function(winid)
   if not winid then
     error("dispose_window: winid cannot be nil")
   end
-  for i, state in ipairs(all_states) do
+  -- Iterate in reverse because we are removing items during loop
+  for i = #all_states, 1, -1 do
+    local state = all_states[i]
     if state.id == winid then
       log.trace(state.name, " disposing of window: ", winid, state.name)
       dispose_state(state)

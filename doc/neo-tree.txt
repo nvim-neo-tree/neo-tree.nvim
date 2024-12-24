@@ -114,7 +114,7 @@ reveal~
 This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.
 
-reveal_path~
+reveal_file~
 A path to a file to reveal. This supersedes the "reveal" flag so there is no
 need to specify both. Use this if you want to reveal something other than the
 current file. If you include a path to a file as one of the arguments, it will
@@ -224,6 +224,12 @@ P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode|
 
 l           = focus_preview: Focus the active preview window
 
+<C-f>      = scroll_preview: Scrolls preview window down (without focusing it)
+                             see |neo-tree-preview-mode| for params 
+
+<C-b>      = scroll_preview: Scrolls preview window up (without focusing it)
+                             see |neo-tree-preview-mode| for params 
+
 <esc>      = revert_preview: Ends "preview_mode" if it is enabled, and reverts
                              any preview windows to what was being shown before
                              preview mode began.
@@ -301,6 +307,9 @@ i    = show_file_details     Show file details in popup window, such as size
                              and last modified date.
 
 r    = rename:               Rename the selected file or directory.
+
+b    = rename_basename:      Rename the selected file or directory without the
+                             extension.
 
 y    = copy_to_clipboard:    Mark file to be copied.
                              Supports visual selection.~
@@ -404,6 +413,9 @@ an existing split by configuring the command like this:
       window = {
         mappings = {
           ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+          ["l"] = "focus_preview",
+          ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
+          ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
         }
       }
     })
@@ -931,6 +943,9 @@ highlight group which will be applied when they are visible, see
           always_show = { -- remains visible even if other settings would normally hide it
             --".gitignored",
           },
+          always_show_by_pattern = { -- uses glob style patterns
+            --".env*",
+          },
           never_show = { -- remains hidden even if visible is toggled to true, this overrides always_show
             --".DS_Store",
             --"thumbs.db",
@@ -963,6 +978,10 @@ patterns. No guarantees on how it handles advanced patterns.
 The `always_show` option is a list of file/folder names that will always be 
 visible, even if other settings would normally hide it. This section takes
 precedence over all other options except for `never_show`.
+
+the `always_show_by_pattern` option is a list of file/folder patterns that 
+always will be visible. This section takes precedence over all other options
+except `never_show`.
 
 The `never_show` option is the same as `hide_by_name`, except that those items
 will remain hidden even if you toggle `visible` to true. This section takes
@@ -1008,7 +1027,7 @@ for a deeper dive into customizing this aspect. If you wish to configure those
 components in a universal way, the best place to do that is in the
 `default_component_configs` section of the config.
 
-For example, to add indent markers, you can apply your settings in each renderer
+For example, to configure indent markers, you can apply your settings in each renderer
 for each source, or just do it once in the default_component_configs section:
 
 >lua
@@ -1165,8 +1184,8 @@ config when calling the setup function.
 
 INDENT MARKERS                                      *neo-tree-indent-markers*
 
-By default, indent markers (aka indent guides) are disabled. In Neo-tree
-indent is a component, so to enable indent markers, you need configure the
+By default, indent markers (aka indent guides) are enabled. In Neo-tree
+indent is a component, so to edit indent markers, you can configure the
 `indent` component:
 
 ...at the global level:
@@ -1546,7 +1565,7 @@ configs for each source, look at the default config by pasting it with
     :lua require("neo-tree").paste_default_config()
 <
 or view it online at:
-https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v1.x/lua/neo-tree/defaults.lua
+https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v3.x/lua/neo-tree/defaults.lua
 
 A default `renderers` config is specified at the root level and will be used
 by each source unless another renderer is defined. If you just want to
@@ -1776,9 +1795,11 @@ Popups will be created with a |filetype| of `neo-tree-popup`. You can use this
 as the target for autocmds or to exclude them from being acted upon by other
 plugins.
 
-They can also be configured by setting the `popup_border_style` in your config,
-and the colors of that border are controlled by the `NeoTreeFloatBorder`
-highlight group. If you you use the special `NC` option for
+They can also be configured by setting the `popup_border_style` in your config.
+To modify the title bar text that appears on a popup window, use
+the `window.popup.title` config option to define a function mapping the window
+state to a string. The colors of the popup border are controlled by the
+`NeoTreeFloatBorder` highlight group.If you you use the special `NC` option for
 `popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
 highlight group.
 
