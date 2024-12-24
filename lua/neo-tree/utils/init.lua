@@ -1300,7 +1300,7 @@ end
 -- so that multibyte characters are not broken up mid-character
 ---@param str string
 ---@param col_limit number
----@param align 'left'|'right'
+---@param align 'left'|'right'|nil
 ---@return string
 M.truncate_by_cell = function(str, col_limit, align)
   align = align or "left"
