@@ -259,12 +259,14 @@ local config = {
       required_width = 88, -- min width of window required to show this column
       format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
                                     -- or use a function that takes in the date in seconds and returns a string to display
+      --format = require("neo-tree.utils").relative_date, -- enable relative timestamps
     },
     created = {
       enabled = false,
       required_width = 120, -- min width of window required to show this column
       format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
                                     -- or use a function that takes in the date in seconds and returns a string to display
+      --format = require("neo-tree.utils").relative_date, -- enable relative timestamps
     },
     symlink_target = {
       enabled = false,
