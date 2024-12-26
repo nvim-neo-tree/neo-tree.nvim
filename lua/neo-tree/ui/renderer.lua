@@ -841,7 +841,7 @@ local set_buffer_mappings = function(state)
           func = func.command or func[1]
         end
         if type(func) == "string" then
-          resolved_mappings[cmd] = { text = func }
+          resolved_mappings[cmd] = { text = desc or func }
           map_options.desc = map_options.desc or func
           vfunc = state.commands[func .. "_visual"]
           func = state.commands[func]
@@ -880,8 +880,14 @@ local function create_floating_window(state, win_options, bufname)
     local win
     state.force_float = nil
     -- First get the default options for floating windows.
-    local sourceTitle = state.name:gsub("^%l", string.upper)
-    win_options = popups.popup_options("Neo-tree " .. sourceTitle, 40, win_options)
+    local title = utils.resolve_config_option(
+        state,
+        "window.popup.title",
+        function (current_state)
+            return "Neo-tree " .. current_state.name:gsub("^%l", string.upper)
+        end
+    )
+    win_options = popups.popup_options(title, 40, win_options)
     win_options.win_options = nil
     win_options.zindex = 40
 

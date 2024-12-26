@@ -203,7 +203,18 @@ local config = {
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
       default = "*",
-      highlight = "NeoTreeFileIcon"
+      highlight = "NeoTreeFileIcon",
+      provider = function(icon, node, state) -- default icon provider utilizes nvim-web-devicons if available
+        if node.type == "file" or node.type == "terminal" then
+          local success, web_devicons = pcall(require, "nvim-web-devicons")
+          local name = node.type == "terminal" and "terminal" or node.name
+          if success then
+            local devicon, hl = web_devicons.get_icon(name)
+            icon.text = devicon or icon.text
+            icon.highlight = hl or icon.highlight
+          end
+        end
+      end
     },
     modified = {
       symbol = "[+] ",
@@ -237,22 +248,27 @@ local config = {
     -- If you don't want to use these columns, you can set `enabled = false` for each of them individually
     file_size = {
       enabled = true,
+      width = 12, -- width of the column
       required_width = 64, -- min width of window required to show this column
     },
     type = {
       enabled = true,
+      width = 10, -- width of the column
       required_width = 110, -- min width of window required to show this column
     },
     last_modified = {
       enabled = true,
+      width = 20, -- width of the column
       required_width = 88, -- min width of window required to show this column
     },
     created = {
       enabled = false,
+      width = 20, -- width of the column
       required_width = 120, -- min width of window required to show this column
     },
     symlink_target = {
       enabled = false,
+      text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
   renderers = {
@@ -345,6 +361,9 @@ local config = {
         width = "50%",
       },
       position = "50%", -- 50% means center it
+      title = function (state) -- format the text that appears at the top of a popup window
+        return "Neo-tree " .. state.name:gsub("^%l", string.upper)
+      end,
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
@@ -395,6 +414,7 @@ local config = {
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
       ["r"] = "rename",
+      ["b"] = "rename_basename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",

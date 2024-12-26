@@ -51,6 +51,7 @@ M._get_all_states = function()
 end
 
 M._for_each_state = function(source_name, action)
+  M.dispose_invalid_tabs()
   for _, state in ipairs(all_states) do
     if source_name == nil or state.name == source_name then
       action(state)
