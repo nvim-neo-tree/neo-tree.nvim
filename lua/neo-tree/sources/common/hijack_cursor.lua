@@ -20,7 +20,7 @@ local hijack_cursor_handler = function()
     end
 
     local state = manager.get_state(source, nil, winid)
-    if state == nil then
+    if state == nil or not state.tree then
       return
     end
     local node = state.tree:get_node()

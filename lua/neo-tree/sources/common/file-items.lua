@@ -93,7 +93,7 @@ end
 local create_item, set_parents
 
 function create_item(context, path, _type, bufnr)
-  local parent_path, name = utils.split_path(path)
+  local parent_path, name = utils.split_path(utils.normalize_path(path))
   local id = path
   if path == "[No Name]" and bufnr then
     parent_path = context.state.path
@@ -167,6 +167,11 @@ function create_item(context, path, _type, bufnr)
     if f.always_show[name] then
       item.filtered_by = item.filtered_by or {}
       item.filtered_by.always_show = true
+    else
+      if utils.is_filtered_by_pattern(f.always_show_by_pattern, path, name) then
+        item.filtered_by = item.filtered_by or {}
+        item.filtered_by.always_show = true
+      end
     end
     if f.hide_by_name[name] then
       item.filtered_by = item.filtered_by or {}

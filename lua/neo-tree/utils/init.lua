@@ -239,34 +239,43 @@ M.get_diagnostic_counts = function()
   for ns, _ in pairs(vim.diagnostic.get_namespaces()) do
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       local success, file_name = pcall(vim.api.nvim_buf_get_name, bufnr)
-      -- TODO, remove is_disabled nil check when dropping support for 0.8
-      if
-        success and vim.diagnostic.is_disabled == nil or not vim.diagnostic.is_disabled(bufnr, ns)
-      then
-        for severity, _ in ipairs(vim.diagnostic.severity) do
-          local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
+      if success then
+        -- TODO: remove is_disabled check when dropping support for 0.8
+        local enabled
+        if vim.diagnostic.is_enabled then
+          enabled = vim.diagnostic.is_enabled({ bufnr = bufnr, ns_id = ns })
+        elseif vim.diagnostic.is_disabled then
+          enabled = not vim.diagnostic.is_disabled(bufnr, ns)
+        else
+          enabled = true
+        end
 
-          if #diagnostics > 0 then
-            local severity_string = diag_severity_to_string(severity)
-            -- Get or create the entry for this file
-            local entry = lookup[file_name]
-            if entry == nil then
-              entry = {
-                severity_number = severity,
-                severity_string = severity_string,
-              }
-              lookup[file_name] = entry
-            end
-            -- Set the count for this diagnostic type
-            if severity_string ~= nil then
-              entry[severity_string] = #diagnostics
-            end
+        if enabled then
+          for severity, _ in ipairs(vim.diagnostic.severity) do
+            local diagnostics = vim.diagnostic.get(bufnr, { namespace = ns, severity = severity })
 
-            -- Set the overall severity to the most severe so far
-            -- Error = 1, Warn = 2, Info = 3, Hint = 4
-            if severity < entry.severity_number then
-              entry.severity_number = severity
-              entry.severity_string = severity_string
+            if #diagnostics > 0 then
+              local severity_string = diag_severity_to_string(severity)
+              -- Get or create the entry for this file
+              local entry = lookup[file_name]
+              if entry == nil then
+                entry = {
+                  severity_number = severity,
+                  severity_string = severity_string,
+                }
+                lookup[file_name] = entry
+              end
+              -- Set the count for this diagnostic type
+              if severity_string ~= nil then
+                entry[severity_string] = #diagnostics
+              end
+
+              -- Set the overall severity to the most severe so far
+              -- Error = 1, Warn = 2, Info = 3, Hint = 4
+              if severity < entry.severity_number then
+                entry.severity_number = severity
+                entry.severity_string = severity_string
+              end
             end
           end
         end
@@ -1042,24 +1051,20 @@ end
 ---be lost.
 ---
 ---For more details, see issue #889 when this function was introduced, and further
----discussions in #1264 and #1352.
+---discussions in #1264, #1352, and #1448.
 ---@param path string
 ---@return string
 M.escape_path_for_cmd = function(path)
   local escaped_path = vim.fn.fnameescape(path)
   if M.is_windows then
-    -- on windows, some punctuation preceeded by a `\` needs to have a second
-    -- `\` added to preserve the path separator. this is a naive replacement and
-    -- definitely not bullet proof. if we start finding issues with opening files
-    -- or changing directories, look here first. #1382 was the first regression
-    -- from the implementation that used lua's %p to match punctuation, which
-    -- did not quite work. the following characters were tested on windows to
-    -- be known to require an extra escape character.
-    for _, c in ipairs({ "&", "(", ")", ";", "^", "`" }) do
-      -- lua doesn't seem to have a problem with an unnecessary `%` escape
-      -- (e.g., `%;`), so we can use it to ensure we match the punctuation
-      -- for the ones that do (e.g., `%(` and `%^`)
-      escaped_path = escaped_path:gsub("\\%" .. c, "\\%1")
+    -- there is too much history to this logic to capture in a reasonable comment.
+    -- essentially, the following logic adds a number of `\` depending on the leading
+    -- character in a path segment. see #1264, #1352, and #1448 for more info.
+    local need_extra_esc = path:find("[%[%]`%$~]")
+    local esc = need_extra_esc and "\\\\" or "\\"
+    escaped_path = escaped_path:gsub("\\[%(%)%^&;]", esc .. "%1")
+    if need_extra_esc then
+      escaped_path = escaped_path:gsub("\\\\['` ]", "\\%1")
     end
   end
   return escaped_path

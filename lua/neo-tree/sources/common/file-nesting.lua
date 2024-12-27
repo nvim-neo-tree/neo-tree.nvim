@@ -149,7 +149,7 @@ local function case_insensitive_pattern(pattern)
   return p
 end
 
-function table_is_empty(table_to_check)
+local function table_is_empty(table_to_check)
   return table_to_check == nil or next(table_to_check) == nil
 end
 
