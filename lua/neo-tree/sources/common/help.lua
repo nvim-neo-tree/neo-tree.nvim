@@ -69,12 +69,14 @@ M.show = function(state, title, prefix_key)
 
   local width = math.min(60, max_width + 1)
 
+  local col
   if state.current_position == "right" then
     col = vim.o.columns - tree_width - width - 1
   else
     col = tree_width - 1
   end
 
+  ---@type nui_popup_options
   local options = {
     position = {
       row = 2,
@@ -121,8 +123,8 @@ M.show = function(state, title, prefix_key)
     options.size.height = max_height
   end
 
-  local title = title or "Neotree Help"
-  local options = popups.popup_options(title, width, options)
+  title = title or "Neotree Help"
+  options = popups.popup_options(title, width, options)
   local popup = Popup(options)
   popup:mount()
 
