@@ -88,6 +88,9 @@ M.show = function(state, title, prefix_key)
     focusable = true,
     zindex = 50,
     relative = "editor",
+    win_options = {
+      foldenable = false, -- Prevent folds from hiding lines
+    },
   }
 
   local popup_max_height = function()
@@ -122,11 +125,6 @@ M.show = function(state, title, prefix_key)
   local options = popups.popup_options(title, width, options)
   local popup = Popup(options)
   popup:mount()
-
-  -- Disable folding to avoid display issues from foldlevel
-  vim.api.nvim_set_option_value("foldenable", false, {
-    win = popup.winid,
-  })
 
   popup:map("n", "<esc>", function()
     popup:unmount()
