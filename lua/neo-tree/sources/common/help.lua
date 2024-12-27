@@ -75,6 +75,7 @@ M.show = function(state, title, prefix_key)
     col = tree_width - 1
   end
 
+  ---@type nui_popup_options
   local options = {
     position = {
       row = 2,
@@ -88,6 +89,9 @@ M.show = function(state, title, prefix_key)
     focusable = true,
     zindex = 50,
     relative = "editor",
+    win_options = {
+      foldenable = false, -- Prevent folds from hiding lines
+    },
   }
 
   local popup_max_height = function()
@@ -118,8 +122,8 @@ M.show = function(state, title, prefix_key)
     options.size.height = max_height
   end
 
-  local title = title or "Neotree Help"
-  local options = popups.popup_options(title, width, options)
+  title = title or "Neotree Help"
+  options = popups.popup_options(title, width, options)
   local popup = Popup(options)
   popup:mount()
 
