@@ -199,7 +199,7 @@ local function get_unused_name(
         local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
         get_unused_name(source, new_path, using_root_directory, name_chosen_callback)
       end
-    end)
+    end, {}, "file")
   else
     name_chosen_callback(destination)
   end
@@ -420,7 +420,7 @@ M.create_directory = function(in_directory, callback, using_root_directory)
         end
       end)
     end
-  end)
+  end, {}, "file")
 end
 
 --- Create Node
@@ -499,7 +499,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
       end
       complete()
     end
-  end)
+  end, {}, "file")
 end
 
 ---Recursively delete a directory and its children.
@@ -716,7 +716,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
       return
     end
     fs_rename()
-  end)
+  end, {}, "file")
 end
 
 -- Rename Node
