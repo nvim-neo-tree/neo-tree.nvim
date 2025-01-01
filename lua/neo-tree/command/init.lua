@@ -208,17 +208,12 @@ end
 
 handle_reveal = function(args, state)
   -- Deal with cwd if we need to
-  local cwd = state.path
+  local cwd = state.path or manager.get_cwd(state)
   local path = args.reveal_file
-  local dir = args.dir
-  if cwd == nil then
-    cwd = manager.get_cwd(state)
-  end
+  local dir = args.dir or cwd
 
-  if dir == nil then
+  if not utils.is_subpath(dir, path) then
     dir, _ = utils.split_path(path)
-  elseif not utils.is_subpath(dir, path) then
-    error(string.format('%s is not a subpath of %s', path, args.dir))
   end
 
   if args.reveal_force_cwd and not utils.is_subpath(cwd, path) then
