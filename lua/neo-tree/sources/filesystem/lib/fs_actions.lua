@@ -180,8 +180,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
   )
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
-    -- vim.fs.normalize removes relative paths which makes this work correctly
-    -- TODO: consider always normalizing paths in utils.normalize_path
+    -- Resolve user-inputted relative paths out of the absolute paths
     dest = vim.fs.normalize(dest)
     local function move_file()
       create_all_parents(dest)
