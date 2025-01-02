@@ -123,8 +123,7 @@ local function rename_buffer(old_path, new_path)
 end
 
 local function create_all_parents(path)
-  local create_all_as_folders
-  function create_all_as_folders(in_path)
+  local function create_all_as_folders(in_path)
     if not loop.fs_stat(in_path) then
       local parent, _ = utils.split_path(in_path)
       if parent then
@@ -181,6 +180,9 @@ M.move_node = function(source, destination, callback, using_root_directory)
   )
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
+    -- vim.fs.normalize removes relative paths which makes this work correctly
+    -- TODO: consider always normalizing paths in utils.normalize_path
+    dest = vim.fs.normalize(dest)
     local function move_file()
       create_all_parents(dest)
       loop.fs_rename(source, dest, function(err)
