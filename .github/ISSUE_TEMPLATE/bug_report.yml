@@ -61,7 +61,7 @@ body:
   - type: textarea
     attributes:
       label: Your Configuration
-      description: Minimal `init.lua` using lazy.nvim to reproduce this issue. Save as `repro.lua` and run with `nvim -u repro.lua`
+      description: Minimal `init.lua` to reproduce this issue. Save as `repro.lua` and run with `nvim -u repro.lua`
       value: |
         vim.env.LAZY_STDPATH = ".repro"
         load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua"))()
