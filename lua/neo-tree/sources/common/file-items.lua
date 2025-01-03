@@ -151,6 +151,7 @@ function create_item(context, path, _type, bufnr)
   end
 
   item.is_reveal_target = (path == context.path_to_reveal)
+  item.contains_reveal_target = not item.is_reveal_target and utils.is_subpath(path, context.path_to_reveal)
   local state = context.state
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)
