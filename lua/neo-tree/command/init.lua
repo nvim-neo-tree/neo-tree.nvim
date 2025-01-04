@@ -207,12 +207,19 @@ do_show_or_focus = function(args, state, force_navigate)
 end
 
 handle_reveal = function(args, state)
+  if args.dir then
+    if not utils.is_subpath(args.dir, args.reveal_file) then
+      args.reveal_file = nil
+    end
+    do_show_or_focus(args, state, true)
+    return
+  end
+
   -- Deal with cwd if we need to
   local cwd = state.path or manager.get_cwd(state)
-  local dir = args.dir or cwd
-
+  local dir = cwd
   if not utils.is_subpath(dir, args.reveal_file) then
-    dir, _ = utils.split_path(args.reveal_file)
+    dir, _ = utils.split_path(args.reveal_file) --[[@as string]]
   end
 
   if args.reveal_force_cwd or utils.is_subpath(cwd, args.reveal_file) then
