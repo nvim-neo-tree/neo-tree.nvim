@@ -8,35 +8,23 @@ local M = {}
 ---@alias Loc integer[] a location in a buffer {row, col}, 0-indexed
 ---@alias LocRange { start: Loc, ["end"]: Loc } a range consisting of two loc
 
----@class SymbolExtra
+---@class neotree.SymbolExtra
 ---@field bufnr integer the buffer containing the symbols,
----@field kind string the kind of each symbol
+---@field kind neotree.LspKindDisplay the kind of each symbol
 ---@field selection_range LocRange the symbol's location
 ---@field position Loc start of symbol's definition
 ---@field end_position Loc start of symbol's definition
 
----@class SymbolNode see
+---@class neotree.SymbolNode see
 ---@field id string
 ---@field name string name of symbol
 ---@field path string buffer path - should all be the same
 ---@field type "root"|"symbol"
----@field children SymbolNode[]
----@field extra SymbolExtra additional info
+---@field children neotree.SymbolNode[]
+---@field extra neotree.SymbolExtra additional info
 
----@alias LspLoc { line: integer, character: integer}
----@alias LspRange { start : LspLoc, ["end"]: LspLoc }
----@class LspRespNode
----@field name string
----@field detail string?
----@field kind integer
----@field tags any
----@field deprecated boolean?
----@field range LspRange
----@field selectionRange LspRange
----@field children LspRespNode[]
-
----Parse the LspRange
----@param range LspRange the LspRange object to parse
+---Parse the lsp.Range
+---@param range lsp.Range the lsp.Range object to parse
 ---@return LocRange range the parsed range
 local parse_range = function(range)
   return {
@@ -95,9 +83,9 @@ end
 ---Parse the LSP response into a tree. Each node on the tree follows
 ---the same structure as a NuiTree node, with the extra field
 ---containing additional information.
----@param resp_node LspRespNode the LSP response node
+---@param resp_node lsp.DocumentSymbol|lsp.SymbolInformation the LSP response node
 ---@param id string the id of the current node
----@return SymbolNode symb_node the parsed tree
+---@return neotree.SymbolNode symb_node the parsed tree
 local function parse_resp(resp_node, id, state, parent_search_path)
   -- parse all children
   local children = {}
@@ -107,29 +95,37 @@ local function parse_resp(resp_node, id, state, parent_search_path)
     table.insert(children, child_node)
   end
 
-  -- parse current node
-  local preview_range = parse_range(resp_node.range)
-  local symb_node = {
+  ---@type neotree.SymbolNode
+  local symbol_node = {
     id = id,
     name = resp_node.name,
     type = "symbol",
     path = state.path,
     children = children,
+    ---@diagnostic disable-next-line: missing-fields
     extra = {
       bufnr = state.lsp_bufnr,
       kind = kinds.get_kind(resp_node.kind),
-      selection_range = parse_range(resp_node.selectionRange),
       search_path = search_path,
       -- detail = resp_node.detail,
-      position = preview_range.start,
-      end_position = preview_range["end"],
     },
   }
-  return symb_node
+  local preview_range = resp_node.range
+  if preview_range then
+    ---@cast resp_node lsp.DocumentSymbol
+    symbol_node.extra.selection_range = parse_range(resp_node.selectionRange)
+  else
+    ---@cast resp_node lsp.SymbolInformation
+    preview_range = resp_node.location.range
+    symbol_node.extra.selection_range = parse_range(preview_range)
+  end
+  symbol_node.extra.position = preview_range.start
+  symbol_node.extra.end_position = preview_range["end"]
+  return symbol_node
 end
 
 ---Callback function for lsp request
----@param lsp_resp LspRespRaw the response of the lsp client
+---@param lsp_resp neotree.LspRespRaw the response of the lsp client
 ---@param state table the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then

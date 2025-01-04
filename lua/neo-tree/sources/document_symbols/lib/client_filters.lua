@@ -1,7 +1,7 @@
 ---Utilities function to filter the LSP servers
 local utils = require("neo-tree.utils")
 
----@alias LspRespRaw table<integer, { result: LspRespNode }>
+---@alias neotree.LspRespRaw table<integer,{err: lsp.ResponseError?, result: any}>
 local M = {}
 
 ---@alias FilterFn fun(client_name: string): boolean
@@ -9,8 +9,8 @@ local M = {}
 ---Filter clients
 ---@param filter_type "first" | "all"
 ---@param filter_fn FilterFn
----@param resp LspRespRaw
----@return table<string, LspRespNode>
+---@param resp neotree.LspRespRaw
+---@return table<string, any>
 local filter_clients = function(filter_type, filter_fn, resp)
   if resp == nil or type(resp) ~= "table" then
     return {}
@@ -51,8 +51,8 @@ local ignore = function(ignore)
 end
 
 ---Main entry point for the filter
----@param resp LspRespRaw
----@return table<string, LspRespNode>
+---@param resp neotree.LspRespRaw
+---@return table<string, any>
 M.filter_resp = function(resp)
   return {}
 end
