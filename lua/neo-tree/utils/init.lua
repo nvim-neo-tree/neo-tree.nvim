@@ -805,6 +805,8 @@ M.normalize_path = function(path)
     path = vim.fs.normalize(path)
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
+  else
+    path = vim.fs.normalize(path)
   end
   return path
 end
