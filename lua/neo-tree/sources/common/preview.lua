@@ -272,7 +272,14 @@ end
 
 ---@param winid number
 ---@param bufnr number
+---@return Image[]|false result Images if the buffer was successfully hijacked, otherwise false
 local function try_load_image_nvim_buf(winid, bufnr)
+  -- notify only image.nvim to let it try and hijack
+  vim.opt.eventignore:remove("BufWinEnter")
+  vim.api.nvim_win_call(winid, function()
+    vim.api.nvim_exec_autocmds("BufWinEnter", { group = "image.nvim", buffer = bufnr })
+  end)
+  vim.opt.eventignore:append("BufWinEnter")
   if vim.bo[bufnr].filetype ~= "image_nvim" then
     return false
   end
@@ -282,7 +289,7 @@ local function try_load_image_nvim_buf(winid, bufnr)
     log.debug("You'll need to install image.nvim to use this command: " .. image_nvim_url)
     return false
   end
-  return mod.hijack_buffer(vim.api.nvim_buf_get_name(bufnr), winid, bufnr)
+  return mod.get_images({ buffer = bufnr, window = winid })
 end
 
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
@@ -446,7 +453,6 @@ Preview.scroll = function(state)
       vim.cmd([[normal! ]] .. count .. input)
     end)
   end
-
 end
 
 return Preview
