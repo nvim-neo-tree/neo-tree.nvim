@@ -664,8 +664,8 @@ M.toggle_preview = function(state)
   Preview.toggle(state)
 end
 
-M.scroll_preview = function(state)
-  Preview.scroll(state)
+M.scroll_preview = function(state, cmd)
+  Preview.scroll(state, cmd)
 end
 
 M.focus_preview = function()
