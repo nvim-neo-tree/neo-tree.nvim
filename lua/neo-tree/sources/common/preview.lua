@@ -33,7 +33,7 @@ local function create_floating_preview_window(state)
   elseif state.current_position == "float" then
     local pos = vim.api.nvim_win_get_position(state.winid)
     -- preview will be same height and top as tree
-    row = pos[1] - 1
+    row = pos[1]
     height = winheight
 
     -- tree and preview window will be side by side and centered in the editor
