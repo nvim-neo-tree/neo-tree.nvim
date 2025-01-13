@@ -260,11 +260,17 @@ local config = {
       enabled = true,
       width = 20, -- width of the column
       required_width = 88, -- min width of window required to show this column
+      format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
+                                    -- or use a function that takes in the date in seconds and returns a string to display
+      --format = require("neo-tree.utils").relative_date, -- enable relative timestamps
     },
     created = {
       enabled = false,
       width = 20, -- width of the column
       required_width = 120, -- min width of window required to show this column
+      format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
+                                    -- or use a function that takes in the date in seconds and returns a string to display
+      --format = require("neo-tree.utils").relative_date, -- enable relative timestamps
     },
     symlink_target = {
       enabled = false,
@@ -442,7 +448,7 @@ local config = {
         ["."] = "set_root",
         ["[g"] = "prev_git_modified",
         ["]g"] = "next_git_modified",
-        ["i"] = "show_file_details",
+        ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -572,7 +578,7 @@ local config = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
         ["bd"] = "buffer_delete",
-        ["i"] = "show_file_details",
+        ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -593,7 +599,7 @@ local config = {
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
-        ["i"] = "show_file_details",
+        ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },

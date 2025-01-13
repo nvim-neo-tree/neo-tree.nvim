@@ -512,6 +512,7 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
+local default_filetime_format = "%Y-%m-%d %I:%M %p"
 M.show_file_details = function(state)
   local node = state.tree:get_node()
   if node.type == "message" then
@@ -530,9 +531,11 @@ M.show_file_details = function(state)
     table.insert(left, "Size")
     table.insert(right, utils.human_size(stat.size))
     table.insert(left, "Created")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.birthtime.sec))
+    local created_format = state.config.created_format or default_filetime_format
+    table.insert(right, utils.date(created_format, stat.birthtime.sec))
     table.insert(left, "Modified")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.mtime.sec))
+    local modified_format = state.config.modified_format or default_filetime_format
+    table.insert(right, utils.date(modified_format, stat.mtime.sec))
   end
 
   local lines = {}

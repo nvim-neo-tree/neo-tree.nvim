@@ -220,6 +220,66 @@ M.human_size = function(size)
   return human
 end
 
+---Converts a Unix timestamp into a human readable relative timestamps
+---@param seconds integer
+---@return string
+M.relative_date = function(seconds)
+  local now = os.time()
+  local diff = now - seconds
+
+  local function format(value, unit)
+    return value .. " " .. unit .. (value == 1 and "" or "s") .. " ago"
+  end
+
+  if diff < 60 then
+    return "Just now"
+  elseif diff < 3600 then
+    local minutes = math.floor(diff / 60)
+    return format(minutes, "minute")
+  elseif diff < 86400 then
+    local hours = math.floor(diff / 3600)
+    return format(hours, "hour")
+  elseif diff < 86400 * 30 then
+    local days = math.floor(diff / 86400)
+    return format(days, "day")
+  elseif diff < 86400 * 365 then
+    local months = math.floor(diff / (86400 * 30))
+    return format(months, "month")
+  end
+  local years = math.floor(diff / (86400 * 365))
+  return format(years, "year")
+end
+
+---@alias neotree.DateFormat string|"relative"|fun(integer):string
+
+---Formats dates. Supports relative dates as a preset, as well as custom formatting using arbitrary functions.
+---Used to let users customize date formatting.
+---
+---If `format` == "relative", it will use utils.relative_date to format.
+---If `format` is a function, it should return a string for neo-tree to display.
+---Else, `format` is presumed to be a format string for os.date().
+---
+---@see os.date()
+---@param format neotree.DateFormat How to format `seconds` into a date string.
+---@param seconds integer? Seconds since the platform epoch (Unix or otherwise). If nil, will be the current time.
+---@return string formatted_date A string that represents the date.
+M.date = function(format, seconds)
+  if not seconds then
+    seconds = os.time()
+  end
+  if format == "relative" then
+    return M.relative_date(seconds)
+  end
+  if type(format) == "function" then
+    return format(seconds)
+  end
+  local formatted_date = os.date(format, seconds)
+  if type(formatted_date) ~= "string" then
+    error('[neo-tree]: the format should not make os.date return a table (e.g. not "*t")')
+  end
+  return formatted_date
+end
+
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
 ---severity_number and severity_string refer to the highest severity with
 ---non-zero diagnostics count.

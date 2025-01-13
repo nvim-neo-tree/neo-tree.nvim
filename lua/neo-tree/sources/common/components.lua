@@ -473,7 +473,7 @@ local get_header = function (state, label, size)
   return vim.fn.printf("%" .. size .. "s  ", truncate_string(label, size))
 end
 
-M.file_size = function (config, node, state)
+M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
@@ -518,7 +518,8 @@ local file_time = function(config, node, state, stat_field)
   local stat = utils.get_stat(node)
   local value = stat and stat[stat_field]
   local seconds = value and value.sec or nil
-  local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
+  local display = seconds and utils.date(config.format, seconds) or "-"
+
   return {
     text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(display, config.width)),
     highlight = config.highlight or highlights.FILE_STATS
@@ -544,7 +545,7 @@ M.symlink_target = function(config, node, state)
   end
 end
 
-M.type = function (config, node, state)
+M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels
   if node:get_depth() == 1 then
