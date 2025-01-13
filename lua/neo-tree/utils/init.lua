@@ -870,9 +870,9 @@ M.normalize_path = function(path)
 end
 
 ---Check if a path is a subpath of another.
---@param base string The base path.
---@param path string The path to check is a subpath.
---@return boolean boolean True if it is a subpath, false otherwise.
+---@param base string The base path.
+---@param path string The path to check is a subpath.
+---@return boolean boolean True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
