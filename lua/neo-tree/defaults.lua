@@ -248,14 +248,17 @@ local config = {
     -- If you don't want to use these columns, you can set `enabled = false` for each of them individually
     file_size = {
       enabled = true,
+      width = 12, -- width of the column
       required_width = 64, -- min width of window required to show this column
     },
     type = {
       enabled = true,
+      width = 10, -- width of the column
       required_width = 110, -- min width of window required to show this column
     },
     last_modified = {
       enabled = true,
+      width = 20, -- width of the column
       required_width = 88, -- min width of window required to show this column
       format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
                                     -- or use a function that takes in the date in seconds and returns a string to display
@@ -263,6 +266,7 @@ local config = {
     },
     created = {
       enabled = false,
+      width = 20, -- width of the column
       required_width = 120, -- min width of window required to show this column
       format = "%Y-%m-%d %I:%M %p", -- format string for timestamp (see `:h os.date()`)
                                     -- or use a function that takes in the date in seconds and returns a string to display
@@ -270,6 +274,7 @@ local config = {
     },
     symlink_target = {
       enabled = false,
+      text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
   renderers = {
@@ -415,6 +420,7 @@ local config = {
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
       ["r"] = "rename",
+      ["b"] = "rename_basename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
