@@ -881,6 +881,9 @@ M.is_subpath = function(base, path)
   end
   base = M.normalize_path(base)
   path = M.normalize_path(path)
+  if base:match("^.*()/") and path:match("^.*()/") then
+    return base == path
+  end
   return string.sub(path, 1, string.len(base)) == base
 end
 
