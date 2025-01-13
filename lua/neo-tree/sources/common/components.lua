@@ -513,11 +513,7 @@ local file_time = function(config, node, state, stat_field)
   local seconds = value and value.sec or nil
   local display = "-"
   if seconds ~= nil then
-    if type(config.format) == "function" then
-      display = config.format(seconds)
-    else
-      display = os.date(config.format, seconds)
-    end
+    display = utils.date(config.format, seconds)
   end
 
   return {
