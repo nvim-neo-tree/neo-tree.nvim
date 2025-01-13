@@ -518,10 +518,7 @@ local file_time = function(config, node, state, stat_field)
   local stat = utils.get_stat(node)
   local value = stat and stat[stat_field]
   local seconds = value and value.sec or nil
-  local display = "-"
-  if seconds ~= nil then
-    display = utils.date(config.format, seconds)
-  end
+  local display = seconds and utils.date(config.format, seconds) or "-"
 
   return {
     text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(display, config.width)),
