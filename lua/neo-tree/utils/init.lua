@@ -250,6 +250,8 @@ M.relative_date = function(seconds)
   return format(years, "year")
 end
 
+---@alias neotree.DateFormat string|"relative"|fun(integer):string
+
 ---Formats dates. Supports relative dates as a preset, as well as custom formatting using arbitrary functions.
 ---Used to let users customize date formatting.
 ---
@@ -258,7 +260,7 @@ end
 ---Else, `format` is presumed to be a format string for os.date().
 ---
 ---@see os.date()
----@param format string|"relative"|fun(integer):string How to format `seconds` into a date string.
+---@param format neotree.DateFormat How to format `seconds` into a date string.
 ---@param seconds integer? Seconds since the platform epoch (Unix or otherwise). If nil, will be the current time.
 ---@return string formatted_date A string that represents the date.
 M.date = function(format, seconds)
@@ -273,7 +275,7 @@ M.date = function(format, seconds)
   end
   local formatted_date = os.date(format, seconds)
   if type(formatted_date) ~= "string" then
-    error('[neo-tree]: the format should not make os.date return a table (i.e. not "*t")')
+    error('[neo-tree]: the format should not make os.date return a table (e.g. not "*t")')
   end
   return formatted_date
 end
