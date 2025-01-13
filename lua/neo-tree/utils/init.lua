@@ -245,10 +245,37 @@ M.relative_date = function(seconds)
   elseif diff < 86400 * 365 then
     local months = math.floor(diff / (86400 * 30))
     return format(months, "month")
-  else
-    local years = math.floor(diff / (86400 * 365))
-    return format(years, "year")
   end
+  local years = math.floor(diff / (86400 * 365))
+  return format(years, "year")
+end
+
+---Formats dates. Supports relative dates as a preset, as well as custom formatting using arbitrary functions.
+---Used to let users customize date formatting.
+---
+---If `format` == "relative", it will use utils.relative_date to format.
+---If `format` is a function, it should return a string for neo-tree to display.
+---Else, `format` is presumed to be a format string for os.date().
+---
+---@see os.date()
+---@param format string|"relative"|fun(integer):string How to format `seconds` into a date string.
+---@param seconds integer? Seconds since the platform epoch (Unix or otherwise). If nil, will be the current time.
+---@return string formatted_date A string that represents the date.
+M.date = function(format, seconds)
+  if not seconds then
+    seconds = os.time()
+  end
+  if format == "relative" then
+    return M.relative_date(seconds)
+  end
+  if type(format) == "function" then
+    return format(seconds)
+  end
+  local formatted_date = os.date(format, seconds)
+  if type(formatted_date) ~= "string" then
+    error('[neo-tree]: the format should not make os.date return a table (i.e. not "*t")')
+  end
+  return formatted_date
 end
 
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
