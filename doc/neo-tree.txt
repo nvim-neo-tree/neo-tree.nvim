@@ -114,7 +114,7 @@ reveal~
 This is a boolean flag. Adding this will make Neotree automatically find and 
 focus the current file when it opens.
 
-reveal_path~
+reveal_file~
 A path to a file to reveal. This supersedes the "reveal" flag so there is no
 need to specify both. Use this if you want to reveal something other than the
 current file. If you include a path to a file as one of the arguments, it will
@@ -303,10 +303,27 @@ A    = add_directory:        Create a new directory, in this mode it does not
 d    = delete:               Delete the selected file or directory.
                              Supports visual selection.~
 
-i    = show_file_details     Show file details in popup window, such as size
+i    = show_file_details     Show file details in a popup window, such as size
                              and last modified date.
 
+                             This command supports two optional options to
+                             change the format string for file timestamps,
+                             `config.created_format` for the date created and
+                             `config.modified_format` for the date last
+                             modified (see `:h os.date()`). Instead of a
+                             format string, these options also accept a
+                             function that takes in the date in seconds and
+                             returns a string to display. They also accept
+                             "relative" as a valid format, which will format
+                             the timestamp as a human-readable relative date.
+
+                             If the options are not set, they default to the
+                             format string "%Y-%m-%d %I:%M %p".
+
 r    = rename:               Rename the selected file or directory.
+
+b    = rename_basename:      Rename the selected file or directory without the
+                             extension.
 
 y    = copy_to_clipboard:    Mark file to be copied.
                              Supports visual selection.~

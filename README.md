@@ -284,6 +284,7 @@ use {
             ["A"] = "add_directory", -- also accepts the optional config.show_path option like "add". this also supports BASH style brace expansion.
             ["d"] = "delete",
             ["r"] = "rename",
+            ["b"] = "rename_basename",
             ["y"] = "copy_to_clipboard",
             ["x"] = "cut_to_clipboard",
             ["p"] = "paste_from_clipboard",
@@ -301,6 +302,16 @@ use {
             ["<"] = "prev_source",
             [">"] = "next_source",
             ["i"] = "show_file_details",
+            -- ["i"] = {
+            --   "show_file_details",
+            --   -- format strings of the timestamps shown for date created and last modified (see `:h os.date()`)
+            --   -- both options accept a string or a function that takes in the date in seconds and returns a string to display
+            --   -- config = {
+            --   --   created_format = "%Y-%m-%d %I:%M %p",
+            --   --   modified_format = "relative", -- equivalent to the line below
+            --   --   modified_format = function(seconds) return require('neo-tree.utils').relative_date(seconds) end
+            --   -- }
+            -- },
           }
         },
         nesting_rules = {},

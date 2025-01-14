@@ -13,7 +13,7 @@ M.get_git_status = function(state)
     return
   end
   state.loading = true
-  local status_lookup, project_root = git.status(state.git_base, true)
+  local status_lookup, project_root = git.status(state.git_base, true, state.path)
   state.path = project_root or state.path or vim.fn.getcwd()
   local context = file_items.create_context()
   context.state = state
