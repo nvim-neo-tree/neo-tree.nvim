@@ -96,7 +96,7 @@ M.show = function(state, title, prefix_key)
 
   ---@return integer lines The number of screen lines that the popup should occupy at most
   local popup_max_height = function()
-    -- statuscolumn
+    -- statusline
     local statusline_lines = 0
     local laststatus = vim.o.laststatus
     if laststatus ~= 0 then
