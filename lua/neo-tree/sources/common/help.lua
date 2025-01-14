@@ -94,16 +94,15 @@ M.show = function(state, title, prefix_key)
     },
   }
 
+  ---@return integer lines The number of screen lines that the popup should occupy at most
   local popup_max_height = function()
-    local lines = vim.o.lines
-    local cmdheight = vim.o.cmdheight
     -- statuscolumn
-    local statuscolumn_lines = 0
+    local statusline_lines = 0
     local laststatus = vim.o.laststatus
     if laststatus ~= 0 then
       local windows = vim.api.nvim_tabpage_list_wins(0)
       if (laststatus == 1 and #windows > 1) or laststatus > 1 then
-        statuscolumn_lines = 1
+        statusline_lines = 1
       end
     end
     -- tabs
@@ -115,7 +114,7 @@ M.show = function(state, title, prefix_key)
         tab_lines = 1
       end
     end
-    return lines - cmdheight - statuscolumn_lines - tab_lines - 1
+    return vim.o.lines - vim.o.cmdheight - statusline_lines - tab_lines - 2
   end
   local max_height = popup_max_height()
   if options.size.height > max_height then
@@ -127,14 +126,22 @@ M.show = function(state, title, prefix_key)
   local popup = Popup(options)
   popup:mount()
 
-  popup:map("n", "<esc>", function()
-    popup:unmount()
-  end, { noremap = true })
-
   local event = require("nui.utils.autocmd").event
+  popup:on({ event.VimResized }, function()
+    popup:update_layout({
+      size = {
+        height = math.min(options.size.height --[[@as integer]], popup_max_height()),
+        width = math.min(options.size.width --[[@as integer]], vim.o.columns - 2),
+      },
+    })
+  end)
   popup:on({ event.BufLeave, event.BufDelete }, function()
     popup:unmount()
   end, { once = true })
+
+  popup:map("n", "<esc>", function()
+    popup:unmount()
+  end, { noremap = true })
 
   for _, key in ipairs(keys) do
     -- map everything except for <escape>
