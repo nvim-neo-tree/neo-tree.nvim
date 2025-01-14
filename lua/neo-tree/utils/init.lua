@@ -862,7 +862,7 @@ M.normalize_path = function(path)
     path = path:sub(1, 1):upper() .. path:sub(2)
     -- Turn mixed forward and back slashes into all forward slashes
     -- using NeoVim's logic
-    path = vim.fs.normalize(path)
+    path = vim.fs.normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
@@ -870,18 +870,29 @@ M.normalize_path = function(path)
 end
 
 ---Check if a path is a subpath of another.
---@param base string The base path.
---@param path string The path to check is a subpath.
---@return boolean boolean True if it is a subpath, false otherwise.
+---@param base string The base path.
+---@param path string The path to check is a subpath.
+---@return boolean boolean True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
   elseif base == path then
     return true
   end
+
   base = M.normalize_path(base)
   path = M.normalize_path(path)
-  return string.sub(path, 1, string.len(base)) == base
+  if path:sub(1, #base) == base then
+    local base_parts = M.split(base, M.path_separator)
+    local path_parts = M.split(path, M.path_separator)
+    for i, part in ipairs(base_parts) do
+      if path_parts[i] ~= part then
+        return false
+      end
+    end
+    return true
+  end
+  return false
 end
 
 ---The file system path separator for the current platform.
