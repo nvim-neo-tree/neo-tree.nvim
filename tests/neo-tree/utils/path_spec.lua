@@ -36,6 +36,7 @@ describe("is_subpath", function()
     utils.is_windows = true
     common_tests()
     assert.are.same(true, utils.is_subpath("C:", "C:"))
+    assert.are.same(false, utils.is_subpath("C:", "D:"))
     assert.are.same(true, utils.is_subpath("C:/A", [[C:\A]]))
 
     -- Test Windows paths with backslashes

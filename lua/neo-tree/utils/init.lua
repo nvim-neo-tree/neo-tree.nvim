@@ -883,11 +883,12 @@ M.is_subpath = function(base, path)
   base = M.normalize_path(base)
   path = M.normalize_path(path)
   if path:sub(1, #base) == base then
-    local base_parent, base_tail = M.split_path(base)
-    local path_parent, path_tail = M.split_path(path)
-    -- edge case of /a/b vs /a/bbbb
-    if path_parent == base_parent then
-      return path_tail == base_tail
+    local base_parts = M.split(base, M.path_separator)
+    local path_parts = M.split(path, M.path_separator)
+    for i, part in ipairs(base_parts) do
+      if path_parts[i] ~= part then
+        return false
+      end
     end
     return true
   end
