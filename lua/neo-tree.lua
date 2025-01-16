@@ -80,15 +80,6 @@ end
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
-  if vim.v.vim_did_enter == 1 then
-    M.ensure_config()
-    local netrw = require("neo-tree.setup.netrw")
-    if netrw.get_hijack_behavior() ~= "disabled" then
-      vim.cmd("silent! autocmd! FileExplorer *")
-      -- if first buffer is a directory, then hijack
-      netrw.hijack()
-    end
-  end
 end
 
 M.show_logs = function()

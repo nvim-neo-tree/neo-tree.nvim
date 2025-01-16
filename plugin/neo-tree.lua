@@ -11,38 +11,33 @@ end, {
   end,
 })
 
----@return boolean hijacked whether the hijack worked
-local function try_netrw_hijack()
-  require("neo-tree").ensure_config()
+---@param path string? The path to check
+---@return boolean hijacked Whether the hijack worked
+local function try_netrw_hijack(path)
+  if not path or #path == 0 then
+    return false
+  end
+
   local netrw = require("neo-tree.setup.netrw")
   if netrw.get_hijack_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack()
+    local stats = (vim.uv or vim.loop).fs_stat(path)
+    if stats and stats.type == "directory" then
+      return netrw.hijack()
+    end
   end
   return false
 end
 
----@param path string The path to check1
----@return boolean is_directory Whether it's a directory
-local is_directory = function(path)
-  if not path or #path == 0 then
-    return false
-  end
-  local stats = (vim.uv or vim.loop).fs_stat(path)
-  return stats and stats.type == "directory" or false
-end
-if
-  is_directory(vim.fn.argv(0) --[[@as string]])
-then
-  -- currently needed to work around configs that already lazy-load neo-tree (e.g. lazyvim)
-  try_netrw_hijack()
-else
+-- currently need to check first arg to not break hijacked on
+-- configs that already lazy-load neo-tree (e.g. lazyvim)
+local first_arg = vim.fn.argv(0) --[[@as string]]
+if not try_netrw_hijack(first_arg) then
   local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
   vim.api.nvim_create_autocmd("BufEnter", {
     group = augroup,
     callback = function(args)
-      if is_directory(args.file) then
-        try_netrw_hijack()
+      if try_netrw_hijack(args.file) then
         vim.api.nvim_del_augroup_by_id(augroup)
       end
     end,
