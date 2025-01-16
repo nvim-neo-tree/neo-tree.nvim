@@ -1,6 +1,4 @@
 local vim = vim
-local utils = require("neo-tree.utils")
-local log = require("neo-tree.log")
 local M = {}
 
 -- DEPRECATED: to be removed in a future release, use this instead:
@@ -11,13 +9,18 @@ M.close_all = function()
   require("neo-tree.command").execute({ action = "close" })
 end
 
+local new_user_config = nil
+
+---Updates the config of neo-tree using the latest user config passed through setup, if any.
 M.ensure_config = function()
-  if not M.config then
-    M.setup({ log_to_file = false }, true)
+  if not M.config or new_user_config then
+    M.config = require("neo-tree.setup").merge_config(new_user_config)
+    new_user_config = nil
   end
 end
 
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
+  local utils = require("neo-tree.utils")
   ignore_filetypes = ignore_filetypes or {}
   local ignore = utils.list_to_dict(ignore_filetypes)
   ignore["neo-tree"] = true
@@ -47,6 +50,7 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
 end
 
 M.paste_default_config = function()
+  local utils = require("neo-tree.utils")
   local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$")
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
   local lines = vim.fn.readfile(config_path)
@@ -70,20 +74,25 @@ M.paste_default_config = function()
 end
 
 M.set_log_level = function(level)
-  log.set_level(level)
+  require("neo-tree.log").set_level(level)
 end
 
-M.setup = function(config, is_auto_config)
-  M.config = require("neo-tree.setup").merge_config(config, is_auto_config)
-  local netrw = require("neo-tree.setup.netrw")
-  if not is_auto_config and netrw.get_hijack_netrw_behavior() ~= "disabled" then
-    vim.cmd("silent! autocmd! FileExplorer *")
-    netrw.hijack()
+M.setup = function(config)
+  -- merging is deferred until ensure_config
+  new_user_config = config
+  if vim.v.vim_did_enter == 1 then
+    M.ensure_config()
+    local netrw = require("neo-tree.setup.netrw")
+    if netrw.get_hijack_behavior() ~= "disabled" then
+      vim.cmd("silent! autocmd! FileExplorer *")
+      -- if first buffer is a directory, then hijack
+      netrw.hijack()
+    end
   end
 end
 
 M.show_logs = function()
-  vim.cmd("tabnew " .. log.outfile)
+  vim.cmd("tabnew " .. require("neo-tree.log").outfile)
 end
 
 return M
