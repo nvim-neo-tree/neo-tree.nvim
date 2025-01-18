@@ -392,7 +392,11 @@ local config = {
       ["<cr>"] = "open",
       -- ["<cr>"] = { "open", config = { expand_nested_files = true } }, -- expand nested file takes precedence
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-      ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = false } },
+      ["P"] = { "toggle_preview", config = {
+        use_float = true,
+        use_image_nvim = false,
+        -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
+      } },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
       ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
       ["l"] = "focus_preview",

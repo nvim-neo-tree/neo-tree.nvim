@@ -12,6 +12,7 @@ local function create_floating_preview_window(state)
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   state.current_position = state.current_position or default_position
 
+  local title = state.config.title or "Neo-tree Preview"
   local winwidth = vim.api.nvim_win_get_width(state.winid)
   local winheight = vim.api.nvim_win_get_height(state.winid)
   local height = vim.o.lines - 4
@@ -58,7 +59,7 @@ local function create_floating_preview_window(state)
   end
 
   local popups = require("neo-tree.ui.popups")
-  local options = popups.popup_options("Neo-tree Preview", width, {
+  local options = popups.popup_options(title, width, {
     ns_id = highlights.ns_id,
     size = { height = height, width = width },
     relative = "editor",
@@ -446,7 +447,6 @@ Preview.scroll = function(state)
       vim.cmd([[normal! ]] .. count .. input)
     end)
   end
-
 end
 
 return Preview
