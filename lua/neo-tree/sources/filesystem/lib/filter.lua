@@ -12,17 +12,6 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {}
 
-local cmds = {
-  move_cursor_down = function(state, scroll_padding)
-    renderer.focus_node(state, nil, true, 1, scroll_padding)
-  end,
-
-  move_cursor_up = function(state, scroll_padding)
-    renderer.focus_node(state, nil, true, -1, scroll_padding)
-    vim.cmd("redraw!")
-  end,
-}
-
 local function create_input_mapping_handle(cmd, state, scroll_padding)
   return function()
     cmd(state, scroll_padding)
@@ -213,26 +202,35 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
 
   if fuzzy_finder_mode then
-    local config = require("neo-tree").config
-    for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
+    local cmds = {
+      move_cursor_down = function(_state, _scroll_padding)
+        renderer.focus_node(_state, nil, true, 1, _scroll_padding)
+      end,
+
+      move_cursor_up = function(_state, _scroll_padding)
+        renderer.focus_node(_state, nil, true, -1, _scroll_padding)
+        vim.cmd("redraw!")
+      end,
+
+      close = function()
+        close_input()
+      end,
+    }
+    for lhs, cmd_name in pairs(require("neo-tree").config.filesystem.window.fuzzy_finder_mappings) do
       local t = type(cmd_name)
       if t == "string" then
-        if cmd_name == "close" then
-          input:map("i", lhs, close_input, { noremap = true })
+        local cmd = cmds[cmd_name]
+        if cmd then
+          input:map(
+            "i",
+            lhs,
+            create_input_mapping_handle(cmd, state, scroll_padding),
+            { noremap = true }
+          )
         else
-          local cmd = cmds[cmd_name]
-          if cmd then
-            input:map(
-              "i",
-              lhs,
-              create_input_mapping_handle(cmd, state, scroll_padding),
-              { noremap = true }
-            )
-          else
-            log.warn(
-              string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name)
-            )
-          end
+          log.warn(
+            string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name)
+          )
         end
       elseif t == "function" then
         input:map(
