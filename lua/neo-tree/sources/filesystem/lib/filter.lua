@@ -32,6 +32,9 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       popup_msg = "Filter:"
     end
   end
+  if state.config.title then
+    popup_msg = state.config.title
+  end
   if state.current_position == "float" then
     scroll_padding = 0
     local width = vim.fn.winwidth(winid)
