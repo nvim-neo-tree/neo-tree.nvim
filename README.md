@@ -718,8 +718,8 @@ require("neo-tree").setup({
         "toggle_preview",
         config = {
           use_float = false,
-          use_image_nvim = true,
-          title = 'Neo-tree Preview',
+          -- use_image_nvim = true,
+          -- title = 'Neo-tree Preview',
         },
       },
     }
