@@ -6,19 +6,42 @@ local log = require("neo-tree.log")
 -- File nesting a la JetBrains (#117).
 local M = {}
 
+---@alias neotree.FileNesting.Callback fun(item: table, siblings: table[]): table[]
+
+---@class neotree.FileNesting.Matcher
+---@field enabled boolean
+---@field config table<string, any>
+---@field get_children neotree.FileNesting.Callback
+---@field get_nesting_callback fun(item: table): neotree.FileNesting.Callback|nil
+
+---@class neotree.FileNesting.Pattern.Rule
+---@field files string[]
+---@field files_exact string[]
+---@field files_glob string[]
+---@field ignore_case boolean Default is false
+---@field pattern string
+
+---@class neotree.FileNesting.PatternMatcher : neotree.FileNesting.Matcher
+---@field config table<string, neotree.FileNesting.Pattern.Rule>
 local pattern_matcher = {
   enabled = false,
   config = {},
 }
 
+---@class neotree.FileNesting.Extension.Rule
+
+---@class neotree.FileNesting.ExtensionMatcher : neotree.FileNesting.Matcher
+---@field config table<string, neotree.FileNesting.Extension.Rule>
 local extension_matcher = {
   enabled = false,
   config = {},
 }
 
-local matchers = {}
-matchers.pattern = pattern_matcher
-matchers.exts = extension_matcher
+---@alias neotree.FileNesting.Matchers table<string, neotree.FileNesting.Matcher>
+local matchers = {
+  pattern = pattern_matcher,
+  exts = extension_matcher,
+}
 
 extension_matcher.get_nesting_callback = function(item)
   if utils.truthy(extension_matcher.config[item.exts]) then
@@ -49,9 +72,10 @@ extension_matcher.get_children = function(item, siblings)
 end
 
 pattern_matcher.get_nesting_callback = function(item)
+  ---@type neotree.FileNesting.Pattern.Rule[]
   local matching_rules = {}
   for _, rule_config in pairs(pattern_matcher.config) do
-    if item.name:match(rule_config["pattern"]) then
+    if item.name:match(rule_config.pattern) then
       table.insert(matching_rules, rule_config)
     end
   end
@@ -78,57 +102,63 @@ pattern_matcher.get_nesting_callback = function(item)
   return nil
 end
 
-pattern_matcher.pattern_types = {}
-pattern_matcher.pattern_types.files_glob = {}
-pattern_matcher.pattern_types.files_glob.get_pattern = function(pattern)
-  return globtopattern.globtopattern(pattern)
-end
-pattern_matcher.pattern_types.files_glob.match = function(filename, pattern)
-  return filename:match(pattern)
-end
-pattern_matcher.pattern_types.files_exact = {}
-pattern_matcher.pattern_types.files_exact.get_pattern = function(pattern)
-  return pattern
-end
-pattern_matcher.pattern_types.files_exact.match = function(filename, pattern)
-  return filename == pattern
-end
+pattern_matcher.types = {
+  files_glob = {
+    get_pattern = function(pattern)
+      return globtopattern.globtopattern(pattern)
+    end,
+    match = function(filename, pattern)
+      return filename:match(pattern)
+    end,
+  },
+  files_exact = {
+    get_pattern = function(pattern)
+      return pattern
+    end,
+    match = function(filename, pattern)
+      return filename == pattern
+    end,
+  },
+}
 
-pattern_matcher.get_children = function(item, siblings, rule_config)
+---@param item any
+---@param siblings any
+---@param rule neotree.FileNesting.Pattern.Rule
+pattern_matcher.get_children = function(item, siblings, rule)
   local matching_files = {}
   if siblings == nil then
     return matching_files
   end
 
-  for type, type_functions in pairs(pattern_matcher.pattern_types) do
-    for _, pattern in pairs(rule_config[type] or {}) do
+  for type, type_functions in pairs(pattern_matcher.types) do
+    for _, pattern in pairs(rule[type] or {}) do
       local item_name = item.name
-      if rule_config["ignore_case"] ~= nil and item.name_lcase ~= nil then
+      if rule.ignore_case ~= nil and item.name_lcase ~= nil then
         item_name = item.name_lcase
       end
 
-      local success, replaced_pattern =
-        pcall(string.gsub, item_name, rule_config["pattern"], pattern)
-      if success then
-        local glob_or_file = type_functions.get_pattern(replaced_pattern)
-        for _, sibling in pairs(siblings) do
-          if
-            sibling.id ~= item.id
-            and sibling.is_nested ~= true
-            and item.parent_path == sibling.parent_path
-          then
-            local sibling_name = sibling.name
-            if rule_config["ignore_case"] ~= nil and sibling.name_lcase ~= nil then
-              sibling_name = sibling.name_lcase
-            end
-            if type_functions.match(sibling_name, glob_or_file) then
-              table.insert(matching_files, sibling)
-            end
+      local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
+      if not success then
+        log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
+        goto continue
+      end
+      local glob_or_file = type_functions.get_pattern(replaced_pattern)
+      for _, sibling in pairs(siblings) do
+        if
+          sibling.id ~= item.id
+          and sibling.is_nested ~= true
+          and item.parent_path == sibling.parent_path
+        then
+          local sibling_name = sibling.name
+          if rule.ignore_case ~= nil and sibling.name_lcase ~= nil then
+            sibling_name = sibling.name_lcase
+          end
+          if type_functions.match(sibling_name, glob_or_file) then
+            table.insert(matching_files, sibling)
           end
         end
-      else
-        log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
       end
+      ::continue::
     end
   end
   return matching_files
@@ -148,10 +178,7 @@ end
 local function is_glob(str)
   local test = str:gsub("\\[%*%?%[%]]", "")
   local pos, _ = test:find("*")
-  if pos ~= nil then
-    return true
-  end
-  return false
+  return pos ~= nil
 end
 
 local function case_insensitive_pattern(pattern)
@@ -169,34 +196,8 @@ local function case_insensitive_pattern(pattern)
   return p
 end
 
-local function table_is_empty(table_to_check)
-  return table_to_check == nil or next(table_to_check) == nil
-end
-
-function flatten_nesting(nesting_parents)
-  for key, config in pairs(nesting_parents) do
-    if config.is_nested ~= nil then
-      local parent = config.nesting_parent
-      -- count for emergency escape
-      local count = 0
-      while parent.nesting_parent ~= nil and count < 100 do
-        parent = parent.nesting_parent
-        count = count + 1
-      end
-      if parent ~= nil then
-        for _, child in pairs(config.children) do
-          child.nesting_parent = parent
-          table.insert(parent.children, child)
-        end
-        config.children = nil
-      end
-    end
-    nesting_parents[key] = nil
-  end
-end
-
 function M.nest_items(context)
-  if M.is_enabled() == false or table_is_empty(context.nesting) then
+  if M.is_enabled() == false or vim.tbl_isempty(context.nesting or {}) then
     return
   end
 
@@ -246,31 +247,36 @@ function M.get_nesting_callback(item)
   return nil
 end
 
+---@alias neotree.FileNesting.Rule neotree.FileNesting.Extension.Rule | neotree.FileNesting.Pattern.Rule
+---@alias neotree.Config.FileNesting table<string, neotree.FileNesting.Rule>
+
 ---Setup the module with the given config
----@param config table
+---@param config neotree.Config.FileNesting
 function M.setup(config)
-  for key, value in pairs(config or {}) do
-    local type = "exts"
-    if value["pattern"] ~= nil then
-      type = "pattern"
-      if value["ignore_case"] == true then
-        value["pattern"] = case_insensitive_pattern(value["pattern"])
+  for key, matcher in pairs(config or {}) do
+    if matcher.pattern ~= nil then
+      ---@cast matcher neotree.FileNesting.Pattern.Rule
+      if matcher.ignore_case == true then
+        matcher.pattern = case_insensitive_pattern(matcher.pattern)
       end
-      value["files_glob"] = {}
-      value["files_exact"] = {}
-      for _, glob in pairs(value["files"]) do
-        if value["ignore_case"] == true then
+      matcher.files_glob = {}
+      matcher.files_exact = {}
+      for _, glob in pairs(matcher.files) do
+        if matcher.ignore_case == true then
           glob = glob:lower()
         end
         local replaced = glob:gsub("%%%d+", "")
         if is_glob(replaced) then
-          table.insert(value["files_glob"], glob)
+          table.insert(matcher.files_glob, glob)
         else
-          table.insert(value["files_exact"], glob)
+          table.insert(matcher.files_exact, glob)
         end
       end
+      matchers.pattern.config[key] = matcher
+    else
+      ---@cast matcher neotree.FileNesting.Extension.Rule
+      matchers.exts.config[key] = matcher
     end
-    matchers[type]["config"][key] = value
   end
   local next = next
   for _, value in pairs(matchers) do
