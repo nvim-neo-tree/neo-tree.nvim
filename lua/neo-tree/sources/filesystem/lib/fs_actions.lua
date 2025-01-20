@@ -389,16 +389,21 @@ M.create_node = function(in_directory, callback, using_root_directory)
         destination = vim.fn.fnamemodify(destination, ":p")
       end
 
-      if utils.is_windows then
-        destination = utils.windowize_path(destination)
-      end
+      destination = utils.normalize_path(destination)
       if loop.fs_stat(destination) then
         log.warn("File already exists")
         return
       end
 
+      local complete = vim.schedule_wrap(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
       local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
       if event_result.handled then
+        complete()
         return
       end
 
@@ -419,13 +424,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
           loop.fs_close(fd)
         end
       end
-
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
-        end
-      end)
+      complete()
     end
   end)
 end
@@ -509,13 +508,17 @@ M.delete_node = function(path, callback, noconfirm)
     return
   end
 
-  local do_delete = function(confirmed)
-    if not confirmed then
-      return
-    end
+  local do_delete = function()
+    local complete = vim.schedule_wrap(function()
+      events.fire_event(events.FILE_DELETED, path)
+      if callback then
+        callback(path)
+      end
+    end)
 
     local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
     if event_result.handled then
+      complete()
       return
     end
 
@@ -556,19 +559,17 @@ M.delete_node = function(path, callback, noconfirm)
       end
       clear_buffer(path)
     end
-
-    vim.schedule(function()
-      events.fire_event(events.FILE_DELETED, path)
-      if callback then
-        callback(path)
-      end
-    end)
+    complete()
   end
 
   if noconfirm then
-    do_delete(true)
+    do_delete()
   else
-    inputs.confirm(msg, do_delete)
+    inputs.confirm(msg, function(confirmed)
+      if confirmed then
+        do_delete()
+      end
+    end)
   end
 end
 
@@ -623,9 +624,8 @@ local rename_node = function(msg, name, get_destination, path, callback)
         if err then
           log.warn("Could not rename the files")
           return
-        else
-          complete()
         end
+        complete()
       end)
     end
 
@@ -635,6 +635,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
       callback = fs_rename,
     }) or {}
     if event_result.handled then
+      complete()
       return
     end
     fs_rename()
