@@ -1354,7 +1354,7 @@ M.index_by_path = function(tbl, key)
 end
 
 ---Iterate through a table, sorted by its keys.
----Compared to vim.spairs, it also accepts a method that has a sorter.
+---Compared to vim.spairs, it also accepts a method that specifies how to sort the table by key.
 ---
 ---@see vim.spairs
 ---@see table.sort

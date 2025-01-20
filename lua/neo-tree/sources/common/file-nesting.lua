@@ -17,24 +17,24 @@ local DEFAULT_PATTERN_PRIORITY = 100
 ---@field priority number? Default is 100. Higher is prioritized.
 ---@field _priority number The internal priority, lower is prioritized. Determined through priority and the key for the rule at setup.
 
----@class neotree.FileNesting.Pattern.Rule : neotree.FileNesting.Rule
+---@class neotree.FileNesting.Rule.Pattern : neotree.FileNesting.Rule
 ---@field files string[]
 ---@field files_exact string[]?
 ---@field files_glob string[]?
 ---@field ignore_case boolean? Default is false
 ---@field pattern string
 
----@class neotree.FileNesting.Pattern.Matcher : neotree.FileNesting.Matcher
----@field rules neotree.FileNesting.Pattern.Rule[]
+---@class neotree.FileNesting.Matcher.Pattern : neotree.FileNesting.Matcher
+---@field rules neotree.FileNesting.Rule.Pattern[]
 local pattern_matcher = {
   rules = {},
 }
 
----@class neotree.FileNesting.Extension.Rule : neotree.FileNesting.Rule
+---@class neotree.FileNesting.Rule.Extension : neotree.FileNesting.Rule
 ---@field [integer] string
 
----@class neotree.FileNesting.ExtensionMatcher : neotree.FileNesting.Matcher
----@field rules table<string, neotree.FileNesting.Extension.Rule>
+---@class neotree.FileNesting.Matcher.Extension : neotree.FileNesting.Matcher
+---@field rules table<string, neotree.FileNesting.Rule.Extension>
 local extension_matcher = {
   rules = {},
 }
@@ -53,7 +53,11 @@ extension_matcher.get_nesting_callback = function(item)
   local rule = extension_matcher.rules[item.exts]
   if utils.truthy(rule) then
     return function(inner_item, siblings)
-      return extension_matcher.get_children(inner_item, siblings, rule)
+      return {
+        parent = inner_item,
+        children = extension_matcher.get_children(inner_item, siblings, rule),
+        priority = rule._priority,
+      }
     end
   end
   return nil
@@ -77,17 +81,13 @@ extension_matcher.get_children = function(item, siblings, rule)
     end
   end
   ---@type neotree.FileNesting.Matches
-  return {
-    parent = item,
-    children = matching_files,
-    priority = rule._priority,
-  }
+  return matching_files
 end
 
 pattern_matcher.get_nesting_callback = function(item)
-  ---@type neotree.FileNesting.Pattern.Rule[]
+  ---@type neotree.FileNesting.Rule.Pattern[]
   local matching_rules = {}
-  for _, rule in pairs(pattern_matcher.rules) do
+  for _, rule in ipairs(pattern_matcher.rules) do
     if item.name:match(rule.pattern) then
       table.insert(matching_rules, rule)
     end
@@ -150,7 +150,7 @@ pattern_matcher.get_children = function(item, siblings, rule)
 
   for type, type_functions in pairs(pattern_matcher_types) do
     for _, pattern in pairs(rule[type] or {}) do
-      ---@cast rule neotree.FileNesting.Pattern.Rule
+      ---@cast rule neotree.FileNesting.Rule.Pattern
       local item_name = rule.ignore_case and item.name:lower() or item.name
 
       local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
@@ -223,13 +223,24 @@ function M.nest_items(context)
 end
 
 function M.get_nesting_callback(item)
+  local cbs = {}
   for _, matcher in ipairs(enabled_matchers) do
     local callback = matcher.get_nesting_callback(item)
     if callback ~= nil then
-      return callback
+      table.insert(cbs, callback)
     end
   end
-  return nil
+  if #cbs <= 1 then
+    return cbs[1]
+  else
+    return function(...)
+      local res = {}
+      for _, cb in ipairs(cbs) do
+        vim.list_extend(res, cb(...))
+      end
+      return res
+    end
+  end
 end
 
 local function is_glob(str)
@@ -257,10 +268,12 @@ end
 ---@param config table<string, neotree.FileNesting.Rule>
 function M.setup(config)
   config = config or {}
+  enabled_matchers = {}
+  local real_priority = 0
   for _, m in pairs(matchers) do
     m.rules = {}
   end
-  local real_priority = 0
+
   for key, rule in
     utils.spairs(config, function(a, b)
       -- Organize by priority (descending) or by key (ascending)
@@ -272,12 +285,12 @@ function M.setup(config)
       return a_prio > b_prio
     end)
   do
+    rule.priority = rule.priority or DEFAULT_PATTERN_PRIORITY
     rule._priority = real_priority
     real_priority = real_priority + 1
     if rule.pattern then
-      ---@cast rule neotree.FileNesting.Pattern.Rule
+      ---@cast rule neotree.FileNesting.Rule.Pattern
       rule.ignore_case = rule.ignore_case or false
-      rule.priority = rule.priority or DEFAULT_PATTERN_PRIORITY
       if rule.ignore_case then
         rule.pattern = case_insensitive_pattern(rule.pattern)
       end
@@ -294,15 +307,18 @@ function M.setup(config)
           table.insert(rule.files_exact, glob)
         end
       end
-      matchers.pattern.rules[key] = rule
+      -- priority does matter for pattern.rules
+      table.insert(matchers.pattern.rules, rule)
     else
-      ---@cast rule neotree.FileNesting.Extension.Rule
+      ---@cast rule neotree.FileNesting.Rule.Extension
       matchers.exts.rules[key] = rule
     end
   end
-  enabled_matchers = vim.tbl_filter(function(matcher)
-    return not vim.tbl_isempty(matcher.rules)
+
+  enabled_matchers = vim.tbl_filter(function(m)
+    return not vim.tbl_isempty(m.rules)
   end, matchers)
+  table.sort(enabled_matchers, function(a, b) end)
 end
 
 return M
