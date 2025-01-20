@@ -1337,7 +1337,33 @@ This will render:
 
 The default mapping to expand/collapse nested files is <space>.
 
-
+A `priority` field can be added to each rule to resolve conflicting rules. The
+default priority is 100. In the event that two rules may match the same file,
+the rule with higher priority will win. If the priorities are the same, the
+rule with a lower key value will win.
+>lua
+    require("neo-tree").setup({
+      nesting_rules = {
+        ["bar"] = {
+          pattern = "(.+)%.bar$",
+          files = { "%1.baz" },
+          priority = 100,
+        },
+        ["foo"] = {
+          pattern = "(.+)%.foo$",
+          files = { "%1.baz" },
+          priority = 200,
+        },
+        -- Without the priorities, "bar" < "foo", so bar would apply first.
+      }
+    })
+<
+This will render:
+>
+    a.bar
+    a.foo
+        a.baz
+<
 HIGHLIGHTS                                                 *neo-tree-highlights*
 
 The following highlight groups are defined by this plugin. If you set any of

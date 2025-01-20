@@ -1353,4 +1353,34 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+---Iterate through a table, sorted by its keys.
+---Compared to vim.spairs, it also accepts a method that has a sorter.
+---
+---@see vim.spairs
+---@see table.sort
+---
+---@generic T: table, K, V
+---@param t T Dict-like table
+---@param sorter? fun(a: K, b: K):boolean A function that returns true if a is less than b.
+---@return fun(table: table<K, V>, index?: K):K, V # |for-in| iterator over sorted keys and their values
+---@return T
+function M.spairs(t, sorter)
+  -- collect the keys
+  local keys = {}
+  for k in pairs(t) do
+    table.insert(keys, k)
+  end
+  table.sort(keys, sorter)
+
+  -- Return the iterator function.
+  local i = 0
+  return function()
+    i = i + 1
+    if keys[i] then
+      return keys[i], t[keys[i]]
+    end
+  end,
+    t
+end
+
 return M
