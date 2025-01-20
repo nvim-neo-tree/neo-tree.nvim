@@ -9,12 +9,13 @@ local M = {}
 ---@alias neotree.FileNesting.Callback fun(item: table, siblings: table[]): table[]
 
 ---@class neotree.FileNesting.Matcher
----@field enabled boolean
 ---@field config table<string, any>
 ---@field get_children neotree.FileNesting.Callback
----@field get_nesting_callback fun(item: table): neotree.FileNesting.Callback|nil
+---@field get_nesting_callback fun(item: table): neotree.FileNesting.Callback|nil A callback that returns all the files
 
----@class neotree.FileNesting.Pattern.Rule
+---@class neotree.FileNesting.Rule
+
+---@class neotree.FileNesting.PatternMatcher.Rule : neotree.FileNesting.Rule
 ---@field files string[]
 ---@field files_exact string[]
 ---@field files_glob string[]
@@ -22,22 +23,22 @@ local M = {}
 ---@field pattern string
 
 ---@class neotree.FileNesting.PatternMatcher : neotree.FileNesting.Matcher
----@field config table<string, neotree.FileNesting.Pattern.Rule>
+---@field config table<string, neotree.FileNesting.PatternMatcher.Rule>
 local pattern_matcher = {
-  enabled = false,
   config = {},
 }
 
----@class neotree.FileNesting.Extension.Rule
+---@class neotree.FileNesting.ExtensionMatcher.Rule : neotree.FileNesting.Rule
 
 ---@class neotree.FileNesting.ExtensionMatcher : neotree.FileNesting.Matcher
----@field config table<string, neotree.FileNesting.Extension.Rule>
+---@field config table<string, neotree.FileNesting.ExtensionMatcher.Rule>
 local extension_matcher = {
-  enabled = false,
   config = {},
 }
 
----@alias neotree.FileNesting.Matchers table<string, neotree.FileNesting.Matcher>
+---@class neotree.FileNesting.Matches
+---@field pattern neotree.FileNesting.PatternMatcher
+---@field exts neotree.FileNesting.ExtensionMatcher
 local matchers = {
   pattern = pattern_matcher,
   exts = extension_matcher,
@@ -72,7 +73,7 @@ extension_matcher.get_children = function(item, siblings)
 end
 
 pattern_matcher.get_nesting_callback = function(item)
-  ---@type neotree.FileNesting.Pattern.Rule[]
+  ---@type neotree.FileNesting.PatternMatcher.Rule[]
   local matching_rules = {}
   for _, rule_config in pairs(pattern_matcher.config) do
     if item.name:match(rule_config.pattern) then
@@ -83,8 +84,8 @@ pattern_matcher.get_nesting_callback = function(item)
   if #matching_rules > 0 then
     return function(inner_item, siblings)
       local all_matching_files = {}
-      for _, rule_config in ipairs(matching_rules) do
-        local matches = pattern_matcher.get_children(inner_item, siblings, rule_config)
+      for _, rule in ipairs(matching_rules) do
+        local matches = pattern_matcher.get_children(inner_item, siblings, rule)
         for _, match in ipairs(matches) do
           -- Use file path as key to prevent duplicates
           all_matching_files[match.id] = match
@@ -123,7 +124,8 @@ pattern_matcher.types = {
 
 ---@param item any
 ---@param siblings any
----@param rule neotree.FileNesting.Pattern.Rule
+---@param rule neotree.FileNesting.PatternMatcher.Rule
+---@return table children The children of the patterns
 pattern_matcher.get_children = function(item, siblings, rule)
   local matching_files = {}
   if siblings == nil then
@@ -132,27 +134,21 @@ pattern_matcher.get_children = function(item, siblings, rule)
 
   for type, type_functions in pairs(pattern_matcher.types) do
     for _, pattern in pairs(rule[type] or {}) do
-      local item_name = item.name
-      if rule.ignore_case ~= nil and item.name_lcase ~= nil then
-        item_name = item.name_lcase
-      end
+      local item_name = rule.ignore_case and item.name_lcase or item.name
 
       local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
       if not success then
         log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
         goto continue
       end
-      local glob_or_file = type_functions.get_pattern(replaced_pattern)
       for _, sibling in pairs(siblings) do
         if
           sibling.id ~= item.id
           and sibling.is_nested ~= true
           and item.parent_path == sibling.parent_path
         then
-          local sibling_name = sibling.name
-          if rule.ignore_case ~= nil and sibling.name_lcase ~= nil then
-            sibling_name = sibling.name_lcase
-          end
+          local sibling_name = rule.ignore_case and sibling.name_lcase or sibling.name
+          local glob_or_file = type_functions.get_pattern(replaced_pattern)
           if type_functions.match(sibling_name, glob_or_file) then
             table.insert(matching_files, sibling)
           end
@@ -164,15 +160,60 @@ pattern_matcher.get_children = function(item, siblings, rule)
   return matching_files
 end
 
---- Checks if file-nesting module is enabled by config
----@return boolean
+---@type neotree.FileNesting.Matcher[]
+local enabled_matchers = {}
+
 function M.is_enabled()
-  for _, matcher in pairs(matchers) do
-    if matcher.enabled then
-      return true
+  return not vim.tbl_isempty(enabled_matchers)
+end
+
+function M.nest_items(context)
+  if not M.is_enabled() or vim.tbl_isempty(context.nesting or {}) then
+    return
+  end
+
+  -- First collect all nesting relationships
+  local all_nesting_relationships = {}
+  for _, parent in pairs(context.nesting) do
+    local files = parent.nesting_callback(parent, context.all_items)
+    if files and #files > 0 then
+      table.insert(all_nesting_relationships, {
+        parent = parent,
+        children = files,
+      })
     end
   end
-  return false
+
+  -- Then apply thems in order
+  for _, relationship in ipairs(all_nesting_relationships) do
+    local folder = context.folders[relationship.parent.parent_path]
+    for _, to_be_nested in ipairs(relationship.children) do
+      if not to_be_nested.is_nested then
+        table.insert(relationship.parent.children, to_be_nested)
+        to_be_nested.is_nested = true
+        to_be_nested.nesting_parent = relationship.parent
+
+        if folder ~= nil then
+          for index, file_to_check in ipairs(folder.children) do
+            if file_to_check.id == to_be_nested.id then
+              table.remove(folder.children, index)
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+function M.get_nesting_callback(item)
+  for _, matcher in pairs(enabled_matchers) do
+    local callback = matcher.get_nesting_callback(item)
+    if callback ~= nil then
+      return callback
+    end
+  end
+  return nil
 end
 
 local function is_glob(str)
@@ -196,94 +237,41 @@ local function case_insensitive_pattern(pattern)
   return p
 end
 
-function M.nest_items(context)
-  if M.is_enabled() == false or vim.tbl_isempty(context.nesting or {}) then
-    return
-  end
-
-  -- First collect all nesting relationships
-  local all_nesting_relationships = {}
-  for _, config in pairs(context.nesting) do
-    local files = config.nesting_callback(config, context.all_items)
-    if files and #files > 0 then
-      table.insert(all_nesting_relationships, {
-        parent = config,
-        children = files,
-      })
-    end
-  end
-
-  -- Then apply them in order
-  for _, relationship in ipairs(all_nesting_relationships) do
-    local folder = context.folders[relationship.parent.parent_path]
-    for _, to_be_nested in ipairs(relationship.children) do
-      if not to_be_nested.is_nested then
-        table.insert(relationship.parent.children, to_be_nested)
-        to_be_nested.is_nested = true
-        to_be_nested.nesting_parent = relationship.parent
-
-        if folder ~= nil then
-          for index, file_to_check in ipairs(folder.children) do
-            if file_to_check.id == to_be_nested.id then
-              table.remove(folder.children, index)
-              break
-            end
-          end
-        end
-      end
-    end
-  end
-end
-
-function M.get_nesting_callback(item)
-  for _, matcher in pairs(matchers) do
-    if matcher.enabled then
-      local callback = matcher.get_nesting_callback(item)
-      if callback ~= nil then
-        return callback
-      end
-    end
-  end
-  return nil
-end
-
----@alias neotree.FileNesting.Rule neotree.FileNesting.Extension.Rule | neotree.FileNesting.Pattern.Rule
----@alias neotree.Config.FileNesting table<string, neotree.FileNesting.Rule>
-
 ---Setup the module with the given config
----@param config neotree.Config.FileNesting
+---@param config table<string, neotree.FileNesting.Rule>
 function M.setup(config)
-  for key, matcher in pairs(config or {}) do
-    if matcher.pattern ~= nil then
-      ---@cast matcher neotree.FileNesting.Pattern.Rule
-      if matcher.ignore_case == true then
-        matcher.pattern = case_insensitive_pattern(matcher.pattern)
+  for _, m in pairs(matchers) do
+    m.config = {}
+  end
+  for key, rule in pairs(config or {}) do
+    if rule.pattern ~= nil then
+      ---@cast rule neotree.FileNesting.PatternMatcher.Rule
+      rule.ignore_case = rule.ignore_case or false
+      if rule.ignore_case then
+        rule.pattern = case_insensitive_pattern(rule.pattern)
       end
-      matcher.files_glob = {}
-      matcher.files_exact = {}
-      for _, glob in pairs(matcher.files) do
-        if matcher.ignore_case == true then
+      rule.files_glob = {}
+      rule.files_exact = {}
+      for _, glob in pairs(rule.files) do
+        if rule.ignore_case then
           glob = glob:lower()
         end
         local replaced = glob:gsub("%%%d+", "")
         if is_glob(replaced) then
-          table.insert(matcher.files_glob, glob)
+          table.insert(rule.files_glob, glob)
         else
-          table.insert(matcher.files_exact, glob)
+          table.insert(rule.files_exact, glob)
         end
       end
-      matchers.pattern.config[key] = matcher
+      matchers.pattern.config[key] = rule
     else
-      ---@cast matcher neotree.FileNesting.Extension.Rule
-      matchers.exts.config[key] = matcher
+      ---@cast rule neotree.FileNesting.ExtensionMatcher.Rule
+      matchers.exts.config[key] = rule
     end
   end
-  local next = next
-  for _, value in pairs(matchers) do
-    if next(value.config) ~= nil then
-      value.enabled = true
-    end
-  end
+  enabled_matchers = vim.tbl_filter(function(matcher)
+    return not vim.tbl_isempty(matcher.config)
+  end, matchers)
 end
 
 return M
