@@ -1293,8 +1293,12 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+---Replaces string of terminal/key-codes with Neovim's representation
+---Alias for vim.api.nvim_replace_termcodes(str, true, true, true)
+---@see vim.api.nvim_replace_termcodes
 ---@param str string
-function M.keycode(str)
+---@return string representation Internal representation of the keycodes
+function M.replace_termcodes(str)
   return vim.api.nvim_replace_termcodes(str, true, true, true)
 end
 
