@@ -71,7 +71,7 @@ body:
           spec = {
             {
               "nvim-neo-tree/neo-tree.nvim",
-              branch = "v3.x",
+              branch = "v3.x", -- or "main"
               dependencies = {
                 "nvim-lua/plenary.nvim",
                 "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
@@ -84,7 +84,8 @@ body:
             }
           },
         })
-
+        vim.g.mapleader = " "
+        vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
         -- do anything else you need to do to reproduce the issue
     render: Lua
     validations:
