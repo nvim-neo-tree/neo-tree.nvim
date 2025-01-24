@@ -273,24 +273,35 @@ end
 
 ---@param winid number
 ---@param bufnr number
----@return Image[]|false result Images if the buffer was successfully hijacked, otherwise false
+---@return boolean hijacked Whether the buffer was successfully hijacked.
 local function try_load_image_nvim_buf(winid, bufnr)
   -- notify only image.nvim to let it try and hijack
+  local image_augroup = vim.api.nvim_create_augroup("image.nvim", { clear = false })
+  if #vim.api.nvim_get_autocmds({ group = image_augroup }) == 0 then
+    local image_available, image = pcall(require, "image")
+    if not image_available then
+      local image_nvim_url = "https://github.com/3rd/image.nvim"
+      log.debug("You'll need to install image.nvim to use this command: " .. image_nvim_url)
+      return false
+    end
+    log.warn("image.nvim was not setup. Calling require('image').setup().")
+    image.setup()
+    image_augroup = vim.api.nvim_create_augroup("image.nvim", { clear = false })
+  end
+
   vim.opt.eventignore:remove("BufWinEnter")
-  vim.api.nvim_win_call(winid, function()
-    vim.api.nvim_exec_autocmds("BufWinEnter", { group = "image.nvim", buffer = bufnr })
+  local ok = pcall(vim.api.nvim_win_call, winid, function()
+    vim.api.nvim_exec_autocmds("BufWinEnter", { group = image_augroup, buffer = bufnr })
   end)
   vim.opt.eventignore:append("BufWinEnter")
+  if not ok then
+    log.debug("image.nvim doesn't have any file patterns to hijack.")
+    return false
+  end
   if vim.bo[bufnr].filetype ~= "image_nvim" then
     return false
   end
-  local success, mod = pcall(require, "image")
-  if not success or not mod.hijack_buffer then
-    local image_nvim_url = "https://github.com/3rd/image.nvim"
-    log.debug("You'll need to install image.nvim to use this command: " .. image_nvim_url)
-    return false
-  end
-  return mod.get_images({ buffer = bufnr, window = winid })
+  return true
 end
 
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
