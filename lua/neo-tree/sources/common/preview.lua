@@ -128,13 +128,8 @@ function Preview:preview(bufnr, start_pos, end_pos)
     return
   end
 
-  if bufnr ~= self.bufnr then
-    self:setBuffer(bufnr)
-  end
+  self:setBuffer(bufnr)
 
-  self:clearHighlight()
-
-  self.bufnr = bufnr
   self.start_pos = start_pos
   self.end_pos = end_pos
 
@@ -146,7 +141,6 @@ end
 function Preview:revert()
   self.active = false
   self:unsubscribe()
-  self:clearHighlight()
 
   if not renderer.is_window_valid(self.winid) then
     self.winid = nil
@@ -254,6 +248,7 @@ function Preview:activate()
     return
   end
   if self.config.use_float then
+    self.bufnr = vim.api.nvim_create_buf(false, true)
     self.truth = {}
   else
     self.truth = {
@@ -286,7 +281,6 @@ local function try_load_image_nvim_buf(winid, bufnr)
     end
     log.warn("image.nvim was not setup. Calling require('image').setup().")
     image.setup()
-    image_augroup = vim.api.nvim_create_augroup("image.nvim", { clear = false })
   end
 
   vim.opt.eventignore:remove("BufWinEnter")
@@ -307,16 +301,28 @@ end
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
 --@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
+  self:clearHighlight()
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
-  vim.api.nvim_win_set_buf(self.winid, bufnr)
-  if self.config.use_image_nvim then
+  if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
+    -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
+    -- really long anyways
+    vim.api.nvim_win_set_buf(self.winid, bufnr)
     try_load_image_nvim_buf(self.winid, bufnr)
+    goto finally
   end
   if self.config.use_float then
-    -- I'm not sufe why float windows won;t show numbers without this
-    vim.api.nvim_win_set_option(self.winid, "number", true)
+    vim.fn.bufload(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+    vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+    -- I'm not sure why float windows won't show numbers without this
+    vim.wo[self.winid].number = true
+  else
+    vim.api.nvim_win_set_buf(self.winid, bufnr)
+    self.bufnr = bufnr
   end
+  ::finally::
   vim.opt.eventignore = eventignore
 end
 
