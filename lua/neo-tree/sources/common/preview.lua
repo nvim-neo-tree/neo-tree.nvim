@@ -312,6 +312,7 @@ function Preview:setBuffer(bufnr)
     goto finally
   end
   if self.config.use_float then
+    -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
     vim.fn.bufload(bufnr)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
