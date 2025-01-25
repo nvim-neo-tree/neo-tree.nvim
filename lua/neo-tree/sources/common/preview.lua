@@ -167,7 +167,6 @@ function Preview:revert()
     return
   end
   self:setBuffer(bufnr)
-  self.bufnr = bufnr
   if vim.api.nvim_win_is_valid(self.winid) then
     vim.api.nvim_win_call(self.winid, function()
       vim.fn.winrestview(self.truth.view)
@@ -310,6 +309,9 @@ end
 ---@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
   self:clearHighlight()
+  if bufnr == self.bufnr then
+    return
+  end
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
 
