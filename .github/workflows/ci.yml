@@ -19,7 +19,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
-          args: --color always --check -g "!**/defaults.lua" lua/
+          args: --color always --check lua/
 
   plenary-tests:
     runs-on: ubuntu-20.04
