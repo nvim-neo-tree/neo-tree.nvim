@@ -6,7 +6,7 @@
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
 local vim = vim
 local api = vim.api
-local loop = vim.loop
+local loop = vim.uv or vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
@@ -253,6 +253,12 @@ M.copy_node = function(source, _destination, callback, using_root_directory)
       log.warn("Cannot copy a file/folder to itself")
       return
     end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
+    if event_result.handled then
+      return
+    end
+
     local source_path = Path:new(source)
     if source_path:is_file() then
       -- When the source is a file, then Path.copy() currently doesn't create
@@ -321,6 +327,11 @@ M.create_directory = function(in_directory, callback, using_root_directory)
         destination = vim.fn.fnamemodify(destination, ":p")
       end
 
+      local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
+      if event_result.handled then
+        return
+      end
+
       if loop.fs_stat(destination) then
         log.warn("Directory already exists")
         return
@@ -378,11 +389,21 @@ M.create_node = function(in_directory, callback, using_root_directory)
         destination = vim.fn.fnamemodify(destination, ":p")
       end
 
-      if utils.is_windows then
-        destination = utils.windowize_path(destination)
-      end
+      destination = utils.normalize_path(destination)
       if loop.fs_stat(destination) then
         log.warn("File already exists")
+        return
+      end
+
+      local complete = vim.schedule_wrap(function()
+        events.fire_event(events.FILE_ADDED, destination)
+        if callback then
+          callback(destination)
+        end
+      end)
+      local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
+      if event_result.handled then
+        complete()
         return
       end
 
@@ -403,15 +424,48 @@ M.create_node = function(in_directory, callback, using_root_directory)
           loop.fs_close(fd)
         end
       end
-
-      vim.schedule(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
-        end
-      end)
+      complete()
     end
   end)
+end
+
+---Recursively delete a directory and its children.
+---@param dir_path string Directory to delete.
+---@return boolean success Whether the directory was deleted.
+local function delete_dir(dir_path)
+  local handle = loop.fs_scandir(dir_path)
+  if type(handle) == "string" then
+    api.nvim_err_writeln(handle)
+    return false
+  end
+
+  if not handle then
+    log.error("could not scan dir " .. dir_path)
+    return false
+  end
+
+  while true do
+    local child_name, t = loop.fs_scandir_next(handle)
+    if not child_name then
+      break
+    end
+
+    local child_path = dir_path .. "/" .. child_name
+    if t == "directory" then
+      local success = delete_dir(child_path)
+      if not success then
+        log.error("failed to delete ", child_path)
+        return false
+      end
+    else
+      local success = loop.fs_unlink(child_path)
+      if not success then
+        return false
+      end
+      clear_buffer(child_path)
+    end
+  end
+  return loop.fs_rmdir(dir_path) or false
 end
 
 -- Delete Node
@@ -454,39 +508,18 @@ M.delete_node = function(path, callback, noconfirm)
     return
   end
 
-  local do_delete = function(confirmed)
-    if not confirmed then
+  local do_delete = function()
+    local complete = vim.schedule_wrap(function()
+      events.fire_event(events.FILE_DELETED, path)
+      if callback then
+        callback(path)
+      end
+    end)
+
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if event_result.handled then
+      complete()
       return
-    end
-
-    local function delete_dir(dir_path)
-      local handle = loop.fs_scandir(dir_path)
-      if type(handle) == "string" then
-        return api.nvim_err_writeln(handle)
-      end
-
-      while true do
-        local child_name, t = loop.fs_scandir_next(handle)
-        if not child_name then
-          break
-        end
-
-        local child_path = dir_path .. "/" .. child_name
-        if t == "directory" then
-          local success = delete_dir(child_path)
-          if not success then
-            log.error("failed to delete ", child_path)
-            return false
-          end
-        else
-          local success = loop.fs_unlink(child_path)
-          if not success then
-            return false
-          end
-          clear_buffer(child_path)
-        end
-      end
-      return loop.fs_rmdir(dir_path)
     end
 
     if _type == "directory" then
@@ -526,19 +559,17 @@ M.delete_node = function(path, callback, noconfirm)
       end
       clear_buffer(path)
     end
-
-    vim.schedule(function()
-      events.fire_event(events.FILE_DELETED, path)
-      if callback then
-        callback(path)
-      end
-    end)
+    complete()
   end
 
   if noconfirm then
-    do_delete(true)
+    do_delete()
   else
-    inputs.confirm(msg, do_delete)
+    inputs.confirm(msg, function(confirmed)
+      if confirmed then
+        do_delete()
+      end
+    end)
   end
 end
 
@@ -593,9 +624,8 @@ local rename_node = function(msg, name, get_destination, path, callback)
         if err then
           log.warn("Could not rename the files")
           return
-        else
-          complete()
         end
+        complete()
       end)
     end
 
@@ -605,6 +635,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
       callback = fs_rename,
     }) or {}
     if event_result.handled then
+      complete()
       return
     end
     fs_rename()
