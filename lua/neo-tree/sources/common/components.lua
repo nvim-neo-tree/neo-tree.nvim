@@ -464,7 +464,7 @@ local truncate_string = function(str, max_length)
   return str:sub(1, max_length - 1) .. "…"
 end
 
-local get_header = function (state, label, size)
+local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
@@ -478,7 +478,7 @@ M.file_size = function(config, node, state)
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Size", config.width),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -496,7 +496,7 @@ M.file_size = function(config, node, state)
 
   return {
     text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(text, config.width)),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -511,7 +511,7 @@ local file_time = function(config, node, state, stat_field)
     end
     return {
       text = get_header(state, label, config.width),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -522,7 +522,7 @@ local file_time = function(config, node, state, stat_field)
 
   return {
     text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(display, config.width)),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -551,13 +551,13 @@ M.type = function(config, node, state)
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Type", config.width),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
   return {
     text = vim.fn.printf("%" .. config.width .. "s  ", truncate_string(text, config.width)),
-    highlight = highlights.FILE_STATS
+    highlight = highlights.FILE_STATS,
   }
 end
 
