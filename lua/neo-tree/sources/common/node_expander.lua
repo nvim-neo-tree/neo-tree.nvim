@@ -16,7 +16,7 @@ local function expand_loaded(node, state, prefetcher)
     else
       if not current_node:is_expanded() then
         current_node:expand()
-        state.explicitly_opened_directories[current_node:get_id()] = true
+        state.explicitly_opened_nodes[current_node:get_id()] = true
       end
       local children = state.tree:get_nodes(current_node:get_id())
       log.debug("Expanding childrens of " .. current_node:get_id())
@@ -62,10 +62,10 @@ M.expand_directory_recursively = function(state, node, prefetcher)
     return
   end
 
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+  state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
   if prefetcher.should_prefetch(node) then
     local id = node:get_id()
-    state.explicitly_opened_directories[id] = true
+    state.explicitly_opened_nodes[id] = true
     prefetcher.prefetch(state, node)
     expand_loaded(node, state, prefetcher)
   else
