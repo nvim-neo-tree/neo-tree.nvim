@@ -1,4 +1,5 @@
 local log = require("neo-tree.log")
+local utils = require("neo-tree.utils")
 
 local M = {}
 
@@ -15,15 +16,15 @@ local function expand_loaded(node, state, prefetcher)
     else
       if not current_node:is_expanded() then
         current_node:expand()
-        state.explicitly_opened_directories[current_node:get_id()] = true
+        state.explicitly_opened_nodes[current_node:get_id()] = true
       end
       local children = state.tree:get_nodes(current_node:get_id())
       log.debug("Expanding childrens of " .. current_node:get_id())
       for _, child in ipairs(children) do
-        if child.type == "directory" then
+        if utils.is_expandable(child) then
           rec(child, to_load)
         else
-          log.trace("Child: " .. child.name .. " is not a directory, skipping")
+          log.trace("Child: " .. (child.name or "") .. " is not expandable, skipping")
         end
       end
     end
@@ -53,16 +54,18 @@ end
 --- async method
 ---@param state table current state of the source
 ---@param node table a node to expand
----@param prefetcher table an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_directory_recursively = function(state, node, prefetcher)
   log.debug("Expanding directory " .. node:get_id())
-  if node.type ~= "directory" then
+  prefetcher = prefetcher or M.default_prefetcher
+  if not utils.is_expandable(node) then
     return
   end
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+
+  state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
   if prefetcher.should_prefetch(node) then
     local id = node:get_id()
-    state.explicitly_opened_directories[id] = true
+    state.explicitly_opened_nodes[id] = true
     prefetcher.prefetch(state, node)
     expand_loaded(node, state, prefetcher)
   else

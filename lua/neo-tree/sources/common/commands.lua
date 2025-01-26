@@ -1,5 +1,4 @@
 --This file should contain all commands meant to be used by mappings.
-
 local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
@@ -113,17 +112,17 @@ end
 ---Expand all nodes
 ---@param state table The state of the source
 ---@param node table A node to expand
----@param prefetcher table an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_nodes = function(state, node, prefetcher)
-  log.debug("Expanding all nodes under " .. node:get_id())
-  if prefetcher == nil then
-    prefetcher = node_expander.default_prefetcher
-  end
+  local root_nodes = node and { node } or state.tree:get_nodes()
 
   renderer.position.set(state, nil)
 
   local task = function()
-    node_expander.expand_directory_recursively(state, node, prefetcher)
+    for _, root in pairs(root_nodes) do
+      log.debug("Expanding all nodes under " .. root:get_id())
+      node_expander.expand_directory_recursively(state, root, prefetcher)
+    end
   end
   async.run(task, function()
     log.debug("All nodes expanded - redrawing")
@@ -150,11 +149,8 @@ M.close_node = function(state, callback)
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
-    if
-      state.explicitly_opened_directories
-      and state.explicitly_opened_directories[target_node:get_id()]
-    then
-      state.explicitly_opened_directories[target_node:get_id()] = false
+    if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
+      state.explicitly_opened_nodes[target_node:get_id()] = false
     end
   end
 end
@@ -174,16 +170,13 @@ M.close_all_subnodes = function(state)
   renderer.collapse_all_nodes(tree, target_node:get_id())
   renderer.redraw(state)
   renderer.focus_node(state, target_node:get_id())
-  if
-    state.explicitly_opened_directories
-    and state.explicitly_opened_directories[target_node:get_id()]
-  then
-    state.explicitly_opened_directories[target_node:get_id()] = false
+  if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
+    state.explicitly_opened_nodes[target_node:get_id()] = false
   end
 end
 
 M.close_all_nodes = function(state)
-  state.explicitly_opened_directories = {}
+  state.explicitly_opened_nodes = {}
   renderer.collapse_all_nodes(state.tree)
   renderer.redraw(state)
 end
