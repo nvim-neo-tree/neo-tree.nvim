@@ -128,25 +128,19 @@ function Preview:preview(bufnr, start_pos, end_pos)
     return
   end
 
-  if bufnr ~= self.bufnr then
-    self:setBuffer(bufnr)
-  end
+  self:setBuffer(bufnr)
 
-  self:clearHighlight()
-
-  self.bufnr = bufnr
   self.start_pos = start_pos
   self.end_pos = end_pos
 
   self:reveal()
-  self:highlight()
+  self:highlight_preview_range()
 end
 
 ---Reverts the preview and inactivates it, restoring the preview window to its previous state.
 function Preview:revert()
   self.active = false
   self:unsubscribe()
-  self:clearHighlight()
 
   if not renderer.is_window_valid(self.winid) then
     self.winid = nil
@@ -173,7 +167,6 @@ function Preview:revert()
     return
   end
   self:setBuffer(bufnr)
-  self.bufnr = bufnr
   if vim.api.nvim_win_is_valid(self.winid) then
     vim.api.nvim_win_call(self.winid, function()
       vim.fn.winrestview(self.truth.view)
@@ -254,6 +247,7 @@ function Preview:activate()
     return
   end
   if self.config.use_float then
+    self.bufnr = vim.api.nvim_create_buf(false, true)
     self.truth = {}
   else
     self.truth = {
@@ -286,7 +280,6 @@ local function try_load_image_nvim_buf(winid, bufnr)
     end
     log.warn("image.nvim was not setup. Calling require('image').setup().")
     image.setup()
-    image_augroup = vim.api.nvim_create_augroup("image.nvim", { clear = false })
   end
 
   vim.opt.eventignore:remove("BufWinEnter")
@@ -304,19 +297,64 @@ local function try_load_image_nvim_buf(winid, bufnr)
   return true
 end
 
+---@param bufnr number The buffer number of the buffer to set.
+---@return number bytecount The number of bytes in the buffer
+local get_bufsize = function(bufnr)
+  return vim.api.nvim_buf_call(bufnr, function()
+    return vim.fn.line2byte(vim.fn.line("$") + 1)
+  end)
+end
+
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
---@param bufnr number The buffer number of the buffer to set.
+---@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
+  self:clearHighlight()
+  if bufnr == self.bufnr then
+    return
+  end
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
-  vim.api.nvim_win_set_buf(self.winid, bufnr)
-  if self.config.use_image_nvim then
+
+  if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
+    -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
+    -- really long anyways
+    vim.api.nvim_win_set_buf(self.winid, bufnr)
     try_load_image_nvim_buf(self.winid, bufnr)
+    goto finally
   end
+
   if self.config.use_float then
-    -- I'm not sufe why float windows won;t show numbers without this
-    vim.api.nvim_win_set_option(self.winid, "number", true)
+    -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
+    vim.fn.bufload(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+    vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+    -- I'm not sure why float windows won't show numbers without this
+    vim.wo[self.winid].number = true
+
+    -- code below is from mini.pick
+    -- only starts treesitter parser if the filetype is matching
+    local ft = vim.bo[bufnr].filetype
+    local bufsize = get_bufsize(bufnr)
+    if bufsize > 1024 * 1024 or bufsize > 1000 * #lines then
+      goto finally
+    end
+    local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
+    lang = has_lang and lang or ft
+    local has_parser, parser = pcall(vim.treesitter.get_parser, self.bufnr, lang, { error = false })
+    has_parser = has_parser and parser ~= nil
+    if has_parser then
+      has_parser = pcall(vim.treesitter.start, self.bufnr, lang)
+    end
+    if not has_parser then
+      vim.bo[self.bufnr].syntax = ft
+    end
+  else
+    vim.api.nvim_win_set_buf(self.winid, bufnr)
+    self.bufnr = bufnr
   end
+
+  ::finally::
   vim.opt.eventignore = eventignore
 end
 
@@ -333,7 +371,7 @@ function Preview:reveal()
 end
 
 ---Highlight the previewed range
-function Preview:highlight()
+function Preview:highlight_preview_range()
   if not self.active or not self.bufnr then
     return
   end
