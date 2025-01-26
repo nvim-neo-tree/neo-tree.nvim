@@ -87,9 +87,9 @@ M.complete_args = function(argLead, cmdLine)
       return get_ref_completions(key .. "=")
     elseif arg_type == parser.LIST then
       local valid_values = parser.arguments[key].values
-      if valid_values and not parsed[key] then
+      if valid_values and not (parsed[key] and #parsed[key] > 0) then
         for _, vv in ipairs(valid_values) do
-          if vv:find(value) then
+          if vv:find(value, 1, true) then
             table.insert(candidates, key .. "=" .. vv)
           end
         end

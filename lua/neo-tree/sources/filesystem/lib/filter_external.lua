@@ -184,6 +184,9 @@ M.filter_files_external = function(
         file_types[#file_types + 1] = file_type_map[k]
       end
     end
+    if ignore.dotfiles then
+      append("-name", ".*", "-prune", "-o")
+    end
     if #file_types > 0 then
       append("-type", table.concat(file_types, ","))
     end
@@ -192,9 +195,6 @@ M.filter_files_external = function(
     end
     if types.executable then
       append("-executable")
-    end
-    if not ignore.dotfiles then
-      append("-not", "-path", "*/.*")
     end
     if glob ~= nil and not full_path then
       append("-iname", glob)
@@ -205,6 +205,7 @@ M.filter_files_external = function(
     elseif regex ~= nil then
       append("-regextype", "sed", "-regex", regex)
     end
+    append("-print")
     append_find_args()
   elseif cmd == "fzf" then
     -- This does not work yet, there's some kind of issue with how fzf uses stdout

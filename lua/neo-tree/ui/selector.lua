@@ -39,29 +39,6 @@ local sep_tbl = function(sep)
   return sep
 end
 
--- Function below provided by @akinsho
--- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
-
--- truncate a string based on number of display columns/cells it occupies
--- so that multibyte characters are not broken up mid-character
----@param str string
----@param col_limit number
----@return string
-local function truncate_by_cell(str, col_limit)
-  local api = vim.api
-  local fn = vim.fn
-  if str and str:len() == api.nvim_strwidth(str) then
-    return fn.strcharpart(str, 0, col_limit)
-  end
-  local short = fn.strcharpart(str, 0, col_limit)
-  if api.nvim_strwidth(short) > col_limit then
-    while api.nvim_strwidth(short) > col_limit do
-      short = fn.strcharpart(short, 0, fn.strchars(short) - 1)
-    end
-  end
-  return short
-end
-
 ---get_separators
 -- Returns information about separator on each tab.
 ---@param source_index integer: index of source
@@ -104,7 +81,9 @@ local get_selector_tab_info = function(source_name, source_index, is_active, sep
   end
   local source_config = config[source_name] or {}
   local get_strlen = vim.api.nvim_strwidth
-  local text = separator_config.sources[source_index].display_name or source_config.display_name or source_name
+  local text = separator_config.sources[source_index].display_name
+    or source_config.display_name
+    or source_name
   local text_length = get_strlen(text)
   if separator_config.tabs_min_width ~= nil and text_length < separator_config.tabs_min_width then
     text = M.text_layout(text, separator_config.content_layout, separator_config.tabs_min_width)
@@ -172,9 +151,9 @@ local text_layout = function(text, content_layout, output_width, trunc_char)
   local left_pad, right_pad = 0, 0
   if pad_length < 0 then
     if output_width < 4 then
-      return truncate_by_cell(text, output_width)
+      return utils.truncate_by_cell(text, output_width)
     else
-      return truncate_by_cell(text, output_width - 1) .. trunc_char
+      return utils.truncate_by_cell(text, output_width - 1) .. trunc_char
     end
   elseif content_layout == "start" then
     left_pad, right_pad = 0, pad_length
