@@ -765,7 +765,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = M.escape_path_for_cmd(path)
+    local relative = require("neo-tree").config.open_files_using_relative_paths
+    local escaped_path = M.escape_path_for_cmd(relative and vim.fn.fnamemodify(path, ":.") or path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
