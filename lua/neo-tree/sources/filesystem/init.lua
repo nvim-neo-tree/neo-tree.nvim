@@ -107,6 +107,7 @@ M.follow = function(callback, force_show)
   end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
 end
 
+local fs_stat = (vim.uv or vim.loop).fs_stat
 M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
@@ -120,6 +121,13 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     path = manager.get_cwd(state)
   end
   path = utils.normalize_path(path)
+
+  -- if path doesn't exist, navigate upwards until it does
+  while not fs_stat(path) do
+    log.debug(("navigate_internal: path %s didn't exist, going up a directory"):format(path))
+    path, _ = utils.split_path(path)
+  end
+
   if path ~= state.path then
     log.debug("navigate_internal: path changed from ", state.path, " to ", path)
     state.path = path
