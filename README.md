@@ -110,7 +110,7 @@ return {
     "MunifTanjim/nui.nvim",
     -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
     {
-      "s1n7ax/nvim-window-picker",
+      "s1n7ax/nvim-window-picker", -- for open_with_window_picker keymaps
       version = "2.*",
       config = function()
         require("window-picker").setup({
