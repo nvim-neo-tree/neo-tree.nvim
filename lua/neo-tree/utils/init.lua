@@ -1305,9 +1305,11 @@ local slice = vim.fn.slice
 ---@param col_limit number
 ---@param align 'left'|'right'|nil
 ---@return string shortened
+---@return number width
 M.truncate_by_cell = function(str, col_limit, align)
-  if width(str) >= col_limit then
-    return str
+  local w = width(str)
+  if w <= col_limit then
+    return str, w
   end
   align = align or "left"
   local short = str
@@ -1320,7 +1322,7 @@ M.truncate_by_cell = function(str, col_limit, align)
       short = slice(short, 1)
     end
   end
-  return short
+  return short, width(short)
 end
 
 return M
