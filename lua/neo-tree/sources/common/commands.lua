@@ -114,13 +114,15 @@ end
 ---@param node table A node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_nodes = function(state, node, prefetcher)
-  node = node or state.tree:get_nodes()[1]
-  log.debug("Expanding all nodes under " .. node:get_id())
+  local root_nodes = node and { node } or state.tree:get_nodes()
 
   renderer.position.set(state, nil)
 
   local task = function()
-    node_expander.expand_directory_recursively(state, node, prefetcher)
+    for _, root in pairs(root_nodes) do
+      log.debug("Expanding all nodes under " .. root:get_id())
+      node_expander.expand_directory_recursively(state, root, prefetcher)
+    end
   end
   async.run(task, function()
     log.debug("All nodes expanded - redrawing")
