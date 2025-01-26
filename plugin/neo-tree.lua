@@ -22,15 +22,14 @@ local function try_netrw_hijack(path)
     vim.cmd("silent! autocmd! FileExplorer *")
     local stats = (vim.uv or vim.loop).fs_stat(path)
     if stats and stats.type == "directory" then
-      return netrw.hijack()
+      return netrw.hijack(path)
     end
   end
   return false
 end
 
--- currently need to check first arg to not break hijacked on
--- configs that already lazy-load neo-tree (e.g. lazyvim)
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
+
 vim.api.nvim_create_autocmd("BufEnter", {
   group = augroup,
   callback = function(args)

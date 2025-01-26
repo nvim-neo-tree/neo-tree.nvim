@@ -77,9 +77,27 @@ M.set_log_level = function(level)
   require("neo-tree.log").set_level(level)
 end
 
+local function try_netrw_hijack(path)
+  if not path or #path == 0 then
+    return false
+  end
+
+  local netrw = require("neo-tree.setup.netrw")
+  if netrw.get_hijack_behavior() ~= "disabled" then
+    vim.cmd("silent! autocmd! FileExplorer *")
+    local stats = (vim.uv or vim.loop).fs_stat(path)
+    if stats and stats.type == "directory" then
+      return netrw.hijack(path)
+    end
+  end
+  return false
+end
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
+  if vim.v.vim_did_enter == 0 then
+    try_netrw_hijack(vim.fn.argv(0))
+  end
 end
 
 M.show_logs = function()
