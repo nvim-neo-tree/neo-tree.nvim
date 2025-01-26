@@ -54,7 +54,7 @@ local render_content = function(config, node, state, context)
   local add_padding = function(rendered_item, should_pad)
     for _, data in ipairs(rendered_item) do
       if data.text then
-        local padding = (should_pad and data.text:sub(1, 1) ~= " ") and " " or ""
+        local padding = (should_pad and #data.text > 0 and data.text:sub(1, 1) ~= " ") and " " or ""
         data.text = padding .. data.text
         should_pad = data.text:sub(#data.text) ~= " "
       end
@@ -141,7 +141,7 @@ local truncate_layer_keep_right = function(layer, skip_count, max_width)
   local result = {}
   local taken = 0
   local skipped = 0
-  for i = #layer, 0, -1 do
+  for i = #layer, 1, -1 do
     local item = layer[i]
     local text_width = strwidth(item.text)
     local remaining_to_skip = skip_count - skipped

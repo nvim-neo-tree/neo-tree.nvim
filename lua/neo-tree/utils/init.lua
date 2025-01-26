@@ -1293,7 +1293,7 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
-local width = vim.api.nvim_strwidth
+local strwidth = vim.api.nvim_strwidth
 local slice = vim.fn.slice
 -- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
@@ -1307,22 +1307,22 @@ local slice = vim.fn.slice
 ---@return string shortened
 ---@return number width
 M.truncate_by_cell = function(str, col_limit, align)
-  local w = width(str)
+  local w = strwidth(str)
   if w <= col_limit then
     return str, w
   end
   align = align or "left"
   local short = str
   if align == "left" then
-    while width(short) > col_limit do
+    while strwidth(short) > col_limit do
       short = slice(short, 0, -1)
     end
   elseif align == "right" then
-    while width(short) > col_limit do
+    while strwidth(short) > col_limit do
       short = slice(short, 1)
     end
   end
-  return short, width(short)
+  return short, strwidth(short)
 end
 
 return M
