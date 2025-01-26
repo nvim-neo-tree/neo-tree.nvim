@@ -77,26 +77,32 @@ M.set_log_level = function(level)
   require("neo-tree.log").set_level(level)
 end
 
+---Ideally this should only be in plugin/neo-tree.lua but lazy-loading might mean this runs before bufenter
+---@param path string? The path to check
+---@return boolean hijacked Whether the hijack worked
 local function try_netrw_hijack(path)
   if not path or #path == 0 then
+    return false
+  end
+
+  local stats = (vim.uv or vim.loop).fs_stat(path)
+  if not stats or stats.type ~= "directory" then
     return false
   end
 
   local netrw = require("neo-tree.setup.netrw")
   if netrw.get_hijack_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
-    local stats = (vim.uv or vim.loop).fs_stat(path)
-    if stats and stats.type == "directory" then
-      return netrw.hijack(path)
-    end
+    return netrw.hijack()
   end
   return false
 end
+
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
   if vim.v.vim_did_enter == 0 then
-    try_netrw_hijack(vim.fn.argv(0))
+    try_netrw_hijack(vim.fn.argv(0) --[[@as string]])
   end
 end
 

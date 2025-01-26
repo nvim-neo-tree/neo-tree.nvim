@@ -17,13 +17,15 @@ local function try_netrw_hijack(path)
     return false
   end
 
+  local stats = (vim.uv or vim.loop).fs_stat(path)
+  if not stats or stats.type ~= "directory" then
+    return false
+  end
+
   local netrw = require("neo-tree.setup.netrw")
   if netrw.get_hijack_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
-    local stats = (vim.uv or vim.loop).fs_stat(path)
-    if stats and stats.type == "directory" then
-      return netrw.hijack(path)
-    end
+    return netrw.hijack()
   end
   return false
 end
