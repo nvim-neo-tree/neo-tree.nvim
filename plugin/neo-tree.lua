@@ -30,17 +30,14 @@ end
 
 -- currently need to check first arg to not break hijacked on
 -- configs that already lazy-load neo-tree (e.g. lazyvim)
-local first_arg = vim.fn.argv(0) --[[@as string]]
-if not try_netrw_hijack(first_arg) then
-  local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
-  vim.api.nvim_create_autocmd("BufEnter", {
-    group = augroup,
-    callback = function(args)
-      if try_netrw_hijack(args.file) then
-        vim.api.nvim_del_augroup_by_id(augroup)
-      end
-    end,
-  })
-end
+local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = augroup,
+  callback = function(args)
+    if try_netrw_hijack(args.file) then
+      vim.api.nvim_del_augroup_by_id(augroup)
+    end
+  end,
+})
 
 vim.g.loaded_neo_tree = 1
