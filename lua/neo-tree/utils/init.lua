@@ -1,6 +1,4 @@
-local vim = vim
 local log = require("neo-tree.log")
-local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -215,7 +213,7 @@ end
 ---@param size any
 ---@return string
 M.human_size = function(size)
-  local human = filesize(size, { output = "string" })
+  local human = require("neo-tree.utils.filesize.filesize")(size, { output = "string" })
   ---@cast human string
   return human
 end

@@ -21,10 +21,8 @@ vim.cmd([[
 vim.opt.swapfile = false
 
 vim.cmd([[
-  runtime plugin/neo-tree.vim
+  runtime plugin/neo-tree.lua
 ]])
 
 -- For debugging
-P = function(...)
-  print(unpack(vim.tbl_map(vim.inspect, { ... })))
-end
+P = vim.print

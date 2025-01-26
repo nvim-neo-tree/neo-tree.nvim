@@ -470,7 +470,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
   end
 end
 
-M.merge_config = function(user_config, is_auto_config)
+M.merge_config = function(user_config)
   local default_config = vim.deepcopy(defaults)
   user_config = vim.deepcopy(user_config or {})
 
