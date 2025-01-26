@@ -149,10 +149,7 @@ M.close_node = function(state, callback)
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
-    if
-      state.explicitly_opened_nodes
-      and state.explicitly_opened_nodes[target_node:get_id()]
-    then
+    if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
       state.explicitly_opened_nodes[target_node:get_id()] = false
     end
   end
@@ -173,10 +170,7 @@ M.close_all_subnodes = function(state)
   renderer.collapse_all_nodes(tree, target_node:get_id())
   renderer.redraw(state)
   renderer.focus_node(state, target_node:get_id())
-  if
-    state.explicitly_opened_nodes
-    and state.explicitly_opened_nodes[target_node:get_id()]
-  then
+  if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
     state.explicitly_opened_nodes[target_node:get_id()] = false
   end
 end
