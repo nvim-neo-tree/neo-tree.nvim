@@ -1293,38 +1293,31 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
--- Function below provided by @akinsho
+local width = vim.api.nvim_strwidth
+local slice = vim.fn.slice
+-- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
+-- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough
 
--- truncate a string based on number of display columns/cells it occupies
+-- Truncate a string based on number of display columns/cells it occupies
 -- so that multibyte characters are not broken up mid-character
 ---@param str string
 ---@param col_limit number
 ---@param align 'left'|'right'|nil
----@return string
+---@return string shortened
 M.truncate_by_cell = function(str, col_limit, align)
-  align = align or "left"
-  local api = vim.api
-  local fn = vim.fn
-  if str and str:len() == api.nvim_strwidth(str) then
-    if align == "left" then
-      return str:sub(1, col_limit)
-    elseif align == "right" then
-      return str:sub(#str - col_limit + 1)
-    end
+  if width(str) >= col_limit then
+    return str
   end
-  local short = fn.strcharpart(str, 0, col_limit)
+  align = align or "left"
+  local short = str
   if align == "left" then
-    if api.nvim_strwidth(short) > col_limit then
-      while api.nvim_strwidth(short) > col_limit do
-        short = fn.strcharpart(short, 0, fn.strchars(short) - 1)
-      end
+    while width(short) > col_limit do
+      short = slice(short, 0, -1)
     end
   elseif align == "right" then
-    if api.nvim_strwidth(short) > col_limit then
-      while api.nvim_strwidth(short) > col_limit do
-        short = fn.strcharpart(short, 1)
-      end
+    while width(short) > col_limit do
+      short = slice(short, 1)
     end
   end
   return short

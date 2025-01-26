@@ -153,10 +153,10 @@ local truncate_layer_keep_right = function(layer, skip_count, max_length)
         skipped = skipped + text_length
         item.text = ""
       else
-        item.text = utils.truncate_by_cell(item.text, text_length - remaining_to_skip)
+        item.text = utils.truncate_by_cell(item.text, text_length - remaining_to_skip, "right")
         text_length = width(item.text)
         if text_length + taken > max_length then
-          item.text = utils.truncate_by_cell(item.text, max_length - taken)
+          item.text = utils.truncate_by_cell(item.text, max_length - taken, "right")
           text_length = width(item.text)
         end
         table.insert(result, item)
@@ -165,7 +165,7 @@ local truncate_layer_keep_right = function(layer, skip_count, max_length)
       end
     elseif taken <= max_length then
       if text_length + taken > max_length then
-        item.text = utils.truncate_by_cell(item.text, max_length - taken)
+        item.text = utils.truncate_by_cell(item.text, max_length - taken, "right")
         text_length = width(item.text)
       end
       table.insert(result, item)
