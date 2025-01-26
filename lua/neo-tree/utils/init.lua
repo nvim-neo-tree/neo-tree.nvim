@@ -689,7 +689,7 @@ end
 ---@param path string The file to open
 ---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
-M.open_file = function(state, path, open_cmd, bufnr, relative)
+M.open_file = function(state, path, open_cmd, bufnr)
   open_cmd = open_cmd or "edit"
   -- If the file is already open, switch to it.
   bufnr = bufnr or M.find_buffer_by_name(path)
@@ -707,7 +707,8 @@ M.open_file = function(state, path, open_cmd, bufnr, relative)
   end
 
   if M.truthy(path) then
-    local escaped_path = M.escape_path_for_cmd(relative and vim.fn.fnamemodify(path, ':.') or path)
+    local relative = require("neo-tree").config.open_files_using_relative_paths
+    local escaped_path = M.escape_path_for_cmd(relative and vim.fn.fnamemodify(path, ":.") or path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true

@@ -730,7 +730,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     if type(open_file) == "function" then
       open_file(state, path, open_cmd, bufnr)
     else
-      utils.open_file(state, path, open_cmd, bufnr, require('neo-tree').config.open_file_with_relative)
+      utils.open_file(state, path, open_cmd, bufnr)
     end
     local extra = node.extra or {}
     local pos = extra.position or extra.end_position
