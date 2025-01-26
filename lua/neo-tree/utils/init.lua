@@ -1363,4 +1363,37 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+local strwidth = vim.api.nvim_strwidth
+local slice = vim.fn.slice
+-- Function below provided by @akinsho, modified by @pynappo
+-- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
+-- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough
+
+-- Truncate a string based on number of display columns/cells it occupies
+-- so that multibyte characters are not broken up mid-character
+---@param str string
+---@param col_limit number
+---@param align 'left'|'right'|nil
+---@return string shortened
+---@return number width
+M.truncate_by_cell = function(str, col_limit, align)
+  local width = strwidth(str)
+  if width <= col_limit then
+    return str, width
+  end
+  local short = str
+  if align == "right" then
+    short = slice(short, 1)
+    while strwidth(short) > col_limit do
+      short = slice(short, 1)
+    end
+  else
+    short = slice(short, 0, -1)
+    while strwidth(short) > col_limit do
+      short = slice(short, 0, -1)
+    end
+  end
+  return short, strwidth(short)
+end
+
 return M
