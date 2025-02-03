@@ -87,6 +87,6 @@ body:
         vim.g.mapleader = " "
         vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
         -- do anything else you need to do to reproduce the issue
-    render: Lua
+      render: Lua
     validations:
       required: true
