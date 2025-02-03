@@ -119,6 +119,8 @@ local function parse_resp(resp_node, id, state, parent_search_path)
     preview_range = resp_node.location.range
     symbol_node.extra.selection_range = parse_range(preview_range)
   end
+
+  preview_range = parse_range(preview_range)
   symbol_node.extra.position = preview_range.start
   symbol_node.extra.end_position = preview_range["end"]
   return symbol_node
