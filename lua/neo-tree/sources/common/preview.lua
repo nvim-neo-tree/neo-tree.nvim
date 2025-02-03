@@ -119,7 +119,6 @@ function Preview:preview(bufnr, start_pos, end_pos)
     return
   end
 
-  bufnr = bufnr or self.bufnr
   if not self.active then
     self:activate()
   end
@@ -148,6 +147,7 @@ function Preview:revert()
   end
 
   if self.config.use_float then
+    vim.bo[self.bufnr].bufhidden = "wipe"
     vim.api.nvim_win_close(self.winid, true)
     self.winid = nil
     return
@@ -248,6 +248,7 @@ function Preview:activate()
   end
   if self.config.use_float then
     self.bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(self.bufnr, "neo-tree floating preview buffer")
     self.truth = {}
   else
     self.truth = {
@@ -306,13 +307,16 @@ local get_bufsize = function(bufnr)
 end
 
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
----@param bufnr number The buffer number of the buffer to set.
+---@param bufnr number? The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
   self:clearHighlight()
-  if bufnr == self.bufnr then
+  if not bufnr or bufnr == self.bufnr then
     return
   end
   local eventignore = vim.opt.eventignore
+  local cleanup = function()
+    vim.opt.eventignore = eventignore
+  end
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
 
   if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
@@ -320,13 +324,21 @@ function Preview:setBuffer(bufnr)
     -- really long anyways
     vim.api.nvim_win_set_buf(self.winid, bufnr)
     try_load_image_nvim_buf(self.winid, bufnr)
-    goto finally
+    cleanup()
+    return
   end
 
   if self.config.use_float then
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+    end
     -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
-    vim.fn.bufload(bufnr)
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    -- vim.fn.bufload(bufnr)
+    local path = vim.api.nvim_buf_get_name(bufnr)
+    local ok, lines = pcall(vim.fn.readfile, path, "")
+    if not ok then
+      cleanup()
+      return
+    end
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     -- I'm not sure why float windows won't show numbers without this
@@ -334,11 +346,7 @@ function Preview:setBuffer(bufnr)
 
     -- code below is from mini.pick
     -- only starts treesitter parser if the filetype is matching
-    local ft = vim.bo[bufnr].filetype
-    local bufsize = get_bufsize(bufnr)
-    if bufsize > 1024 * 1024 or bufsize > 1000 * #lines then
-      goto finally
-    end
+    local ft = vim.filetype.match({ buf = bufnr })
     local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
     lang = has_lang and lang or ft
     local has_parser, parser = pcall(vim.treesitter.get_parser, self.bufnr, lang, { error = false })
@@ -347,15 +355,15 @@ function Preview:setBuffer(bufnr)
       has_parser = pcall(vim.treesitter.start, self.bufnr, lang)
     end
     if not has_parser then
-      vim.bo[self.bufnr].syntax = ft
+      vim.treesitter.stop(self.bufnr)
+      vim.bo[self.bufnr].syntax = ft or "OFF"
     end
   else
     vim.api.nvim_win_set_buf(self.winid, bufnr)
     self.bufnr = bufnr
   end
 
-  ::finally::
-  vim.opt.eventignore = eventignore
+  cleanup()
 end
 
 ---Move the cursor to the previewed position and center the screen.
