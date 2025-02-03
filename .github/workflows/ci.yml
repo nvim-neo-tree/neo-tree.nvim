@@ -24,7 +24,7 @@ jobs:
   plenary-tests:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: date +%F > todays-date
       - name: Restore cache for today's nightly.
         uses: actions/cache@v2
@@ -36,9 +36,9 @@ jobs:
         run: |
           test -d build || {
             mkdir -p build
-            wget https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-            chmod +x nvim.appimage
-            mv nvim.appimage ./build/nvim
+            wget https://github.com/neovim/neovim/releases/download/nightly/nvim-linux-x86_64.appimage
+            chmod +x nvim-linux-x86_64.appimage
+            mv nvim-linux-x86_64.appimage ./build/nvim
           }
 
       # - name: Get Luver Cache Key
