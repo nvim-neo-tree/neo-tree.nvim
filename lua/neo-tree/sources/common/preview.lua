@@ -298,12 +298,47 @@ local function try_load_image_nvim_buf(winid, bufnr)
   return true
 end
 
----@param bufnr number The buffer number of the buffer to set.
----@return number bytecount The number of bytes in the buffer
-local get_bufsize = function(bufnr)
-  return vim.api.nvim_buf_call(bufnr, function()
-    return vim.fn.line2byte(vim.fn.line("$") + 1)
-  end)
+-- ---@param bufnr number The buffer number of the buffer to set.
+-- ---@return number bytecount The number of bytes in the buffer
+-- local get_bufsize = function(bufnr)
+--   return vim.api.nvim_buf_call(bufnr, function()
+--     return vim.fn.line2byte(vim.fn.line("$") + 1)
+--   end)
+-- end
+---@return boolean ok
+local function load_buftext_into_floating_preview(bufnr, preview)
+  local path = vim.api.nvim_buf_get_name(bufnr)
+  local ok, lines
+  if vim.api.nvim_buf_is_loaded(bufnr) and not vim.bo[bufnr].modified then
+    lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    ok = true
+  else
+    ok, lines = pcall(vim.fn.readfile, path, "")
+  end
+  if not ok then
+    return false
+  end
+  vim.api.nvim_buf_set_lines(preview.bufnr, 0, -1, false, lines)
+  vim.api.nvim_win_set_buf(preview.winid, preview.bufnr)
+  -- I'm not sure why float windows won't show numbers without this
+  vim.wo[preview.winid].number = true
+
+  -- code below is from mini.pick
+  -- only starts treesitter parser if the filetype is matching
+  local ft = vim.filetype.match({ buf = bufnr })
+  local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
+  lang = has_lang and lang or ft
+  local has_parser, parser =
+    pcall(vim.treesitter.get_parser, preview.bufnr, lang, { error = false })
+  has_parser = has_parser and parser ~= nil
+  if has_parser then
+    has_parser = pcall(vim.treesitter.start, preview.bufnr, lang)
+  end
+  if not has_parser then
+    vim.treesitter.stop(preview.bufnr)
+    vim.bo[preview.bufnr].syntax = ft or "OFF"
+  end
+  return true
 end
 
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
@@ -329,35 +364,9 @@ function Preview:setBuffer(bufnr)
   end
 
   if self.config.use_float then
-    if not vim.api.nvim_buf_is_valid(bufnr) then
-    end
     -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
     -- vim.fn.bufload(bufnr)
-    local path = vim.api.nvim_buf_get_name(bufnr)
-    local ok, lines = pcall(vim.fn.readfile, path, "")
-    if not ok then
-      cleanup()
-      return
-    end
-    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
-    vim.api.nvim_win_set_buf(self.winid, self.bufnr)
-    -- I'm not sure why float windows won't show numbers without this
-    vim.wo[self.winid].number = true
-
-    -- code below is from mini.pick
-    -- only starts treesitter parser if the filetype is matching
-    local ft = vim.filetype.match({ buf = bufnr })
-    local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
-    lang = has_lang and lang or ft
-    local has_parser, parser = pcall(vim.treesitter.get_parser, self.bufnr, lang, { error = false })
-    has_parser = has_parser and parser ~= nil
-    if has_parser then
-      has_parser = pcall(vim.treesitter.start, self.bufnr, lang)
-    end
-    if not has_parser then
-      vim.treesitter.stop(self.bufnr)
-      vim.bo[self.bufnr].syntax = ft or "OFF"
-    end
+    load_buftext_into_floating_preview(bufnr, self)
   else
     vim.api.nvim_win_set_buf(self.winid, bufnr)
     self.bufnr = bufnr
