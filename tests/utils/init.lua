@@ -93,13 +93,13 @@ end
 ---@param linenr_end? integer (1-indexed, inclusive)
 function mod.assert_buf_lines(bufnr, lines, linenr_start, linenr_end)
   mod.eq(
+    lines,
     vim.api.nvim_buf_get_lines(
       bufnr,
       linenr_start and linenr_start - 1 or 0,
       linenr_end or -1,
       false
-    ),
-    lines
+    )
   )
 end
 

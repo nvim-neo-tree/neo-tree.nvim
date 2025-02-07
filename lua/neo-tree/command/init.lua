@@ -129,8 +129,6 @@ M.execute = function(args)
       args.dir = args.dir:sub(1, -2)
     end
     path_changed = state.path ~= args.dir
-  else
-    args.dir = state.path
   end
 
   -- Handle setting git ref
@@ -156,11 +154,13 @@ M.execute = function(args)
   --  manager.close(args.source)
   --end
   if do_reveal then
-    args.reveal_file = utils.normalize_path(args.reveal_file)
     handle_reveal(args, state)
-  else
-    do_show_or_focus(args, state, force_navigate)
+    return
   end
+  if not args.dir then
+    args.dir = state.path
+  end
+  do_show_or_focus(args, state, force_navigate)
 end
 
 ---Parses and executes the command line. Use execute(args) instead.
@@ -207,30 +207,38 @@ do_show_or_focus = function(args, state, force_navigate)
 end
 
 handle_reveal = function(args, state)
+  args.reveal_file = utils.normalize_path(args.reveal_file)
   -- Deal with cwd if we need to
-  local cwd = state.path
-  local path = args.reveal_file
-  if cwd == nil then
-    cwd = manager.get_cwd(state)
-  end
-  if args.reveal_force_cwd and not utils.is_subpath(cwd, path) then
-    args.dir, _ = utils.split_path(path)
+  local cwd = args.dir or state.path or manager.get_cwd(state)
+  if utils.is_subpath(cwd, args.reveal_file) then
+    args.dir = cwd
     do_show_or_focus(args, state, true)
     return
-  elseif not utils.is_subpath(cwd, path) then
-    -- force was not specified, so we need to ask the user
-    cwd, _ = utils.split_path(path)
-    inputs.confirm("File not in cwd. Change cwd to " .. cwd .. "?", function(response)
-      if response == true then
-        args.dir = cwd
-      else
-        args.reveal_file = nil
-      end
-      do_show_or_focus(args, state, true)
-    end)
-    return
-  else
-    do_show_or_focus(args, state, true)
   end
+
+  local reveal_file_parent, _ = utils.split_path(args.reveal_file) --[[@as string]]
+  if args.reveal_force_cwd then
+    args.dir = reveal_file_parent
+    do_show_or_focus(args, state, true)
+    return
+  end
+
+  -- if dir doesn't have the reveal_file, ignore the reveal_file
+  if args.dir then
+    args.reveal_file = nil
+    do_show_or_focus(args, state, true)
+    return
+  end
+
+  -- force was not specified and the file does not belong to cwd, so we need to ask the user
+  inputs.confirm("File not in cwd. Change cwd to " .. reveal_file_parent .. "?", function(response)
+    if response == true then
+      args.dir = reveal_file_parent
+    else
+      args.reveal_file = nil
+    end
+    do_show_or_focus(args, state, true)
+  end)
 end
+
 return M

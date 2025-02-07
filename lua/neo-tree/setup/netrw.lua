@@ -1,17 +1,14 @@
+local nt = require("neo-tree")
 local utils = require("neo-tree.utils")
-local log = require("neo-tree.log")
-local manager = require("neo-tree.sources.manager")
-local command = require("neo-tree.command")
 local M = {}
 
 local get_position = function(source_name)
-  local nt = require("neo-tree")
   local pos = utils.get_value(nt.config, source_name .. ".window.position", "left", true)
   return pos
 end
 
-M.get_hijack_netrw_behavior = function()
-  local nt = require("neo-tree")
+M.get_hijack_behavior = function()
+  nt.ensure_config()
   local option = "filesystem.hijack_netrw_behavior"
   local hijack_behavior = utils.get_value(nt.config, option, "open_default", true)
   if hijack_behavior == "disabled" then
@@ -21,13 +18,16 @@ M.get_hijack_netrw_behavior = function()
   elseif hijack_behavior == "open_current" then
     return hijack_behavior
   else
-    log.error("Invalid value for " .. option .. ": " .. hijack_behavior)
+    require("neo-tree.log").error("Invalid value for " .. option .. ": " .. hijack_behavior)
     return "disabled"
   end
 end
 
+---@return boolean hijacked Whether the hijack was successful
 M.hijack = function()
-  local hijack_behavior = M.get_hijack_netrw_behavior()
+  local manager = require("neo-tree.sources.manager")
+  local log = require("neo-tree.log")
+  local hijack_behavior = M.get_hijack_behavior()
   if hijack_behavior == "disabled" then
     return false
   end

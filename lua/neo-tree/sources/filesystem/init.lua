@@ -64,13 +64,13 @@ local follow_internal = function(callback, force_show, async)
 
   log.debug("follow file: ", path_to_reveal)
   local show_only_explicitly_opened = function()
-    state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+    state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
     local expanded_nodes = renderer.get_expanded_nodes(state.tree)
     local state_changed = false
     for _, id in ipairs(expanded_nodes) do
-      if not state.explicitly_opened_directories[id] then
+      if not state.explicitly_opened_nodes[id] then
         if path_to_reveal:sub(1, #id) == id then
-          state.explicitly_opened_directories[id] = state.follow_current_file.leave_dirs_open
+          state.explicitly_opened_nodes[id] = state.follow_current_file.leave_dirs_open
         else
           local node = state.tree:get_node(id)
           if node then
@@ -394,20 +394,20 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
   if node.type ~= "directory" then
     return
   end
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+  state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
   if node.loaded == false then
     local id = node:get_id()
-    state.explicitly_opened_directories[id] = true
+    state.explicitly_opened_nodes[id] = true
     renderer.position.set(state, nil)
     fs_scan.get_items(state, id, path_to_reveal, callback, false, recursive)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
       updated = node:collapse()
-      state.explicitly_opened_directories[node:get_id()] = false
+      state.explicitly_opened_nodes[node:get_id()] = false
     else
       updated = node:expand()
-      state.explicitly_opened_directories[node:get_id()] = true
+      state.explicitly_opened_nodes[node:get_id()] = true
     end
     if updated and not skip_redraw then
       renderer.redraw(state)

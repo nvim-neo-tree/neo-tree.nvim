@@ -1,6 +1,4 @@
-local vim = vim
 local log = require("neo-tree.log")
-local filesize = require("neo-tree.utils.filesize.filesize")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -215,9 +213,69 @@ end
 ---@param size any
 ---@return string
 M.human_size = function(size)
-  local human = filesize(size, { output = "string" })
+  local human = require("neo-tree.utils.filesize.filesize")(size, { output = "string" })
   ---@cast human string
   return human
+end
+
+---Converts a Unix timestamp into a human readable relative timestamps
+---@param seconds integer
+---@return string
+M.relative_date = function(seconds)
+  local now = os.time()
+  local diff = now - seconds
+
+  local function format(value, unit)
+    return value .. " " .. unit .. (value == 1 and "" or "s") .. " ago"
+  end
+
+  if diff < 60 then
+    return "Just now"
+  elseif diff < 3600 then
+    local minutes = math.floor(diff / 60)
+    return format(minutes, "minute")
+  elseif diff < 86400 then
+    local hours = math.floor(diff / 3600)
+    return format(hours, "hour")
+  elseif diff < 86400 * 30 then
+    local days = math.floor(diff / 86400)
+    return format(days, "day")
+  elseif diff < 86400 * 365 then
+    local months = math.floor(diff / (86400 * 30))
+    return format(months, "month")
+  end
+  local years = math.floor(diff / (86400 * 365))
+  return format(years, "year")
+end
+
+---@alias neotree.DateFormat string|"relative"|fun(integer):string
+
+---Formats dates. Supports relative dates as a preset, as well as custom formatting using arbitrary functions.
+---Used to let users customize date formatting.
+---
+---If `format` == "relative", it will use utils.relative_date to format.
+---If `format` is a function, it should return a string for neo-tree to display.
+---Else, `format` is presumed to be a format string for os.date().
+---
+---@see os.date()
+---@param format neotree.DateFormat How to format `seconds` into a date string.
+---@param seconds integer? Seconds since the platform epoch (Unix or otherwise). If nil, will be the current time.
+---@return string formatted_date A string that represents the date.
+M.date = function(format, seconds)
+  if not seconds then
+    seconds = os.time()
+  end
+  if format == "relative" then
+    return M.relative_date(seconds)
+  end
+  if type(format) == "function" then
+    return format(seconds)
+  end
+  local formatted_date = os.date(format, seconds)
+  if type(formatted_date) ~= "string" then
+    error('[neo-tree]: the format should not make os.date return a table (e.g. not "*t")')
+  end
+  return formatted_date
 end
 
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
@@ -707,7 +765,8 @@ M.open_file = function(state, path, open_cmd, bufnr)
   end
 
   if M.truthy(path) then
-    local escaped_path = M.escape_path_for_cmd(path)
+    local relative = require("neo-tree").config.open_files_using_relative_paths
+    local escaped_path = M.escape_path_for_cmd(relative and vim.fn.fnamemodify(path, ":.") or path)
     local bufnr_or_path = bufnr or escaped_path
     local events = require("neo-tree.events")
     local result = true
@@ -802,7 +861,7 @@ M.normalize_path = function(path)
     path = path:sub(1, 1):upper() .. path:sub(2)
     -- Turn mixed forward and back slashes into all forward slashes
     -- using NeoVim's logic
-    path = vim.fs.normalize(path)
+    path = vim.fs.normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
@@ -810,18 +869,29 @@ M.normalize_path = function(path)
 end
 
 ---Check if a path is a subpath of another.
---@param base string The base path.
---@param path string The path to check is a subpath.
---@return boolean boolean True if it is a subpath, false otherwise.
+---@param base string The base path.
+---@param path string The path to check is a subpath.
+---@return boolean boolean True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
   elseif base == path then
     return true
   end
+
   base = M.normalize_path(base)
   path = M.normalize_path(path)
-  return string.sub(path, 1, string.len(base)) == base
+  if path:sub(1, #base) == base then
+    local base_parts = M.split(base, M.path_separator)
+    local path_parts = M.split(path, M.path_separator)
+    for i, part in ipairs(base_parts) do
+      if path_parts[i] ~= part then
+        return false
+      end
+    end
+    return true
+  end
+  return false
 end
 
 ---The file system path separator for the current platform.
@@ -1291,6 +1361,39 @@ M.index_by_path = function(tbl, key)
   end
 
   return value
+end
+
+local strwidth = vim.api.nvim_strwidth
+local slice = vim.fn.slice
+-- Function below provided by @akinsho, modified by @pynappo
+-- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
+-- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough
+
+-- Truncate a string based on number of display columns/cells it occupies
+-- so that multibyte characters are not broken up mid-character
+---@param str string
+---@param col_limit number
+---@param align 'left'|'right'|nil
+---@return string shortened
+---@return number width
+M.truncate_by_cell = function(str, col_limit, align)
+  local width = strwidth(str)
+  if width <= col_limit then
+    return str, width
+  end
+  local short = str
+  if align == "right" then
+    short = slice(short, 1)
+    while strwidth(short) > col_limit do
+      short = slice(short, 1)
+    end
+  else
+    short = slice(short, 0, -1)
+    while strwidth(short) > col_limit do
+      short = slice(short, 0, -1)
+    end
+  end
+  return short, strwidth(short)
 end
 
 return M

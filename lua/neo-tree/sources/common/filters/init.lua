@@ -119,6 +119,9 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
   if search_as_you_type then
     popup_msg = "Filter:"
   end
+  if state.config.title then
+    popup_msg = state.config.title
+  end
 
   local width = vim.fn.winwidth(0) - 2
   local row = height - 3
