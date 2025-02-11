@@ -102,6 +102,18 @@ Press `?` in the Neo-tree window to view the list of mappings.
 
 ```lua
 return {
+  -- If you want neo-tree's file operations to work with LSP (updating imports, etc.), you can use a plugin like
+  -- https://github.com/antosha417/nvim-lsp-file-operations:
+  -- {
+  --   "antosha417/nvim-lsp-file-operations",
+  --   dependencies = {
+  --     "nvim-lua/plenary.nvim",
+  --     "nvim-neo-tree/neo-tree.nvim",
+  --   },
+  --   config = function()
+  --     require("lsp-file-operations").setup()
+  --   end,
+  -- },
   {
     "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
@@ -453,18 +465,6 @@ return {
       vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
     end,
   },
-  -- If you want neo-tree's file operations to work with LSP, you can use a plugin like
-  -- https://github.com/antosha417/nvim-lsp-file-operations:
-  -- {
-  --   "antosha417/nvim-lsp-file-operations",
-  --   dependencies = {
-  --     "nvim-lua/plenary.nvim",
-  --     "nvim-neo-tree/neo-tree.nvim",
-  --   },
-  --   config = function()
-  --     require("lsp-file-operations").setup()
-  --   end,
-  -- },
 }
 ```
 </details>
