@@ -22,6 +22,7 @@ M.popup_options = function(title, min_width, override_options)
   if popup_last_col >= vim.o.columns then
     col = vim.o.columns - popup_last_col
   end
+  ---@type nui_popup_options
   local popup_options = {
     ns_id = highlights.ns_id,
     relative = "cursor",
@@ -34,6 +35,7 @@ M.popup_options = function(title, min_width, override_options)
       text = {
         top = popup_border_text,
       },
+      ---@diagnostic disable-next-line: assign-type-mismatch
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,
     },
