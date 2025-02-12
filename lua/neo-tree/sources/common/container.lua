@@ -5,12 +5,13 @@ local log = require("neo-tree.log")
 
 local M = {}
 
+local strwidth = vim.api.nvim_strwidth
 local calc_rendered_width = function(rendered_item)
   local width = 0
 
   for _, item in ipairs(rendered_item) do
     if item.text then
-      width = width + vim.fn.strchars(item.text)
+      width = width + strwidth(item.text)
     end
   end
 
@@ -53,7 +54,7 @@ local render_content = function(config, node, state, context)
   local add_padding = function(rendered_item, should_pad)
     for _, data in ipairs(rendered_item) do
       if data.text then
-        local padding = (should_pad and #data.text and data.text:sub(1, 1) ~= " ") and " " or ""
+        local padding = (should_pad and #data.text > 0 and data.text:sub(1, 1) ~= " ") and " " or ""
         data.text = padding .. data.text
         should_pad = data.text:sub(#data.text) ~= " "
       end
@@ -85,7 +86,7 @@ local render_content = function(config, node, state, context)
         vim.list_extend(zindex_rendered[align], rendered_item)
         rendered_width = rendered_width + calc_rendered_width(rendered_item)
       end
-        ::continue::
+      ::continue::
     end
 
     max_width = math.max(max_width, rendered_width)
@@ -97,35 +98,36 @@ local render_content = function(config, node, state, context)
   return context
 end
 
+local truncate = utils.truncate_by_cell
+
 ---Takes a list of rendered components and truncates them to fit the container width
 ---@param layer table The list of rendered components.
 ---@param skip_count number The number of characters to skip from the begining/left.
----@param max_length number The maximum number of characters to return.
-local truncate_layer_keep_left = function(layer, skip_count, max_length)
+---@param max_width number The maximum number of characters to return.
+local truncate_layer_keep_left = function(layer, skip_count, max_width)
   local result = {}
   local taken = 0
   local skipped = 0
   for _, item in ipairs(layer) do
     local remaining_to_skip = skip_count - skipped
+    local text_width = strwidth(item.text)
     if remaining_to_skip > 0 then
-      if #item.text <= remaining_to_skip then
-        skipped = skipped + vim.fn.strchars(item.text)
+      if text_width <= remaining_to_skip then
+        skipped = skipped + text_width
         item.text = ""
       else
-        item.text = item.text:sub(remaining_to_skip)
-        if #item.text + taken > max_length then
-          item.text = item.text:sub(1, max_length - taken)
+        item.text, text_width = truncate(item.text, text_width - remaining_to_skip, "right")
+        if text_width > max_width - taken then
+          item.text, text_width = truncate(item.text, max_width - taken)
         end
         table.insert(result, item)
-        taken = taken + #item.text
+        taken = taken + text_width
         skipped = skipped + remaining_to_skip
       end
-    elseif taken <= max_length then
-      if #item.text + taken > max_length then
-        item.text = item.text:sub(1, max_length - taken)
-      end
+    elseif taken <= max_width then
+      item.text, text_width = truncate(item.text, max_width - taken)
       table.insert(result, item)
-      taken = taken + vim.fn.strchars(item.text)
+      taken = taken + text_width
     end
   end
   return result
@@ -134,39 +136,34 @@ end
 ---Takes a list of rendered components and truncates them to fit the container width
 ---@param layer table The list of rendered components.
 ---@param skip_count number The number of characters to skip from the end/right.
----@param max_length number The maximum number of characters to return.
-local truncate_layer_keep_right = function(layer, skip_count, max_length)
+---@param max_width number The maximum number of characters to return.
+local truncate_layer_keep_right = function(layer, skip_count, max_width)
   local result = {}
   local taken = 0
   local skipped = 0
-  local i = #layer
-  while i > 0 do
+  for i = #layer, 1, -1 do
     local item = layer[i]
-    i = i - 1
-    local text_length = vim.fn.strchars(item.text)
+    local text_width = strwidth(item.text)
     local remaining_to_skip = skip_count - skipped
     if remaining_to_skip > 0 then
-      if text_length <= remaining_to_skip then
-        skipped = skipped + text_length
+      if text_width <= remaining_to_skip then
+        skipped = skipped + text_width
         item.text = ""
       else
-        item.text = vim.fn.strcharpart(item.text, 0, text_length - remaining_to_skip)
-        text_length = vim.fn.strchars(item.text)
-        if text_length + taken > max_length then
-          item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
-          text_length = vim.fn.strchars(item.text)
+        item.text, text_width = truncate(item.text, text_width - remaining_to_skip)
+        if text_width > max_width - taken then
+          item.text, text_width = truncate(item.text, max_width - taken, "right")
         end
         table.insert(result, item)
-        taken = taken + text_length
+        taken = taken + text_width
         skipped = skipped + remaining_to_skip
       end
-    elseif taken <= max_length then
-      if text_length + taken > max_length then
-        item.text = vim.fn.strcharpart(item.text, text_length - (max_length - taken))
-        text_length = vim.fn.strchars(item.text)
+    elseif taken <= max_width then
+      if text_width > max_width - taken then
+        item.text, text_width = truncate(item.text, max_width - taken, "right")
       end
       table.insert(result, item)
-      taken = taken + text_length
+      taken = taken + text_width
     end
   end
   return result

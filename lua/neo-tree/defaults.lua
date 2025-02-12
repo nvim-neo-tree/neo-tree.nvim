@@ -34,6 +34,7 @@ local config = {
   log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
+  open_files_using_relative_paths = false,
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
@@ -392,7 +393,11 @@ local config = {
       ["<cr>"] = "open",
       -- ["<cr>"] = { "open", config = { expand_nested_files = true } }, -- expand nested file takes precedence
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-      ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = false } },
+      ["P"] = { "toggle_preview", config = {
+        use_float = true,
+        use_image_nvim = false,
+        -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
+      } },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
       ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
       ["l"] = "focus_preview",
@@ -463,6 +468,7 @@ local config = {
         ["<C-n>"] = "move_cursor_down",
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
+        ["<esc>"] = "close"
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
