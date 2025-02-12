@@ -1391,6 +1391,8 @@ function M.spairs(t, sorter)
     end
   end,
     t
+end
+
 local strwidth = vim.api.nvim_strwidth
 local slice = vim.fn.slice
 
