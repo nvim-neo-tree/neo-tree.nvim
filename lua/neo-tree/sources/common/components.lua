@@ -16,6 +16,34 @@ local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local log = require("neo-tree.log")
 
+---@alias neotree.Component.Common._Key
+---|"bufnr"
+---|"clipboard"
+---|"container"
+---|"current_filter"
+---|"diagnostics"
+---|"git_status"
+---|"filtered_by"
+---|"icon"
+---|"modified"
+---|"name"
+---|"indent"
+---|"file_size"
+---|"last_modified"
+---|"created"
+---|"symlink_target"
+---|"type"
+
+---@class neotree.Component.Common Use the neotree.Component.Common.* types to get more specific types.
+---@field [1] neotree.Component.Common._Key
+
+local a = {}
+
+---@class neotree.Render.Node
+---@field text string The text to display.
+---@field highlight string The highlight for the text.
+
+---@type table<neotree.Component.Common._Key,fun(config, node, state):(neotree.Render.Node|neotree.Render.Node[])>
 local M = {}
 
 local make_two_char = function(symbol)
@@ -26,16 +54,19 @@ local make_two_char = function(symbol)
   end
 end
 
----@class neotree.Config.Component.Base.Highlight
+---@class (exact) neotree.Config.Component.Base.Highlight
 ---@field highlight string?
 
----@class neotree.Config.Component.Common.Bufnr : neotree.Config.Component.Base.Highlight
+---@class (exact) neotree.Config.Component.Common.Bufnr : neotree.Config.Component.Base.Highlight
+
+---@class (exact) neotree.Component.Common.Bufnr : neotree.Config.Component.Common.Bufnr
+---@field [1] "bufnr"
 
 -- Config fields below:
 -- only works in the buffers component, but it's here so we don't have to defined
 -- multple renderers.
 ---@param config neotree.Config.Component.Common.Bufnr
-M.bufnr = function(config, node, state)
+M.bufnr = function(config, node, _)
   local highlight = config.highlight or highlights.BUFFER_NUMBER
   local bufnr = node.extra and node.extra.bufnr
   if not bufnr then
@@ -47,9 +78,12 @@ M.bufnr = function(config, node, state)
   }
 end
 
----@class neotree.Config.Component.Common.Clipboard : neotree.Config.Component.Base.Highlight
+---@class (exact) neotree.Config.Component.Common.Clipboard : neotree.Config.Component.Base.Highlight
+
+---@class (exact) neotree.Component.Common.Clipboard : neotree.Config.Component.Common.Clipboard
+---@field [1] "clipboard"
+
 ---@param config neotree.Config.Component.Common.Clipboard
----@param config neotree.Node
 M.clipboard = function(config, node, state)
   local clipboard = state.clipboard or {}
   local clipboard_state = clipboard[node:get_id()]
@@ -64,7 +98,13 @@ end
 
 M.container = container.render
 
-M.current_filter = function(config, node, state)
+---@class (exact) neotree.Config.Component.Common.CurrentFilter : neotree.Config.Component.Base.Highlight
+
+---@class (exact) neotree.Component.Common.CurrentFilter : neotree.Config.Component.Common.CurrentFilter
+---@field [1] "current_filter"
+
+---@param config neotree.Config.Component.Common.CurrentFilter
+M.current_filter = function(config, node, _)
   local filter = node.search_pattern or ""
   if filter == "" then
     return {}
@@ -124,6 +164,16 @@ local function get_defined_sign(severity)
   return defined
 end
 
+---@class (exact) neotree.Config.Component.Common.Diagnostics : neotree.Config.Component.Base.Highlight
+---@field errors_only boolean?
+---@field hide_when_expanded boolean?
+---@field symbols table<string, string>?
+---@field highlights table<string, string>?
+
+---@class (exact) neotree.Component.Common.Diagnostics : neotree.Config.Component.Common.Diagnostics
+---@field [1] "diagnostics"
+
+---@param config neotree.Config.Component.Common.Diagnostics
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = utils.index_by_path(diag, node:get_id())
@@ -136,6 +186,7 @@ M.diagnostics = function(config, node, state)
   if config.errors_only and diag_state.severity_number > 1 then
     return {}
   end
+  ---@type string
   local severity = diag_state.severity_string
   local defined = get_defined_sign(severity)
 
@@ -163,6 +214,14 @@ M.diagnostics = function(config, node, state)
   end
 end
 
+---@class (exact) neotree.Config.Component.Common.GitStatus : neotree.Config.Component.Base.Highlight
+---@field hide_when_expanded boolean?
+---@field symbols table<string, string>?
+
+---@class (exact) neotree.Component.Common.GitStatus : neotree.Config.Component.Common.GitStatus
+---@field [1] "git_status"
+
+---@param config neotree.Config.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
   if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
@@ -183,6 +242,7 @@ M.git_status = function(config, node, state)
   local symbols = config.symbols or {}
   local change_symbol
   local change_highlt = highlights.FILE_NAME
+  ---@type string?
   local status_symbol = symbols.staged
   local status_highlt = highlights.GIT_STAGED
   if node.type == "directory" and git_status:len() == 1 then
@@ -266,7 +326,10 @@ M.git_status = function(config, node, state)
   end
 end
 
-M.filtered_by = function(config, node, state)
+---@class neotree.Component.Common.FilteredBy
+---@field [1] "filtered_by"
+
+M.filtered_by = function(_, node, _)
   local result = {}
   if type(node.filtered_by) == "table" then
     local fby = node.filtered_by
@@ -301,6 +364,18 @@ M.filtered_by = function(config, node, state)
   return result
 end
 
+---@class (exact) neotree.Config.Component.Common.Icon : neotree.Config.Component.Base.Highlight
+---@field default string The default icon for a node.
+---@field folder_empty string The string to display to represent an empty folder.
+---@field folder_empty_open string The icon to display to represent an empty but open folder.
+---@field folder_open string The icon to display for an open folder.
+---@field folder_closed string The icon to display for a closed folder.
+---@field provider fun(icon, node, state):(neotree.Render.Node|neotree.Render.Node[])
+
+---@class (exact) neotree.Component.Common.Icon : neotree.Config.Component.Common.Icon
+---@field [1] "icon"
+
+---@param config neotree.Config.Component.Common.Icon
 M.icon = function(config, node, state)
   -- calculate default icon
   local icon =
@@ -329,6 +404,13 @@ M.icon = function(config, node, state)
   return icon
 end
 
+---@class (exact) neotree.Config.Component.Common.Modified : neotree.Config.Component.Base.Highlight
+---@field symbol string?
+
+---@class (exact) neotree.Component.Common.Modified : neotree.Config.Component.Common.Modified
+---@field [1] "modified"
+
+---@param config neotree.Config.Component.Common.Modified
 M.modified = function(config, node, state)
   local opened_buffers = state.opened_buffers or {}
   local buf_info = utils.index_by_path(opened_buffers, node.path)
@@ -343,6 +425,16 @@ M.modified = function(config, node, state)
   end
 end
 
+---@class (exact) neotree.Config.Component.Common.Name : neotree.Config.Component.Base.Highlight
+---@field trailing_slash boolean?
+---@field use_git_status_colors boolean?
+---@field highlight_opened_files boolean?
+---@field right_padding integer?
+
+---@class (exact) neotree.Component.Common.Name : neotree.Config.Component.Common.Name
+---@field [1] "name"
+
+---@param config neotree.Config.Component.Common.Name
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME
   local text = node.name
@@ -391,6 +483,21 @@ M.name = function(config, node, state)
   }
 end
 
+---@class (exact) neotree.Config.Component.Common.Indent : neotree.Config.Component.Base.Highlight
+---@field expander_collapsed string?
+---@field expander_expanded string?
+---@field expander_highlight boolean?
+---@field indent_marker string?
+---@field indent_size integer?
+---@field last_indent_marker string?
+---@field padding integer?
+---@field with_expanders boolean?
+---@field with_markers integer?
+
+---@class (exact) neotree.Component.Common.Indent : neotree.Config.Component.Common.Indent
+---@field [1] "indent"
+
+---@param config neotree.Config.Component.Common.Indent
 M.indent = function(config, node, state)
   if not state.skip_marker_at_level then
     state.skip_marker_at_level = {}
@@ -479,11 +586,20 @@ local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
+    ---diagnostic here is wrong, printf has arbitrary args.
+    ---@diagnostic disable-next-line: redundant-parameter
     return vim.fn.printf("%" .. size .. "s %s  ", truncate_string(label, size), icon)
   end
   return vim.fn.printf("%" .. size .. "s  ", truncate_string(label, size))
 end
 
+---@class (exact) neotree.Config.Component.Common.FileSize : neotree.Config.Component.Base.Highlight
+---@field width integer?
+
+---@class (exact) neotree.Component.Common.FileSize : neotree.Config.Component.Common.FileSize
+---@field [1] "file_size"
+
+---@param config neotree.Config.Component.Common.FileSize
 M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
@@ -511,6 +627,11 @@ M.file_size = function(config, node, state)
   }
 end
 
+---@class (exact) neotree.Config.Component.Common.Time : neotree.Config.Component.Base.Highlight
+---@field format neotree.DateFormat
+---@field width integer?
+
+---@param config neotree.Config.Component.Common.Time
 local file_time = function(config, node, state, stat_field)
   -- Root node gets column labels
   if node:get_depth() == 1 then
@@ -537,15 +658,30 @@ local file_time = function(config, node, state, stat_field)
   }
 end
 
+---@class (exact) neotree.Component.Common.LastModified : neotree.Config.Component.Common.Time
+---@field [1] "last_modified"
+
+---@param config neotree.Config.Component.Common.Time
 M.last_modified = function(config, node, state)
   return file_time(config, node, state, "mtime")
 end
 
+---@class (exact) neotree.Component.Common.Created : neotree.Config.Component.Common.Time
+---@field [1] "created"
+
+---@param config neotree.Config.Component.Common.Time
 M.created = function(config, node, state)
   return file_time(config, node, state, "birthtime")
 end
 
-M.symlink_target = function(config, node, state)
+---@class (exact) neotree.Config.Component.Common.SymlinkTarget : neotree.Config.Component.Base.Highlight
+---@field text_format string
+
+---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Config.Component.Common.SymlinkTarget
+---@field [1] "symlink_target"
+
+---@param config neotree.Config.Component.Common.SymlinkTarget
+M.symlink_target = function(config, node, _)
   if node.is_link then
     return {
       text = string.format(config.text_format, node.link_to),
@@ -556,6 +692,14 @@ M.symlink_target = function(config, node, state)
   end
 end
 
+---@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component.Base.Highlight
+---@field format neotree.DateFormat
+---@field width integer?
+
+---@class (exact) neotree.Component.Common.Type : neotree.Config.Component.Common.Type
+---@field [1] "type"
+
+---@param config neotree.Config.Component.Common.Type
 M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels
