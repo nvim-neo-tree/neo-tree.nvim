@@ -183,8 +183,8 @@
 ---@field use_default_mappings boolean?
 ---@field source_selector neotree.Config.SourceSelector?
 ---@field event_handlers table[]?
----@field default_component_configs neotree.Config.Components?
----@field renderers neotree.Config.Renderers[]?
+---@field default_component_configs neotree.Config.ComponentDefaults?
+---@field renderers neotree.Config.Renderers?
 ---@field nesting_rules table[]? -- TODO, merge rework
 ---@field commands table<string, fun()>?
 ---@field window neotree.Config.Window?

@@ -25,8 +25,16 @@ local make_two_char = function(symbol)
     return symbol
   end
 end
+
+---@class neotree.Config.Component.Base.Highlight
+---@field highlight string?
+
+---@class neotree.Config.Component.Common.Bufnr : neotree.Config.Component.Base.Highlight
+
+-- Config fields below:
 -- only works in the buffers component, but it's here so we don't have to defined
 -- multple renderers.
+---@param config neotree.Config.Component.Common.Bufnr
 M.bufnr = function(config, node, state)
   local highlight = config.highlight or highlights.BUFFER_NUMBER
   local bufnr = node.extra and node.extra.bufnr
@@ -39,6 +47,9 @@ M.bufnr = function(config, node, state)
   }
 end
 
+---@class neotree.Config.Component.Common.Clipboard : neotree.Config.Component.Base.Highlight
+---@param config neotree.Config.Component.Common.Clipboard
+---@param config neotree.Node
 M.clipboard = function(config, node, state)
   local clipboard = state.clipboard or {}
   local clipboard_state = clipboard[node:get_id()]
