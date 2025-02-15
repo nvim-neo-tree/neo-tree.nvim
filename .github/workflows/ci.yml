@@ -22,23 +22,34 @@ jobs:
           args: --color always --check lua/
 
   plenary-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            rev: nightly/nvim-linux-x86_64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.7.2/nvim-linux64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.8.3/nvim-linux64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.9.5/nvim-linux64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.10.4/nvim-linux-x86_64.tar.gz
     steps:
       - uses: actions/checkout@v4
       - run: date +%F > todays-date
       - name: Restore cache for today's nightly.
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-appimage-${{ hashFiles('todays-date') }}
-
+          key: ${{ runner.os }}-${{ matrix.rev }}-${{ hashFiles('todays-date') }}
       - name: Prepare
         run: |
           test -d build || {
             mkdir -p build
-            wget https://github.com/neovim/neovim/releases/download/nightly/nvim-linux-x86_64.appimage
-            chmod +x nvim-linux-x86_64.appimage
-            mv nvim-linux-x86_64.appimage ./build/nvim
+            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/build"
           }
 
       # - name: Get Luver Cache Key
