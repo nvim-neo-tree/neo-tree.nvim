@@ -3,18 +3,44 @@ on:
   pull_request: ~
   push:
     branches:
-      - main
+      - '*'
 
 jobs:
   build:
-    name: Lua Type Check
+    name: Type Check Code Base
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Checkout dependency neodev
+        uses: actions/checkout@v4
+        with:
+          repository: "folke/neodev.nvim"
+          path: "deps/neodev.nvim"
+
+      - name: Checkout dependency plenary
+        uses: actions/checkout@v4
+        with:
+          repository: "nvim-lua/plenary.nvim"
+          path: "deps/plenary.nvim"
+
+      - name: Checkout dependency nvim-web-devicons
+        uses: actions/checkout@v4
+        with:
+          repository: "nvim-tree/nvim-web-devicons"
+          path: "deps/nvim-web-devicons"
+
+      - name: Checkout dependency nui
+        uses: actions/checkout@v4
+        with:
+          repository: "MunifTanjim/nui.nvim"
+          path: "deps/nui.nvim"
 
       - name: Type Check Code Base
-        uses: mrcjkb/lua-typecheck-action@v0.1.2
+        uses: mrcjkb/lua-typecheck-action@v0.1
         with:
-          configpath: ".luarc.json"
+          configpath: .github/workflows/.luarc.json
+          directories: |
+            lua/neo-tree
