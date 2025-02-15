@@ -39,7 +39,7 @@ jobs:
           path: "deps/nui.nvim"
 
       - name: Type Check Code Base
-        uses: mrcjkb/lua-typecheck-action@v0.1
+        uses: mrcjkb/lua-typecheck-action@v0
         with:
           configpath: .github/workflows/.luarc.json
           directories: |
