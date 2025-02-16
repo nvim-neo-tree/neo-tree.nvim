@@ -30,8 +30,6 @@ jobs:
           - os: ubuntu-22.04
             rev: nightly/nvim-linux-x86_64.tar.gz
           - os: ubuntu-22.04
-            rev: v0.7.2/nvim-linux64.tar.gz
-          - os: ubuntu-22.04
             rev: v0.8.3/nvim-linux64.tar.gz
           - os: ubuntu-22.04
             rev: v0.9.5/nvim-linux64.tar.gz
@@ -77,7 +75,7 @@ jobs:
 
       - name: Run tests
         run: |
-          export PATH="${PWD}/build/:${PATH}"
+          export PATH="${PWD}/build/bin:${PATH}"
           ./scripts/test.sh
 
       # - name: Upload coverage to Codecov

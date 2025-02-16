@@ -1394,7 +1394,14 @@ function M.spairs(t, sorter)
 end
 
 local strwidth = vim.api.nvim_strwidth
-local slice = vim.fn.slice
+local strcharpart, strchars = vim.fn.strcharpart, vim.fn.strchars
+local slice = vim.fn.exists("*slice") == 1 and vim.fn.slice
+  or function(str, start, _end)
+    local char_amount = strchars(str)
+    _end = _end or char_amount
+    _end = _end < 0 and (char_amount + _end) or _end
+    return strcharpart(str, start, _end)
+  end
 
 -- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
