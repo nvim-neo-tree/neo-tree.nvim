@@ -1363,8 +1363,46 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+---Iterate through a table, sorted by its keys.
+---Compared to vim.spairs, it also accepts a method that specifies how to sort the table by key.
+---
+---@see vim.spairs
+---@see table.sort
+---
+---@generic T: table, K, V
+---@param t T Dict-like table
+---@param sorter? fun(a: K, b: K):boolean A function that returns true if a is less than b.
+---@return fun(table: table<K, V>, index?: K):K, V # |for-in| iterator over sorted keys and their values
+---@return T
+function M.spairs(t, sorter)
+  -- collect the keys
+  local keys = {}
+  for k in pairs(t) do
+    table.insert(keys, k)
+  end
+  table.sort(keys, sorter)
+
+  -- Return the iterator function.
+  local i = 0
+  return function()
+    i = i + 1
+    if keys[i] then
+      return keys[i], t[keys[i]]
+    end
+  end,
+    t
+end
+
 local strwidth = vim.api.nvim_strwidth
-local slice = vim.fn.slice
+local strcharpart, strchars = vim.fn.strcharpart, vim.fn.strchars
+local slice = vim.fn.exists("*slice") == 1 and vim.fn.slice
+  or function(str, start, _end)
+    local char_amount = strchars(str)
+    _end = _end or char_amount
+    _end = _end < 0 and (char_amount + _end) or _end
+    return strcharpart(str, start, _end)
+  end
+
 -- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
 -- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough

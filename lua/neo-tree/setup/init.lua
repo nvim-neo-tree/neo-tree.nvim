@@ -498,6 +498,16 @@ M.merge_config = function(user_config)
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
   })
+  events.subscribe({
+    event = events.NEO_TREE_WINDOW_AFTER_OPEN,
+    handler = function(args)
+      if not vim.w[args.winid].neo_tree_settings_applied then
+        -- TODO: should figure out a less disorganized way to set window options
+        -- BufEnter doesn't trigger while vim is starting up so this will handle it instead.
+        M.buffer_enter_event()
+      end
+    end,
+  })
 
   -- Setup autocmd for neo-tree BufLeave, to restore window settings.
   -- This is set to happen just before leaving the window.
