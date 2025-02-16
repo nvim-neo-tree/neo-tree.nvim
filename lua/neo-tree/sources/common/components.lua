@@ -389,6 +389,7 @@ M.indent = function(config, node, state)
   local skip_marker = state.skip_marker_at_level
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
+  local start_level = config.level or 2
   local level = node.level
   local with_markers = config.with_markers
   local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
@@ -403,7 +404,7 @@ M.indent = function(config, node, state)
     end
   end
 
-  if indent_size == 0 or level < 2 or not with_markers then
+  if indent_size == 0 or level < start_level or not with_markers then
     local len = indent_size * level + padding
     local expander = get_expander()
     if level == 0 or not expander then
@@ -426,12 +427,12 @@ M.indent = function(config, node, state)
     table.insert(indent, { text = string.rep(" ", padding) })
   end
 
-  for i = 1, level do
+  for i = start_level - 1, level do
     local char = ""
     local spaces_count = indent_size
     local highlight = nil
 
-    if i > 1 and not skip_marker[i] or i == level then
+    if i > start_level - 1 and not skip_marker[i] or i == level then
       spaces_count = spaces_count - 1
       char = indent_marker
       highlight = marker_highlight
