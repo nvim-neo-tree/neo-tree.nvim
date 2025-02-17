@@ -428,7 +428,7 @@ end
 ---@class (exact) neotree.Config.Component.Common.Name : neotree.Config.Component.Base.Highlight
 ---@field trailing_slash boolean?
 ---@field use_git_status_colors boolean?
----@field highlight_opened_files boolean?
+---@field highlight_opened_files boolean|"all"?
 ---@field right_padding integer?
 
 ---@class (exact) neotree.Component.Common.Name : neotree.Config.Component.Common.Name
@@ -658,7 +658,9 @@ local file_time = function(config, node, state, stat_field)
   }
 end
 
----@class (exact) neotree.Component.Common.LastModified : neotree.Config.Component.Common.Time
+---@class (exact) neotree.Config.Component.Common.LastModified : neotree.Config.Component.Common.Time
+
+---@class (exact) neotree.Component.Common.LastModified : neotree.Config.Component.Common.LastModified
 ---@field [1] "last_modified"
 
 ---@param config neotree.Config.Component.Common.Time
@@ -666,7 +668,9 @@ M.last_modified = function(config, node, state)
   return file_time(config, node, state, "mtime")
 end
 
----@class (exact) neotree.Component.Common.Created : neotree.Config.Component.Common.Time
+---@class (exact) neotree.Config.Component.Common.Created : neotree.Config.Component.Common.Time
+
+---@class (exact) neotree.Component.Common.Created : neotree.Config.Component.Common.Created
 ---@field [1] "created"
 
 ---@param config neotree.Config.Component.Common.Time
@@ -693,7 +697,6 @@ M.symlink_target = function(config, node, _)
 end
 
 ---@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component.Base.Highlight
----@field format neotree.DateFormat
 ---@field width integer?
 
 ---@class (exact) neotree.Component.Common.Type : neotree.Config.Component.Common.Type
