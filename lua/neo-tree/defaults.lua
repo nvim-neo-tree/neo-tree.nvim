@@ -708,22 +708,23 @@ local config = {
       -- Macro = { icon = ' ', hl = 'Macro' },
     },
   },
-  example = {
-    renderers = {
-      custom = {
-        { "indent" },
-        { "icon", default = "C" },
-        { "custom" },
-        { "name" },
-      },
-    },
-    window = {
-      mappings = {
-        ["<cr>"] = "toggle_node",
-        ["<C-e>"] = "example_command",
-        ["d"] = "show_debug_info",
-      },
-    },
-  },
+  -- If you want to write your own source for items, this is how it would be configured:
+  -- example = {
+  --   renderers = {
+  --     custom = {
+  --       { "indent" },
+  --       { "icon", default = "C" },
+  --       { "custom" },
+  --       { "name" },
+  --     },
+  --   },
+  --   window = {
+  --     mappings = {
+  --       ["<cr>"] = "toggle_node",
+  --       ["<C-e>"] = "example_command",
+  --       ["d"] = "show_debug_info",
+  --     },
+  --   },
+  -- },
 }
 return config
