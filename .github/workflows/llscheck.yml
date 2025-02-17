@@ -22,7 +22,7 @@ jobs:
       with:
         luaVersion: ${{matrix.lua}}
 
-    - uses: luarocks/gh-actions-luarocks@v4
+    - uses: luarocks/gh-actions-luarocks@v5
 
     - name: build
       run: |

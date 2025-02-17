@@ -11,7 +11,8 @@
     "/github/workspace/deps/plenary.nvim/lua",
     "/github/workspace/deps/nui.nvim/lua",
     "/github/workspace/deps/nvim-web-devicons/lua",
-    "${3rd}/busted/library"
+    "${3rd}/busted/library",
+    "${VIMRUNTIME}/lua"
   ],
   "diagnostics.libraryFiles": "Disable",
   "workspace.checkThirdParty": "Disable"
