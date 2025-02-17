@@ -43,4 +43,4 @@ jobs:
         with:
           configpath: .github/workflows/.luarc.json
           directories: |
-            lua/neo-tree
+            lua/neo-tree/defaults.lua
