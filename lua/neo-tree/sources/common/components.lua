@@ -344,6 +344,9 @@ M.name = function(config, node, state)
 
   if node:get_depth() == 1 and node.type ~= "message" then
     highlight = highlights.ROOT_NAME
+    if state.sort and state.sort.label == "Name" then
+      text = text .. state.sort.direction == 1 and "  ▲" or "  ▼"
+    end
   else
     local filtered_by = M.filtered_by(config, node, state)
     highlight = filtered_by.highlight or highlight
