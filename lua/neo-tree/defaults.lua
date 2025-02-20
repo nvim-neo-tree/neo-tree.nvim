@@ -583,6 +583,7 @@ local config = {
       mappings = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
+        ["d"] = "buffer_delete",
         ["bd"] = "buffer_delete",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
