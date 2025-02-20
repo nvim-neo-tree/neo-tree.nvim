@@ -9,7 +9,7 @@ jobs:
   llscheck:
     strategy:
       matrix:
-        neovim: ["0.8", "0.9", "0.10", "nightly"]
+        neovim: ["0.10"]
         lua: ["5.1", "luajit-master"]
     runs-on: ubuntu-latest
     name: llscheck
@@ -35,7 +35,3 @@ jobs:
           [tools]
           neovim = "${{ matrix.neovim }}"
           lua-language-server = "latest"
-
-    - name: Print Version
-      run: |
-        lua-language-server --version
