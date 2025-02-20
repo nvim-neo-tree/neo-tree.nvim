@@ -41,6 +41,7 @@ local function create_state(tabid, sd, winid)
   state.dirty = true
   state.position = {}
   state.git_base = "HEAD"
+  state.sort = { label = "Name", direction = 1 }
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state

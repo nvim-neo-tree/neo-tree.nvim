@@ -441,7 +441,16 @@ end
 
 M.order_by_name = function(state)
   set_sort(state, "Name")
-  state.sort_field_provider = nil
+  local config = require("neo-tree").config
+  if config.sort_case_insensitive then
+    state.sort_field_provider = function(node)
+      return node.path:lower()
+    end
+  else
+    state.sort_field_provider = function(node)
+      return node.path
+    end
+  end
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
