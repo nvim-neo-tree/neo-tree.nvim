@@ -1,6 +1,9 @@
 {
-  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "diagnostics.libraryFiles": "Disable",
   "runtime.version": "LuaJIT",
+  "workspace.checkThirdParty": "Disable",
+  "workspace.ignoreDir": [".dependencies", ".lua", ".luarocks"],
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
   "runtime.path": [
     "lua/?.lua",
     "lua/?/init.lua"
@@ -12,7 +15,5 @@
     "$PWD/.dependencies/site/pack/vendor/start/nvim-web-devicons/lua",
     "$PWD/.dependencies/site/pack/vendor/start/luvit-meta/library",
     "$VIMRUNTIME/lua"
-  ],
-  "diagnostics.libraryFiles": "Disable",
-  "workspace.checkThirdParty": "Disable"
+  ]
 }
