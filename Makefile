@@ -11,29 +11,32 @@ test-docker:
 format:
 	stylua --glob '*.lua' --glob '!defaults.lua' .
 
-llscheck:
-	llscheck --configpath .github/workflows/.luarc.json .
-
 # Dependencies:
 
-PLUGINS_DIR := ./.dependencies/site/pack/vendor/start
+DEPS := ./.dependencies/site/pack/vendor/start
 
-$(PLUGINS_DIR):
-	mkdir -p "$(PLUGINS_DIR)"
+$(DEPS):
+	mkdir -p "$(DEPS)"
 
-.PHONY: nui.nvim nvim-web-devicons plenary.nvim setup
-nui.nvim:
-	git clone https://github.com/MunifTanjim/nui.nvim "$(PLUGINS_DIR)/nui.nvim"
+$(DEPS)/nui.nvim: $(DEPS)
+	@test -d "$(DEPS)/nui.nvim" || git clone https://github.com/MunifTanjim/nui.nvim "$(DEPS)/nui.nvim"
 
-nvim-web-devicons:
-	git clone https://github.com/nvim-tree/nvim-web-devicons "$(PLUGINS_DIR)/nvim-web-devicons"
+$(DEPS)/nvim-web-devicons: $(DEPS)
+	@test -d "$(DEPS)/nvim-web-devicons" || git clone https://github.com/nvim-tree/nvim-web-devicons "$(DEPS)/nvim-web-devicons"
 
-plenary.nvim:
-	git clone https://github.com/nvim-lua/plenary.nvim "$(PLUGINS_DIR)/plenary.nvim"
+$(DEPS)/plenary.nvim: $(DEPS)
+	@test -d "$(DEPS)/plenary.nvim" || git clone https://github.com/nvim-lua/plenary.nvim "$(DEPS)/plenary.nvim"
 
-setup: | $(PLUGINS_DIR) nui.nvim nvim-web-devicons plenary.nvim
-	@echo "[test] environment ready"
+$(DEPS)/luvit-meta: $(DEPS)
+	@test -d "$(DEPS)/luvit-meta" || git clone https://github.com/Bilal2453/luvit-meta "$(DEPS)/luvit-meta"
+
+setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/luvit-meta
+	@echo "[setup] environment ready"
 
 .PHONY: clean
 clean:
-	rm -rf "$(PLUGINS_DIR)"
+	rm -rf "$(DEPS)"
+
+CONFIGURATION = .github/workflows/.luarc.json
+llscheck: $(DEPS)
+	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" llscheck --configpath $(CONFIGURATION) .

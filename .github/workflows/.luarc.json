@@ -6,13 +6,12 @@
     "lua/?/init.lua"
   ],
   "workspace.library": [
-    "/github/workspace/lua/neo-tree/types",
-    "/github/workspace/deps/neodev.nvim/types/stable",
-    "/github/workspace/deps/plenary.nvim/lua",
-    "/github/workspace/deps/nui.nvim/lua",
-    "/github/workspace/deps/nvim-web-devicons/lua",
-    "${3rd}/busted/library",
-    "${VIMRUNTIME}/lua"
+    "$PWD/lua/",
+    "$PWD/.dependencies/site/pack/vendor/start/plenary.nvim/lua",
+    "$PWD/.dependencies/site/pack/vendor/start/nui.nvim/lua",
+    "$PWD/.dependencies/site/pack/vendor/start/nvim-web-devicons/lua",
+    "$PWD/.dependencies/site/pack/vendor/start/luvit-meta/library",
+    "$VIMRUNTIME/lua"
   ],
   "diagnostics.libraryFiles": "Disable",
   "workspace.checkThirdParty": "Disable"

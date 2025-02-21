@@ -35,3 +35,8 @@ jobs:
           [tools]
           neovim = "${{ matrix.neovim }}"
           lua-language-server = "latest"
+
+    - name: Run llscheck
+      continue-on-error: true
+      run: |
+        make llscheck
