@@ -9,7 +9,6 @@
     "lua/?/init.lua"
   ],
   "workspace.library": [
-    "$PWD/lua/",
     "$PWD/.dependencies/site/pack/vendor/start/plenary.nvim/lua",
     "$PWD/.dependencies/site/pack/vendor/start/nui.nvim/lua",
     "$PWD/.dependencies/site/pack/vendor/start/nvim-web-devicons/lua",
