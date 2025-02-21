@@ -38,5 +38,5 @@ clean:
 	rm -rf "$(DEPS)"
 
 CONFIGURATION = .github/workflows/.luarc.json
-llscheck: $(DEPS)
+llscheck: setup
 	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" llscheck --configpath $(CONFIGURATION) .
