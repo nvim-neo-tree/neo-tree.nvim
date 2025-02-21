@@ -39,4 +39,4 @@ jobs:
     - name: Run llscheck
       continue-on-error: true
       run: |
-        make llscheck
+        make llscheck CONFIGURATION=.github/workflows/.luarc.json
