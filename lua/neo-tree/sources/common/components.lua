@@ -370,7 +370,7 @@ end
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.
 ---@field folder_open string The icon to display for an open folder.
 ---@field folder_closed string The icon to display for a closed folder.
----@field provider fun(icon, node, state):(neotree.Render.Node|neotree.Render.Node[])
+---@field provider fun(icon, node, state):(neotree.Render.Node|neotree.Render.Node[]|nil)
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Config.Component.Common.Icon
 ---@field [1] "icon"
@@ -486,13 +486,13 @@ end
 ---@class (exact) neotree.Config.Component.Common.Indent : neotree.Config.Component.Base.Highlight
 ---@field expander_collapsed string?
 ---@field expander_expanded string?
----@field expander_highlight boolean?
+---@field expander_highlight string?
 ---@field indent_marker string?
 ---@field indent_size integer?
 ---@field last_indent_marker string?
 ---@field padding integer?
 ---@field with_expanders boolean?
----@field with_markers integer?
+---@field with_markers boolean?
 
 ---@class (exact) neotree.Component.Common.Indent : neotree.Config.Component.Common.Indent
 ---@field [1] "indent"

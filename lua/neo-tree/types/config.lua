@@ -153,10 +153,10 @@
 ---@field handler fun(table?):neotree.Config.EventHandler.HandlerResult?
 
 ---@class neotree.Config.Renderers
----@field directory neotree.Component[]?
----@field file neotree.Component[]?
----@field message neotree.Component[]?
----@field terminal neotree.Component[]?
+---@field directory neotree.Component.Common[]?
+---@field file neotree.Component.Common[]?
+---@field message neotree.Component.Common[]?
+---@field terminal neotree.Component.Common[]?
 
 ---@class neotree.Config.ComponentDefaults
 ---@field container neotree.Config.Component.Common.Container
@@ -204,7 +204,7 @@
 ---@field event_handlers table[]?
 ---@field default_component_configs neotree.Config.ComponentDefaults?
 ---@field renderers neotree.Config.Renderers?
----@field nesting_rules table[]? -- TODO, merge rework
+---@field nesting_rules neotree.FileNesting.Rule[]
 ---@field commands table<string, fun()>?
 ---@field window neotree.Config.Window?
 ---@field filesystem neotree.Config.Filesystem?
