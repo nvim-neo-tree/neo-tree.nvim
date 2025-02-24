@@ -164,7 +164,7 @@ local function get_defined_sign(severity)
   return defined
 end
 
----@class (exact) neotree.Config.Component.Common.Diagnostics : neotree.Config.Component.Base.Highlight
+---@class (exact) neotree.Config.Component.Common.Diagnostics
 ---@field errors_only boolean?
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
@@ -696,7 +696,7 @@ M.symlink_target = function(config, node, _)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component.Base.Highlight
+---@class (exact) neotree.Config.Component.Common.Type
 ---@field width integer?
 
 ---@class (exact) neotree.Component.Common.Type : neotree.Config.Component.Common.Type
