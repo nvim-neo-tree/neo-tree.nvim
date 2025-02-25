@@ -181,7 +181,10 @@ M.move_node = function(source, destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(destination or source, using_root_directory, function(dest)
     -- Resolve user-inputted relative paths out of the absolute paths
-    dest = utils.normalize_path(dest)
+    dest = vim.fs.normalize(dest)
+    if utils.is_windows then
+      utils.windowize_path(dest)
+    end
     local function move_file()
       create_all_parents(dest)
       loop.fs_rename(source, dest, function(err)
