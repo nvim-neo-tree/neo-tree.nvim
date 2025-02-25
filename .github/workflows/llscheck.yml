@@ -6,13 +6,13 @@ on:
       - '*'
 
 jobs:
-  llscheck:
+  luacheck:
     strategy:
       matrix:
         neovim: ["0.10"]
         lua: ["5.1", "luajit-master"]
     runs-on: ubuntu-latest
-    name: llscheck
+    name: luacheck
 
     steps:
     - name: Checkout
@@ -22,12 +22,6 @@ jobs:
       with:
         luaVersion: ${{matrix.lua}}
 
-    - uses: luarocks/gh-actions-luarocks@v5
-
-    - name: build
-      run: |
-        luarocks install llscheck
-
     - name: Install lua-language-server
       uses: jdx/mise-action@v2
       with:
@@ -36,7 +30,8 @@ jobs:
           neovim = "${{ matrix.neovim }}"
           lua-language-server = "latest"
 
-    - name: Run llscheck
+    - name: Run lua-language-server check
       continue-on-error: true
       run: |
-        make llscheck CONFIGURATION=.github/workflows/.luarc.json
+        LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json"
+        make luacheck CONFIGURATION="$LUARC"

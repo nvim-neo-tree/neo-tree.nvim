@@ -38,5 +38,5 @@ clean:
 	rm -rf "$(DEPS)"
 
 CONFIGURATION = .github/workflows/.luarc.json
-llscheck: setup
-	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" llscheck --configpath $(CONFIGURATION) .
+luacheck: setup
+	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" lua-language-server --configpath=$(CONFIGURATION) --check=.
