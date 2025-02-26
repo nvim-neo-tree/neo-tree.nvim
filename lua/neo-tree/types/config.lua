@@ -1,4 +1,5 @@
 ---@meta
+---@diagnostic disable:duplicate-doc-field
 
 ---@class neotree.Config.MappingOptions
 ---@field noremap boolean
@@ -78,7 +79,7 @@
 ---@field same_level boolean
 ---@field insert_as "child"|"sibling"
 ---@field mapping_options neotree.Config.MappingOptions
----@field mappings table
+---@field mappings neotree.Config.Mapping[]
 
 ---@alias neotree.Config.Cwd "tab"|"window"|"global"
 
@@ -201,7 +202,7 @@
 ---@field use_popups_for_input boolean?
 ---@field use_default_mappings boolean?
 ---@field source_selector neotree.Config.SourceSelector?
----@field event_handlers table[]?
+---@field event_handlers neotree.Event.Handler[]?
 ---@field default_component_configs neotree.Config.ComponentDefaults?
 ---@field renderers neotree.Config.Renderers?
 ---@field nesting_rules neotree.FileNesting.Rule[]
@@ -210,3 +211,6 @@
 ---@field filesystem neotree.Config.Filesystem?
 ---@field buffers neotree.Config.Buffers?
 ---@field git_status neotree.Config.GitStatus?
+
+---@class neotree.Config._Full : neotree.Config
+---@field prior_windows table<string, integer[]>?

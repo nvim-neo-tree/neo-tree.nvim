@@ -6,6 +6,12 @@ local event_queues = {}
 local event_definitions = {}
 local M = {}
 
+---@class neotree.Event.Handler
+---@field event neotree.Event
+---@field handler fun(...)
+---@field id string?
+local a = {}
+
 local validate_event_handler = function(event_handler)
   if type(event_handler) ~= "table" then
     error("Event handler must be a table")
@@ -104,6 +110,7 @@ M.fire_event = function(event, args)
   end
 end
 
+---@param event_handler neotree.Event.Handler
 M.subscribe = function(event_handler)
   validate_event_handler(event_handler)
 

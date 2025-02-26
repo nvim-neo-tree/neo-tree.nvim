@@ -9,6 +9,7 @@ M.close_all = function()
   require("neo-tree.command").execute({ action = "close" })
 end
 
+---@type neotree.Config?
 local new_user_config = nil
 
 ---Updates the config of neo-tree using the latest user config passed through setup, if any.

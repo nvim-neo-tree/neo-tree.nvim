@@ -37,6 +37,6 @@ setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/l
 clean:
 	rm -rf "$(DEPS)"
 
-CONFIGURATION = .github/workflows/.luarc.json
-luacheck: setup
+CONFIGURATION = .luarc.json
+luals-check: setup
 	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" lua-language-server --configpath=$(CONFIGURATION) --check=.

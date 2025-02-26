@@ -1,11 +1,29 @@
 {
-    "diagnostics.libraryFiles": "Disable",
-    "runtime.version": "LuaJIT",
-    "workspace.checkThirdParty": "Disable",
-    "workspace.ignoreDir": [
-        ".dependencies"
-    ],
-    "workspace.library": [
-        "$VIMRUNTIME/lua"
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "diagnostics.libraryFiles": "Disable",
+  "runtime": {
+    "version": "LuaJIT",
+    "path": [
+      "lua/?.lua",
+      "lua/?/init.lua",
+      "library/?.lua",
+      "library/?/init.lua"
     ]
+  },
+  "workspace": {
+    "checkThirdParty": "Disable",
+    "library": [
+      "$PWD/.dependencies/site/pack/vendor/start/plenary.nvim",
+      "$PWD/.dependencies/site/pack/vendor/start/nui.nvim",
+      "$PWD/.dependencies/site/pack/vendor/start/nvim-web-devicons",
+      "${3rd}/luassert",
+      "${3rd}/busted",
+      "${3rd}/luv",
+      "$VIMRUNTIME"
+    ],
+    "ignoreDir": [
+      ".dependencies",
+      ".luarocks"
+    ]
+  }
 }

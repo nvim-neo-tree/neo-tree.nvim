@@ -1,4 +1,4 @@
-name: Lua Type Check
+name: Lua Language Server Diagnostics
 on:
   pull_request: ~
   push:
@@ -6,13 +6,12 @@ on:
       - '*'
 
 jobs:
-  luacheck:
+  luals-check:
     strategy:
       matrix:
         neovim: ["0.10"]
         lua: ["5.1", "luajit-master"]
     runs-on: ubuntu-latest
-    name: luacheck
 
     steps:
     - name: Checkout

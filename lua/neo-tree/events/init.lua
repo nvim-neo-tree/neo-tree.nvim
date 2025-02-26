@@ -3,6 +3,7 @@ local q = require("neo-tree.events.queue")
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 
+---@class neotree.Event.Functions
 local M = {
   -- Well known event names, you can make up your own
   AFTER_RENDER = "after_render",
@@ -52,6 +53,7 @@ local M = {
   VIM_WIN_ENTER = "vim_win_enter",
 }
 
+---@param event_name neotree.Event
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   local opts = {
     setup = function()
