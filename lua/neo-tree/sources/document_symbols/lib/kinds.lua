@@ -34,9 +34,14 @@ local kinds_id_to_name = {
 
 local kinds_map = {}
 
+---@class neotree.LspKindDisplay
+---@field name string Display name
+---@field icon string Icon to render
+---@field hl string Highlight for the node
+
 ---Get how the kind with kind_id should be rendered
 ---@param kind_id integer the kind_id to be render
----@return table res of the form { name = kind_display_name, icon = kind_icon, hl = kind_hl }
+---@return neotree.LspKindDisplay res
 M.get_kind = function(kind_id)
   local kind_name = kinds_id_to_name[kind_id]
   return vim.tbl_extend(
