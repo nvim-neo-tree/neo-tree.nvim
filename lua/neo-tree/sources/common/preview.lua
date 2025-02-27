@@ -435,12 +435,12 @@ Preview.focus = function()
   end
 end
 
-Preview.scroll = function(state, cmd)
+local CTRL_E = utils.keycode("<c-e>")
+local CTRL_Y = utils.keycode("<c-y>")
+Preview.scroll = function(state, fallback)
   local direction = state.config.direction
-  local input = direction < 0 and utils.keycode("<c-e>") or utils.keycode("<c-y>")
+  local input = direction < 0 and CTRL_E or CTRL_Y
   local count = math.abs(direction)
-
-  local keycode = utils.keycode(cmd)
 
   if Preview:is_active() then
     vim.api.nvim_win_call(instance.winid, function()
@@ -448,7 +448,7 @@ Preview.scroll = function(state, cmd)
     end)
   else
     vim.api.nvim_buf_call(state.bufnr, function()
-      vim.cmd(("normal! %s"):format(keycode))
+      vim.cmd(("normal! %s"):format(utils.keycode(fallback)))
     end)
   end
 end

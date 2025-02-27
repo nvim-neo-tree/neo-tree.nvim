@@ -1293,7 +1293,10 @@ M.index_by_path = function(tbl, key)
   return value
 end
 
+---Backport of vim.keycode
+---@see vim.keycode
 ---@param str string
+---@return string representation Internal representation of the keycodes
 function M.keycode(str)
   return vim.api.nvim_replace_termcodes(str, true, true, true)
 end
