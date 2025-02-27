@@ -33,4 +33,4 @@ jobs:
       continue-on-error: true
       run: |
         LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json"
-        make luacheck CONFIGURATION="$LUARC"
+        make luals-check CONFIGURATION="$LUARC"
