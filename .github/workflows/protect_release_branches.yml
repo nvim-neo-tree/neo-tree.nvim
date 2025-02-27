@@ -21,7 +21,7 @@ jobs:
         run: |
           target=${{ github.base_ref }}
           echo "Target is: $target"
-          if [[ $target  == "v2.x" ]]; then
+          if [[ $target != "main" ]]; then
             echo "PRs must target main"
             exit 1
           else

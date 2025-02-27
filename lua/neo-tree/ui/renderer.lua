@@ -13,7 +13,7 @@ local log = require("neo-tree.log")
 local windows = require("neo-tree.ui.windows")
 
 local M = { resize_timer_interval = 50 }
-local ESC_KEY = vim.api.nvim_replace_termcodes("<ESC>", true, false, true)
+local ESC_KEY = utils.keycode("<ESC>")
 local default_popup_size = { width = 60, height = "80%" }
 local draw, create_tree, render_tree
 
@@ -852,7 +852,7 @@ local set_buffer_mappings = function(state)
         if type(func) == "function" then
           resolved_mappings[cmd].handler = function()
             state.config = config
-            return func(state)
+            return func(state, cmd)
           end
           keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
           if type(vfunc) == "function" then

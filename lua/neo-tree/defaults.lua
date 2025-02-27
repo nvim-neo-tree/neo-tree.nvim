@@ -31,7 +31,7 @@ local config = {
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
-  log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
+  log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   open_files_using_relative_paths = false,
@@ -583,6 +583,7 @@ local config = {
       mappings = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
+        ["d"] = "buffer_delete",
         ["bd"] = "buffer_delete",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
