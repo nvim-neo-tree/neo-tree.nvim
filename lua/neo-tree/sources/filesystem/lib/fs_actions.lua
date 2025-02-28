@@ -20,6 +20,7 @@ local M = {}
 ---Has an additional check for renaming files to a different case (e.g. for windows)
 ---@param original_path string
 ---@param destination string
+---@return boolean rename_is_safe
 local function can_safely_rename(original_path, destination)
   if not loop.fs_stat(destination) then
     return true
@@ -27,10 +28,11 @@ local function can_safely_rename(original_path, destination)
 
   if utils.is_windows then
     -- check to see if we're just renaming the original to a different case
-    local orig = utils.normalize_path(original_path)
-    local dest = utils.normalize_path(destination)
+    local orig = utils.normalize_path(original_path):lower()
+    local dest = utils.normalize_path(destination):lower()
     return orig == dest
   end
+  return false
 end
 
 local function find_replacement_buffer(for_buf)
