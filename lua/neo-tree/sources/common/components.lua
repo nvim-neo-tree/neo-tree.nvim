@@ -387,9 +387,9 @@ M.indent = function(config, node, state)
 
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
-  local indent_size = config.indent_size or 2
-  local padding = config.padding or 0
-  local start_level = config.level or 2
+  local indent_size = config.indent_size
+  local padding = config.padding
+  local marker_start_level = config.marker_start_level
   local level = node.level
   local with_markers = config.with_markers
   local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
@@ -404,10 +404,13 @@ M.indent = function(config, node, state)
     end
   end
 
-  if indent_size == 0 or level < start_level or not with_markers then
-    local len = indent_size * level + padding
+  if indent_size == 0 or not with_markers then
+    local len = indent_size + padding
     local expander = get_expander()
     if level == 0 or not expander then
+      if marker_start_level == 0 then
+        len = len + indent_size
+      end
       return {
         text = string.rep(" ", len),
       }
@@ -420,36 +423,67 @@ M.indent = function(config, node, state)
 
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
-
   skip_marker[level] = node.is_last_child
+
   local indent = {}
   if padding > 0 then
     table.insert(indent, { text = string.rep(" ", padding) })
   end
 
-  for i = start_level - 1, level do
-    local char = ""
-    local spaces_count = indent_size
+  for i = 0, level do
     local highlight = nil
+    local char = marker_start_level ~= 0 and "" or " "
+    local separator = i < marker_start_level and "" or " "
+    local additional_spaces = string.rep(" ", math.max(0, indent_size - 2))
 
-    if i > start_level - 1 and not skip_marker[i] or i == level then
-      spaces_count = spaces_count - 1
-      char = indent_marker
+    if marker_start_level ~= 0 then
+      if i <= 0 then
+        additional_spaces = ""
+      end
+      if level == 0 then
+        char = ""
+        separator = ""
+        additional_spaces = ""
+      end
+    end
+
+    if indent_size == 1 then
+      separator = ""
+      additional_spaces = ""
+    end
+
+    if marker_start_level >= 2 and i > 0 then
+      char = " "
+      separator = " "
+    end
+
+    if i >= marker_start_level then
       highlight = marker_highlight
       if i == level then
-        local expander = get_expander()
-        if expander then
-          char = expander
-          highlight = expander_highlight
-        elseif node.is_last_child then
+        if node.is_last_child then
           char = last_indent_marker
-          spaces_count = spaces_count - (vim.api.nvim_strwidth(last_indent_marker) - 1)
+          -- proof of concept for extended markers
+          -- if indent_size > 2 then
+          --     separator = "─"
+          -- end
+        else
+          char = indent_marker
         end
+      elseif not skip_marker[i] then
+        char = indent_marker
+      end
+    end
+
+    if i == level and i >= 1 then
+      local expander = get_expander()
+      if expander then
+        char = expander
+        highlight = expander_highlight
       end
     end
 
     table.insert(indent, {
-      text = char .. string.rep(" ", spaces_count),
+      text = char .. separator .. additional_spaces,
       highlight = highlight,
       no_next_padding = true,
     })
@@ -458,7 +492,7 @@ M.indent = function(config, node, state)
   return indent
 end
 
-local get_header = function (state, label, size)
+local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"
     size = size - 2
@@ -467,12 +501,12 @@ local get_header = function (state, label, size)
   return string.format("%" .. size .. "s  ", label)
 end
 
-M.file_size = function (config, node, state)
+M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Size", 12),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -490,7 +524,7 @@ M.file_size = function (config, node, state)
 
   return {
     text = string.format("%12s  ", text),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -505,7 +539,7 @@ local file_time = function(config, node, state, stat_field)
     end
     return {
       text = get_header(state, label, 20),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
@@ -515,7 +549,7 @@ local file_time = function(config, node, state, stat_field)
   local display = seconds and os.date("%Y-%m-%d %I:%M %p", seconds) or "-"
   return {
     text = string.format("%20s  ", display),
-    highlight = config.highlight or highlights.FILE_STATS
+    highlight = config.highlight or highlights.FILE_STATS,
   }
 end
 
@@ -538,19 +572,19 @@ M.symlink_target = function(config, node, state)
   end
 end
 
-M.type = function (config, node, state)
+M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels
   if node:get_depth() == 1 then
     return {
       text = get_header(state, "Type", 10),
-      highlight = highlights.FILE_STATS_HEADER
+      highlight = highlights.FILE_STATS_HEADER,
     }
   end
 
   return {
     text = string.format("%10s  ", text),
-    highlight = highlights.FILE_STATS
+    highlight = highlights.FILE_STATS,
   }
 end
 
