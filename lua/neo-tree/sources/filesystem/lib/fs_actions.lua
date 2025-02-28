@@ -16,6 +16,23 @@ local Path = require("plenary").path
 
 local M = {}
 
+---Checks to see if a file can be safely renamed to a new one.
+---Has an additional check for renaming files to a different case (e.g. for windows)
+---@param original_path string
+---@param destination string
+local function can_safely_rename(original_path, destination)
+  if not loop.fs_stat(destination) then
+    return true
+  end
+
+  if utils.is_windows then
+    -- check to see if we're just renaming the original to a different case
+    local orig = utils.normalize_path(original_path)
+    local dest = utils.normalize_path(destination)
+    return orig == dest
+  end
+end
+
 local function find_replacement_buffer(for_buf)
   local bufs = vim.api.nvim_list_bufs()
 
@@ -602,9 +619,9 @@ local rename_node = function(msg, name, get_destination, path, callback)
     end
 
     local destination = get_destination(new_name)
-    -- If already exists
-    if loop.fs_stat(destination) then
-      log.warn(destination, " already exists")
+
+    if not can_safely_rename(path, destination) then
+      log.warn(destination, " already exists, canceling")
       return
     end
 
