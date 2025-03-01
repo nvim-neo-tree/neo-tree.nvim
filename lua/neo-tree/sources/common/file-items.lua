@@ -93,7 +93,7 @@ end
 local create_item, set_parents
 
 function create_item(context, path, _type, bufnr)
-  local parent_path, name = utils.split_path(path)
+  local parent_path, name = utils.split_path(utils.normalize_path(path))
   local id = path
   if path == "[No Name]" and bufnr then
     parent_path = context.state.path
@@ -151,6 +151,8 @@ function create_item(context, path, _type, bufnr)
   end
 
   item.is_reveal_target = (path == context.path_to_reveal)
+  item.contains_reveal_target = not item.is_reveal_target
+    and utils.is_subpath(path, context.path_to_reveal)
   local state = context.state
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)

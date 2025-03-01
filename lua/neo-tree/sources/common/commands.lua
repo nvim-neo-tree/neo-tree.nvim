@@ -1,5 +1,4 @@
 --This file should contain all commands meant to be used by mappings.
-
 local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
@@ -113,17 +112,17 @@ end
 ---Expand all nodes
 ---@param state table The state of the source
 ---@param node table A node to expand
----@param prefetcher table an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_nodes = function(state, node, prefetcher)
-  log.debug("Expanding all nodes under " .. node:get_id())
-  if prefetcher == nil then
-    prefetcher = node_expander.default_prefetcher
-  end
+  local root_nodes = node and { node } or state.tree:get_nodes()
 
   renderer.position.set(state, nil)
 
   local task = function()
-    node_expander.expand_directory_recursively(state, node, prefetcher)
+    for _, root in pairs(root_nodes) do
+      log.debug("Expanding all nodes under " .. root:get_id())
+      node_expander.expand_directory_recursively(state, root, prefetcher)
+    end
   end
   async.run(task, function()
     log.debug("All nodes expanded - redrawing")
@@ -150,11 +149,8 @@ M.close_node = function(state, callback)
     target_node:collapse()
     renderer.redraw(state)
     renderer.focus_node(state, target_node:get_id())
-    if
-      state.explicitly_opened_directories
-      and state.explicitly_opened_directories[target_node:get_id()]
-    then
-      state.explicitly_opened_directories[target_node:get_id()] = false
+    if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
+      state.explicitly_opened_nodes[target_node:get_id()] = false
     end
   end
 end
@@ -174,16 +170,13 @@ M.close_all_subnodes = function(state)
   renderer.collapse_all_nodes(tree, target_node:get_id())
   renderer.redraw(state)
   renderer.focus_node(state, target_node:get_id())
-  if
-    state.explicitly_opened_directories
-    and state.explicitly_opened_directories[target_node:get_id()]
-  then
-    state.explicitly_opened_directories[target_node:get_id()] = false
+  if state.explicitly_opened_nodes and state.explicitly_opened_nodes[target_node:get_id()] then
+    state.explicitly_opened_nodes[target_node:get_id()] = false
   end
 end
 
 M.close_all_nodes = function(state)
-  state.explicitly_opened_directories = {}
+  state.explicitly_opened_nodes = {}
   renderer.collapse_all_nodes(state.tree)
   renderer.redraw(state)
 end
@@ -448,7 +441,16 @@ end
 
 M.order_by_name = function(state)
   set_sort(state, "Name")
-  state.sort_field_provider = nil
+  local config = require("neo-tree").config
+  if config.sort_case_insensitive then
+    state.sort_field_provider = function(node)
+      return node.path:lower()
+    end
+  else
+    state.sort_field_provider = function(node)
+      return node.path
+    end
+  end
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
@@ -512,6 +514,7 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
+local default_filetime_format = "%Y-%m-%d %I:%M %p"
 M.show_file_details = function(state)
   local node = state.tree:get_node()
   if node.type == "message" then
@@ -530,9 +533,11 @@ M.show_file_details = function(state)
     table.insert(left, "Size")
     table.insert(right, utils.human_size(stat.size))
     table.insert(left, "Created")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.birthtime.sec))
+    local created_format = state.config.created_format or default_filetime_format
+    table.insert(right, utils.date(created_format, stat.birthtime.sec))
     table.insert(left, "Modified")
-    table.insert(right, os.date("%Y-%m-%d %I:%M %p", stat.mtime.sec))
+    local modified_format = state.config.modified_format or default_filetime_format
+    table.insert(right, utils.date(modified_format, stat.mtime.sec))
   end
 
   local lines = {}
@@ -664,8 +669,8 @@ M.toggle_preview = function(state)
   Preview.toggle(state)
 end
 
-M.scroll_preview = function(state)
-  Preview.scroll(state)
+M.scroll_preview = function(state, fallback)
+  Preview.scroll(state, fallback)
 end
 
 M.focus_preview = function()
@@ -827,6 +832,15 @@ M.rename = function(state, callback)
     return
   end
   fs_actions.rename_node(node.path, callback)
+end
+
+M.rename_basename = function(state, callback)
+  local tree = state.tree
+  local node = tree:get_node()
+  if node.type == "message" then
+    return
+  end
+  fs_actions.rename_node_basename(node.path, callback)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.

@@ -10,7 +10,7 @@ local manager = require("neo-tree.sources.manager")
 
 local M = {
   name = "git_status",
-  display_name = " 󰊢 Git "
+  display_name = " 󰊢 Git ",
 }
 
 local wrap = function(func)
@@ -24,6 +24,7 @@ end
 ---Navigate to the given path.
 ---@param path string Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(state, path, path_to_reveal, callback, async)
+  state.path = path or state.path
   state.dirty = false
   if path_to_reveal then
     renderer.position.set(state, path_to_reveal)

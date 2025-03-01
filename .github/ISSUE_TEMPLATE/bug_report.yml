@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Before** reporting an issue, make sure to read [`:h neo-tree.txt`](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v2.x/doc/neo-tree.txt) and search [existing issues](https://github.com/nvim-neo-tree/neo-tree.nvim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/nvim-neo-tree/neo-tree.nvim/discussions) and will be closed.
+        **Before** reporting an issue, make sure to read [`:h neo-tree.txt`](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/v3.x/doc/neo-tree.txt) and search [existing issues](https://github.com/nvim-neo-tree/neo-tree.nvim/issues). Usage questions such as ***"How do I...?"*** belong in [Discussions](https://github.com/nvim-neo-tree/neo-tree.nvim/discussions) and will be closed.
   - type: checkboxes
     attributes:
       label: Did you check docs and existing issues?
@@ -21,7 +21,7 @@ body:
   - type: input
     attributes:
       label: "Neovim Version (nvim -v)"
-      placeholder: "0.8.0 commit db1b0ee3b30f"
+      placeholder: "NVIM v0.10.3"
     validations:
       required: true
   - type: input
@@ -63,47 +63,30 @@ body:
       label: Your Configuration
       description: Minimal `init.lua` to reproduce this issue. Save as `repro.lua` and run with `nvim -u repro.lua`
       value: |
-        -- DO NOT change the paths and don't remove the colorscheme
-        local root = vim.fn.fnamemodify("./.repro", ":p")
+        -- template from https://lazy.folke.io/developers#reprolua, feel free to replace if you have your own minimal init.lua
+        vim.env.LAZY_STDPATH = ".repro"
+        load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua"))()
 
-        -- set stdpaths to use .repro
-        for _, name in ipairs({ "config", "data", "state", "cache" }) do
-          vim.env[("XDG_%s_HOME"):format(name:upper())] = root .. "/" .. name
-        end
-
-        -- bootstrap lazy
-        local lazypath = root .. "/plugins/lazy.nvim"
-        if not vim.loop.fs_stat(lazypath) then
-          vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", lazypath, })
-        end
-        vim.opt.runtimepath:prepend(lazypath)
-
-        -- install plugins
-        local plugins = {
-          "folke/tokyonight.nvim",
-          -- add any other plugins here
-        }
-
-        local neotree_config = {
-          "nvim-neo-tree/neo-tree.nvim",
-          dependencies = { "MunifTanjim/nui.nvim", "nvim-tree/nvim-web-devicons", "nvim-lua/plenary.nvim" },
-          cmd = { "Neotree" },
-          keys = {
-            { "<Leader>e", "<Cmd>Neotree<CR>" }, -- change or remove this line if relevant.
+        require("lazy.minit").repro({
+          spec = {
+            {
+              "nvim-neo-tree/neo-tree.nvim",
+              branch = "v3.x", -- or "main"
+              dependencies = {
+                "nvim-lua/plenary.nvim",
+                "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+                "MunifTanjim/nui.nvim",
+                -- { "3rd/image.nvim", opts = {} }, -- Optional image support
+              },
+              opts = {
+                -- fill any relevant options here
+              },
+            }
           },
-          opts = {
-            -- Your config here
-            -- ...
-          },
-        }
-
-        table.insert(plugins, neotree_config)
-        require("lazy").setup(plugins, {
-          root = root .. "/plugins",
         })
-
-        vim.cmd.colorscheme("tokyonight")
-        -- add anything else here
+        vim.g.mapleader = " "
+        vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
+        -- do anything else you need to do to reproduce the issue
       render: Lua
     validations:
       required: true

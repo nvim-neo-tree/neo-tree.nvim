@@ -3,7 +3,7 @@ pcall(require, "luacov")
 local u = require("tests.utils")
 local verify = require("tests.utils.verify")
 
-local manager = require('neo-tree.sources.manager')
+local manager = require("neo-tree.sources.manager")
 
 local get_dirs = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
@@ -25,7 +25,7 @@ local get_state_for_tab = function(tabid)
 end
 
 local get_tabnr = function(tabid)
-    return vim.api.nvim_tabpage_get_number(tabid or vim.api.nvim_get_current_tabpage())
+  return vim.api.nvim_tabpage_get_number(tabid or vim.api.nvim_get_current_tabpage())
 end
 
 describe("Manager", function()
@@ -72,14 +72,14 @@ describe("Manager", function()
     -- set different directories
     vim.api.nvim_set_current_tabpage(tab2)
     local base_dir = vim.fn.getcwd()
-    vim.cmd.tcd('foo')
+    vim.cmd.tcd("foo")
     local new_dir = vim.fn.getcwd()
 
     -- open neo-tree
     vim.api.nvim_set_current_tabpage(tab1)
-    vim.cmd.Neotree('show')
+    vim.cmd.Neotree("show")
     vim.api.nvim_set_current_tabpage(tab2)
-    vim.cmd.Neotree('show')
+    vim.cmd.Neotree("show")
 
     return {
       tab1 = tab1,
@@ -109,7 +109,7 @@ describe("Manager", function()
 
     -- swap tabs
     vim.cmd.tabfirst()
-    vim.cmd.tabmove('+1')
+    vim.cmd.tabmove("+1")
 
     -- make sure tabs have been swapped
     u.eq(2, get_tabnr(ctx.tab1))
@@ -122,4 +122,3 @@ describe("Manager", function()
     u.eq(get_dirs(ctx.win2).tab, manager.get_cwd(state2))
   end)
 end)
-
