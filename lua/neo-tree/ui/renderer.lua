@@ -426,31 +426,32 @@ local prepare_node = function(item, state)
   local should_pad = false
 
   for _, component in ipairs(renderer) do
-    if component.enabled == false then
-      goto continue
-    end
-    local component_data, component_wanted_width =
-      M.render_component(component, item, state, remaining_cols - (should_pad and 1 or 0))
-    local actual_width = 0
-    if component_data then
-      for _, data in ipairs(component_data) do
-        if data.text then
-          local padding = ""
-          if should_pad and #data.text and data.text:sub(1, 1) ~= " " and not data.no_padding then
-            padding = " "
-          end
-          data.text = padding .. data.text
-          should_pad = data.text:sub(#data.text) ~= " " and not data.no_next_padding
+    repeat
+      if component.enabled == false then
+        break
+      end
+      local component_data, component_wanted_width =
+        M.render_component(component, item, state, remaining_cols - (should_pad and 1 or 0))
+      local actual_width = 0
+      if component_data then
+        for _, data in ipairs(component_data) do
+          if data.text then
+            local padding = ""
+            if should_pad and #data.text and data.text:sub(1, 1) ~= " " and not data.no_padding then
+              padding = " "
+            end
+            data.text = padding .. data.text
+            should_pad = data.text:sub(#data.text) ~= " " and not data.no_next_padding
 
-          actual_width = actual_width + vim.api.nvim_strwidth(data.text)
-          line:append(data.text, data.highlight)
-          remaining_cols = remaining_cols - vim.fn.strchars(data.text)
+            actual_width = actual_width + vim.api.nvim_strwidth(data.text)
+            line:append(data.text, data.highlight)
+            remaining_cols = remaining_cols - vim.fn.strchars(data.text)
+          end
         end
       end
-    end
-    component_wanted_width = component_wanted_width or actual_width
-    wanted_width = wanted_width + component_wanted_width
-    ::continue::
+      component_wanted_width = component_wanted_width or actual_width
+      wanted_width = wanted_width + component_wanted_width
+    until true
   end
 
   line.wanted_width = wanted_width
