@@ -404,21 +404,20 @@ M.indent = function(config, node, state)
     end
   end
 
-  if indent_size == 0 or not with_markers then
-    local len = indent_size + padding
+  if indent_size == 0 then
     local expander = get_expander()
-    if level == 0 or not expander then
-      if marker_start_level == 0 then
-        len = len + indent_size
-      end
+    local len = 0
+    if expander then
+      len = indent_size * level - strlen(expander) - 1
+      return {
+        text = string.rep(" ", len) .. expander .. " ",
+        highlight = expander_highlight,
+      }
+    else
       return {
         text = string.rep(" ", len),
       }
     end
-    return {
-      text = string.rep(" ", len - strlen(expander) - 1) .. expander .. " ",
-      highlight = expander_highlight,
-    }
   end
 
   local indent_marker = config.indent_marker or "│"
@@ -430,60 +429,47 @@ M.indent = function(config, node, state)
     table.insert(indent, { text = string.rep(" ", padding) })
   end
 
+  local root_indent_applied = false
+
   for i = 0, level do
+    local char = ""
     local highlight = nil
-    local char = marker_start_level ~= 0 and "" or " "
-    local separator = i < marker_start_level and "" or " "
-    local additional_spaces = string.rep(" ", math.max(0, indent_size - 2))
+    local current_indent_size = indent_size
+    local expander = get_expander()
 
-    if marker_start_level ~= 0 then
-      if i <= 0 then
-        additional_spaces = ""
-      end
-      if level == 0 then
-        char = ""
-        separator = ""
-        additional_spaces = ""
+    if i < marker_start_level then
+      if i == 0 and not root_indent_applied then
+        current_indent_size = 0
+        root_indent_applied = true
+      else
+        current_indent_size = 0
       end
     end
 
-    if indent_size == 1 then
-      separator = ""
-      additional_spaces = ""
-    end
-
-    if marker_start_level >= 2 and i > 0 then
-      char = " "
-      separator = " "
-    end
-
-    if i >= marker_start_level then
-      highlight = marker_highlight
-      if i == level then
-        if node.is_last_child then
-          char = last_indent_marker
-          -- proof of concept for extended markers
-          -- if indent_size > 2 then
-          --     separator = "─"
-          -- end
-        else
-          char = indent_marker
-        end
-      elseif not skip_marker[i] then
+    if i == level and expander and level ~= 0 then
+      char = expander
+      highlight = expander_highlight
+    elseif with_markers then
+      if i >= marker_start_level then
         char = indent_marker
+        if skip_marker[i] then
+          char = " "
+        end
+        if i == level and node.is_last_child then
+          char = last_indent_marker
+        end
+        highlight = marker_highlight
+      elseif i < marker_start_level and i == 0 and level > 0 and not root_indent_applied then
+        char = " "
+        root_indent_applied = true
       end
+    elseif not with_markers and not expander then
+      char = ""
     end
 
-    if i == level and i >= 1 then
-      local expander = get_expander()
-      if expander then
-        char = expander
-        highlight = expander_highlight
-      end
-    end
-
+    local prefix = string.rep(" ", current_indent_size - strlen(char))
     table.insert(indent, {
-      text = char .. separator .. additional_spaces,
+      text = char .. prefix,
       highlight = highlight,
       no_next_padding = true,
     })
