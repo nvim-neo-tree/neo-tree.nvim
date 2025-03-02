@@ -99,6 +99,7 @@ local function try_netrw_hijack(path)
   return false
 end
 
+---@param config neotree.Config
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config

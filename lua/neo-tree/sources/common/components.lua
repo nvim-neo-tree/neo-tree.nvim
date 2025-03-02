@@ -37,11 +37,7 @@ local log = require("neo-tree.log")
 ---@class neotree.Component.Common Use the neotree.Component.Common.* types to get more specific types.
 ---@field [1] neotree.Component.Common._Key
 
----@class neotree.Render.Node
----@field text string The text to display.
----@field highlight string The highlight for the text.
-
----@type table<neotree.Component.Common._Key,fun(config, node, state):(neotree.Render.Node|neotree.Render.Node[])>
+---@type table<neotree.Component.Common._Key, neotree.Component.Renderer>
 local M = {}
 
 local make_two_char = function(symbol)
@@ -52,11 +48,7 @@ local make_two_char = function(symbol)
   end
 end
 
----@class (exact) neotree.Config.Component.Base
----@field enabled boolean?
----@field highlight string?
-
----@class (exact) neotree.Config.Component.Common.Bufnr : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Bufnr : neotree.Config.Component
 
 ---@class (exact) neotree.Component.Common.Bufnr : neotree.Config.Component.Common.Bufnr
 ---@field [1] "bufnr"
@@ -77,7 +69,7 @@ M.bufnr = function(config, node, _)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Clipboard : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Clipboard : neotree.Config.Component
 
 ---@class (exact) neotree.Component.Common.Clipboard : neotree.Config.Component.Common.Clipboard
 ---@field [1] "clipboard"
@@ -97,7 +89,7 @@ end
 
 M.container = container.render
 
----@class (exact) neotree.Config.Component.Common.CurrentFilter : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.CurrentFilter : neotree.Config.Component
 
 ---@class (exact) neotree.Component.Common.CurrentFilter : neotree.Config.Component.Common.CurrentFilter
 ---@field [1] "current_filter"
@@ -163,7 +155,7 @@ local function get_defined_sign(severity)
   return defined
 end
 
----@class (exact) neotree.Config.Component.Common.Diagnostics : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Diagnostics : neotree.Config.Component
 ---@field errors_only boolean?
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
@@ -213,7 +205,7 @@ M.diagnostics = function(config, node, state)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.GitStatus : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.GitStatus : neotree.Config.Component
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 
@@ -363,13 +355,13 @@ M.filtered_by = function(_, node, _)
   return result
 end
 
----@class (exact) neotree.Config.Component.Common.Icon : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Icon : neotree.Config.Component
 ---@field default string The default icon for a node.
 ---@field folder_empty string The string to display to represent an empty folder.
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.
 ---@field folder_open string The icon to display for an open folder.
 ---@field folder_closed string The icon to display for a closed folder.
----@field provider fun(icon, node, state):(neotree.Render.Node|neotree.Render.Node[]|nil)
+---@field provider neotree.IconProvider?
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Config.Component.Common.Icon
 ---@field [1] "icon"
@@ -403,7 +395,7 @@ M.icon = function(config, node, state)
   return icon
 end
 
----@class (exact) neotree.Config.Component.Common.Modified : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Modified : neotree.Config.Component
 ---@field symbol string?
 
 ---@class (exact) neotree.Component.Common.Modified : neotree.Config.Component.Common.Modified
@@ -424,7 +416,7 @@ M.modified = function(config, node, state)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Name : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Name : neotree.Config.Component
 ---@field trailing_slash boolean?
 ---@field use_git_status_colors boolean?
 ---@field highlight_opened_files boolean|"all"?
@@ -486,7 +478,7 @@ M.name = function(config, node, state)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Indent : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Indent : neotree.Config.Component
 ---@field expander_collapsed string?
 ---@field expander_expanded string?
 ---@field expander_highlight string?
@@ -596,7 +588,7 @@ local get_header = function(state, label, size)
   return vim.fn.printf("%" .. size .. "s  ", truncate_string(label, size))
 end
 
----@class (exact) neotree.Config.Component.Common.FileSize : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.FileSize : neotree.Config.Component
 ---@field width integer?
 
 ---@class (exact) neotree.Component.Common.FileSize : neotree.Config.Component.Common.FileSize
@@ -630,7 +622,7 @@ M.file_size = function(config, node, state)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Time : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Time : neotree.Config.Component
 ---@field format neotree.DateFormat
 ---@field width integer?
 
@@ -681,7 +673,7 @@ M.created = function(config, node, state)
   return file_time(config, node, state, "birthtime")
 end
 
----@class (exact) neotree.Config.Component.Common.SymlinkTarget : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.SymlinkTarget : neotree.Config.Component
 ---@field text_format string
 
 ---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Config.Component.Common.SymlinkTarget
@@ -699,7 +691,7 @@ M.symlink_target = function(config, node, _)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component.Base
+---@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component
 ---@field width integer?
 
 ---@class (exact) neotree.Component.Common.Type : neotree.Config.Component.Common.Type
