@@ -470,6 +470,8 @@ local merge_renderers = function(default_config, source_default_config, user_con
   end
 end
 
+---@param user_config neotree.Config?
+---@return neotree.Config._Full full_config
 M.merge_config = function(user_config)
   local default_config = vim.deepcopy(defaults)
   user_config = vim.deepcopy(user_config or {})
@@ -538,7 +540,7 @@ M.merge_config = function(user_config)
   -- used to either limit the sources that or loaded, or add extra external sources
   local all_sources = {}
   local all_source_names = {}
-  for _, source in ipairs(user_config.sources or default_config.sources) do
+  for _, source in ipairs(user_config.sources or default_config.sources or {}) do
     local parts = utils.split(source, ".")
     local name = parts[#parts]
     local is_internal_ns, is_external_ns = false, false
@@ -624,11 +626,10 @@ M.merge_config = function(user_config)
   end
   --print(vim.inspect(default_config.filesystem))
 
-  -- Moving user_config.sources to user_config.orig_sources
-  user_config.orig_sources = user_config.sources and user_config.sources or {}
+  -- local orig_sources = user_config.sources and user_config.sources or {}
 
   -- apply the users config
-  M.config = vim.tbl_deep_extend("force", default_config, user_config)
+  M.config = vim.tbl_deep_extend("force", default_config, user_config) --[[@as neotree.Config._Full]]
 
   -- RE: 873, fixes issue with invalid source checking by overriding
   -- source table with name table

@@ -127,7 +127,7 @@ local function parse_resp(resp_node, id, state, parent_search_path)
 end
 
 ---Callback function for lsp request
----@param lsp_resp neotree.LspRespRaw the response of the lsp client
+---@param lsp_resp neotree.lsp.RespRaw the response of the lsp client
 ---@param state table the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then

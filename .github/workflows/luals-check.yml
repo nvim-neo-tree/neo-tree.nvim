@@ -1,0 +1,36 @@
+name: Lua Language Server Diagnostics
+on:
+  pull_request: ~
+  push:
+    branches:
+      - '*'
+
+jobs:
+  luals-check:
+    strategy:
+      matrix:
+        neovim: ["0.10"]
+        lua: ["5.1", "luajit-master"]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - uses: luarocks/gh-actions-lua@v10
+      with:
+        luaVersion: ${{matrix.lua}}
+
+    - name: Install lua-language-server
+      uses: jdx/mise-action@v2
+      with:
+        mise_toml: |
+          [tools]
+          neovim = "${{ matrix.neovim }}"
+          lua-language-server = "latest"
+
+    - name: Run lua-language-server check
+      continue-on-error: true
+      run: |
+        LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json"
+        make luals-check CONFIGURATION="$LUARC"

@@ -15,6 +15,22 @@ local common = require("neo-tree.sources.common.components")
 
 local M = {}
 
+---@alias neotree.Component.GitStatus._Key
+---|"name"
+
+---@class neotree.Component.GitStatus
+---@field [1] neotree.Component.GitStatus._Key|neotree.Component.Common._Key
+
+---@type table<neotree.Component.GitStatus._Key, neotree.Component.Renderer>
+local M = {}
+
+---@class (exact) neotree.Config.Component.GitStatus.Name : neotree.Config.Component
+---@field use_git_status_colors boolean?
+
+---@class (exact) neotree.Component.GitStatus.Name: neotree.Config.Component.GitStatus.Name
+---@field [1] "current_filter"
+
+---@param config neotree.Config.Component.GitStatus.Name
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME_OPENED
   local name = node.name
