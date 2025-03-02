@@ -27,10 +27,7 @@ $(DEPS)/nvim-web-devicons: $(DEPS)
 $(DEPS)/plenary.nvim: $(DEPS)
 	@test -d "$(DEPS)/plenary.nvim" || git clone https://github.com/nvim-lua/plenary.nvim "$(DEPS)/plenary.nvim"
 
-$(DEPS)/luvit-meta: $(DEPS)
-	@test -d "$(DEPS)/luvit-meta" || git clone https://github.com/Bilal2453/luvit-meta "$(DEPS)/luvit-meta"
-
-setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/luvit-meta
+setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim
 	@echo "[setup] environment ready"
 
 .PHONY: clean

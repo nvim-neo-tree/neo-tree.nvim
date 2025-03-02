@@ -311,7 +311,9 @@ end
 ---@field left_padding integer?
 ---@field right_padding integer?
 ---@field enable_character_fade boolean?
----@field context neotree.Component[]?
+---@field content neotree.Component[]?
+
+---@alias neotree.Component table
 
 ---@class (exact) neotree.Component.Common.Container : neotree.Config.Component.Common.Container
 ---@field [1] "clipboard"

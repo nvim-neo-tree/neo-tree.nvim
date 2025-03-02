@@ -1,5 +1,4 @@
 ---@meta
----@diagnostic disable:duplicate-doc-field
 
 ---@class neotree.Config.MappingOptions
 ---@field noremap boolean
