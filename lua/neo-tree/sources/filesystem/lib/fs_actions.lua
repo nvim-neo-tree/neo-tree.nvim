@@ -16,7 +16,8 @@ local Path = require("plenary").path
 
 local M = {}
 
----Checks to see if a file can be safely renamed to a new one.
+---Checks to see if a file can safely be renamed to its destination without data loss.
+---Also prevents renames from going through if the rename will not do anything.
 ---Has an additional check for renaming files to a different case (e.g. for windows)
 ---@param original_path string
 ---@param destination string
@@ -28,9 +29,9 @@ local function can_safely_rename(original_path, destination)
 
   if utils.is_windows then
     -- check to see if we're just renaming the original to a different case
-    local orig = utils.normalize_path(original_path):lower()
-    local dest = utils.normalize_path(destination):lower()
-    return orig == dest
+    local orig = utils.normalize_path(original_path)
+    local dest = utils.normalize_path(destination)
+    return orig ~= dest and orig:lower() == dest:lower()
   end
   return false
 end
