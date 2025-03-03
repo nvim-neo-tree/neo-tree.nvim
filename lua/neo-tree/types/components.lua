@@ -6,7 +6,8 @@
 ---@field text string The text to display.
 ---@field highlight string The highlight for the text.
 
----@class (exact) neotree.Config.Component
+---@class (exact) neotree.Component
+---@field [1] string?
 ---@field enabled boolean?
 ---@field highlight string?
 

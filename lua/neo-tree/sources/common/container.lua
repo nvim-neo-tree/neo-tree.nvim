@@ -307,18 +307,7 @@ local merge_content = function(context)
   context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 
----@class (exact) neotree.Config.Component.Common.Container
----@field left_padding integer?
----@field right_padding integer?
----@field enable_character_fade boolean?
----@field content neotree.Component[]?
-
----@alias neotree.Component table
-
----@class (exact) neotree.Component.Common.Container : neotree.Config.Component.Common.Container
----@field [1] "clipboard"
-
----@param config neotree.Config.Component.Common.Container
+---@param config neotree.Component.Common.Container
 M.render = function(config, node, state, available_width)
   local context = {
     wanted_width = 0,

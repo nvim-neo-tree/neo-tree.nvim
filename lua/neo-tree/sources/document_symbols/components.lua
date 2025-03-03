@@ -21,16 +21,14 @@ local common = require("neo-tree.sources.common.components")
 ---@class neotree.Component.DocumentSymbols Use the neotree.Component.DocumentSymbols.* types to get more specific types.
 ---@field [1] neotree.Component.DocumentSymbols._Key|neotree.Component.Common._Key
 
----@type table<neotree.Component.DocumentSymbols._Key, neotree.Component.Renderer>
+---@type table<neotree.Component.DocumentSymbols._Key, neotree.Renderer>
 local M = {}
 
----@class (exact) neotree.Config.Component.DocumentSymbols.KindIcon : neotree.Config.Component
+---@class (exact) neotree.Component.DocumentSymbols.KindIcon : neotree.Component
+---@field [1] "kind_icon"?
 ---@field provider neotree.IconProvider?
 
----@class (exact) neotree.Component.DocumentSymbols.KindIcon : neotree.Config.Component.DocumentSymbols.KindIcon
----@field [1] "kind_icon"
-
----@param config neotree.Config.Component.DocumentSymbols.KindIcon
+---@param config neotree.Component.DocumentSymbols.KindIcon
 M.kind_icon = function(config, node, state)
   local icon = {
     text = node:get_depth() == 1 and "" or node.extra.kind.icon,
@@ -44,12 +42,10 @@ M.kind_icon = function(config, node, state)
   return icon
 end
 
----@class (exact) neotree.Config.Component.DocumentSymbols.KindName : neotree.Config.Component
+---@class (exact) neotree.Component.DocumentSymbols.KindName : neotree.Component
+---@field [1] "kind_name"?
 
----@class (exact) neotree.Component.DocumentSymbols.KindName : neotree.Config.Component.DocumentSymbols.KindName
----@field [1] "kind_name"
-
----@param config neotree.Config.Component.DocumentSymbols.KindName
+---@param config neotree.Component.DocumentSymbols.KindName
 M.kind_name = function(config, node, state)
   return {
     text = node:get_depth() == 1 and "" or node.extra.kind.name,
@@ -57,12 +53,10 @@ M.kind_name = function(config, node, state)
   }
 end
 
----@class (exact) neotree.Config.Component.DocumentSymbols.Name : neotree.Config.Component
+---@class (exact) neotree.Component.DocumentSymbols.Name : neotree.Component.Common.Name
+---@field [1] "name"?
 
----@class (exact) neotree.Component.DocumentSymbols.Name : neotree.Config.Component.DocumentSymbols.Name
----@field [1] "name"
-
----@param config neotree.Config.Component.DocumentSymbols.Name
+---@param config neotree.Component.DocumentSymbols.Name
 M.name = function(config, node, state)
   return {
     text = node.name,

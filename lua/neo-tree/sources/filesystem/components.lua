@@ -20,15 +20,13 @@ local utils = require("neo-tree.utils")
 ---@class neotree.Component.Filesystem
 ---@field [1] neotree.Component.Filesystem._Key|neotree.Component.Common._Key
 
----@type table<neotree.Component.Filesystem._Key, neotree.Component.Renderer>
+---@type table<neotree.Component.Filesystem._Key, neotree.Renderer>
 local M = {}
 
----@class (exact) neotree.Config.Component.Filesystem.CurrentFilter : neotree.Config.Component
+---@class (exact) neotree.Component.Filesystem.CurrentFilter : neotree.Component.Common.CurrentFilter
+---@field [1] "current_filter"?
 
----@class (exact) neotree.Component.Filesystem.CurrentFilter : neotree.Config.Component.Filesystem.CurrentFilter
----@field [1] "current_filter"
-
----@param config neotree.Config.Component.Filesystem.CurrentFilter
+---@param config neotree.Component.Filesystem.CurrentFilter
 M.current_filter = function(config, node, state)
   local filter = node.search_pattern or ""
   if filter == "" then

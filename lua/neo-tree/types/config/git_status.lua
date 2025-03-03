@@ -1,4 +1,6 @@
 ---@meta
 
+---@class neotree.Config.GitStatus.Renderers : neotree.Config.Renderers
+
 ---@class neotree.Config.GitStatus : neotree.Config.Source
----@field renderers (neotree.Component.GitStatus|neotree.Component.Common)[]
+---@field renderers neotree.Config.GitStatus.Renderers?

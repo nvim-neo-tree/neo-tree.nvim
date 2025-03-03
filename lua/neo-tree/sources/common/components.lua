@@ -37,7 +37,7 @@ local log = require("neo-tree.log")
 ---@class neotree.Component.Common Use the neotree.Component.Common.* types to get more specific types.
 ---@field [1] neotree.Component.Common._Key
 
----@type table<neotree.Component.Common._Key, neotree.Component.Renderer>
+---@type table<neotree.Component.Common._Key, neotree.Renderer>
 local M = {}
 
 local make_two_char = function(symbol)
@@ -48,15 +48,13 @@ local make_two_char = function(symbol)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Bufnr : neotree.Config.Component
-
----@class (exact) neotree.Component.Common.Bufnr : neotree.Config.Component.Common.Bufnr
----@field [1] "bufnr"
+---@class (exact) neotree.Component.Common.Bufnr : neotree.Component
+---@field [1] "bufnr"?
 
 -- Config fields below:
 -- only works in the buffers component, but it's here so we don't have to defined
 -- multple renderers.
----@param config neotree.Config.Component.Common.Bufnr
+---@param config neotree.Component.Common.Bufnr
 M.bufnr = function(config, node, _)
   local highlight = config.highlight or highlights.BUFFER_NUMBER
   local bufnr = node.extra and node.extra.bufnr
@@ -69,12 +67,10 @@ M.bufnr = function(config, node, _)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Clipboard : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Clipboard : neotree.Component
+---@field [1] "clipboard"?
 
----@class (exact) neotree.Component.Common.Clipboard : neotree.Config.Component.Common.Clipboard
----@field [1] "clipboard"
-
----@param config neotree.Config.Component.Common.Clipboard
+---@param config neotree.Component.Common.Clipboard
 M.clipboard = function(config, node, state)
   local clipboard = state.clipboard or {}
   local clipboard_state = clipboard[node:get_id()]
@@ -87,14 +83,19 @@ M.clipboard = function(config, node, state)
   }
 end
 
+---@class (exact) neotree.Component.Common.Container : neotree.Component
+---@field [1] "container"
+---@field left_padding integer?
+---@field right_padding integer?
+---@field enable_character_fade boolean?
+---@field content (neotree.Component|{zindex: number, align: "left"|"right"|nil})[]?
+
 M.container = container.render
 
----@class (exact) neotree.Config.Component.Common.CurrentFilter : neotree.Config.Component
-
----@class (exact) neotree.Component.Common.CurrentFilter : neotree.Config.Component.Common.CurrentFilter
+---@class (exact) neotree.Component.Common.CurrentFilter : neotree.Component
 ---@field [1] "current_filter"
 
----@param config neotree.Config.Component.Common.CurrentFilter
+---@param config neotree.Component.Common.CurrentFilter
 M.current_filter = function(config, node, _)
   local filter = node.search_pattern or ""
   if filter == "" then
@@ -155,16 +156,14 @@ local function get_defined_sign(severity)
   return defined
 end
 
----@class (exact) neotree.Config.Component.Common.Diagnostics : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Diagnostics : neotree.Component
+---@field [1] "diagnostics"?
 ---@field errors_only boolean?
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 ---@field highlights table<string, string>?
 
----@class (exact) neotree.Component.Common.Diagnostics : neotree.Config.Component.Common.Diagnostics
----@field [1] "diagnostics"
-
----@param config neotree.Config.Component.Common.Diagnostics
+---@param config neotree.Component.Common.Diagnostics
 M.diagnostics = function(config, node, state)
   local diag = state.diagnostics_lookup or {}
   local diag_state = utils.index_by_path(diag, node:get_id())
@@ -205,14 +204,12 @@ M.diagnostics = function(config, node, state)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.GitStatus : neotree.Config.Component
+---@class (exact) neotree.Component.Common.GitStatus : neotree.Component
+---@field [1] "git_status"?
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 
----@class (exact) neotree.Component.Common.GitStatus : neotree.Config.Component.Common.GitStatus
----@field [1] "git_status"
-
----@param config neotree.Config.Component.Common.GitStatus
+---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local git_status_lookup = state.git_status_lookup
   if config.hide_when_expanded and node.type == "directory" and node:is_expanded() then
@@ -355,7 +352,8 @@ M.filtered_by = function(_, node, _)
   return result
 end
 
----@class (exact) neotree.Config.Component.Common.Icon : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Icon : neotree.Component
+---@field [1] "icon"
 ---@field default string The default icon for a node.
 ---@field folder_empty string The string to display to represent an empty folder.
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.
@@ -363,10 +361,7 @@ end
 ---@field folder_closed string The icon to display for a closed folder.
 ---@field provider neotree.IconProvider?
 
----@class (exact) neotree.Component.Common.Icon : neotree.Config.Component.Common.Icon
----@field [1] "icon"
-
----@param config neotree.Config.Component.Common.Icon
+---@param config neotree.Component.Common.Icon
 M.icon = function(config, node, state)
   -- calculate default icon
   local icon =
@@ -395,13 +390,11 @@ M.icon = function(config, node, state)
   return icon
 end
 
----@class (exact) neotree.Config.Component.Common.Modified : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Modified : neotree.Component
+---@field [1] "modified"?
 ---@field symbol string?
 
----@class (exact) neotree.Component.Common.Modified : neotree.Config.Component.Common.Modified
----@field [1] "modified"
-
----@param config neotree.Config.Component.Common.Modified
+---@param config neotree.Component.Common.Modified
 M.modified = function(config, node, state)
   local opened_buffers = state.opened_buffers or {}
   local buf_info = utils.index_by_path(opened_buffers, node.path)
@@ -416,16 +409,14 @@ M.modified = function(config, node, state)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Name : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Name : neotree.Component
+---@field [1] "name"?
 ---@field trailing_slash boolean?
 ---@field use_git_status_colors boolean?
 ---@field highlight_opened_files boolean|"all"?
 ---@field right_padding integer?
 
----@class (exact) neotree.Component.Common.Name : neotree.Config.Component.Common.Name
----@field [1] "name"
-
----@param config neotree.Config.Component.Common.Name
+---@param config neotree.Component.Common.Name
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME
   local text = node.name
@@ -478,7 +469,8 @@ M.name = function(config, node, state)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Indent : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Indent : neotree.Component
+---@field [1] "indent"?
 ---@field expander_collapsed string?
 ---@field expander_expanded string?
 ---@field expander_highlight string?
@@ -489,10 +481,7 @@ end
 ---@field with_expanders boolean?
 ---@field with_markers boolean?
 
----@class (exact) neotree.Component.Common.Indent : neotree.Config.Component.Common.Indent
----@field [1] "indent"
-
----@param config neotree.Config.Component.Common.Indent
+---@param config neotree.Component.Common.Indent
 M.indent = function(config, node, state)
   if not state.skip_marker_at_level then
     state.skip_marker_at_level = {}
@@ -588,13 +577,11 @@ local get_header = function(state, label, size)
   return vim.fn.printf("%" .. size .. "s  ", truncate_string(label, size))
 end
 
----@class (exact) neotree.Config.Component.Common.FileSize : neotree.Config.Component
+---@class (exact) neotree.Component.Common.FileSize : neotree.Component
+---@field [1] "file_size"?
 ---@field width integer?
 
----@class (exact) neotree.Component.Common.FileSize : neotree.Config.Component.Common.FileSize
----@field [1] "file_size"
-
----@param config neotree.Config.Component.Common.FileSize
+---@param config neotree.Component.Common.FileSize
 M.file_size = function(config, node, state)
   -- Root node gets column labels
   if node:get_depth() == 1 then
@@ -622,11 +609,11 @@ M.file_size = function(config, node, state)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.Time : neotree.Config.Component
+---@class (exact) neotree.Component.Common._Time : neotree.Component
 ---@field format neotree.DateFormat
 ---@field width integer?
 
----@param config neotree.Config.Component.Common.Time
+---@param config neotree.Component.Common._Time
 local file_time = function(config, node, state, stat_field)
   -- Root node gets column labels
   if node:get_depth() == 1 then
@@ -653,33 +640,27 @@ local file_time = function(config, node, state, stat_field)
   }
 end
 
----@class (exact) neotree.Config.Component.Common.LastModified : neotree.Config.Component.Common.Time
+---@class (exact) neotree.Component.Common.LastModified : neotree.Component.Common._Time
+---@field [1] "last_modified"?
 
----@class (exact) neotree.Component.Common.LastModified : neotree.Config.Component.Common.LastModified
----@field [1] "last_modified"
-
----@param config neotree.Config.Component.Common.Time
+---@param config neotree.Component.Common.LastModified
 M.last_modified = function(config, node, state)
   return file_time(config, node, state, "mtime")
 end
 
----@class (exact) neotree.Config.Component.Common.Created : neotree.Config.Component.Common.Time
+---@class (exact) neotree.Component.Common.Created : neotree.Component.Common._Time
+---@field [1] "created"?
 
----@class (exact) neotree.Component.Common.Created : neotree.Config.Component.Common.Created
----@field [1] "created"
-
----@param config neotree.Config.Component.Common.Time
+---@param config neotree.Component.Common.Created
 M.created = function(config, node, state)
   return file_time(config, node, state, "birthtime")
 end
 
----@class (exact) neotree.Config.Component.Common.SymlinkTarget : neotree.Config.Component
+---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Component
+---@field [1] "symlink_target"?
 ---@field text_format string
 
----@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Config.Component.Common.SymlinkTarget
----@field [1] "symlink_target"
-
----@param config neotree.Config.Component.Common.SymlinkTarget
+---@param config neotree.Component.Common.SymlinkTarget
 M.symlink_target = function(config, node, _)
   if node.is_link then
     return {
@@ -691,13 +672,11 @@ M.symlink_target = function(config, node, _)
   end
 end
 
----@class (exact) neotree.Config.Component.Common.Type : neotree.Config.Component
+---@class (exact) neotree.Component.Common.Type : neotree.Component
+---@field [1] "type"?
 ---@field width integer?
 
----@class (exact) neotree.Component.Common.Type : neotree.Config.Component.Common.Type
----@field [1] "type"
-
----@param config neotree.Config.Component.Common.Type
+---@param config neotree.Component.Common.Type
 M.type = function(config, node, state)
   local text = node.ext or node.type
   -- Root node gets column labels

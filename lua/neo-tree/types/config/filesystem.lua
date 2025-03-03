@@ -31,6 +31,8 @@
 ---|"open_current" # opening a directory opens neo-tree within the current window.
 ---|"disabled" # opening a directory opens neo-tree within the current window.
 
+---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
+
 ---@class neotree.Config.Filesystem : neotree.Config.Source
 ---@field async_directory_scan "auto"|"always"|"never"
 ---@field bind_to_cwd boolean
@@ -45,4 +47,4 @@
 ---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile
 ---@field hijack_netrw_behavior neotree.Config.HijackNetrwBehavior
 ---@field use_libuv_file_watcher boolean
----@field renderers (neotree.Component.Filesystem|neotree.Component.Common)[]
+---@field renderers neotree.Config.Filesystem.Renderers?

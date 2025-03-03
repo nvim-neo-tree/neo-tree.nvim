@@ -94,17 +94,17 @@
 ---@field terminal neotree.Component.Common[]?
 
 ---@class neotree.Config.ComponentDefaults
----@field container neotree.Config.Component.Common.Container
----@field indent neotree.Config.Component.Common.Indent
----@field icon neotree.Config.Component.Common.Icon
----@field modified neotree.Config.Component.Common.Modified
----@field name neotree.Config.Component.Common.Name
----@field git_status neotree.Config.Component.Common.GitStatus
----@field file_size neotree.Config.Component.Common.FileSize
----@field type neotree.Config.Component.Common.Type
----@field last_modified neotree.Config.Component.Common.LastModified
----@field created neotree.Config.Component.Common.Created
----@field symlink_target neotree.Config.Component.Common.SymlinkTarget
+---@field container neotree.Component.Common.Container
+---@field indent neotree.Component.Common.Indent
+---@field icon neotree.Component.Common.Icon
+---@field modified neotree.Component.Common.Modified
+---@field name neotree.Component.Common.Name
+---@field git_status neotree.Component.Common.GitStatus
+---@field file_size neotree.Component.Common.FileSize
+---@field type neotree.Component.Common.Type
+---@field last_modified neotree.Component.Common.LastModified
+---@field created neotree.Component.Common.Created
+---@field symlink_target neotree.Component.Common.SymlinkTarget
 
 ---@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"|nil
 
@@ -142,9 +142,11 @@
 ---@field nesting_rules neotree.FileNesting.Rule[]
 ---@field commands table<string, fun()>?
 ---@field window neotree.Config.Window?
+---
 ---@field filesystem neotree.Config.Filesystem?
 ---@field buffers neotree.Config.Buffers?
 ---@field git_status neotree.Config.GitStatus?
+---@field document_symbols neotree.Config.DocumentSymbols?
 
 ---@class neotree.Config._Full : neotree.Config
 ---@field prior_windows table<string, integer[]>?
