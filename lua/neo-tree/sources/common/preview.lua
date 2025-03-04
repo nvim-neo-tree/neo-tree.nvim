@@ -491,7 +491,7 @@ end
 
 local CTRL_E = utils.keycode("<c-e>")
 local CTRL_Y = utils.keycode("<c-y>")
-Preview.scroll = function(state, fallback)
+Preview.scroll = function(state)
   local direction = state.config.direction
   local input = direction < 0 and CTRL_E or CTRL_Y
   local count = math.abs(direction)
@@ -502,7 +502,7 @@ Preview.scroll = function(state, fallback)
     end)
   else
     vim.api.nvim_buf_call(state.bufnr, function()
-      vim.cmd(("normal! %s"):format(utils.keycode(fallback)))
+      vim.cmd(("normal! %s"):format(utils.keycode(state.fallback)))
     end)
   end
 end
