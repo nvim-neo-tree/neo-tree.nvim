@@ -24,7 +24,6 @@ local utils = require("neo-tree.utils")
 local M = {}
 
 ---@class (exact) neotree.Component.Buffers.Name : neotree.Component.Common.Name
----@field [1] "name"
 
 ---@param config neotree.Component.Buffers.Name
 M.name = function(config, node, state)

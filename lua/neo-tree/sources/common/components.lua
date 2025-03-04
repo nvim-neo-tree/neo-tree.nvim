@@ -84,7 +84,7 @@ M.clipboard = function(config, node, state)
 end
 
 ---@class (exact) neotree.Component.Common.Container : neotree.Component
----@field [1] "container"
+---@field [1] "container"?
 ---@field left_padding integer?
 ---@field right_padding integer?
 ---@field enable_character_fade boolean?
@@ -315,7 +315,7 @@ M.git_status = function(config, node, state)
 end
 
 ---@class neotree.Component.Common.FilteredBy
----@field [1] "filtered_by"
+---@field [1] "filtered_by"?
 
 M.filtered_by = function(_, node, _)
   local result = {}
@@ -353,7 +353,7 @@ M.filtered_by = function(_, node, _)
 end
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Component
----@field [1] "icon"
+---@field [1] "icon"?
 ---@field default string The default icon for a node.
 ---@field folder_empty string The string to display to represent an empty folder.
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.

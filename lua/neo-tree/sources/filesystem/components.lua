@@ -24,7 +24,6 @@ local utils = require("neo-tree.utils")
 local M = {}
 
 ---@class (exact) neotree.Component.Filesystem.CurrentFilter : neotree.Component.Common.CurrentFilter
----@field [1] "current_filter"?
 
 ---@param config neotree.Component.Filesystem.CurrentFilter
 M.current_filter = function(config, node, state)

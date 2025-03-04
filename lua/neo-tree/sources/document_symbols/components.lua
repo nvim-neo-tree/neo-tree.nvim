@@ -54,7 +54,6 @@ M.kind_name = function(config, node, state)
 end
 
 ---@class (exact) neotree.Component.DocumentSymbols.Name : neotree.Component.Common.Name
----@field [1] "name"?
 
 ---@param config neotree.Component.DocumentSymbols.Name
 M.name = function(config, node, state)
