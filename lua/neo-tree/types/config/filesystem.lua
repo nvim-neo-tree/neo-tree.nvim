@@ -34,17 +34,17 @@
 ---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
 
 ---@class neotree.Config.Filesystem : neotree.Config.Source
----@field async_directory_scan "auto"|"always"|"never"
----@field bind_to_cwd boolean
----@field cwd_target neotree.Config.Filesystem.CwdTarget
----@field check_gitignore_in_search boolean
----@field filtered_items neotree.Config.Filesystem.FilteredItems
----@field find_by_full_path_words boolean
+---@field async_directory_scan "auto"|"always"|"never"|nil
+---@field bind_to_cwd boolean?
+---@field cwd_target neotree.Config.Filesystem.CwdTarget?
+---@field check_gitignore_in_search boolean?
+---@field filtered_items neotree.Config.Filesystem.FilteredItems?
+---@field find_by_full_path_words boolean?
 ---@field find_command string?
 ---@field find_args table<string, string[]>|neotree.Config.Filesystem.FindArgsHandler|nil
----@field group_empty_dirs boolean
----@field search_limit integer
----@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile
----@field hijack_netrw_behavior neotree.Config.HijackNetrwBehavior
----@field use_libuv_file_watcher boolean
+---@field group_empty_dirs boolean?
+---@field search_limit integer?
+---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
+---@field hijack_netrw_behavior neotree.Config.HijackNetrwBehavior?
+---@field use_libuv_file_watcher boolean?
 ---@field renderers neotree.Config.Filesystem.Renderers?

@@ -10,14 +10,12 @@
 ---@field noremap boolean?
 ---@field config table?
 
----@alias neotree.Config.Window.Mappings table<string, string|neotree.Config.Mapping>
-
 ---@class neotree.Config.Source
----@field window neotree.Config.Source.Window
----@field renderers neotree.Component[]
+---@field window neotree.Config.Source.Window?
+---@field renderers neotree.Component[]?
 
 ---@class neotree.Config.Source.Window
----@field mappings neotree.Config.Window.Mappings
+---@field mappings table<string, string|neotree.Config.Mapping>
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string
@@ -36,10 +34,10 @@
 ---@field override neotree.Config.SourceSelector.Separator.Override
 
 ---@class neotree.Config.SourceSelector
----@field winbar boolean
----@field statusline boolean
----@field show_scrolled_off_parent_node boolean
----@field sources neotree.Config.SourceSelector.Item[]
+---@field winbar boolean?
+---@field statusline boolean?
+---@field show_scrolled_off_parent_node boolean?
+---@field sources neotree.Config.SourceSelector.Item[]?
 ---@field content_layout string? "start"|"end"|"center"
 ---@field tabs_layout string? "equal"|"start"|"end"|"center"|"focus"
 ---@field truncation_character string
@@ -48,17 +46,17 @@
 ---@field padding integer?
 ---@field separator neotree.Config.SourceSelector.Separator?
 ---@field separator_active neotree.Config.SourceSelector.Separator?
----@field show_separator_on_edge boolean
----@field highlight_tab string
----@field highlight_tab_active string
----@field highlight_background string
----@field highlight_separator string
----@field highlight_separator_active string
+---@field show_separator_on_edge boolean?
+---@field highlight_tab string?
+---@field highlight_tab_active string?
+---@field highlight_background string?
+---@field highlight_separator string?
+---@field highlight_separator_active string?
 
 ---@class neotree.Config.GitStatusAsync
----@field batch_size integer
----@field batch_delay integer
----@field max_lines integer
+---@field batch_size integer?
+---@field batch_delay integer?
+---@field max_lines integer?
 
 ---@class neotree.Config.Window.Size
 ---@field height string|number?
@@ -94,21 +92,21 @@
 ---@field terminal neotree.Component.Common[]?
 
 ---@class neotree.Config.ComponentDefaults
----@field container neotree.Component.Common.Container
----@field indent neotree.Component.Common.Indent
----@field icon neotree.Component.Common.Icon
----@field modified neotree.Component.Common.Modified
----@field name neotree.Component.Common.Name
----@field git_status neotree.Component.Common.GitStatus
----@field file_size neotree.Component.Common.FileSize
----@field type neotree.Component.Common.Type
----@field last_modified neotree.Component.Common.LastModified
----@field created neotree.Component.Common.Created
----@field symlink_target neotree.Component.Common.SymlinkTarget
+---@field container neotree.Component.Common.Container?
+---@field indent neotree.Component.Common.Indent?
+---@field icon neotree.Component.Common.Icon?
+---@field modified neotree.Component.Common.Modified?
+---@field name neotree.Component.Common.Name?
+---@field git_status neotree.Component.Common.GitStatus?
+---@field file_size neotree.Component.Common.FileSize?
+---@field type neotree.Component.Common.Type?
+---@field last_modified neotree.Component.Common.LastModified?
+---@field created neotree.Component.Common.Created?
+---@field symlink_target neotree.Component.Common.SymlinkTarget?
 
----@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"|nil
+---@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"
 
----@class neotree.Config
+---@class (exact) neotree.Config
 ---@field sources string[]?
 ---@field add_blank_line_at_top boolean?
 ---@field auto_clean_after_session_restore boolean?
@@ -125,12 +123,12 @@
 ---@field hide_root_node boolean?
 ---@field retain_hidden_root_indent boolean?
 ---@field log_level "trace"|"debug"|"info"|"warn"|"error"|"fatal"|nil
----@field log_to_file boolean?
+---@field log_to_file boolean|string?
 ---@field open_files_in_last_window boolean?
 ---@field open_files_do_not_replace_types string[]?
 ---@field open_files_using_relative_paths boolean?
----@field popup_border_style neotree.Config.BorderStyle
----@field resize_timer_interval integer?
+---@field popup_border_style neotree.Config.BorderStyle?
+---@field resize_timer_interval integer|-1?
 ---@field sort_case_insensitive boolean?
 ---@field sort_function fun(a: any, b: any)?
 ---@field use_popups_for_input boolean?
@@ -139,7 +137,7 @@
 ---@field event_handlers neotree.Event.Handler[]?
 ---@field default_component_configs neotree.Config.ComponentDefaults?
 ---@field renderers neotree.Config.Renderers?
----@field nesting_rules neotree.FileNesting.Rule[]
+---@field nesting_rules neotree.FileNesting.Rule[]?
 ---@field commands table<string, fun()>?
 ---@field window neotree.Config.Window?
 ---
