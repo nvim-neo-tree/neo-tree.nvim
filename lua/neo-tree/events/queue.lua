@@ -10,7 +10,6 @@ local M = {}
 ---@field event neotree.Event|string
 ---@field handler fun(...)
 ---@field id string?
-local a = {}
 
 local validate_event_handler = function(event_handler)
   if type(event_handler) ~= "table" then
