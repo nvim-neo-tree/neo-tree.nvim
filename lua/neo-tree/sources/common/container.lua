@@ -307,6 +307,7 @@ local merge_content = function(context)
   context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 
+---@param config neotree.Component.Common.Container
 M.render = function(config, node, state, available_width)
   local context = {
     wanted_width = 0,

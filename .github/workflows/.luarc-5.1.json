@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
   "diagnostics.libraryFiles": "Disable",
   "runtime": {
-    "version": "LuaJIT",
+    "version": "Lua 5.1",
     "path": [
       "lua/?.lua",
       "lua/?/init.lua",

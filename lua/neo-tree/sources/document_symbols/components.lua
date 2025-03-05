@@ -13,8 +13,22 @@
 local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
 
+---@alias neotree.Component.DocumentSymbols._Key
+---|"kind_icon"
+---|"kind_name"
+---|"name"
+
+---@class neotree.Component.DocumentSymbols Use the neotree.Component.DocumentSymbols.* types to get more specific types.
+---@field [1] neotree.Component.DocumentSymbols._Key|neotree.Component.Common._Key
+
+---@type table<neotree.Component.DocumentSymbols._Key, neotree.Renderer>
 local M = {}
 
+---@class (exact) neotree.Component.DocumentSymbols.KindIcon : neotree.Component
+---@field [1] "kind_icon"?
+---@field provider neotree.IconProvider?
+
+---@param config neotree.Component.DocumentSymbols.KindIcon
 M.kind_icon = function(config, node, state)
   local icon = {
     text = node:get_depth() == 1 and "" or node.extra.kind.icon,
@@ -28,6 +42,10 @@ M.kind_icon = function(config, node, state)
   return icon
 end
 
+---@class (exact) neotree.Component.DocumentSymbols.KindName : neotree.Component
+---@field [1] "kind_name"?
+
+---@param config neotree.Component.DocumentSymbols.KindName
 M.kind_name = function(config, node, state)
   return {
     text = node:get_depth() == 1 and "" or node.extra.kind.name,
@@ -35,6 +53,9 @@ M.kind_name = function(config, node, state)
   }
 end
 
+---@class (exact) neotree.Component.DocumentSymbols.Name : neotree.Component.Common.Name
+
+---@param config neotree.Component.DocumentSymbols.Name
 M.name = function(config, node, state)
   return {
     text = node.name,
