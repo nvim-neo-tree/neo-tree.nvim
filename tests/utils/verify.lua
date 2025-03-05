@@ -57,7 +57,7 @@ verify.tree_focused = function(timeout)
     if not verify.get_state() then
       return false
     end
-    return vim.api.nvim_buf_get_option(0, "filetype") == "neo-tree"
+    return vim.bo[0].filetype == "neo-tree"
   end, "Current buffer is not a 'neo-tree' filetype")
 end
 

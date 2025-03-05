@@ -201,7 +201,7 @@ M.buffer_enter_event = function()
   if prior_buf < 1 then
     return
   end
-  local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
+  local prior_type = vim.bo[prior_buf].filetype
 
   -- there is nothing more we want to do with floating windows
   -- but when prior_type is neo-tree we might need to redirect buffer somewhere else.

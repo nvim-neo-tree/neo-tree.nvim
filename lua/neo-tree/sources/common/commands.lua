@@ -871,7 +871,7 @@ local use_window_picker = function(state, path, cmd)
     local result, err = pcall(vim.cmd, cmd .. " " .. vim.fn.fnameescape(path))
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321
-      vim.api.nvim_buf_set_option(0, "buflisted", true)
+      vim.bo[0].buflisted = true
       events.fire_event(events.FILE_OPENED, path)
     else
       log.error("Error opening file:", err)

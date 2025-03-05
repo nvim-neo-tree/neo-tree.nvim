@@ -56,7 +56,7 @@ M.hijack = function()
     local replace_with_bufnr = vim.fn.bufnr("#")
     local is_currently_neo_tree = false
     if replace_with_bufnr > 0 then
-      if vim.api.nvim_buf_get_option(replace_with_bufnr, "filetype") == "neo-tree" then
+      if vim.bo[replace_with_bufnr].filetype == "neo-tree" then
         -- don't hijack the current window if it's already a Neo-tree sidebar
         local _, position = pcall(vim.api.nvim_buf_get_var, replace_with_bufnr, "neo_tree_position")
         if position ~= "current" then

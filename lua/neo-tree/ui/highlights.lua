@@ -123,14 +123,14 @@ end
 local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   local normal = vim.api.nvim_get_hl_by_name("Normal", true)
   if type(normal.foreground) ~= "number" then
-    if vim.api.nvim_get_option("background") == "dark" then
+    if vim.go.background == "dark" then
       normal.foreground = 0xffffff
     else
       normal.foreground = 0x000000
     end
   end
   if type(normal.background) ~= "number" then
-    if vim.api.nvim_get_option("background") == "dark" then
+    if vim.go.background == "dark" then
       normal.background = 0x000000
     else
       normal.background = 0xffffff

@@ -929,11 +929,11 @@ local get_buffer = function(bufname, state)
   if bufnr < 1 then
     bufnr = vim.api.nvim_create_buf(false, false)
     vim.api.nvim_buf_set_name(bufnr, bufname)
-    vim.api.nvim_buf_set_option(bufnr, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(bufnr, "swapfile", false)
-    vim.api.nvim_buf_set_option(bufnr, "filetype", "neo-tree")
-    vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
-    vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+    vim.bo[bufnr].buftype = "nofile"
+    vim.bo[bufnr].swapfile = false
+    vim.bo[bufnr].filetype = "neo-tree"
+    vim.bo[bufnr].modifiable = false
+    vim.bo[bufnr].undolevels = -1
     autocmd.buf.define(bufnr, "BufDelete", function()
       M.position.save(state)
     end)

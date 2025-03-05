@@ -389,7 +389,7 @@ M.get_opened_buffers = function()
         buffer_name = "[No Name]#" .. buffer
       end
       opened_buffers[buffer_name] = {
-        ["modified"] = vim.api.nvim_buf_get_option(buffer, "modified"),
+        ["modified"] = vim.bo[buffer].modified,
         ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
       }
     end
@@ -578,7 +578,7 @@ end
 M.is_winfixbuf = function(win_id)
   if vim.fn.exists("&winfixbuf") == 1 then
     win_id = win_id or vim.api.nvim_get_current_win()
-    return vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
+    return vim.wo[win_id].winfixbuf
   end
   return false
 end
@@ -600,7 +600,7 @@ M.is_real_file = function(afile, true_for_terminals)
 
   local success, bufnr = pcall(vim.fn.bufnr, afile)
   if success and bufnr > 0 then
-    local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
+    local buftype = vim.bo[bufnr].buftype
 
     if true_for_terminals and buftype == "terminal" then
       return true
@@ -814,7 +814,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321
-      vim.api.nvim_buf_set_option(0, "buflisted", true)
+      vim.bo[0].buflisted = true
       events.fire_event(events.FILE_OPENED, path)
     else
       log.error("Error opening file:", err)

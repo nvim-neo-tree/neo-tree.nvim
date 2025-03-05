@@ -50,7 +50,7 @@ local function find_replacement_buffer(for_buf)
     if buf ~= for_buf then
       local is_valid = vim.api.nvim_buf_is_valid(buf)
       if is_valid then
-        local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+        local buftype = vim.bo[buf].buftype
         if buftype == "" then
           return buf
         end
@@ -112,11 +112,11 @@ local function rename_buffer(old_path, new_path)
       if utils.truthy(new_buf_name) then
         local new_buf = vim.fn.bufadd(new_buf_name)
         vim.fn.bufload(new_buf)
-        vim.api.nvim_buf_set_option(new_buf, "buflisted", true)
+        vim.bo[new_buf].buflisted = true
         replace_buffer_in_windows(buf, new_buf)
 
-        if vim.api.nvim_buf_get_option(buf, "buftype") == "" then
-          local modified = vim.api.nvim_buf_get_option(buf, "modified")
+        if vim.bo[buf].buftype == "" then
+          local modified = vim.bo[buf].modified
           if modified then
             local old_buffer_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
             vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, old_buffer_lines)
