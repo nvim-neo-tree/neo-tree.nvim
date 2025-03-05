@@ -13,6 +13,7 @@ local fzy = require("neo-tree.sources.common.filters.filter_fzy")
 
 local M = {}
 
+---@enum (key) neotree.FuzzyFinder.Commands
 local cmds = {
   move_cursor_down = function(state, scroll_padding)
     renderer.focus_node(state, nil, true, 1, scroll_padding)
