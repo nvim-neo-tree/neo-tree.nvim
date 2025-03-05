@@ -154,7 +154,7 @@ function Preview:revert()
   else
     local foldenable = utils.get_value(self.truth, "options.foldenable", nil, false)
     if foldenable ~= nil then
-      vim.api.nvim_win_set_option(self.winid, "foldenable", self.truth.options.foldenable)
+      vim.wo[self.winid].foldenable = self.truth.options.foldenable
     end
     vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 0)
   end
@@ -172,7 +172,7 @@ function Preview:revert()
       vim.fn.winrestview(self.truth.view)
     end)
   end
-  vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", self.truth.options.bufhidden)
+  vim.bo[self.bufnr].bufhidden = self.truth.options.bufhidden
 end
 
 ---Subscribe to event and add it to the preview event list.
@@ -254,12 +254,12 @@ function Preview:activate()
       bufnr = self.bufnr,
       view = vim.api.nvim_win_call(self.winid, vim.fn.winsaveview),
       options = {
-        bufhidden = vim.api.nvim_buf_get_option(self.bufnr, "bufhidden"),
-        foldenable = vim.api.nvim_win_get_option(self.winid, "foldenable"),
+        bufhidden = vim.bo[self.bufnr].bufhidden,
+        foldenable = vim.wo[self.winid].foldenable,
       },
     }
-    vim.api.nvim_buf_set_option(self.bufnr, "bufhidden", "hide")
-    vim.api.nvim_win_set_option(self.winid, "foldenable", false)
+    vim.bo[self.bufnr].bufhidden = "hide"
+    vim.wo[self.winid].foldenable = false
   end
   self.active = true
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)

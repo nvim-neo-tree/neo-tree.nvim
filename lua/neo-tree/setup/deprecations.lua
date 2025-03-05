@@ -14,12 +14,12 @@ M.show_migrations = function()
     table.insert(content, 1, header)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-    vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "buflisted", false)
-    vim.api.nvim_buf_set_option(buf, "swapfile", false)
-    vim.api.nvim_buf_set_option(buf, "modifiable", false)
-    vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].bufhidden = "wipe"
+    vim.bo[buf].buflisted = false
+    vim.bo[buf].swapfile = false
+    vim.bo[buf].modifiable = false
+    vim.bo[buf].filetype = "markdown"
     vim.api.nvim_buf_set_name(buf, "Neo-tree migrations")
     vim.defer_fn(function()
       vim.cmd(string.format("%ssplit", #content))

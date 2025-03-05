@@ -38,8 +38,8 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
       local success, is_valid = pcall(vim.api.nvim_win_is_valid, last_win)
       if success and is_valid and not (ignore_winfixbuf and utils.is_winfixbuf(last_win)) then
         local buf = vim.api.nvim_win_get_buf(last_win)
-        local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-        local bt = vim.api.nvim_buf_get_option(buf, "buftype") or "normal"
+        local ft = vim.bo[buf].filetype
+        local bt = vim.bo[buf].buftype or "normal"
         if ignore[ft] ~= true and ignore[bt] ~= true then
           return last_win
         end
