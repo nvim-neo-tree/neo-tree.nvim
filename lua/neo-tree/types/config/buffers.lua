@@ -2,7 +2,7 @@
 
 ---@class neotree.Config.Buffers.Renderers : neotree.Config.Renderers
 
----@class neotree.Config.Buffers : neotree.Config.Source
+---@class (exact) neotree.Config.Buffers : neotree.Config.Source
 ---@field bind_to_cwd boolean?
 ---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
 ---@field group_empty_dirs boolean?

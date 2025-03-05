@@ -7,7 +7,7 @@ local event_definitions = {}
 local M = {}
 
 ---@class neotree.Event.Handler
----@field event neotree.Event
+---@field event neotree.Event|string
 ---@field handler fun(...)
 ---@field id string?
 local a = {}

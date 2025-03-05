@@ -1,8 +1,8 @@
 ---@meta
 
 ---@class neotree.Config.MappingOptions
----@field noremap boolean
----@field nowait boolean
+---@field noremap boolean?
+---@field nowait boolean?
 
 ---@class neotree.Config.Mapping : neotree.Config.MappingOptions
 ---@field [1] string
@@ -15,12 +15,12 @@
 ---@field renderers neotree.Component[]?
 
 ---@class neotree.Config.Source.Window
----@field mappings table<string, string|neotree.Config.Mapping>
+---@field mappings table<string, string|neotree.Config.Mapping>?
 
 ---@class neotree.Config.SourceSelector.Item
----@field source string
----@field padding? integer|{left:integer,right:integer}
----@field separator? string|{left:string,right:string, override?:string}
+---@field source string?
+---@field padding integer|{left:integer,right:integer}?
+---@field separator string|{left:string,right:string, override?:string}?
 
 ---@alias neotree.Config.SourceSelector.Separator.Override
 ---|"right"   # When right and left separators meet, only show the right one.
@@ -29,9 +29,9 @@
 ---|nil       # Show both separators.
 
 ---@class neotree.Config.SourceSelector.Separator
----@field left string
----@field right string
----@field override neotree.Config.SourceSelector.Separator.Override
+---@field left string?
+---@field right string?
+---@field override neotree.Config.SourceSelector.Separator.Override?
 
 ---@class neotree.Config.SourceSelector
 ---@field winbar boolean?
@@ -63,27 +63,27 @@
 ---@field width string|number?
 
 ---@class neotree.Config.Window.Popup
----@field title fun(state:table):string
----@field size neotree.Config.Window.Size
----@field border neotree.Config.BorderStyle
+---@field title fun(state:table):string?
+---@field size neotree.Config.Window.Size?
+---@field border neotree.Config.BorderStyle?
 
 ---@class neotree.Config.Window
----@field position string
----@field width integer
----@field height integer
----@field auto_expand_width boolean
----@field popup neotree.Config.Window.Popup
----@field same_level boolean
----@field insert_as "child"|"sibling"
----@field mapping_options neotree.Config.MappingOptions
----@field mappings neotree.Config.Mapping[]
+---@field position string?
+---@field width integer?
+---@field height integer?
+---@field auto_expand_width boolean?
+---@field popup neotree.Config.Window.Popup?
+---@field same_level boolean?
+---@field insert_as "child"|"sibling"|nil
+---@field mapping_options neotree.Config.MappingOptions?
+---@field mappings neotree.Config.Mapping[]?
 
 ---@class neotree.Config.EventHandler.HandlerResult
----@field handled boolean
+---@field handled boolean?
 
 ---@class neotree.Config.EventHandler
 ---@field event string
----@field handler fun(table?):neotree.Config.EventHandler.HandlerResult?
+---@field handler fun(table?):(neotree.Config.EventHandler.HandlerResult?)
 
 ---@class neotree.Config.Renderers
 ---@field directory neotree.Component.Common[]?
@@ -146,5 +146,5 @@
 ---@field git_status neotree.Config.GitStatus?
 ---@field document_symbols neotree.Config.DocumentSymbols?
 
----@class neotree.Config._Full : neotree.Config
+---@class (exact) neotree.Config._Full : neotree.Config
 ---@field prior_windows table<string, integer[]>?

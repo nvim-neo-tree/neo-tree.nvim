@@ -33,8 +33,9 @@
 
 ---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
 
----@class neotree.Config.Filesystem : neotree.Config.Source
+---@class (exact) neotree.Config.Filesystem : neotree.Config.Source
 ---@field async_directory_scan "auto"|"always"|"never"|nil
+---@field scan_mode "shallow"|"deep"|nil
 ---@field bind_to_cwd boolean?
 ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
 ---@field check_gitignore_in_search boolean?

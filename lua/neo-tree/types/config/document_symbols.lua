@@ -8,7 +8,7 @@
 ---@field root neotree.Component.DocumentSymbols[]?
 ---@field symbol neotree.Component.DocumentSymbols[]?
 
----@class neotree.Config.DocumentSymbols : neotree.Config.Source
+---@class (exact) neotree.Config.DocumentSymbols : neotree.Config.Source
 ---@field follow_cursor boolean?
 ---@field client_filters neotree.lsp.ClientFilter?
 ---@field custom_kinds table<integer, string>?
