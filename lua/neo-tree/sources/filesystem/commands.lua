@@ -6,6 +6,7 @@ local utils = require("neo-tree.utils")
 local filter = require("neo-tree.sources.filesystem.lib.filter")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
+local shared_clipboard = require("neo-tree.sources.filesystem.lib.shared_clipboard")
 
 local M = {}
 local refresh = function(state)
@@ -14,6 +15,12 @@ end
 
 local redraw = function(state)
   renderer.redraw(state)
+end
+
+local sync_with_shared_clipboard = function(state)
+  if state.shared_clipboard then
+    shared_clipboard.save_clipboard(state.clipboard)
+  end
 end
 
 M.add = function(state)
@@ -35,19 +42,23 @@ end
 ---Marks node as copied, so that it can be pasted somewhere else.
 M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, utils.wrap(redraw, state))
+  sync_with_shared_clipboard(state)
 end
 
 M.copy_to_clipboard_visual = function(state, selected_nodes)
   cc.copy_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
+  sync_with_shared_clipboard(state)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, utils.wrap(redraw, state))
+  sync_with_shared_clipboard(state)
 end
 
 M.cut_to_clipboard_visual = function(state, selected_nodes)
   cc.cut_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
+  sync_with_shared_clipboard(state)
 end
 
 M.move = function(state)
@@ -57,6 +68,7 @@ end
 ---Pastes all items from the clipboard to the current directory.
 M.paste_from_clipboard = function(state)
   cc.paste_from_clipboard(state, utils.wrap(fs.show_new_children, state))
+  sync_with_shared_clipboard(state)
 end
 
 M.delete = function(state)
