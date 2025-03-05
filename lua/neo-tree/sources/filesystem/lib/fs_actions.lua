@@ -16,6 +16,26 @@ local Path = require("plenary").path
 
 local M = {}
 
+---Checks to see if a file can safely be renamed to its destination without data loss.
+---Also prevents renames from going through if the rename will not do anything.
+---Has an additional check for renaming files to a different case (e.g. for windows)
+---@param original_path string
+---@param destination string
+---@return boolean rename_is_safe
+local function can_safely_rename(original_path, destination)
+  if not loop.fs_stat(destination) then
+    return true
+  end
+
+  if utils.is_windows then
+    -- check to see if we're just renaming the original to a different case
+    local orig = utils.normalize_path(original_path)
+    local dest = utils.normalize_path(destination)
+    return orig ~= dest and orig:lower() == dest:lower()
+  end
+  return false
+end
+
 local function find_replacement_buffer(for_buf)
   local bufs = vim.api.nvim_list_bufs()
 
@@ -138,13 +158,19 @@ local function create_all_parents(path)
 end
 
 -- Gets a non-existing filename from the user and executes the callback with it.
+---@param source string
+---@param destination string
+---@param using_root_directory boolean
+---@param name_chosen_callback fun(string)
+---@param first_message string?
 local function get_unused_name(
+  source,
   destination,
   using_root_directory,
   name_chosen_callback,
   first_message
 )
-  if loop.fs_stat(destination) then
+  if can_safely_rename(source, destination) then
     local parent_path, name
     if not using_root_directory then
       parent_path, name = utils.split_path(destination)
@@ -160,7 +186,7 @@ local function get_unused_name(
     inputs.input(message, name, function(new_name)
       if new_name and string.len(new_name) > 0 then
         local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
-        get_unused_name(new_path, using_root_directory, name_chosen_callback)
+        get_unused_name(source, new_path, using_root_directory, name_chosen_callback)
       end
     end)
   else
@@ -179,7 +205,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     using_root_directory
   )
   local _, name = utils.split_path(source)
-  get_unused_name(destination or source, using_root_directory, function(dest)
+  get_unused_name(source, destination or source, using_root_directory, function(dest)
     -- Resolve user-inputted relative paths out of the absolute paths
     dest = vim.fs.normalize(dest)
     if utils.is_windows then
@@ -251,7 +277,7 @@ end
 -- Copy Node
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
-  get_unused_name(_destination or source, using_root_directory, function(destination)
+  get_unused_name(source, _destination or source, using_root_directory, function(destination)
     local parent_path, _ = utils.split_path(destination)
     if source == parent_path then
       log.warn("Cannot copy a file/folder to itself")
@@ -605,9 +631,9 @@ local rename_node = function(msg, name, get_destination, path, callback)
     end
 
     local destination = get_destination(new_name)
-    -- If already exists
-    if loop.fs_stat(destination) then
-      log.warn(destination, " already exists")
+
+    if not can_safely_rename(path, destination) then
+      log.warn(destination, " already exists, canceling")
       return
     end
 
