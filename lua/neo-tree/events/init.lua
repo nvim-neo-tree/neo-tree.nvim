@@ -53,7 +53,7 @@ local M = {
   VIM_WIN_ENTER = "vim_win_enter",
 }
 
----@param event_name neotree.Event
+---@param event_name neotree.Event|string
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   local opts = {
     setup = function()
