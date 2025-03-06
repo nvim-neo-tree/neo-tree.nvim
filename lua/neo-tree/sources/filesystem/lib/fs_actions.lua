@@ -22,7 +22,7 @@ local M = {}
 ---@param original_path string
 ---@param destination string
 ---@return boolean rename_is_safe
-local function can_safely_rename(original_path, destination)
+local function rename_is_safe(original_path, destination)
   if not loop.fs_stat(destination) then
     return true
   end
@@ -170,7 +170,7 @@ local function get_unused_name(
   name_chosen_callback,
   first_message
 )
-  if not can_safely_rename(source, destination) then
+  if not rename_is_safe(source, destination) then
     local parent_path, name
     if not using_root_directory then
       parent_path, name = utils.split_path(destination)
@@ -632,7 +632,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
 
     local destination = get_destination(new_name)
 
-    if not can_safely_rename(path, destination) then
+    if not rename_is_safe(path, destination) then
       log.warn(destination, " already exists, canceling")
       return
     end
