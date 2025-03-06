@@ -170,7 +170,7 @@ local function get_unused_name(
   name_chosen_callback,
   first_message
 )
-  if can_safely_rename(source, destination) then
+  if not can_safely_rename(source, destination) then
     local parent_path, name
     if not using_root_directory then
       parent_path, name = utils.split_path(destination)
