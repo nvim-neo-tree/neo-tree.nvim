@@ -1003,9 +1003,9 @@ M.split = function(inputString, sep)
 end
 
 ---Split a path into a parentPath and a name.
----@param path string The path to split.
----@return string|nil parentPath
----@return string|nil name
+---@param path string? The path to split.
+---@return string? parentPath
+---@return string? name
 M.split_path = function(path)
   if not path then
     return nil, nil
