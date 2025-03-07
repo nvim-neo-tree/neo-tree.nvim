@@ -732,11 +732,13 @@ M.force_new_split = function(current_position, escaped_path)
   if escaped_path == M.escape_path_for_cmd("[No Name]") then
     -- vim's default behavior is to overwrite [No Name] buffers.
     -- We need to split first and then open the path to workaround this behavior.
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command)
     if result then
       vim.cmd.edit(escaped_path)
     end
   else
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
   end
   return result, err
@@ -782,6 +784,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       return
     end
     if state.current_position == "current" then
+      ---@diagnostic disable-next-line: param-type-mismatch
       result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
@@ -797,6 +800,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
         result, err = M.force_new_split(state.current_position, escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
@@ -807,6 +811,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
       if not is_neo_tree_window and not M.is_winfixbuf(winid) then
         vim.api.nvim_set_current_win(winid)
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       else
         result, err = M.force_new_split(state.current_position, escaped_path)
