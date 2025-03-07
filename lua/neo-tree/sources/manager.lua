@@ -35,7 +35,7 @@ end
 
 local function create_state(tabid, sd, winid)
   local default_config = default_configs[sd.name]
-  local state = vim.deepcopy(default_config, { noref = 1 })
+  local state = vim.deepcopy(default_config, true)
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true

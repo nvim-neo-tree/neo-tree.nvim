@@ -187,7 +187,7 @@ M.reset_search = function(state, refresh, open_current_node)
     refresh = true
   end
   if state.open_folders_before_search then
-    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, true)
   else
     state.force_open_folders = nil
   end
