@@ -6,9 +6,12 @@ local event_queues = {}
 local event_definitions = {}
 local M = {}
 
+---@class neotree.Event.Handler.Result
+---@field handled boolean?
+
 ---@class neotree.Event.Handler
 ---@field event neotree.Event|string
----@field handler fun(...)
+---@field handler fun(table?):(neotree.Event.Handler.Result?)
 ---@field id string?
 
 local validate_event_handler = function(event_handler)

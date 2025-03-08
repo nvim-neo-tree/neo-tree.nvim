@@ -78,13 +78,6 @@
 ---@field mapping_options neotree.Config.MappingOptions?
 ---@field mappings neotree.Config.Mapping[]?
 
----@class neotree.Config.EventHandler.HandlerResult
----@field handled boolean?
-
----@class neotree.Config.EventHandler
----@field event string
----@field handler fun(table?):(neotree.Config.EventHandler.HandlerResult?)
-
 ---@class neotree.Config.Renderers
 ---@field directory neotree.Component.Common[]?
 ---@field file neotree.Component.Common[]?
