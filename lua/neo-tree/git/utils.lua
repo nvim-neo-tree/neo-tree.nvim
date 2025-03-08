@@ -11,6 +11,7 @@ M.get_repository_root = function(path, callback)
     args = { "-C", path, "rev-parse", "--show-toplevel" }
   end
   if type(callback) == "function" then
+    ---@diagnostic disable-next-line: missing-fields
     Job:new({
       command = "git",
       args = args,

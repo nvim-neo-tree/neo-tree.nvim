@@ -223,6 +223,7 @@ M.filter_files_external = function(
     limit = math.huge -- `fd` manages limit on its own
   end
   local item_count = 0
+  ---@diagnostic disable-next-line: missing-fields
   local job = Job:new({
     command = cmd,
     cwd = path,

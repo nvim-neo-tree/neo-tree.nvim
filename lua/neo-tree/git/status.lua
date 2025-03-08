@@ -250,6 +250,7 @@ M.status_async = function(path, base, opts)
     end)
 
     utils.debounce(event_id, function()
+      ---@diagnostic disable-next-line: missing-fields
       local staged_job = Job:new({
         command = "git",
         args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
@@ -267,6 +268,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       local unstaged_job = Job:new({
         command = "git",
         args = { "-C", git_root, "diff", "--name-status" },
@@ -287,6 +289,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       local untracked_job = Job:new({
         command = "git",
         args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
@@ -307,6 +310,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       Job:new({
         command = "git",
         args = {
