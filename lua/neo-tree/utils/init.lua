@@ -367,9 +367,10 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
---- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
+---@deprecated
+---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers { [buffer_name] = bool }
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
   for bufname, bufinfo in pairs(opened_buffers) do
@@ -1073,12 +1074,22 @@ table_merge_internal = function(base_table, override_table)
   return base_table
 end
 
----DEPRECATED: Use vim.deepcopy(source_table, true) instead.
+---@deprecated
+---Use
+---```lua
+---vim.deepcopy(source_table, true)
+---```
+---instead.
 M.table_copy = function(source_table)
   return vim.deepcopy(source_table, true)
 end
 
----DEPRECATED: Use vim.tbl_deep_extend("force", base_table, source_table) instead.
+---@deprecated
+---Use:
+---```lua
+---vim.tbl_deep_extend("force", base_table, source_table) instead.
+---```
+---instead.
 M.table_merge = function(base_table, override_table)
   local merged_table = table_merge_internal({}, base_table)
   return table_merge_internal(merged_table, override_table)

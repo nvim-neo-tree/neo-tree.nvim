@@ -524,8 +524,11 @@ M.refresh = function(source_name, callback)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- @deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- ```
 M.reveal_current_file = function(source_name, callback, force_cwd)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]]
@@ -567,8 +570,12 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
+---@deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" }
+--- ```
+--- instead.
 M.reveal_in_split = function(source_name, callback)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]]

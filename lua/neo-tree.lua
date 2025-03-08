@@ -1,10 +1,11 @@
 local vim = vim
 local M = {}
 
--- DEPRECATED: to be removed in a future release, use this instead:
--- ```
--- require("neo-tree.command").execute({ action = "close" })
--- ```
+--- To be removed in a future release, use this instead:
+--- ```lua
+--- require("neo-tree.command").execute({ action = "close" })
+--- ```
+---@deprecated
 M.close_all = function()
   require("neo-tree.command").execute({ action = "close" })
 end
