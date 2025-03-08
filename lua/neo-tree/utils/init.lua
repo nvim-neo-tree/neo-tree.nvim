@@ -1252,7 +1252,7 @@ local brace_expand_contents = function(s)
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
   ---@param resolve_func fun(from: string, to: string, step: string): string[]
-  ---@return string[] | nil: expanded sequence or nil if failed
+  ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
     if from then
