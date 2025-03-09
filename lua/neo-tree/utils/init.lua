@@ -708,7 +708,7 @@ M.resolve_width = function(width)
       width = tonumber(string.sub(width, 1, #width - 1)) / 100
       width = width * available_width
     else
-      width = tonumber(width)
+      width = tonumber(width) or default_width
     end
   elseif type(width) == "function" then
     width = width()
@@ -1249,9 +1249,11 @@ local brace_expand_contents = function(s)
     return items
   end
 
+  ---@alias neotree.Utils.Resolver fun(from: string, to: string, step: string): string[]
+
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func fun(from: string, to: string, step: string): string[]
+  ---@param resolve_func neotree.Utils.Resolver
   ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
@@ -1281,6 +1283,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
+  ---@type table<string, neotree.Utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
@@ -1288,7 +1291,7 @@ local brace_expand_contents = function(s)
     { [=[^(%a)%.%.(%a)$]=], resolve_sequence_char },
   }
   for _, list in ipairs(check_list) do
-    local regex, func = table.unpack(list)
+    local regex, func = list[1], list[2]
     local sequence = try_sequence_on_pattern(regex, func)
     if sequence then
       return sequence

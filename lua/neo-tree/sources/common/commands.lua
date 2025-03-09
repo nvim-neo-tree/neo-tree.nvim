@@ -368,9 +368,13 @@ end
 -- END Git commands
 --------------------------------------------------------------------------------
 
+local get_sources = function()
+  local config = require("neo-tree").config
+  return config.source_selector.sources or config.sources
+end
+
 M.next_source = function(state)
-  local sources = require("neo-tree").config.sources
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = get_sources()
   local next_source = sources[1]
   for i, source_info in ipairs(sources) do
     if source_info.source == state.name then
@@ -390,8 +394,7 @@ M.next_source = function(state)
 end
 
 M.prev_source = function(state)
-  local sources = require("neo-tree").config.sources
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = get_sources()
   local next_source = sources[#sources]
   for i, source_info in ipairs(sources) do
     if source_info.source == state.name then

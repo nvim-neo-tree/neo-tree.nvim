@@ -107,6 +107,9 @@ M.follow = function(callback, force_show)
   end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
 end
 
+---@param path string?
+---@param path_to_reveal string?
+---@param callback function?
 M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
@@ -161,9 +164,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 end
 
 ---Navigate to the given path.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string Node to focus after the items are loaded.
----@param callback function Callback to call after the items are loaded.
+---@param path string? Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string? Node to focus after the items are loaded.
+---@param callback function? Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state._ready = false
   log.trace("navigate", path, path_to_reveal, async)
