@@ -80,7 +80,7 @@ end
 
 ---Ideally this should only be in plugin/neo-tree.lua but lazy-loading might mean this runs before bufenter
 ---@param path string? The path to check
----@return boolean hijacked Whether the hijack worked
+---@return boolean hijacked Whether we hijacked a buffer
 local function try_netrw_hijack(path)
   if not path or #path == 0 then
     return false

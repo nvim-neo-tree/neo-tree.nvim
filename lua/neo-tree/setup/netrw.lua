@@ -32,7 +32,10 @@ M.hijack = function(path)
   end
 
   -- ensure this is a directory
-  local bufname = path or vim.api.nvim_buf_get_name(0)
+  local bufname = vim.api.nvim_buf_get_name(0)
+  if not utils.truthy(bufname) then
+    bufname = path or ""
+  end
   local stats = vim.loop.fs_stat(bufname)
   if not stats then
     return false
@@ -47,11 +50,11 @@ M.hijack = function(path)
   local winid = vim.api.nvim_get_current_win()
   local dir_bufnr = vim.api.nvim_get_current_buf()
 
-  local manager = require("neo-tree.sources.manager")
-  local log = require("neo-tree.log")
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
   utils.debounce("hijack_netrw_" .. winid, function()
+    local manager = require("neo-tree.sources.manager")
+    local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
     local replace_with_bufnr = vim.fn.bufnr("#")
