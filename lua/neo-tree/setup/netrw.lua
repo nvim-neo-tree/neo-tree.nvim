@@ -23,17 +23,16 @@ M.get_hijack_behavior = function()
   end
 end
 
+---@param path string? Path to hijack (sometimes bufname doesn't set in time)
 ---@return boolean hijacked Whether the hijack was successful
-M.hijack = function()
-  local manager = require("neo-tree.sources.manager")
-  local log = require("neo-tree.log")
+M.hijack = function(path)
   local hijack_behavior = M.get_hijack_behavior()
   if hijack_behavior == "disabled" then
     return false
   end
 
   -- ensure this is a directory
-  local bufname = vim.api.nvim_buf_get_name(0)
+  local bufname = path or vim.api.nvim_buf_get_name(0)
   local stats = vim.loop.fs_stat(bufname)
   if not stats then
     return false
@@ -48,6 +47,8 @@ M.hijack = function()
   local winid = vim.api.nvim_get_current_win()
   local dir_bufnr = vim.api.nvim_get_current_buf()
 
+  local manager = require("neo-tree.sources.manager")
+  local log = require("neo-tree.log")
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
   utils.debounce("hijack_netrw_" .. winid, function()

@@ -94,7 +94,7 @@ local function try_netrw_hijack(path)
   local netrw = require("neo-tree.setup.netrw")
   if netrw.get_hijack_behavior() ~= "disabled" then
     vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack()
+    return netrw.hijack(path)
   end
   return false
 end
