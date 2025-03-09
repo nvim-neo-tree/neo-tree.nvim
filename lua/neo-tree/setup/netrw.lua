@@ -32,7 +32,10 @@ M.hijack = function(path)
   end
 
   -- ensure this is a directory
-  local bufname = path or vim.api.nvim_buf_get_name(0)
+  local bufname = vim.api.nvim_buf_get_name(0)
+  if not utils.truthy(bufname) then
+    bufname = path or ""
+  end
   local stats = vim.loop.fs_stat(bufname)
   if not stats then
     return false
