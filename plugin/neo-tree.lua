@@ -11,7 +11,7 @@ end, {
 })
 
 ---@param path string? The path to check
----@return boolean hijacked Whether the hijack worked
+---@return boolean hijacked Whether we hijacked a buffer
 local function try_netrw_hijack(path)
   if not path or #path == 0 then
     return false
@@ -35,7 +35,7 @@ local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = t
 vim.api.nvim_create_autocmd("BufEnter", {
   group = augroup,
   callback = function(args)
-    if try_netrw_hijack(args.file) then
+    if vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file) then
       vim.api.nvim_del_augroup_by_id(augroup)
     end
   end,

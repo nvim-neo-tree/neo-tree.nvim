@@ -496,6 +496,7 @@ M.merge_config = function(user_config)
   define_events()
 
   -- Prevent accidentally opening another file in the neo-tree window.
+  vim.g.neotree_watching_bufenter = 1
   events.subscribe({
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
