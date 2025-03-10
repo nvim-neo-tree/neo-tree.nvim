@@ -107,13 +107,12 @@ M.alert = function(title, message, size)
 
   local success, msg = pcall(vim.api.nvim_buf_set_lines, win.bufnr, 0, 0, false, lines)
   if success then
-    win:map("n", "<esc>", function(bufnr)
-      win:unmount()
-    end, { noremap = true })
-
-    win:map("n", "<enter>", function(bufnr)
-      win:unmount()
-    end, { noremap = true })
+    local exit_keys = { "<esc>", "<enter>", "q" }
+    for _, key in ipairs(exit_keys) do
+      win:map("n", key, function(bufnr)
+        win:unmount()
+      end, { noremap = true })
+    end
 
     local event = require("nui.utils.autocmd").event
     win:on({ event.BufLeave, event.BufDelete }, function()
