@@ -43,7 +43,7 @@
 ---@field truncation_character string
 ---@field tabs_min_width integer?
 ---@field tabs_max_width integer?
----@field padding integer?
+---@field padding integer|{left: integer, right:integer}?
 ---@field separator neotree.Config.SourceSelector.Separator?
 ---@field separator_active neotree.Config.SourceSelector.Separator?
 ---@field show_separator_on_edge boolean?

@@ -238,7 +238,7 @@ M.get_selector = function(state, width)
   if type(padding_config) == "number" then
     padding = { left = padding_config, right = padding_config }
   else
-    padding = padding_config
+    padding = padding_config or { left = 0, right = 0 }
   end
   width = math.floor(width - padding.left - padding.right)
 
