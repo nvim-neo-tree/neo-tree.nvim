@@ -233,9 +233,12 @@ M.get_selector = function(state, width)
   local winid = state.winid or vim.api.nvim_get_current_win()
 
   -- load padding from config
+  local padding_config = config.source_selector.padding
   local padding
-  if type(config.source_selector.padding) == "number" then
-    padding = { left = padding, right = padding }
+  if type(padding_config) == "number" then
+    padding = { left = padding_config, right = padding_config }
+  else
+    padding = padding_config
   end
   width = math.floor(width - padding.left - padding.right)
 
@@ -265,7 +268,7 @@ M.get_selector = function(state, width)
   end
 
   -- start creating string to display
-  local tabs_layout = config.source_selector.tabs_layout or "center"
+  local tabs_layout = config.source_selector.tabs_layout or "equal"
   local content_layout = config.source_selector.content_layout or "center"
   local hl_background = config.source_selector.highlight_background
   local trunc_char = config.source_selector.truncation_character or "…"
