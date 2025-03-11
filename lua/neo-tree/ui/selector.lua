@@ -233,15 +233,15 @@ M.get_selector = function(state, width)
   local winid = state.winid or vim.api.nvim_get_current_win()
 
   -- load padding from config
-  local padding = config.source_selector.padding
-  if type(padding) == "number" then
+  local padding
+  if type(config.source_selector.padding) == "number" then
     padding = { left = padding, right = padding }
   end
   width = math.floor(width - padding.left - padding.right)
 
   -- generate information of each tab (look `get_selector_tab_info` for type hint)
   local tabs = {}
-  local sources = config.source_selector.sources
+  local sources = config.source_selector.sources or {}
   local active_index = #sources
   local length_sum, length_active, length_separators = 0, 0, 0
   for i, source_info in ipairs(sources) do
