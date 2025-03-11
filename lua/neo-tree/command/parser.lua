@@ -8,7 +8,7 @@ local M = {
 }
 
 M.setup = function(all_source_names)
-  local source_names = utils.table_copy(all_source_names)
+  local source_names = vim.deepcopy(all_source_names, true)
   table.insert(source_names, "migrations")
 
   -- A special source referring to the last used source.
