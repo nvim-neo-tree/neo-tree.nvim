@@ -1,6 +1,7 @@
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local uv = vim.uv or vim.loop
 
 local function sort_items(a, b)
   if a.type == b.type then
@@ -108,7 +109,7 @@ function create_item(context, path, _type, bufnr)
   end
 
   if _type == nil then
-    local stat = vim.loop.fs_stat(path)
+    local stat = uv.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
   local item = {
@@ -125,9 +126,9 @@ function create_item(context, path, _type, bufnr)
   end
   if item.type == "link" then
     item.is_link = true
-    item.link_to = vim.loop.fs_realpath(path)
+    item.link_to = uv.fs_realpath(path)
     if item.link_to ~= nil then
-      item.type = vim.loop.fs_stat(item.link_to).type
+      item.type = uv.fs_stat(item.link_to).type
     end
   end
   if item.type == "directory" then

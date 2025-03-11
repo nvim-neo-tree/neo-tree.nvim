@@ -1,3 +1,4 @@
+local uv = vim.uv or vim.loop
 local log = require("neo-tree.log")
 local compat = require("neo-tree.utils._compat")
 local bit = require("bit")
@@ -444,7 +445,7 @@ end
 
 local stat_providers = {
   default = function(node)
-    return vim.loop.fs_stat(node.path)
+    return uv.fs_stat(node.path)
   end,
 }
 

@@ -5,7 +5,7 @@
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
 local api = vim.api
-local loop = vim.uv or vim.loop
+local uv = vim.uv or vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
@@ -21,8 +21,8 @@ local M = {}
 ---@param original_path string
 ---@param destination string
 ---@return boolean rename_is_safe
-local function rename_is_safe(original_path, destination)
-  if not loop.fs_stat(destination) then
+local function can_safely_rename(original_path, destination)
+  if not uv.fs_stat(destination) then
     return true
   end
 
@@ -143,12 +143,12 @@ end
 
 local function create_all_parents(path)
   local function create_all_as_folders(in_path)
-    if not loop.fs_stat(in_path) then
+    if not uv.fs_stat(in_path) then
       local parent, _ = utils.split_path(in_path)
       if parent then
         create_all_as_folders(parent)
       end
-      loop.fs_mkdir(in_path, 493)
+      uv.fs_mkdir(in_path, 493)
     end
   end
 
@@ -212,7 +212,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     end
     local function move_file()
       create_all_parents(dest)
-      loop.fs_rename(source, dest, function(err)
+      uv.fs_rename(source, dest, function(err)
         if err then
           log.error("Could not move the files from", source, "to", dest, ":", err)
           return
@@ -361,13 +361,13 @@ M.create_directory = function(in_directory, callback, using_root_directory)
         return
       end
 
-      if loop.fs_stat(destination) then
+      if uv.fs_stat(destination) then
         log.warn("Directory already exists")
         return
       end
 
       create_all_parents(destination)
-      loop.fs_mkdir(destination, 493)
+      uv.fs_mkdir(destination, 493)
 
       vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)
@@ -419,7 +419,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
       end
 
       destination = utils.normalize_path(destination)
-      if loop.fs_stat(destination) then
+      if uv.fs_stat(destination) then
         log.warn("File already exists")
         return
       end
@@ -438,19 +438,19 @@ M.create_node = function(in_directory, callback, using_root_directory)
 
       create_all_parents(destination)
       if is_dir then
-        loop.fs_mkdir(destination, 493)
+        uv.fs_mkdir(destination, 493)
       else
-        local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
-        local fd = loop.fs_open(destination, open_mode, 420)
+        local open_mode = uv.constants.O_CREAT + uv.constants.O_WRONLY + uv.constants.O_TRUNC
+        local fd = uv.fs_open(destination, open_mode, 420)
         if not fd then
-          if not loop.fs_stat(destination) then
+          if not uv.fs_stat(destination) then
             api.nvim_err_writeln("Could not create file " .. destination)
             return
           else
             log.warn("Failed to complete file creation of " .. destination)
           end
         else
-          loop.fs_close(fd)
+          uv.fs_close(fd)
         end
       end
       complete()
@@ -462,7 +462,7 @@ end
 ---@param dir_path string Directory to delete.
 ---@return boolean success Whether the directory was deleted.
 local function delete_dir(dir_path)
-  local handle = loop.fs_scandir(dir_path)
+  local handle = uv.fs_scandir(dir_path)
   if type(handle) == "string" then
     api.nvim_err_writeln(handle)
     return false
@@ -474,7 +474,7 @@ local function delete_dir(dir_path)
   end
 
   while true do
-    local child_name, t = loop.fs_scandir_next(handle)
+    local child_name, t = uv.fs_scandir_next(handle)
     if not child_name then
       break
     end
@@ -487,14 +487,14 @@ local function delete_dir(dir_path)
         return false
       end
     else
-      local success = loop.fs_unlink(child_path)
+      local success = uv.fs_unlink(child_path)
       if not success then
         return false
       end
       clear_buffer(child_path)
     end
   end
-  return loop.fs_rmdir(dir_path) or false
+  return uv.fs_rmdir(dir_path) or false
 end
 
 -- Delete Node
@@ -504,19 +504,20 @@ M.delete_node = function(path, callback, noconfirm)
 
   log.trace("Deleting node: ", path)
   local _type = "unknown"
-  local stat = loop.fs_stat(path)
+  local stat = uv.fs_stat(path)
   if stat then
     _type = stat.type
     if _type == "link" then
-      local link_to = loop.fs_readlink(path)
+      local link_to = uv.fs_readlink(path)
       if not link_to then
         log.error("Could not read link")
         return
       end
-      local target_file = loop.fs_stat(link_to)
+      local target_file = uv.fs_stat(link_to)
       if target_file then
         _type = target_file.type
       end
+      _type = uv.fs_stat(link_to).type
     end
     if _type == "directory" then
       local children = scan.scan_dir(path, {
@@ -585,7 +586,7 @@ M.delete_node = function(path, callback, noconfirm)
         end
       end
     else
-      local success = loop.fs_unlink(path)
+      local success = uv.fs_unlink(path)
       if not success then
         return api.nvim_err_writeln("Could not remove file: " .. path)
       end
@@ -652,7 +653,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
     end)
 
     local function fs_rename()
-      loop.fs_rename(path, destination, function(err)
+      uv.fs_rename(path, destination, function(err)
         if err then
           log.warn("Could not rename the files")
           return

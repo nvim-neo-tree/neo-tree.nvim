@@ -1,3 +1,4 @@
+local uv = vim.uv or vim.loop
 local utils = require("neo-tree.utils")
 local _compat = require("neo-tree.utils._compat")
 
@@ -88,8 +89,8 @@ M.resolve_path = function(path, validate_type)
   local expanded = vim.fn.expand(path)
   local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
-    local stat = vim.loop.fs_stat(abs_path)
-    if stat and stat.type ~= validate_type then
+    local stat = uv.fs_stat(abs_path)
+    if stat.type ~= validate_type then
       error("Invalid path: " .. path .. " is not a " .. validate_type)
     end
   end
@@ -141,7 +142,7 @@ local parse_arg = function(result, arg)
         end
         -- maybe it's a path
         local path = M.resolve_path(value)
-        local stat = vim.loop.fs_stat(path)
+        local stat = uv.fs_stat(path)
         if stat then
           if stat.type == "directory" then
             result["dir"] = path
