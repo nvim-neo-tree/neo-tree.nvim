@@ -1,5 +1,5 @@
 -- This files holds code for scanning the filesystem to build the tree.
-local uv = vim.loop
+local uv = vim.uv or vim.loop
 
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
@@ -54,7 +54,7 @@ local dir_complete = function(context, dir_path)
   while #paths_to_load > 0 and not next_path do
     next_path = table.remove(paths_to_load)
     -- ensure that the path is still valid
-    local success, result = pcall(vim.loop.fs_stat, next_path)
+    local success, result = pcall(uv.fs_stat, next_path)
     -- ensure that the result is a directory
     if success and result and result.type == "directory" then
       -- ensure that it is not already loaded
@@ -402,11 +402,11 @@ local function sync_scan(context, path_to_scan)
     end
     job_complete(context)
   else -- scan_mode == "shallow"
-    local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
+    local success, dir = pcall(uv.fs_opendir, path_to_scan, nil, 1000)
     if not success then
       log.error("Error opening dir:", dir)
     end
-    local success2, stats = pcall(vim.loop.fs_readdir, dir)
+    local success2, stats = pcall(uv.fs_readdir, dir)
     if success2 and stats then
       for _, stat in ipairs(stats) do
         local path = utils.path_join(path_to_scan, stat.name)
@@ -420,7 +420,7 @@ local function sync_scan(context, path_to_scan)
         end
       end
     end
-    vim.loop.fs_closedir(dir)
+    uv.fs_closedir(dir)
 
     local next_path = dir_complete(context, path_to_scan)
     if next_path then
@@ -502,7 +502,7 @@ local handle_refresh_or_up = function(context, async)
     end
     -- Ensure that there are no nested files in the list of folders to load
     context.paths_to_load = vim.tbl_filter(function(p)
-      local stats = vim.loop.fs_stat(p)
+      local stats = uv.fs_stat(p)
       return stats and stats.type == "directory" or false
     end, context.paths_to_load)
     if path_to_reveal then

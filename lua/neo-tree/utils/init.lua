@@ -123,6 +123,8 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   if type(fn) == "function" then
     success, result = pcall(fn)
   end
+  ---not sure if this line is needed
+  ---@diagnostic disable-next-line: cast-local-type
   fn = nil
   fn_data.fn = fn
 
@@ -560,7 +562,7 @@ M.is_filtered_by_pattern = function(pattern_list, path, name)
   for _, p in ipairs(pattern_list) do
     local separator_pattern = M.is_windows and "\\" or "/"
     local filename = string.find(p, separator_pattern) and path or name
-    if string.find(filename, p) then
+    if string.find(filename or "", p) then
       return true
     end
   end
@@ -651,8 +653,8 @@ M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
-  local ignore_ft = nt.config.open_files_do_not_replace_types
-  local ignore = M.list_to_dict(ignore_ft)
+  local ignore_list = nt.config.open_files_do_not_replace_types or {}
+  local ignore = M.list_to_dict(ignore_list)
   ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
     local prior_window = nt.get_prior_window(ignore, ignore_winfixbuf)

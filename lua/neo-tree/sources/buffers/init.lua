@@ -81,7 +81,7 @@ M.buffers_changed = function()
 end
 
 ---Navigate to the given path.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
+---@param path string? Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state.dirty = false
   local path_changed = false

@@ -386,7 +386,7 @@ _G.___neotree_selector_click = function(id, _, _, _)
   if id < 1 then
     return
   end
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = require("neo-tree").config.source_selector.sources or {}
   local winid, source_index = calc_source_from_click_id(id)
   local state = manager.get_state_for_window(winid)
   if state == nil then
