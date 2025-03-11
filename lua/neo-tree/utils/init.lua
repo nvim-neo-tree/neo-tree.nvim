@@ -1084,7 +1084,7 @@ end
 ---```
 ---instead.
 M.table_copy = function(source_table)
-  return vim.deepcopy(source_table, compat.DEEPCOPY_NOREF)
+  return vim.deepcopy(source_table, compat.noref())
 end
 
 ---@deprecated
