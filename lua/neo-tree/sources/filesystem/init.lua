@@ -3,6 +3,7 @@
 
 local vim = vim
 local utils = require("neo-tree.utils")
+local _compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local events = require("neo-tree.events")
@@ -190,7 +191,7 @@ M.reset_search = function(state, refresh, open_current_node)
     refresh = true
   end
   if state.open_folders_before_search then
-    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, true)
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, _compat.noref())
   else
     state.force_open_folders = nil
   end
