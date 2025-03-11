@@ -90,7 +90,7 @@ M.resolve_path = function(path, validate_type)
   local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
     local stat = uv.fs_stat(abs_path)
-    if stat.type ~= validate_type then
+    if not stat or stat.type ~= validate_type then
       error("Invalid path: " .. path .. " is not a " .. validate_type)
     end
   end
