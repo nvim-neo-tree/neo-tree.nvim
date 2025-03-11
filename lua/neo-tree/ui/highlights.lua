@@ -160,10 +160,10 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   if hl_group.undercurl then
     table.insert(gui, "undercurl")
   end
+
+  local hl
   if #gui > 0 then
-    gui = table.concat(gui, ",")
-  else
-    gui = nil
+    hl = table.concat(gui, ",")
   end
 
   local f_red = tonumber(foreground:sub(1, 2), 16)
@@ -184,7 +184,7 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   return {
     background = hl_group.background,
     foreground = new_foreground,
-    gui = gui,
+    gui = hl,
   }
 end
 
