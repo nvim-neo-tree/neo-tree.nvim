@@ -207,10 +207,7 @@ local function get_children_sync(path)
     end
     return children
   end
-  if not dir then
-    log.debug("no err but no dir for whatever reason")
-    return children
-  end
+  ---@cast dir uv.luv_dir_t
   local stats = uv.fs_readdir(dir)
   if stats then
     for _, stat in ipairs(stats) do
@@ -403,9 +400,10 @@ local function sync_scan(context, path_to_scan)
     job_complete(context)
   else -- scan_mode == "shallow"
     local success, dir, err = pcall(uv.fs_opendir, path_to_scan, nil, 1000)
-    if not dir or not success then
+    if err or not success then
       log.error("Error opening dir:", err)
     end
+    ---@cast dir uv.luv_dir_t
     local success2, stats = pcall(uv.fs_readdir, dir)
     if success2 and stats then
       for _, stat in ipairs(stats) do
