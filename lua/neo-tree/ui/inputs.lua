@@ -1,4 +1,3 @@
-local vim = vim
 local Input = require("nui.input")
 local popups = require("neo-tree.ui.popups")
 local utils = require("neo-tree.utils")

@@ -1,4 +1,3 @@
-local vim = vim
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local NuiSplit = require("nui.split")

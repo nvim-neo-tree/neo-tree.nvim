@@ -1,4 +1,3 @@
-local vim = vim
 local utils = require("neo-tree.utils")
 local highlights = require("neo-tree.ui.highlights")
 local events = require("neo-tree.events")

@@ -1,4 +1,3 @@
-local vim = vim
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")

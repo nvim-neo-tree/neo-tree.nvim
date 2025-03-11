@@ -4,7 +4,6 @@
 -- https://github.com/mhartington/dotfiles
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
-local vim = vim
 local api = vim.api
 local loop = vim.uv or vim.loop
 local scan = require("plenary.scandir")

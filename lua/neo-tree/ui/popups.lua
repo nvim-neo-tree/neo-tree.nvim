@@ -1,4 +1,3 @@
-local vim = vim
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
 local highlights = require("neo-tree.ui.highlights")
