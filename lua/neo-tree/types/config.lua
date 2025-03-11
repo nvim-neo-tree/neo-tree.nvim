@@ -106,45 +106,47 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"
 
----@class (exact) neotree.Config
----@field sources string[]?
----@field add_blank_line_at_top boolean?
----@field auto_clean_after_session_restore boolean?
----@field close_if_last_window boolean?
----@field default_source string?
----@field enable_diagnostics boolean?
----@field enable_git_status boolean?
----@field enable_modified_markers boolean?
----@field enable_opened_markers boolean?
----@field enable_refresh_on_write boolean?
----@field enable_cursor_hijack boolean?
----@field git_status_async boolean?
----@field git_status_async_options neotree.Config.GitStatusAsync?
----@field hide_root_node boolean?
----@field retain_hidden_root_indent boolean?
+---@class (exact) neotree.Config.Base
+---@field sources string[]
+---@field add_blank_line_at_top boolean
+---@field auto_clean_after_session_restore boolean
+---@field close_if_last_window boolean
+---@field default_source string
+---@field enable_diagnostics boolean
+---@field enable_git_status boolean
+---@field enable_modified_markers boolean
+---@field enable_opened_markers boolean
+---@field enable_refresh_on_write boolean
+---@field enable_cursor_hijack boolean
+---@field git_status_async boolean
+---@field git_status_async_options neotree.Config.GitStatusAsync
+---@field hide_root_node boolean
+---@field retain_hidden_root_indent boolean
 ---@field log_level "trace"|"debug"|"info"|"warn"|"error"|"fatal"|nil
----@field log_to_file boolean|string?
----@field open_files_in_last_window boolean?
----@field open_files_do_not_replace_types string[]?
----@field open_files_using_relative_paths boolean?
----@field popup_border_style neotree.Config.BorderStyle?
----@field resize_timer_interval integer|-1?
----@field sort_case_insensitive boolean?
----@field sort_function fun(a: any, b: any)?
----@field use_popups_for_input boolean?
----@field use_default_mappings boolean?
----@field source_selector neotree.Config.SourceSelector?
----@field event_handlers neotree.Event.Handler[]?
----@field default_component_configs neotree.Config.ComponentDefaults?
----@field renderers neotree.Config.Renderers?
----@field nesting_rules neotree.FileNesting.Rule[]?
----@field commands table<string, fun()>?
----@field window neotree.Config.Window?
+---@field log_to_file boolean|string
+---@field open_files_in_last_window boolean
+---@field open_files_do_not_replace_types string[]
+---@field open_files_using_relative_paths boolean
+---@field popup_border_style neotree.Config.BorderStyle
+---@field resize_timer_interval integer|-1
+---@field sort_case_insensitive boolean
+---@field sort_function? fun(a: any, b: any):boolean
+---@field use_popups_for_input boolean
+---@field use_default_mappings boolean
+---@field source_selector neotree.Config.SourceSelector
+---@field event_handlers? neotree.Event.Handler[]
+---@field default_component_configs neotree.Config.ComponentDefaults
+---@field renderers neotree.Config.Renderers
+---@field nesting_rules neotree.FileNesting.Rule[]
+---@field commands table<string, fun()>
+---@field window neotree.Config.Window
 ---
----@field filesystem neotree.Config.Filesystem?
----@field buffers neotree.Config.Buffers?
----@field git_status neotree.Config.GitStatus?
----@field document_symbols neotree.Config.DocumentSymbols?
+---@field filesystem neotree.Config.Filesystem
+---@field buffers neotree.Config.Buffers
+---@field git_status neotree.Config.GitStatus
+---@field document_symbols neotree.Config.DocumentSymbols
 
----@class (exact) neotree.Config._Full : neotree.Config
+---@class (exact) neotree.Config._Full : neotree.Config.Base
 ---@field prior_windows table<string, integer[]>?
+
+---@class (partial) neotree.Config : neotree.Config.Base
