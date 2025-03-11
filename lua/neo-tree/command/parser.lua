@@ -1,4 +1,5 @@
 local utils = require("neo-tree.utils")
+local _compat = require("neo-tree.utils._compat")
 
 local M = {
   FLAG = "<FLAG>",
@@ -8,7 +9,7 @@ local M = {
 }
 
 M.setup = function(all_source_names)
-  local source_names = vim.deepcopy(all_source_names, true)
+  local source_names = vim.deepcopy(all_source_names, _compat.DEEPCOPY_NOREF)
   table.insert(source_names, "migrations")
 
   -- A special source referring to the last used source.

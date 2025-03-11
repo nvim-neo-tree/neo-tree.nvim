@@ -1,4 +1,5 @@
 local log = require("neo-tree.log")
+local compat = require("neo-tree.utils._compat")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -1083,7 +1084,7 @@ end
 ---```
 ---instead.
 M.table_copy = function(source_table)
-  return vim.deepcopy(source_table, true)
+  return vim.deepcopy(source_table, compat.DEEPCOPY_NOREF)
 end
 
 ---@deprecated

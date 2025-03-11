@@ -7,6 +7,7 @@ local event = require("nui.utils.autocmd").event
 local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
+local compat = require("neo-tree.utils._compat")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
 local fzy = require("neo-tree.sources.common.filters.filter_fzy")
@@ -40,7 +41,7 @@ local reset_filter = function(state, refresh, open_current_node)
 
   -- reset search state
   if state.open_folders_before_search then
-    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, true)
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, compat.DEEPCOPY_NOREF)
   else
     state.force_open_folders = nil
   end

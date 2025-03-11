@@ -3,6 +3,7 @@
 
 local vim = vim
 local utils = require("neo-tree.utils")
+local compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
@@ -35,7 +36,7 @@ end
 
 local function create_state(tabid, sd, winid)
   local default_config = default_configs[sd.name]
-  local state = vim.deepcopy(default_config, true)
+  local state = vim.deepcopy(default_config, compat.DEEPCOPY_NOREF)
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
