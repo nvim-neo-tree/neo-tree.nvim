@@ -402,9 +402,9 @@ local function sync_scan(context, path_to_scan)
     end
     job_complete(context)
   else -- scan_mode == "shallow"
-    local success, dir = pcall(uv.fs_opendir, path_to_scan, nil, 1000)
-    if not success then
-      log.error("Error opening dir:", dir)
+    local success, dir, err = pcall(uv.fs_opendir, path_to_scan, nil, 1000)
+    if not success or not dir then
+      log.error("Error opening dir:", err)
     end
     local success2, stats = pcall(uv.fs_readdir, dir)
     if success2 and stats then

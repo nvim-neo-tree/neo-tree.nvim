@@ -206,7 +206,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
 
   -- create mappings and autocmd
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-  input:map("i", "<esc>", function(bufnr)
+  input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
     input:unmount()
     if utils.truthy(state.search_pattern) then

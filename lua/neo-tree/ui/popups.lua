@@ -107,11 +107,11 @@ M.alert = function(title, message, size)
 
   local success, msg = pcall(vim.api.nvim_buf_set_lines, win.bufnr, 0, 0, false, lines)
   if success then
-    win:map("n", "<esc>", function(bufnr)
+    win:map("n", "<esc>", function()
       win:unmount()
     end, { noremap = true })
 
-    win:map("n", "<enter>", function(bufnr)
+    win:map("n", "<enter>", function()
       win:unmount()
     end, { noremap = true })
 

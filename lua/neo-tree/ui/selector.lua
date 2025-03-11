@@ -265,7 +265,7 @@ M.get_selector = function(state, width)
   end
 
   -- start creating string to display
-  local tabs_layout = config.source_selector.tabs_layout
+  local tabs_layout = config.source_selector.tabs_layout or "center"
   local content_layout = config.source_selector.content_layout or "center"
   local hl_background = config.source_selector.highlight_background
   local trunc_char = config.source_selector.truncation_character or "…"

@@ -159,6 +159,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
           state.sort_function_override = sort_by_score
           state.use_fzy = true
         end
+        ---@type function?
         local callback = select_first_file
         if fuzzy_finder_mode == "directory" then
           callback = nil
