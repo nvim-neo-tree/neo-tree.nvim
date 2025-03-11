@@ -436,9 +436,9 @@ M.get_inner_win_width = function(winid)
   local info = vim.fn.getwininfo(winid)
   if info and info[1] then
     return info[1].width - info[1].textoff
-  else
-    log.error("Could not get window info for window", winid)
   end
+  log.error("Could not get window info for window", winid)
+  return vim.o.columns
 end
 
 local stat_providers = {
