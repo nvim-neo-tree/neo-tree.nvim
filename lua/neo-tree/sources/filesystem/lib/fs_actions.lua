@@ -21,7 +21,7 @@ local M = {}
 ---@param original_path string
 ---@param destination string
 ---@return boolean rename_is_safe
-local function can_safely_rename(original_path, destination)
+local function rename_is_safe(original_path, destination)
   if not uv.fs_stat(destination) then
     return true
   end
