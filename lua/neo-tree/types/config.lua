@@ -130,11 +130,11 @@
 ---@field popup_border_style neotree.Config.BorderStyle
 ---@field resize_timer_interval integer|-1
 ---@field sort_case_insensitive boolean
----@field sort_function fun(a: any, b: any)
+---@field sort_function? fun(a: any, b: any):boolean
 ---@field use_popups_for_input boolean
 ---@field use_default_mappings boolean
 ---@field source_selector neotree.Config.SourceSelector
----@field event_handlers neotree.Event.Handler[]
+---@field event_handlers? neotree.Event.Handler[]
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
 ---@field nesting_rules neotree.FileNesting.Rule[]
