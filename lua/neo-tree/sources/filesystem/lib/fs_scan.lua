@@ -207,6 +207,10 @@ local function get_children_sync(path)
     end
     return children
   end
+  if not dir then
+    log.debug("no err but no dir for whatever reason")
+    return children
+  end
   local stats = uv.fs_readdir(dir)
   if stats then
     for _, stat in ipairs(stats) do
