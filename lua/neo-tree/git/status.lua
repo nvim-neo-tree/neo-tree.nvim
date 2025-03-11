@@ -49,6 +49,12 @@ local function get_priority_git_status_code(status, other_status)
   end
 end
 
+---@class neotree.Git.Context
+---@field status neotree.Git.Status
+
+---@class neotree.Git.Status
+---@field [string] string
+
 local parse_git_status_line = function(context, line)
   context.lines_parsed = context.lines_parsed + 1
   if type(line) ~= "string" then
@@ -114,13 +120,11 @@ local parse_git_status_line = function(context, line)
     end)
   end
 end
-
 ---Parse "git status" output for the current working directory.
 ---@base git ref base
 ---@exclude_directories boolean Whether to skip bubling up status to directories
 ---@path string Path to run the git status command in, defaults to cwd.
----@return table table Table with the path as key and the status as value.
----@return table, string|nil The git root for the specified path.
+---@return neotree.Git.Status, string? git_status the neotree.Git.Status of the given root
 M.status = function(base, exclude_directories, path)
   local git_root = git_utils.get_repository_root(path)
   if not utils.truthy(git_root) then
@@ -250,6 +254,7 @@ M.status_async = function(path, base, opts)
     end)
 
     utils.debounce(event_id, function()
+      ---@diagnostic disable-next-line: missing-fields
       local staged_job = Job:new({
         command = "git",
         args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
@@ -267,6 +272,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       local unstaged_job = Job:new({
         command = "git",
         args = { "-C", git_root, "diff", "--name-status" },
@@ -287,6 +293,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       local untracked_job = Job:new({
         command = "git",
         args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
@@ -307,6 +314,7 @@ M.status_async = function(path, base, opts)
         end,
       })
 
+      ---@diagnostic disable-next-line: missing-fields
       Job:new({
         command = "git",
         args = {

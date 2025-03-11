@@ -9,6 +9,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
+local compat = require("neo-tree.utils._compat")
 
 local M = {}
 
@@ -147,7 +148,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
         log.trace("Resetting search in on_change")
         local original_open_folders = nil
         if type(state.open_folders_before_search) == "table" then
-          original_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+          original_open_folders = vim.deepcopy(state.open_folders_before_search, compat.noref())
         end
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders

@@ -1,4 +1,5 @@
 local log = require("neo-tree.log")
+local compat = require("neo-tree.utils._compat")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -123,6 +124,8 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   if type(fn) == "function" then
     success, result = pcall(fn)
   end
+  ---not sure if this line is needed
+  ---@diagnostic disable-next-line: cast-local-type
   fn = nil
   fn_data.fn = fn
 
@@ -367,9 +370,10 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
---- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
+---@deprecated
+---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers { [buffer_name] = bool }
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
   for bufname, bufinfo in pairs(opened_buffers) do
@@ -433,9 +437,9 @@ M.get_inner_win_width = function(winid)
   local info = vim.fn.getwininfo(winid)
   if info and info[1] then
     return info[1].width - info[1].textoff
-  else
-    log.error("Could not get window info for window", winid)
   end
+  log.error("Could not get window info for window", winid)
+  return vim.o.columns
 end
 
 local stat_providers = {
@@ -559,7 +563,7 @@ M.is_filtered_by_pattern = function(pattern_list, path, name)
   for _, p in ipairs(pattern_list) do
     local separator_pattern = M.is_windows and "\\" or "/"
     local filename = string.find(p, separator_pattern) and path or name
-    if string.find(filename, p) then
+    if string.find(filename or "", p) then
       return true
     end
   end
@@ -650,8 +654,8 @@ M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
-  local ignore_ft = nt.config.open_files_do_not_replace_types
-  local ignore = M.list_to_dict(ignore_ft)
+  local ignore_list = nt.config.open_files_do_not_replace_types or {}
+  local ignore = M.list_to_dict(ignore_list)
   ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
     local prior_window = nt.get_prior_window(ignore, ignore_winfixbuf)
@@ -707,7 +711,7 @@ M.resolve_width = function(width)
       width = tonumber(string.sub(width, 1, #width - 1)) / 100
       width = width * available_width
     else
-      width = tonumber(width)
+      width = tonumber(width) or default_width
     end
   elseif type(width) == "function" then
     width = width()
@@ -732,11 +736,13 @@ M.force_new_split = function(current_position, escaped_path)
   if escaped_path == M.escape_path_for_cmd("[No Name]") then
     -- vim's default behavior is to overwrite [No Name] buffers.
     -- We need to split first and then open the path to workaround this behavior.
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command)
     if result then
       vim.cmd.edit(escaped_path)
     end
   else
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
   end
   return result, err
@@ -782,6 +788,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       return
     end
     if state.current_position == "current" then
+      ---@diagnostic disable-next-line: param-type-mismatch
       result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
@@ -797,6 +804,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
         result, err = M.force_new_split(state.current_position, escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
@@ -807,6 +815,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
       if not is_neo_tree_window and not M.is_winfixbuf(winid) then
         vim.api.nvim_set_current_win(winid)
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       else
         result, err = M.force_new_split(state.current_position, escaped_path)
@@ -998,9 +1007,9 @@ M.split = function(inputString, sep)
 end
 
 ---Split a path into a parentPath and a name.
----@param path string The path to split.
----@return string|nil parentPath
----@return string|nil name
+---@param path string? The path to split.
+---@return string? parentPath
+---@return string? name
 M.split_path = function(path)
   if not path then
     return nil, nil
@@ -1068,12 +1077,22 @@ table_merge_internal = function(base_table, override_table)
   return base_table
 end
 
----DEPRECATED: Use vim.deepcopy(source_table, { noref = 1 }) instead.
+---@deprecated
+---Use
+---```lua
+---vim.deepcopy(source_table, true)
+---```
+---instead.
 M.table_copy = function(source_table)
-  return vim.deepcopy(source_table, { noref = 1 })
+  return vim.deepcopy(source_table, compat.noref())
 end
 
----DEPRECATED: Use vim.tbl_deep_extend("force", base_table, source_table) instead.
+---@deprecated
+---Use:
+---```lua
+---vim.tbl_deep_extend("force", base_table, source_table) instead.
+---```
+---instead.
 M.table_merge = function(base_table, override_table)
   local merged_table = table_merge_internal({}, base_table)
   return table_merge_internal(merged_table, override_table)
@@ -1233,10 +1252,12 @@ local brace_expand_contents = function(s)
     return items
   end
 
+  ---@alias neotree.Utils.Resolver fun(from: string, to: string, step: string): string[]
+
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func fun(from: string, to: string, step: string): string[]
-  ---@return string[] | nil: expanded sequence or nil if failed
+  ---@param resolve_func neotree.Utils.Resolver
+  ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
     if from then
@@ -1265,6 +1286,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
+  ---@type table<string, neotree.Utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
@@ -1272,7 +1294,7 @@ local brace_expand_contents = function(s)
     { [=[^(%a)%.%.(%a)$]=], resolve_sequence_char },
   }
   for _, list in ipairs(check_list) do
-    local regex, func = table.unpack(list)
+    local regex, func = list[1], list[2]
     local sequence = try_sequence_on_pattern(regex, func)
     if sequence then
       return sequence

@@ -94,6 +94,9 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add = function(state, callback)
   local node = get_folder_node(state)
+  if not node then
+    return
+  end
   local in_directory = node:get_id()
   local using_root_directory = get_using_root_directory(state)
   fs_actions.create_node(in_directory, callback, using_root_directory)
@@ -104,6 +107,9 @@ end
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add_directory = function(state, callback)
   local node = get_folder_node(state)
+  if not node then
+    return
+  end
   local in_directory = node:get_id()
   local using_root_directory = get_using_root_directory(state)
   fs_actions.create_directory(in_directory, callback, using_root_directory)
@@ -368,9 +374,13 @@ end
 -- END Git commands
 --------------------------------------------------------------------------------
 
+local get_sources = function()
+  local config = require("neo-tree").config
+  return config.source_selector.sources or config.sources
+end
+
 M.next_source = function(state)
-  local sources = require("neo-tree").config.sources
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = get_sources()
   local next_source = sources[1]
   for i, source_info in ipairs(sources) do
     if source_info.source == state.name then
@@ -390,8 +400,7 @@ M.next_source = function(state)
 end
 
 M.prev_source = function(state)
-  local sources = require("neo-tree").config.sources
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = get_sources()
   local next_source = sources[#sources]
   for i, source_info in ipairs(sources) do
     if source_info.source == state.name then
@@ -868,6 +877,7 @@ local use_window_picker = function(state, path, cmd)
   local picked_window_id = picker.pick_window()
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
+    ---@diagnostic disable-next-line: param-type-mismatch
     local result, err = pcall(vim.cmd, cmd .. " " .. vim.fn.fnameescape(path))
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321

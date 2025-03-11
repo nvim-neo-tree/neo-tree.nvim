@@ -3,6 +3,7 @@
 
 local vim = vim
 local utils = require("neo-tree.utils")
+local compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
@@ -35,7 +36,7 @@ end
 
 local function create_state(tabid, sd, winid)
   local default_config = default_configs[sd.name]
-  local state = vim.deepcopy(default_config, { noref = 1 })
+  local state = vim.deepcopy(default_config, compat.noref())
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
@@ -524,8 +525,11 @@ M.refresh = function(source_name, callback)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- @deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- ```
 M.reveal_current_file = function(source_name, callback, force_cwd)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]]
@@ -567,8 +571,12 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
+---@deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" }
+--- ```
+--- instead.
 M.reveal_in_split = function(source_name, callback)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]]

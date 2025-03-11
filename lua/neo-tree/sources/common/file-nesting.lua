@@ -318,7 +318,6 @@ function M.setup(config)
   enabled_matchers = vim.tbl_filter(function(m)
     return not vim.tbl_isempty(m.rules)
   end, matchers)
-  table.sort(enabled_matchers, function(a, b) end)
 end
 
 return M

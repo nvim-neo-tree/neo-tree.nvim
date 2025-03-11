@@ -378,9 +378,13 @@ function Preview:highlight_preview_range()
   local start_pos, end_pos = self.start_pos, self.end_pos
   if not start_pos and not end_pos then
     return
-  elseif not start_pos then
+  end
+
+  if not start_pos then
+    ---@cast end_pos table
     start_pos = end_pos
   elseif not end_pos then
+    ---@cast start_pos table
     end_pos = start_pos
   end
 
@@ -485,6 +489,7 @@ end
 
 Preview.focus = function()
   if Preview.is_active() then
+    ---@cast instance table
     vim.fn.win_gotoid(instance.winid)
   end
 end
@@ -497,6 +502,7 @@ Preview.scroll = function(state)
   local count = math.abs(direction)
 
   if Preview:is_active() then
+    ---@cast instance table
     vim.api.nvim_win_call(instance.winid, function()
       vim.cmd(("normal! %s%s"):format(count, input))
     end)

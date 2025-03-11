@@ -129,6 +129,7 @@ M.mark_ignored = function(state, items, callback)
 
     for folder, folder_items in pairs(folders) do
       local args = { "-C", folder, "check-ignore", "--stdin" }
+      ---@diagnostic disable-next-line: missing-fields
       local job = Job:new({
         command = "git",
         args = args,

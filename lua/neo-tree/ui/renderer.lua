@@ -398,6 +398,7 @@ local prepare_node = function(item, state)
       return line
     end
   end
+  ---@class NuiLine
   local line = NuiLine()
 
   local renderer = state.renderers[item.type]
@@ -879,7 +880,6 @@ local set_buffer_mappings = function(state)
 end
 
 local function create_floating_window(state, win_options, bufname)
-  local win
   state.force_float = nil
   -- First get the default options for floating windows.
   local title = utils.resolve_config_option(state, "window.popup.title", function(current_state)
@@ -895,7 +895,8 @@ local function create_floating_window(state, win_options, bufname)
   win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
   win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
 
-  win = NuiPopup(win_options)
+  ---@class NuiPopup
+  local win = NuiPopup(win_options)
   win:mount()
   win.source_name = state.name
   win.original_options = state.window

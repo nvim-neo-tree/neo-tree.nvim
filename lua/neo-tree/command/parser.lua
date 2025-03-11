@@ -1,4 +1,5 @@
 local utils = require("neo-tree.utils")
+local _compat = require("neo-tree.utils._compat")
 
 local M = {
   FLAG = "<FLAG>",
@@ -8,7 +9,7 @@ local M = {
 }
 
 M.setup = function(all_source_names)
-  local source_names = utils.table_copy(all_source_names)
+  local source_names = vim.deepcopy(all_source_names, _compat.noref())
   table.insert(source_names, "migrations")
 
   -- A special source referring to the last used source.
@@ -88,7 +89,7 @@ M.resolve_path = function(path, validate_type)
   local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
     local stat = vim.loop.fs_stat(abs_path)
-    if stat.type ~= validate_type then
+    if stat and stat.type ~= validate_type then
       error("Invalid path: " .. path .. " is not a " .. validate_type)
     end
   end

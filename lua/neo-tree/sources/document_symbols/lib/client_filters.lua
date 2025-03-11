@@ -8,7 +8,7 @@ local M = {}
 
 ---Filter clients
 ---@param filter_type "first" | "all"
----@param filter_fn neotree.lsp.Filter
+---@param filter_fn neotree.lsp.Filter?
 ---@param resp neotree.lsp.RespRaw
 ---@return table<string, any>
 local filter_clients = function(filter_type, filter_fn, resp)

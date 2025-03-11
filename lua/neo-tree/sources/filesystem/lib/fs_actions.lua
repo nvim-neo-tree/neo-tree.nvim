@@ -514,7 +514,10 @@ M.delete_node = function(path, callback, noconfirm)
         log.error("Could not read link")
         return
       end
-      _type = loop.fs_stat(link_to)
+      local target_file = loop.fs_stat(link_to)
+      if target_file then
+        _type = target_file.type
+      end
     end
     if _type == "directory" then
       local children = scan.scan_dir(path, {

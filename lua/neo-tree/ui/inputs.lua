@@ -79,6 +79,7 @@ M.confirm = function(message, callback)
   if should_use_popup_input() then
     local popup_options = popups.popup_options(message, 10)
 
+    ---@class NuiInput
     local input = Input(popup_options, {
       prompt = " y/n: ",
       on_close = function()
