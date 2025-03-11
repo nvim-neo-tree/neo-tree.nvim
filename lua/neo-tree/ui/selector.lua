@@ -151,9 +151,9 @@ local text_layout = function(text, content_layout, output_width, trunc_char)
   local left_pad, right_pad = 0, 0
   if pad_length < 0 then
     if output_width < 4 then
-      return utils.truncate_by_cell(text, output_width)
+      return (utils.truncate_by_cell(text, output_width))
     else
-      return utils.truncate_by_cell(text, output_width - 1) .. trunc_char
+      return (utils.truncate_by_cell(text, output_width - 1) .. trunc_char)
     end
   elseif content_layout == "start" then
     left_pad, right_pad = 0, pad_length
