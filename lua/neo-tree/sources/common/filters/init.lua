@@ -1,7 +1,6 @@
 ---A generalization of the filter functionality to directly filter the
 ---source tree instead of relying on pre-filtered data, which is specific
 ---to the filesystem source.
-local vim = vim
 local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local popups = require("neo-tree.ui.popups")

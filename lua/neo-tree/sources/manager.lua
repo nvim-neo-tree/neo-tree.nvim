@@ -1,7 +1,6 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
-local vim = vim
 local utils = require("neo-tree.utils")
 local compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")

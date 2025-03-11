@@ -1,6 +1,6 @@
 pcall(require, "luacov")
 
-local uv = vim.loop
+local uv = vim.uv or vim.loop
 
 ---Return all sources inside "lua/neo-tree/sources"
 ---@return string[] # name of sources found

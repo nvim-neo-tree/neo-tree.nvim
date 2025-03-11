@@ -1,4 +1,3 @@
-local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local file_items = require("neo-tree.sources.common.file-items")

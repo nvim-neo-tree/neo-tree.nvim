@@ -1,6 +1,5 @@
 -- This file holds all code for the search function.
 
-local vim = vim
 local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")

@@ -1,4 +1,3 @@
-local vim = vim
 local M = {}
 
 --- To be removed in a future release, use this instead:

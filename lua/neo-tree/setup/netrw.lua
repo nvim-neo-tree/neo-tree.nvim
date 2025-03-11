@@ -1,3 +1,4 @@
+local uv = vim.uv or vim.loop
 local nt = require("neo-tree")
 local utils = require("neo-tree.utils")
 local M = {}
@@ -36,7 +37,7 @@ M.hijack = function(path)
   if not utils.truthy(bufname) then
     bufname = path or ""
   end
-  local stats = vim.loop.fs_stat(bufname)
+  local stats = uv.fs_stat(bufname)
   if not stats then
     return false
   end

@@ -1,5 +1,4 @@
 --This file should contain all commands meant to be used by mappings.
-local vim = vim
 local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")

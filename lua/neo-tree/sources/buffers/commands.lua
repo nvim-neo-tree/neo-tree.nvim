@@ -1,6 +1,5 @@
 --This file should contain all commands meant to be used by mappings.
 
-local vim = vim
 local cc = require("neo-tree.sources.common.commands")
 local buffers = require("neo-tree.sources.buffers")
 local utils = require("neo-tree.utils")

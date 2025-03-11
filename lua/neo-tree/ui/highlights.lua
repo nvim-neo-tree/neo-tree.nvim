@@ -1,6 +1,5 @@
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
-local vim = vim
 local M = {}
 
 ---@type integer
