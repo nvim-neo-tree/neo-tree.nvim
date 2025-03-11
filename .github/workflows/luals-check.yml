@@ -27,7 +27,7 @@ jobs:
         mise_toml: |
           [tools]
           neovim = "${{ matrix.neovim }}"
-          lua-language-server = "latest"
+          lua-language-server = "3.13.6"
 
     - name: Run lua-language-server check
       continue-on-error: true
