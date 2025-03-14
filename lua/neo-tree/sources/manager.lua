@@ -1,6 +1,7 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
+local nt = require("neo-tree")
 local utils = require("neo-tree.utils")
 local compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
@@ -34,6 +35,7 @@ local get_source_data = function(source_name)
 end
 
 local function create_state(tabid, sd, winid)
+  nt.ensure_config()
   local default_config = default_configs[sd.name]
   local state = vim.deepcopy(default_config, compat.noref())
   state.tabid = tabid
