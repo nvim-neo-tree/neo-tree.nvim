@@ -52,39 +52,46 @@ local M = {
   VIM_WIN_ENTER = "vim_win_enter",
 }
 
----@param event_name neotree.Event|string
-M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
-  local opts = {
-    setup = function()
-      local tpl =
-        ":lua require('neo-tree.events').fire_event('%s', { afile = vim.F.npcall(vim.fn.expand, '<afile>') or '' })"
-      local callback = string.format(tpl, event_name)
-      if nested then
-        callback = "++nested " .. callback
-      end
+---@param autocmds string
+---@return string event
+---@return string? pattern
+local parse_autocmd_string = function(autocmds)
+  local parsed = vim.split(autocmds, " ")
+  return parsed[1], parsed[2]
+end
 
-      local autocmd = table.concat(autocmds, ",")
-      if not vim.startswith(autocmd, "User") then
-        autocmd = autocmd .. " *"
+---@param event_name neotree.Event|string
+---@param autocmds string[]
+---@param debounce_frequency integer
+---@param seed_fn function
+---@param nested boolean
+M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
+  local augroup = vim.api.nvim_create_augroup("NeoTreeEvent_" .. event_name, { clear = true })
+  q.define_event(event_name, {
+    setup = function()
+      for _, autocmd in ipairs(autocmds) do
+        local event, pattern = parse_autocmd_string(autocmd)
+        vim.api.nvim_create_autocmd({ event }, {
+          pattern = pattern or "*",
+          group = augroup,
+          nested = nested,
+          callback = function(args)
+            M.fire_event(event_name, {
+              afile = args.file or "",
+            })
+          end,
+        })
       end
-      local cmds = {
-        "augroup NeoTreeEvent_" .. event_name,
-        "autocmd " .. autocmd .. " " .. callback,
-        "augroup END",
-      }
-      log.trace("Registering autocmds: %s", table.concat(cmds, "\n"))
-      vim.cmd(table.concat(cmds, "\n"))
     end,
     seed = seed_fn,
     teardown = function()
       log.trace("Teardown autocmds for ", event_name)
-      vim.cmd(string.format("autocmd! NeoTreeEvent_%s", event_name))
+      vim.api.nvim_del_augroup_by_id(augroup)
     end,
     debounce_frequency = debounce_frequency,
     debounce_strategy = utils.debounce_strategy.CALL_LAST_ONLY,
-  }
+  })
   log.debug("Defining autocmd event: %s", event_name)
-  q.define_event(event_name, opts)
 end
 
 M.clear_all_events = q.clear_all_events
