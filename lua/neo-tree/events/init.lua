@@ -76,9 +76,11 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
           group = augroup,
           nested = nested,
           callback = function(args)
-            M.fire_event(event_name, {
-              afile = args.file or "",
-            })
+            ---@class neotree.Event.Autocmd.CallbackArgs : vim.api.keyset.create_autocmd.callback_args
+            ---@field afile string
+            local a = args
+            a.afile = args.file or ""
+            M.fire_event(event_name, args)
           end,
         })
       end

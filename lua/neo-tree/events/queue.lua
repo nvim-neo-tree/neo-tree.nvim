@@ -57,6 +57,8 @@ M.destroy_event = function(event_name)
   return true
 end
 
+---@param event string
+---@param args table
 local fire_event_internal = function(event, args)
   local queue = event_queues[event]
   if queue == nil then
@@ -99,6 +101,8 @@ local fire_event_internal = function(event, args)
   end)
 end
 
+---@param event string
+---@param args table?
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
