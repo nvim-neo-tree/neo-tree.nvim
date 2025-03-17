@@ -37,3 +37,6 @@ clean:
 CONFIGURATION = .luarc.json
 luals-check: setup
 	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" lua-language-server --configpath=$(CONFIGURATION) --check=.
+
+emmylua-check: setup
+	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" emmylua_check -c $(CONFIGURATION) .
