@@ -62,9 +62,9 @@ end
 
 ---@param event_name neotree.Event|string
 ---@param autocmds string[]
----@param debounce_frequency integer
----@param seed_fn function
----@param nested boolean
+---@param debounce_frequency integer?
+---@param seed_fn function?
+---@param nested boolean?
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   log.debug("Defining autocmd event: %s", event_name)
   local augroup_name = "NeoTreeEvent_" .. event_name

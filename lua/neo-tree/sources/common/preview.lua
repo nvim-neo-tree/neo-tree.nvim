@@ -387,28 +387,15 @@ function Preview:highlight_preview_range()
     end_pos = start_pos
   end
 
-  local highlight = function(line, col_start, col_end)
-    vim.api.nvim_buf_add_highlight(
-      self.bufnr,
-      neo_tree_preview_namespace,
-      highlights.PREVIEW,
-      line,
-      col_start,
-      col_end
-    )
-  end
-
   local start_line, end_line = start_pos[1], end_pos[1]
   local start_col, end_col = start_pos[2], end_pos[2]
-  if start_line == end_line then
-    highlight(start_line, start_col, end_col)
-  else
-    highlight(start_line, start_col, -1)
-    for line = start_line + 1, end_line - 1 do
-      highlight(line, 0, -1)
-    end
-    highlight(end_line, 0, end_col)
-  end
+  vim.api.nvim_buf_set_extmark(self.bufnr, neo_tree_preview_namespace, start_line, start_col, {
+    hl_group = highlights.PREVIEW,
+    end_row = end_line,
+    end_col = end_col,
+    -- priority = priority,
+    strict = false,
+  })
 end
 
 ---Clear the preview highlight in the buffer currently in the preview window.

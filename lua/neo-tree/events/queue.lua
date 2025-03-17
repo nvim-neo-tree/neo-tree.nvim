@@ -102,7 +102,7 @@ local fire_event_internal = function(event, args)
 end
 
 ---@param event string
----@param args table?
+---@param args any?
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)

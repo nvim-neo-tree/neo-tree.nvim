@@ -163,6 +163,7 @@ local on_lsp_resp = function(lsp_resp, state)
 end
 
 ---latter is deprecated in neovim v0.11
+---@diagnostic disable-next-line: deprecated
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 M.render_symbols = function(state)
   local bufnr = state.lsp_bufnr
