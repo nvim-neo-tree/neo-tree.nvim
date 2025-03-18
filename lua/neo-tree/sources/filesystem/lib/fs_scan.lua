@@ -399,26 +399,26 @@ local function sync_scan(context, path_to_scan)
     end
     job_complete(context)
   else -- scan_mode == "shallow"
-    local success, dir, err = pcall(uv.fs_opendir, path_to_scan, nil, 1000)
-    if err or not success then
-      log.error("Error opening dir:", err)
-    end
-    ---@cast dir uv.luv_dir_t
-    local success2, stats = pcall(uv.fs_readdir, dir)
-    if success2 and stats then
-      for _, stat in ipairs(stats) do
-        local path = utils.path_join(path_to_scan, stat.name)
-        local success3, item = pcall(file_items.create_item, context, path, stat.type)
-        if success3 then
-          if context.recursive and stat.type == "directory" then
-            table.insert(context.paths_to_load, path)
+    local dir, err = uv.fs_opendir(path_to_scan, nil, 1000)
+    if dir then
+      local stats = uv.fs_readdir(dir)
+      if stats then
+        for _, stat in ipairs(stats) do
+          local path = utils.path_join(path_to_scan, stat.name)
+          local success3, item = pcall(file_items.create_item, context, path, stat.type)
+          if success3 then
+            if context.recursive and stat.type == "directory" then
+              table.insert(context.paths_to_load, path)
+            end
+          else
+            log.error("error creating item for ", path)
           end
-        else
-          log.error("error creating item for ", path)
         end
       end
+      uv.fs_closedir(dir)
+    else
+      log.error("Error opening dir:", err)
     end
-    uv.fs_closedir(dir)
 
     local next_path = dir_complete(context, path_to_scan)
     if next_path then
