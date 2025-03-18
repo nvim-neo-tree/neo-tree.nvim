@@ -1,7 +1,7 @@
 ---Utilities function to filter the LSP servers
 local utils = require("neo-tree.utils")
 
----@alias neotree.lsp.RespRaw table<integer,{err: lsp.ResponseError?, result: any}>
+---@alias neotree.lsp.RespRaw table<integer,{err: lsp.ResponseError?, error: lsp.ResponseError?, result: any}>
 local M = {}
 
 ---@alias neotree.lsp.Filter fun(client_name: string): boolean
