@@ -57,7 +57,7 @@ so we can fix it.
 ## Minimal Quickstart
 
 > [!NOTE]
-> You do not need to call `require('neo-tree').setup({ ... })` for neo-tree to work. `setup()` is only used for
+> You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
 > configuration.
 
 #### Minimal Example for Lazy:
