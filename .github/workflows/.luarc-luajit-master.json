@@ -1,6 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
-  "diagnostics.libraryFiles": "Disable",
+  "diagnostics": {
+    "libraryFiles": "Disable"
+  },
   "runtime": {
     "version": "LuaJIT",
     "path": [
@@ -23,7 +25,8 @@
     ],
     "ignoreDir": [
       ".dependencies",
-      ".luarocks"
+      ".luarocks",
+      ".lua"
     ]
   }
 }
