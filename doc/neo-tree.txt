@@ -784,6 +784,28 @@ commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
 lua file just to read it as documentation.
 
+NOTE: Neo-tree has type annotations for its configuration. If you have a Lua
+language server that supports EmmyLua/LuaCATS annotations, you can use
+`neotree.Config`, for example:
+
+>lua
+    -- if using lazy.nvim:
+    {
+      "nvim-neo-tree/neo-tree.nvim",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-tree/nvim-web-devicons",
+        "MunifTanjim/nui.nvim",
+        -- { "3rd/image.nvim", opts = {} }, -- Optional image support
+      },
+      lazy = false, -- neo-tree lazy-loads itself
+      ---@module "neo-tree"
+      ---@type neotree.Config?
+      -- opts = {
+      --   -- fill any relevant options here
+      -- },
+    }
+<
 
 SOURCE SELECTOR                                       *neo-tree-source-selector*
 
