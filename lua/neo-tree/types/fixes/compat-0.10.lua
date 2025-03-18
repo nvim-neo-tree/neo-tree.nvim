@@ -1,4 +1,5 @@
---- A backport from v0.10
+---@meta
+--- A backport from nightly for v0.10 type checking
 
 --- @class neotree._vim.api.keyset.create_autocmd.callback_args
 --- @field id integer autocommand id
