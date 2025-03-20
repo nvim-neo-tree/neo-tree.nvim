@@ -181,7 +181,7 @@ local job_complete = function(context)
 end
 
 local function create_node(context, node)
-  local success3, item = pcall(file_items.create_item, context, node.path, node.type)
+  local success, item = pcall(file_items.create_item, context, node.path, node.type)
 end
 
 local function process_node(context, path)
@@ -405,8 +405,8 @@ local function sync_scan(context, path_to_scan)
       if stats then
         for _, stat in ipairs(stats) do
           local path = utils.path_join(path_to_scan, stat.name)
-          local success3, item = pcall(file_items.create_item, context, path, stat.type)
-          if success3 then
+          local success, item = pcall(file_items.create_item, context, path, stat.type)
+          if success then
             if context.recursive and stat.type == "directory" then
               table.insert(context.paths_to_load, path)
             end
