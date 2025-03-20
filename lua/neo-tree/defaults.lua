@@ -190,6 +190,7 @@ local config = {
       with_markers = true,
       indent_marker = "│",
       last_indent_marker = "└",
+      marker_start_level = 2, -- the directory node in which the marker should start rendering
       highlight = "NeoTreeIndentMarker",
       -- expander config, needed for nesting files
       with_expanders = nil, -- if nil and file nesting is enabled, will enable expanders
