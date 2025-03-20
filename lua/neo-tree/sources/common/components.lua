@@ -662,14 +662,13 @@ end
 
 ---@param config neotree.Component.Common.SymlinkTarget
 M.symlink_target = function(config, node, _)
-  if node.is_link then
-    return {
-      text = string.format(config.text_format, node.link_to),
-      highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
-    }
-  else
+  if not node.is_link then
     return {}
   end
+  return {
+    text = string.format(config.text_format, node.link_to),
+    highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
+  }
 end
 
 ---@class (exact) neotree.Component.Common.Type : neotree.Component
