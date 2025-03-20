@@ -850,9 +850,10 @@ local set_buffer_mappings = function(state)
           resolved_mappings[cmd] = { text = desc or "<function>" }
         end
         if type(func) == "function" then
+          local fallback = utils.keycode(cmd)
           resolved_mappings[cmd].handler = function()
             state.config = config
-            state.fallback = cmd
+            state.fallback = fallback
             return func(state)
           end
           keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
