@@ -681,8 +681,14 @@ M.scroll_preview = function(state)
   Preview.scroll(state)
 end
 
-M.focus_preview = function()
-  Preview.focus()
+M.focus_preview = function(state)
+  if Preview.is_active() then
+    Preview.focus()
+  else
+    vim.api.nvim_win_call(state.winid, function()
+      vim.api.nvim_feedkeys(state.fallback, "n", false)
+    end)
+  end
 end
 
 ---Expands or collapses the current node.

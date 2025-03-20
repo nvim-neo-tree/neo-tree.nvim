@@ -506,8 +506,8 @@ Preview.scroll = function(state)
       vim.cmd(("normal! %s%s"):format(count, input))
     end)
   else
-    vim.api.nvim_buf_call(state.bufnr, function()
-      vim.cmd(("normal! %s"):format(utils.keycode(state.fallback)))
+    vim.api.nvim_win_call(state.winid, function()
+      vim.api.nvim_feedkeys(state.fallback, "n", false)
     end)
   end
 end
