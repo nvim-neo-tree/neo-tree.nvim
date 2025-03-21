@@ -136,7 +136,7 @@ local get_legacy_signs = function(severity)
   return defined
 end
 
----`sign_getdefined` based wrapper with compatibility
+---Returns the sign corresponding to the given severity
 ---@param severity string
 ---@return vim.fn.sign_getdefined.ret.item
 local function get_defined_sign(severity)
