@@ -427,7 +427,7 @@ local prepare_node = function(item, state)
 
   for _, component in ipairs(renderer) do
     repeat
-      if component.enabled then
+      if component.enabled == false then
         break
       end
       local component_data, component_wanted_width =
