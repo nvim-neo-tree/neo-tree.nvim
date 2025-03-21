@@ -95,6 +95,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local has_pre_search_folders = utils.truthy(state.open_folders_before_search)
   if not has_pre_search_folders then
     log.trace("No search or pre-search folders, recording pre-search folders now")
+    ---@type table|nil
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 
@@ -159,6 +160,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
           state.sort_function_override = sort_by_score
           state.use_fzy = true
         end
+        ---@type function|nil
         local callback = select_first_file
         if fuzzy_finder_mode == "directory" then
           callback = nil

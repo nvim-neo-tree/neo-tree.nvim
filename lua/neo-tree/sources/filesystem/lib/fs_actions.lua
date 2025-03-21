@@ -444,7 +444,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
         local fd = uv.fs_open(destination, open_mode, 420)
         if not fd then
           if not uv.fs_stat(destination) then
-            api.nvim_err_writeln("Could not create file " .. destination)
+            log.error("Could not create file " .. destination)
             return
           else
             log.warn("Failed to complete file creation of " .. destination)
@@ -464,7 +464,7 @@ end
 local function delete_dir(dir_path)
   local handle = uv.fs_scandir(dir_path)
   if type(handle) == "string" then
-    api.nvim_err_writeln(handle)
+    log.error(handle)
     return false
   end
 
@@ -582,13 +582,13 @@ M.delete_node = function(path, callback, noconfirm)
       if not success then
         success = delete_dir(path)
         if not success then
-          return api.nvim_err_writeln("Could not remove directory: " .. path)
+          return log.error("Could not remove directory: " .. path)
         end
       end
     else
       local success = uv.fs_unlink(path)
       if not success then
-        return api.nvim_err_writeln("Could not remove file: " .. path)
+        return log.error("Could not remove file: " .. path)
       end
       clear_buffer(path)
     end

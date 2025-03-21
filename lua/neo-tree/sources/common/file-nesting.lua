@@ -150,24 +150,25 @@ pattern_matcher.get_children = function(item, siblings, rule)
 
   for type, type_functions in pairs(pattern_matcher_types) do
     for _, pattern in pairs(rule[type] or {}) do
-      ---@cast rule neotree.FileNesting.Rule.Pattern
-      local item_name = rule.ignore_case and item.name:lower() or item.name
+      repeat
+        ---@cast rule neotree.FileNesting.Rule.Pattern
+        local item_name = rule.ignore_case and item.name:lower() or item.name
 
-      local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
-      if not success then
-        log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
-        goto continue
-      end
-      for _, sibling in pairs(siblings) do
-        if sibling.id ~= item.id then
-          local sibling_name = rule.ignore_case and sibling.name:lower() or sibling.name
-          local glob_or_file = type_functions.get_pattern(replaced_pattern)
-          if type_functions.match(sibling_name, glob_or_file) then
-            table.insert(matching_files, sibling)
+        local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
+        if not success then
+          log.error("Error using file glob '" .. pattern .. "'; Error: " .. replaced_pattern)
+          break
+        end
+        for _, sibling in pairs(siblings) do
+          if sibling.id ~= item.id then
+            local sibling_name = rule.ignore_case and sibling.name:lower() or sibling.name
+            local glob_or_file = type_functions.get_pattern(replaced_pattern)
+            if type_functions.match(sibling_name, glob_or_file) then
+              table.insert(matching_files, sibling)
+            end
           end
         end
-      end
-      ::continue::
+      until true
     end
   end
   return matching_files
