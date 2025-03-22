@@ -6,6 +6,7 @@ local log = require("neo-tree.log")
 
 local M = {}
 
+local winborder_option_exists = vim.fn.exists("&winborder") > 0
 M.popup_options = function(title, min_width, override_options)
   if string.len(title) ~= 0 then
     title = " " .. title .. " "
@@ -15,7 +16,7 @@ M.popup_options = function(title, min_width, override_options)
 
   local popup_border_style = nt.config.popup_border_style
   if popup_border_style == "" then
-    if vim.fn.exists("&winborder") > 0 then
+    if winborder_option_exists then
       popup_border_style = vim.o.winborder
     end
     if popup_border_style == "" then
