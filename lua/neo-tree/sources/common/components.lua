@@ -120,40 +120,61 @@ end
 ---`sign_getdefined` based wrapper with compatibility
 ---@param severity string
 ---@return vim.fn.sign_getdefined.ret.item
-local function get_defined_sign(severity)
-  local defined
+local get_legacy_sign = function(severity)
+  local sign = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
+  if vim.tbl_isempty(sign) then
+    -- backwards compatibility...
+    local old_severity = severity
+    if severity == "Warning" then
+      old_severity = "Warn"
+    elseif severity == "Information" then
+      old_severity = "Info"
+    end
+    sign = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
+  end
+  return sign and sign[1]
+end
 
-  if vim.fn.has("nvim-0.10") > 0 then
-    local signs_config = vim.diagnostic.config().signs
-    if type(signs_config) == "table" then
+local nvim_0_10 = vim.fn.has("nvim-0.10") > 0
+---Returns the sign corresponding to the given severity
+---@param severity string
+---@return vim.fn.sign_getdefined.ret.item
+local function get_diagnostic_sign(severity)
+  local sign
+
+  if nvim_0_10 then
+    local signs = vim.diagnostic.config().signs
+
+    if type(signs) == "function" then
+      --TODO: Find a better way to get a namespace
+      local namespaces = vim.diagnostic.get_namespaces()
+      if not vim.tbl_isempty(namespaces) then
+        local ns_id = next(namespaces)
+        ---@cast ns_id -nil
+        signs = signs(ns_id, 0)
+      end
+    end
+
+    if type(signs) == "table" then
       local identifier = severity:sub(1, 1)
       if identifier == "H" then
         identifier = "N"
       end
-      defined = {
-        text = (signs_config.text or {})[vim.diagnostic.severity[identifier]],
+      sign = {
+        text = (signs.text or {})[vim.diagnostic.severity[identifier]],
         texthl = "DiagnosticSign" .. severity,
       }
+    elseif signs == true then
+      sign = get_legacy_sign(severity)
     end
   else -- before 0.10
-    defined = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
-    if vim.tbl_isempty(defined) then
-      -- backwards compatibility...
-      local old_severity = severity
-      if severity == "Warning" then
-        old_severity = "Warn"
-      elseif severity == "Information" then
-        old_severity = "Info"
-      end
-      defined = vim.fn.sign_getdefined("LspDiagnosticsSign" .. old_severity)
-    end
-    defined = defined and defined[1]
+    sign = get_legacy_sign(severity)
   end
 
-  if type(defined) ~= "table" then
-    defined = {}
+  if type(sign) ~= "table" then
+    sign = {}
   end
-  return defined
+  return sign
 end
 
 ---@class (exact) neotree.Component.Common.Diagnostics : neotree.Component
@@ -178,23 +199,23 @@ M.diagnostics = function(config, node, state)
   end
   ---@type string
   local severity = diag_state.severity_string
-  local defined = get_defined_sign(severity)
+  local sign = get_diagnostic_sign(severity)
 
   -- check for overrides in the component config
   local severity_lower = severity:lower()
   if config.symbols and config.symbols[severity_lower] then
-    defined.texthl = defined.texthl or ("Diagnostic" .. severity)
-    defined.text = config.symbols[severity_lower]
+    sign.texthl = sign.texthl or ("Diagnostic" .. severity)
+    sign.text = config.symbols[severity_lower]
   end
   if config.highlights and config.highlights[severity_lower] then
-    defined.text = defined.text or severity:sub(1, 1)
-    defined.texthl = config.highlights[severity_lower]
+    sign.text = sign.text or severity:sub(1, 1)
+    sign.texthl = config.highlights[severity_lower]
   end
 
-  if defined.text and defined.texthl then
+  if sign.text and sign.texthl then
     return {
-      text = make_two_char(defined.text),
-      highlight = defined.texthl,
+      text = make_two_char(sign.text),
+      highlight = sign.texthl,
     }
   else
     return {
