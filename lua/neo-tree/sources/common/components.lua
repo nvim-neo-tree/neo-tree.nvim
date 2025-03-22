@@ -135,14 +135,25 @@ local get_legacy_sign = function(severity)
   return sign and sign[1]
 end
 
+local nvim_0_10 = vim.fn.has("nvim-0.10") > 0
 ---Returns the sign corresponding to the given severity
 ---@param severity string
 ---@return vim.fn.sign_getdefined.ret.item
 local function get_diagnostic_sign(severity)
   local sign
 
-  if vim.fn.has("nvim-0.10") > 0 then
+  if nvim_0_10 then
     local signs = vim.diagnostic.config().signs
+
+    if type(signs) == "function" then
+      --TODO: Find a better way to get a namespace
+      local namespaces = vim.diagnostic.get_namespaces()
+      if not vim.tbl_isempty(namespaces) then
+        local ns_id = next(namespaces)
+        ---@cast ns_id -nil
+        signs = signs(ns_id, 0)
+      end
+    end
 
     if type(signs) == "table" then
       local identifier = severity:sub(1, 1)
