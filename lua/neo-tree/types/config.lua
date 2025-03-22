@@ -97,7 +97,7 @@
 ---@field created neotree.Component.Common.Created?
 ---@field symlink_target neotree.Component.Common.SymlinkTarget?
 
----@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"
+---@alias neotree.Config.BorderStyle "NC"|"none"|"rounded"|"shadow"|"single"|"solid"|"double"|""
 
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]

@@ -1,14 +1,9 @@
-local Input = require("nui.input")
+local NuiInput = require("nui.input")
+local nt = require("neo-tree")
 local popups = require("neo-tree.ui.popups")
-local utils = require("neo-tree.utils")
 local events = require("neo-tree.events")
 
 local M = {}
-
-local should_use_popup_input = function()
-  local nt = require("neo-tree")
-  return utils.get_value(nt.config, "use_popups_for_input", true, false)
-end
 
 M.show_input = function(input, callback)
   input:mount()
@@ -47,10 +42,10 @@ M.show_input = function(input, callback)
 end
 
 M.input = function(message, default_value, callback, options, completion)
-  if should_use_popup_input() then
+  if nt.config.use_popups_for_input then
     local popup_options = popups.popup_options(message, 10, options)
 
-    local input = Input(popup_options, {
+    local input = NuiInput(popup_options, {
       prompt = " ",
       default_value = default_value,
       on_submit = callback,
@@ -75,11 +70,11 @@ M.input = function(message, default_value, callback, options, completion)
 end
 
 M.confirm = function(message, callback)
-  if should_use_popup_input() then
+  if nt.config.use_popups_for_input then
     local popup_options = popups.popup_options(message, 10)
 
     ---@class NuiInput
-    local input = Input(popup_options, {
+    local input = NuiInput(popup_options, {
       prompt = " y/n: ",
       on_close = function()
         callback(false)

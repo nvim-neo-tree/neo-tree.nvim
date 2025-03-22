@@ -4,6 +4,7 @@ local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local log = require("neo-tree.log")
 local renderer = require("neo-tree.ui.renderer")
+local NuiPopup = require("nui.popup")
 
 local neo_tree_preview_namespace = vim.api.nvim_create_namespace("neo_tree_preview")
 
@@ -77,7 +78,6 @@ local function create_floating_preview_window(state)
   options.zindex = 40
   options.buf_options.filetype = "neo-tree-preview"
 
-  local NuiPopup = require("nui.popup")
   local win = NuiPopup(options)
   win:mount()
   return win
