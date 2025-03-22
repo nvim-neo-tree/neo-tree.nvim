@@ -1184,6 +1184,29 @@ If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
 >lua
+    vim.diagnostic.config({
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = '',
+          [vim.diagnostic.severity.WARN] = '',
+          [vim.diagnostic.severity.INFO] = '',
+          [vim.diagnostic.severity.HINT] = '󰌵',
+        },
+      }
+    })
+<
+
+If you don't change the `signs` option from its default, e.g.:
+
+>lua
+    vim.diagnostic.config({
+      signs = true
+    })
+<
+
+or are on Neovim v0.9 and below, then this will work instead:
+>lua
+
     vim.fn.sign_define("DiagnosticSignError",
         {text = " ", texthl = "DiagnosticSignError"})
     vim.fn.sign_define("DiagnosticSignWarn",
