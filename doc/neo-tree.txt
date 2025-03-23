@@ -1205,8 +1205,8 @@ If you don't change the `signs` option from its default, e.g.:
 <
 
 or are on Neovim v0.9 and below, then this will work instead:
->lua
 
+>lua
     vim.fn.sign_define("DiagnosticSignError",
         {text = " ", texthl = "DiagnosticSignError"})
     vim.fn.sign_define("DiagnosticSignWarn",
@@ -1240,6 +1240,7 @@ neo-tree setup call like this:
       }
     })
 >
+
 Anything not specified in the `default_component_configs` will fallback to the
 `sign_define` method.
 
