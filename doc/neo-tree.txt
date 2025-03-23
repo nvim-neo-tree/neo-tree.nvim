@@ -1239,7 +1239,7 @@ neo-tree setup call like this:
         },
       }
     })
->
+<
 
 Anything not specified in the `default_component_configs` will fallback to the
 `sign_define` method.
