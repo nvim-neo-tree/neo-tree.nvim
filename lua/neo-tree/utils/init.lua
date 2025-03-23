@@ -306,7 +306,9 @@ M.get_diagnostic_counts = function()
         local enabled
         if vim.diagnostic.is_enabled then
           enabled = vim.diagnostic.is_enabled({ bufnr = bufnr, ns_id = ns })
+        ---@diagnostic disable-next-line: deprecated
         elseif vim.diagnostic.is_disabled then
+          ---@diagnostic disable-next-line: deprecated
           enabled = not vim.diagnostic.is_disabled(bufnr, ns)
         else
           enabled = true
@@ -1222,6 +1224,15 @@ local brace_expand_split = function(s, separator)
   return s, nil
 end
 
+---@param tbl table
+local function flatten(tbl)
+  if vim.iter then
+    return vim.iter(tbl):flatten():totable()
+  end
+
+  ---@diagnostic disable-next-line: deprecated
+  return vim.tbl_flatten(tbl)
+end
 ---Perform brace expansion on a string and return the sequence of the results
 ---@param s string?: input string which is inside braces, if nil return { "" }
 ---@return string[] | nil: list of strings each representing the individual expanded strings
@@ -1311,7 +1322,7 @@ local brace_expand_contents = function(s)
   if #items == 1 then -- Only one expansion found. Abort.
     return nil
   end
-  return vim.tbl_flatten(items)
+  return flatten(items)
 end
 
 ---brace_expand:

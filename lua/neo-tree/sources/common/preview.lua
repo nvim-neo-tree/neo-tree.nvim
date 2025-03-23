@@ -314,46 +314,48 @@ function Preview:setBuffer(bufnr)
   local eventignore = vim.opt.eventignore
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
 
-  if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
-    -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
-    -- really long anyways
-    vim.api.nvim_win_set_buf(self.winid, bufnr)
-    try_load_image_nvim_buf(self.winid, bufnr)
-    goto finally
-  end
-
-  if self.config.use_float then
-    -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
-    vim.fn.bufload(bufnr)
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
-    vim.api.nvim_win_set_buf(self.winid, self.bufnr)
-    -- I'm not sure why float windows won't show numbers without this
-    vim.wo[self.winid].number = true
-
-    -- code below is from mini.pick
-    -- only starts treesitter parser if the filetype is matching
-    local ft = vim.bo[bufnr].filetype
-    local bufsize = get_bufsize(bufnr)
-    if bufsize > 1024 * 1024 or bufsize > 1000 * #lines then
-      goto finally
+  repeat
+    if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
+      -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
+      -- really long anyways
+      vim.api.nvim_win_set_buf(self.winid, bufnr)
+      try_load_image_nvim_buf(self.winid, bufnr)
+      break -- goto end
     end
-    local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
-    lang = has_lang and lang or ft
-    local has_parser, parser = pcall(vim.treesitter.get_parser, self.bufnr, lang, { error = false })
-    has_parser = has_parser and parser ~= nil
-    if has_parser then
-      has_parser = pcall(vim.treesitter.start, self.bufnr, lang)
-    end
-    if not has_parser then
-      vim.bo[self.bufnr].syntax = ft
-    end
-  else
-    vim.api.nvim_win_set_buf(self.winid, bufnr)
-    self.bufnr = bufnr
-  end
 
-  ::finally::
+    if self.config.use_float then
+      -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
+      vim.fn.bufload(bufnr)
+      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+      vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+      -- I'm not sure why float windows won't show numbers without this
+      vim.wo[self.winid].number = true
+
+      -- code below is from mini.pick
+      -- only starts treesitter parser if the filetype is matching
+      local ft = vim.bo[bufnr].filetype
+      local bufsize = get_bufsize(bufnr)
+      if bufsize > 1024 * 1024 or bufsize > 1000 * #lines then
+        break -- goto end
+      end
+      local has_lang, lang = pcall(vim.treesitter.language.get_lang, ft)
+      lang = has_lang and lang or ft
+      local has_parser, parser =
+        pcall(vim.treesitter.get_parser, self.bufnr, lang, { error = false })
+      has_parser = has_parser and parser ~= nil
+      if has_parser then
+        has_parser = pcall(vim.treesitter.start, self.bufnr, lang)
+      end
+      if not has_parser then
+        vim.bo[self.bufnr].syntax = ft
+      end
+    else
+      vim.api.nvim_win_set_buf(self.winid, bufnr)
+      self.bufnr = bufnr
+    end
+
+  until true
   vim.opt.eventignore = eventignore
 end
 
@@ -387,28 +389,15 @@ function Preview:highlight_preview_range()
     end_pos = start_pos
   end
 
-  local highlight = function(line, col_start, col_end)
-    vim.api.nvim_buf_add_highlight(
-      self.bufnr,
-      neo_tree_preview_namespace,
-      highlights.PREVIEW,
-      line,
-      col_start,
-      col_end
-    )
-  end
-
   local start_line, end_line = start_pos[1], end_pos[1]
   local start_col, end_col = start_pos[2], end_pos[2]
-  if start_line == end_line then
-    highlight(start_line, start_col, end_col)
-  else
-    highlight(start_line, start_col, -1)
-    for line = start_line + 1, end_line - 1 do
-      highlight(line, 0, -1)
-    end
-    highlight(end_line, 0, end_col)
-  end
+  vim.api.nvim_buf_set_extmark(self.bufnr, neo_tree_preview_namespace, start_line, start_col, {
+    hl_group = highlights.PREVIEW,
+    end_row = end_line,
+    end_col = end_col,
+    -- priority = priority,
+    strict = false,
+  })
 end
 
 ---Clear the preview highlight in the buffer currently in the preview window.
