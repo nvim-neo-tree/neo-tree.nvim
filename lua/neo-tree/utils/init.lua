@@ -1227,7 +1227,7 @@ end
 ---@param tbl table
 local function flatten(tbl)
   if vim.iter then
-    return vim.iter(tbl):flatten()
+    return vim.iter(tbl):flatten():totable()
   end
 
   ---@diagnostic disable-next-line: deprecated
