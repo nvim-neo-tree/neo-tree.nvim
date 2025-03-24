@@ -213,10 +213,10 @@ local function get_children_sync(path)
   end
   repeat
     local stats = uv.fs_readdir(dir)
-    local more = false
     if not stats then
       break
     end
+    local more = false
     for i, stat in ipairs(stats) do
       more = i == ENTRIES_BATCH_SIZE
       local child_path = utils.path_join(path, stat.name)
@@ -420,12 +420,12 @@ local function sync_scan(context, path_to_scan)
     local dir, err = uv.fs_opendir(path_to_scan, nil, ENTRIES_BATCH_SIZE)
     if dir then
       local stats = uv.fs_readdir(dir)
-      local more = false
       repeat
         if not stats then
           break
         end
 
+        local more = false
         for i, stat in ipairs(stats) do
           more = i == ENTRIES_BATCH_SIZE
           local path = utils.path_join(path_to_scan, stat.name)
