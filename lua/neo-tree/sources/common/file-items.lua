@@ -126,7 +126,7 @@ function create_item(context, path, _type, bufnr)
   end
   if item.type == "link" then
     item.is_link = true
-    item.link_to = uv.fs_realpath(path)
+    item.link_to = uv.fs_readlink(path)
     if item.link_to ~= nil then
       item.type = uv.fs_stat(item.link_to).type
     end
