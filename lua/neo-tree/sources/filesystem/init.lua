@@ -126,9 +126,15 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   path = utils.normalize_path(path)
 
   -- if path doesn't exist, navigate upwards until it does
+  local orig_path = path
+  local backed_out = false
   while not fs_stat(path) do
     log.debug(("navigate_internal: path %s didn't exist, going up a directory"):format(path))
+    backed_out = true
     path, _ = utils.split_path(path)
+  end
+  if backed_out then
+    log.warn(("Root path %s doesn't exist, backing out to %s"):format(orig_path, path))
   end
 
   if path ~= state.path then
