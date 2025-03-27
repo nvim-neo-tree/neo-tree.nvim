@@ -1,7 +1,6 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
-local vim = vim
 local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local items = require("neo-tree.sources.buffers.lib.items")
@@ -81,7 +80,7 @@ M.buffers_changed = function()
 end
 
 ---Navigate to the given path.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
+---@param path string? Path to navigate to. If empty, will navigate to the cwd.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state.dirty = false
   local path_changed = false

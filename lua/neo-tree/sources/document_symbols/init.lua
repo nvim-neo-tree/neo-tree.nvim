@@ -1,7 +1,6 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
-local vim = vim
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local utils = require("neo-tree.utils")

@@ -1,3 +1,4 @@
+local uv = vim.uv or vim.loop
 local nt = require("neo-tree")
 local utils = require("neo-tree.utils")
 local M = {}
@@ -23,10 +24,9 @@ M.get_hijack_behavior = function()
   end
 end
 
+---@param path string? Path to hijack (sometimes bufname doesn't set in time)
 ---@return boolean hijacked Whether the hijack was successful
-M.hijack = function()
-  local manager = require("neo-tree.sources.manager")
-  local log = require("neo-tree.log")
+M.hijack = function(path)
   local hijack_behavior = M.get_hijack_behavior()
   if hijack_behavior == "disabled" then
     return false
@@ -34,7 +34,10 @@ M.hijack = function()
 
   -- ensure this is a directory
   local bufname = vim.api.nvim_buf_get_name(0)
-  local stats = vim.loop.fs_stat(bufname)
+  if not utils.truthy(bufname) then
+    bufname = path or ""
+  end
+  local stats = uv.fs_stat(bufname)
   if not stats then
     return false
   end
@@ -51,12 +54,14 @@ M.hijack = function()
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
   utils.debounce("hijack_netrw_" .. winid, function()
+    local manager = require("neo-tree.sources.manager")
+    local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
     local replace_with_bufnr = vim.fn.bufnr("#")
     local is_currently_neo_tree = false
     if replace_with_bufnr > 0 then
-      if vim.api.nvim_buf_get_option(replace_with_bufnr, "filetype") == "neo-tree" then
+      if vim.bo[replace_with_bufnr].filetype == "neo-tree" then
         -- don't hijack the current window if it's already a Neo-tree sidebar
         local _, position = pcall(vim.api.nvim_buf_get_var, replace_with_bufnr, "neo_tree_position")
         if position ~= "current" then

@@ -1,4 +1,3 @@
-local vim = vim
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
@@ -151,9 +150,9 @@ local text_layout = function(text, content_layout, output_width, trunc_char)
   local left_pad, right_pad = 0, 0
   if pad_length < 0 then
     if output_width < 4 then
-      return utils.truncate_by_cell(text, output_width)
+      return (utils.truncate_by_cell(text, output_width))
     else
-      return utils.truncate_by_cell(text, output_width - 1) .. trunc_char
+      return (utils.truncate_by_cell(text, output_width - 1) .. trunc_char)
     end
   elseif content_layout == "start" then
     left_pad, right_pad = 0, pad_length
@@ -233,15 +232,18 @@ M.get_selector = function(state, width)
   local winid = state.winid or vim.api.nvim_get_current_win()
 
   -- load padding from config
-  local padding = config.source_selector.padding
-  if type(padding) == "number" then
-    padding = { left = padding, right = padding }
+  local padding_config = config.source_selector.padding
+  local padding
+  if type(padding_config) == "number" then
+    padding = { left = padding_config, right = padding_config }
+  else
+    padding = padding_config or { left = 0, right = 0 }
   end
   width = math.floor(width - padding.left - padding.right)
 
   -- generate information of each tab (look `get_selector_tab_info` for type hint)
   local tabs = {}
-  local sources = config.source_selector.sources
+  local sources = config.source_selector.sources or {}
   local active_index = #sources
   local length_sum, length_active, length_separators = 0, 0, 0
   for i, source_info in ipairs(sources) do
@@ -265,7 +267,7 @@ M.get_selector = function(state, width)
   end
 
   -- start creating string to display
-  local tabs_layout = config.source_selector.tabs_layout
+  local tabs_layout = config.source_selector.tabs_layout or "equal"
   local content_layout = config.source_selector.content_layout or "center"
   local hl_background = config.source_selector.highlight_background
   local trunc_char = config.source_selector.truncation_character or "…"
@@ -386,7 +388,7 @@ _G.___neotree_selector_click = function(id, _, _, _)
   if id < 1 then
     return
   end
-  local sources = require("neo-tree").config.source_selector.sources
+  local sources = require("neo-tree").config.source_selector.sources or {}
   local winid, source_index = calc_source_from_click_id(id)
   local state = manager.get_state_for_window(winid)
   if state == nil then

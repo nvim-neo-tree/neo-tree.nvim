@@ -78,6 +78,9 @@ body:
                 "MunifTanjim/nui.nvim",
                 -- { "3rd/image.nvim", opts = {} }, -- Optional image support
               },
+              lazy = false,
+              ---@module "neo-tree"
+              ---@type neotree.Config?
               opts = {
                 -- fill any relevant options here
               },
@@ -87,6 +90,6 @@ body:
         vim.g.mapleader = " "
         vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
         -- do anything else you need to do to reproduce the issue
-    render: Lua
+      render: Lua
     validations:
       required: true

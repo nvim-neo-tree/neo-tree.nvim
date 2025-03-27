@@ -56,32 +56,42 @@ so we can fix it.
 
 ## Minimal Quickstart
 
+> [!NOTE]
+> You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
+> configuration.
+
 #### Minimal Example for Lazy:
 ```lua
 {
-    "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
-      "MunifTanjim/nui.nvim",
-      -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
-    }
+  "nvim-neo-tree/neo-tree.nvim",
+  branch = "v3.x",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+    "MunifTanjim/nui.nvim",
+    -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
+  },
+  lazy = false, -- neo-tree will lazily load itself
+  ---@module "neo-tree"
+  ---@type neotree.Config?
+  opts = {
+    -- fill any relevant options here
+  },
 }
 ```
 
 #### Minimal Example for Packer:
 ```lua
-use {
+use({
   "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    requires = { 
-      "nvim-lua/plenary.nvim",
-      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
-      "MunifTanjim/nui.nvim",
-      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
-    }
+  branch = "v3.x",
+  requires = {
+    "nvim-lua/plenary.nvim",
+    "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+    "MunifTanjim/nui.nvim",
+    -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
   }
+})
 ```
 
 After installing, run:
@@ -94,51 +104,79 @@ Press `?` in the Neo-tree window to view the list of mappings.
 
 ## Quickstart
 
-#### Longer Example for Packer:
+#### Longer Example for lazy.nvim:
 <details>
   <summary>
-    Click to view longer example for Packer.nvim
+    Click to view longer example for lazy.nvim
   </summary>
-  
+
 ```lua
-use {
-  "nvim-neo-tree/neo-tree.nvim",
+return {
+  -- If you want neo-tree's file operations to work with LSP (updating imports, etc.), you can use a plugin like
+  -- https://github.com/antosha417/nvim-lsp-file-operations:
+  -- {
+  --   "antosha417/nvim-lsp-file-operations",
+  --   dependencies = {
+  --     "nvim-lua/plenary.nvim",
+  --     "nvim-neo-tree/neo-tree.nvim",
+  --   },
+  --   config = function()
+  --     require("lsp-file-operations").setup()
+  --   end,
+  -- },
+  {
+    "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
-    requires = { 
+    dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
-      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
+      -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
       {
-        's1n7ax/nvim-window-picker',
-        version = '2.*',
+        "s1n7ax/nvim-window-picker", -- for open_with_window_picker keymaps
+        version = "2.*",
         config = function()
-            require 'window-picker'.setup({
-                filter_rules = {
-                    include_current_win = false,
-                    autoselect_one = true,
-                    -- filter using buffer options
-                    bo = {
-                        -- if the file type is one of following, the window will be ignored
-                        filetype = { 'neo-tree', "neo-tree-popup", "notify" },
-                        -- if the buffer type is one of following, the window will be ignored
-                        buftype = { 'terminal', "quickfix" },
-                    },
+          require("window-picker").setup({
+            filter_rules = {
+              include_current_win = false,
+              autoselect_one = true,
+              -- filter using buffer options
+              bo = {
+                -- if the file type is one of following, the window will be ignored
+                filetype = { "neo-tree", "neo-tree-popup", "notify" },
+                -- if the buffer type is one of following, the window will be ignored
+                buftype = { "terminal", "quickfix" },
+              },
             },
-        })
+          })
         end,
       },
     },
-    config = function ()
-      -- If you want icons for diagnostic errors, you'll need to define them somewhere:
-      vim.fn.sign_define("DiagnosticSignError",
-        {text = " ", texthl = "DiagnosticSignError"})
-      vim.fn.sign_define("DiagnosticSignWarn",
-        {text = " ", texthl = "DiagnosticSignWarn"})
-      vim.fn.sign_define("DiagnosticSignInfo",
-        {text = " ", texthl = "DiagnosticSignInfo"})
-      vim.fn.sign_define("DiagnosticSignHint",
-        {text = "󰌵", texthl = "DiagnosticSignHint"})
+    lazy = false,
+    -----Instead of using `config`, you can use `opts` instead, if you'd like:
+    -----@module "neo-tree"
+    -----@type neotree.Config
+    --opts = {},
+    config = function()
+      -- If you want icons for diagnostic errors, you'll need to define them somewhere.
+      -- In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
+      --
+      -- vim.diagnostic.config({
+      --   signs = {
+      --     text = {
+      --       [vim.diagnostic.severity.ERROR] = '',
+      --       [vim.diagnostic.severity.WARN] = '',
+      --       [vim.diagnostic.severity.INFO] = '',
+      --       [vim.diagnostic.severity.HINT] = '󰌵',
+      --     },
+      --   }
+      -- })
+      --
+      -- In older versions, you can define the signs manually:
+      -- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
+      -- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
+      -- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
+      -- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
 
       require("neo-tree").setup({
         close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
@@ -148,7 +186,7 @@ use {
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
         open_files_using_relative_paths = false,
         sort_case_insensitive = false, -- used when sorting files and directories in the tree
-        sort_function = nil , -- use a custom function for sorting files and directories in the tree 
+        sort_function = nil, -- use a custom function for sorting files and directories in the tree
         -- sort_function = function (a,b)
         --       if a.type == b.type then
         --           return a.path > b.path
@@ -158,7 +196,7 @@ use {
         --   end , -- this sorts files and directories descendantly
         default_component_configs = {
           container = {
-            enable_character_fade = true
+            enable_character_fade = true,
           },
           indent = {
             indent_size = 2,
@@ -192,7 +230,7 @@ use {
             -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
             -- then these will never be used.
             default = "*",
-            highlight = "NeoTreeFileIcon"
+            highlight = "NeoTreeFileIcon",
           },
           modified = {
             symbol = "[+]",
@@ -206,17 +244,17 @@ use {
           git_status = {
             symbols = {
               -- Change type
-              added     = "", -- or "✚", but this is redundant info if you use git_status_colors on the name
-              modified  = "", -- or "", but this is redundant info if you use git_status_colors on the name
-              deleted   = "✖",-- this can only be used in the git_status source
-              renamed   = "󰁕",-- this can only be used in the git_status source
+              added = "", -- or "✚", but this is redundant info if you use git_status_colors on the name
+              modified = "", -- or "", but this is redundant info if you use git_status_colors on the name
+              deleted = "✖", -- this can only be used in the git_status source
+              renamed = "󰁕", -- this can only be used in the git_status source
               -- Status type
               untracked = "",
-              ignored   = "",
-              unstaged  = "󰄱",
-              staged    = "",
-              conflict  = "",
-            }
+              ignored = "",
+              unstaged = "󰄱",
+              staged = "",
+              conflict = "",
+            },
           },
           -- If you don't want to use these columns, you can set `enabled = false` for each of them individually
           file_size = {
@@ -255,9 +293,9 @@ use {
             nowait = true,
           },
           mappings = {
-            ["<space>"] = { 
-                "toggle_node", 
-                nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use 
+            ["<space>"] = {
+              "toggle_node",
+              nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use
             },
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
@@ -278,13 +316,13 @@ use {
             -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
-            ["a"] = { 
+            ["a"] = {
               "add",
               -- this command supports BASH style brace expansion ("x{a,b,c}" -> xa,xb,xc). see `:h neo-tree-file-actions` for details
               -- some commands may take optional config options, see `:h neo-tree-mappings` for details
               config = {
-                show_path = "none" -- "none", "relative", "absolute"
-              }
+                show_path = "none", -- "none", "relative", "absolute"
+              },
             },
             ["A"] = "add_directory", -- also accepts the optional config.show_path option like "add". this also supports BASH style brace expansion.
             ["d"] = "delete",
@@ -317,7 +355,7 @@ use {
             --   --   modified_format = function(seconds) return require('neo-tree.utils').relative_date(seconds) end
             --   -- }
             -- },
-          }
+          },
         },
         nesting_rules = {},
         filesystem = {
@@ -354,12 +392,12 @@ use {
           },
           group_empty_dirs = false, -- when true, empty folders will be grouped together
           hijack_netrw_behavior = "open_default", -- netrw disabled, opening a directory opens neo-tree
-                                                  -- in whatever position is specified in window.position
-                                -- "open_current",  -- netrw disabled, opening a directory opens within the
-                                                  -- window like netrw would, regardless of window.position
-                                -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
+          -- in whatever position is specified in window.position
+          -- "open_current",  -- netrw disabled, opening a directory opens within the
+          -- window like netrw would, regardless of window.position
+          -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
           use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect changes
-                                          -- instead of relying on nvim autocmd events.
+          -- instead of relying on nvim autocmd events.
           window = {
             mappings = {
               ["<bs>"] = "navigate_up",
@@ -373,7 +411,11 @@ use {
               ["<c-x>"] = "clear_filter",
               ["[g"] = "prev_git_modified",
               ["]g"] = "next_git_modified",
-              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["o"] = {
+                "show_help",
+                nowait = false,
+                config = { title = "Order by", prefix_key = "o" },
+              },
               ["oc"] = { "order_by_created", nowait = false },
               ["od"] = { "order_by_diagnostics", nowait = false },
               ["og"] = { "order_by_git_status", nowait = false },
@@ -393,7 +435,7 @@ use {
             },
           },
 
-          commands = {} -- Add a custom command or override a global one using the same function name
+          commands = {}, -- Add a custom command or override a global one using the same function name
         },
         buffers = {
           follow_current_file = {
@@ -405,59 +447,67 @@ use {
           show_unloaded = true,
           window = {
             mappings = {
+              ["d"] = "buffer_delete",
               ["bd"] = "buffer_delete",
               ["<bs>"] = "navigate_up",
               ["."] = "set_root",
-              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["o"] = {
+                "show_help",
+                nowait = false,
+                config = { title = "Order by", prefix_key = "o" },
+              },
               ["oc"] = { "order_by_created", nowait = false },
               ["od"] = { "order_by_diagnostics", nowait = false },
               ["om"] = { "order_by_modified", nowait = false },
               ["on"] = { "order_by_name", nowait = false },
               ["os"] = { "order_by_size", nowait = false },
               ["ot"] = { "order_by_type", nowait = false },
-            }
+            },
           },
         },
         git_status = {
           window = {
             position = "float",
             mappings = {
-              ["A"]  = "git_add_all",
+              ["A"] = "git_add_all",
               ["gu"] = "git_unstage_file",
               ["ga"] = "git_add_file",
               ["gr"] = "git_revert_file",
               ["gc"] = "git_commit",
               ["gp"] = "git_push",
               ["gg"] = "git_commit_and_push",
-              ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
+              ["o"] = {
+                "show_help",
+                nowait = false,
+                config = { title = "Order by", prefix_key = "o" },
+              },
               ["oc"] = { "order_by_created", nowait = false },
               ["od"] = { "order_by_diagnostics", nowait = false },
               ["om"] = { "order_by_modified", nowait = false },
               ["on"] = { "order_by_name", nowait = false },
               ["os"] = { "order_by_size", nowait = false },
               ["ot"] = { "order_by_type", nowait = false },
-            }
-          }
-        }
+            },
+          },
+        },
       })
 
-      vim.cmd([[nnoremap \ :Neotree reveal<cr>]])
-    end
+      vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
+    end,
+  },
 }
 ```
 </details>
-  
+
 _The above configuration is not everything that can be changed, it's just the
 parts you might want to change first._
-
 
 See `:h neo-tree` for full documentation. You can also preview that online at
 [doc/neo-tree.txt](doc/neo-tree.txt), although it's best viewed within vim.
 
-
 To see all of the default config options with commentary, you can view it online
 at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
-into a buffer after installing Neo-tree by running: 
+into a buffer after installing Neo-tree by running:
 
 ```
 :lua require("neo-tree").paste_default_config()
@@ -466,7 +516,7 @@ into a buffer after installing Neo-tree by running:
 ## The `:Neotree` Command
 
 The single `:Neotree` command accepts a range of arguments that give you full
-control over the details of what and where it will show. For example, the following 
+control over the details of what and where it will show. For example, the following
 command will open a file browser on the right hand side, "revealing" the currently
 active file:
 
@@ -489,7 +539,7 @@ without any arguments, it will use default values for everything. For example:
 :Neotree
 ```
 
-will open the filesystem source on the left hand side and focus it, if you are using 
+will open the filesystem source on the left hand side and focus it, if you are using
 the default config.
 
 ### Tab Completion
@@ -556,7 +606,7 @@ current file. For example:
 The base that is used to calculate the git status for each dir/file.
 By default it uses `HEAD`, so it shows all changes that are not yet committed.
 You can for example work on a feature branch, and set it to `main`. It will
-show all changes that happened on the feature branch and main since you 
+show all changes that happened on the feature branch and main since you
 branched off.
 
 Any git ref, commit, tag, or sha will work.
@@ -569,7 +619,7 @@ Any git ref, commit, tag, or sha will work.
 ```
 
 #### `reveal`
-This is a boolean flag. Adding this will make Neotree automatically find and 
+This is a boolean flag. Adding this will make Neotree automatically find and
 focus the current file when it opens.
 
 #### `reveal_file`
@@ -656,7 +706,7 @@ the same list you would see from `:ls`. To show with the `buffers` list, use:
 This view take the results of the `git status` command and display them in a
 tree. It includes commands for adding, unstaging, reverting, and committing.
 
-The screenshot below shows the result of `:Neotree float git_status` while the 
+The screenshot below shows the result of `:Neotree float git_status` while the
 filesystem is open in a sidebar:
 
 ![Neo-tree git_status](https://github.com/nvim-neo-tree/resources/raw/main/images/Neo-tree-git_status.png)
@@ -685,7 +735,7 @@ following features:
 	- [x] Rename symbols (`rename`)
 	- [x] Preview symbol (`preview` and friends)
 	- [ ] Hover docs
-	- [ ] Call hierarchy 
+	- [ ] Call hierarchy
 - [x] LSP
    - [x] LSP Support
    - [x] LSP server selection (ignore, allow_only, use first, use all, etc.)
@@ -693,7 +743,7 @@ following features:
 
 See #879 for the tracking issue of these features.
 
-This source is currently experimental, so in order to use it, you need to first 
+This source is currently experimental, so in order to use it, you need to first
 add `"document_symbols"` to `config.sources` and open it with the command
 ```
 :Neotree document_symbols
@@ -720,7 +770,7 @@ To do so, set one of these options to `true`:
     })
 ```
 
-There are many configuration options to change the style of these tabs. 
+There are many configuration options to change the style of these tabs.
 See [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua) for details.
 
 ### Preview Mode
@@ -775,11 +825,11 @@ However, if you do not want this feature, you can disable it by changing the opt
 
 This is designed to be flexible. The way that is achieved is by making
 everything a function, or a string that identifies a built-in function. All of the
-built-in functions can be replaced with your own implementation, or you can 
+built-in functions can be replaced with your own implementation, or you can
 add new ones.
 
 Each node in the tree is created from the renderer specified for the given node
-type, and each renderer is a list of component configs to be rendered in order. 
+type, and each renderer is a list of component configs to be rendered in order.
 Each component is a function, either built-in or specified in your config. Those
 functions simply return the text and highlight group for the component.
 
@@ -801,7 +851,7 @@ file.
 
 ## Why?
 
-There are many tree plugins for (neo)vim, so why make another one? Well, I
+There are many tree plugins for (Neo)vim, so why make another one? Well, I
 wanted something that was:
 
 1. Easy to maintain and enhance.
@@ -831,9 +881,9 @@ for **v1.x**, **v2.x**, etc which will receive updates after a short testing
 period in **main**. You should be safe to follow those branches and be sure
 your tree won't break in an update. There will also be tags for each release
 pushed to those branches named **v1.1**, **v1.2**, etc. If stability is
-critical to you, or a bug accidentally make it into **v1.x**, you can use those
+critical to you, or a bug accidentally makes it into **v3.x**, you can use those
 tags instead. It's possible we may backport bug fixes to those tags, but no
-garauntees on that.
+guarantees on that.
 
 There will never be a breaking change within a major version (1.x, 2.x, etc.) If
 a breaking change is needed, there will be depracation warnings in the prior

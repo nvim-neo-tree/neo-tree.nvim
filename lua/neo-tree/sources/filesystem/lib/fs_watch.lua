@@ -1,8 +1,8 @@
-local vim = vim
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local git = require("neo-tree.git")
 local utils = require("neo-tree.utils")
+local uv = vim.uv or vim.loop
 
 local M = {}
 
@@ -19,7 +19,7 @@ local get_dot_git_folder = function(path, callback)
     git.get_repository_root(path, function(git_root)
       if git_root then
         local git_folder = utils.path_join(git_root, ".git")
-        local stat = vim.loop.fs_stat(git_folder)
+        local stat = uv.fs_stat(git_folder)
         if stat and stat.type == "directory" then
           callback(git_folder, git_root)
         end
@@ -31,7 +31,7 @@ local get_dot_git_folder = function(path, callback)
     local git_root = git.get_repository_root(path)
     if git_root then
       local git_folder = utils.path_join(git_root, ".git")
-      local stat = vim.loop.fs_stat(git_folder)
+      local stat = uv.fs_stat(git_folder)
       if stat and stat.type == "directory" then
         return git_folder, git_root
       end
@@ -76,7 +76,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
         events.fire_event(events.FS_EVENT, { afile = path })
       end)
     h = {
-      handle = vim.loop.new_fs_event(),
+      handle = uv.new_fs_event(),
       path = path,
       references = 0,
       active = false,

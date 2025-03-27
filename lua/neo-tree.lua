@@ -1,14 +1,15 @@
-local vim = vim
 local M = {}
 
--- DEPRECATED: to be removed in a future release, use this instead:
--- ```
--- require("neo-tree.command").execute({ action = "close" })
--- ```
+--- To be removed in a future release, use this instead:
+--- ```lua
+--- require("neo-tree.command").execute({ action = "close" })
+--- ```
+---@deprecated
 M.close_all = function()
   require("neo-tree.command").execute({ action = "close" })
 end
 
+---@type neotree.Config?
 local new_user_config = nil
 
 ---Updates the config of neo-tree using the latest user config passed through setup, if any.
@@ -37,8 +38,8 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
       local success, is_valid = pcall(vim.api.nvim_win_is_valid, last_win)
       if success and is_valid and not (ignore_winfixbuf and utils.is_winfixbuf(last_win)) then
         local buf = vim.api.nvim_win_get_buf(last_win)
-        local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-        local bt = vim.api.nvim_buf_get_option(buf, "buftype") or "normal"
+        local ft = vim.bo[buf].filetype
+        local bt = vim.bo[buf].buftype or "normal"
         if ignore[ft] ~= true and ignore[bt] ~= true then
           return last_win
         end
@@ -77,9 +78,34 @@ M.set_log_level = function(level)
   require("neo-tree.log").set_level(level)
 end
 
+---Ideally this should only be in plugin/neo-tree.lua but lazy-loading might mean this runs before bufenter
+---@param path string? The path to check
+---@return boolean hijacked Whether we hijacked a buffer
+local function try_netrw_hijack(path)
+  if not path or #path == 0 then
+    return false
+  end
+
+  local stats = (vim.uv or vim.loop).fs_stat(path)
+  if not stats or stats.type ~= "directory" then
+    return false
+  end
+
+  local netrw = require("neo-tree.setup.netrw")
+  if netrw.get_hijack_behavior() ~= "disabled" then
+    vim.cmd("silent! autocmd! FileExplorer *")
+    return netrw.hijack(path)
+  end
+  return false
+end
+
+---@param config neotree.Config
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
+  if vim.v.vim_did_enter == 0 then
+    try_netrw_hijack(vim.fn.argv(0) --[[@as string]])
+  end
 end
 
 M.show_logs = function()

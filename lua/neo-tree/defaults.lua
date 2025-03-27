@@ -1,3 +1,4 @@
+---@type neotree.Config.Base
 local config = {
   -- If a user has a sources list it will replace this one.
   -- Only sources listed here will be loaded.
@@ -31,7 +32,7 @@ local config = {
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
-  log_to_file = false, -- true, false, "/path/to/file.log", use :NeoTreeLogs to show the file
+  log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   open_files_using_relative_paths = false,
@@ -425,7 +426,6 @@ local config = {
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
       ["r"] = "rename",
-      ["b"] = "rename_basename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
@@ -454,6 +454,7 @@ local config = {
         ["[g"] = "prev_git_modified",
         ["]g"] = "next_git_modified",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
+        ["b"] = "rename_basename",
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -583,8 +584,10 @@ local config = {
       mappings = {
         ["<bs>"] = "navigate_up",
         ["."] = "set_root",
+        ["d"] = "buffer_delete",
         ["bd"] = "buffer_delete",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
+        ["b"] = "rename_basename",
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },
@@ -606,6 +609,7 @@ local config = {
         ["gp"] = "git_push",
         ["gg"] = "git_commit_and_push",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
+        ["b"] = "rename_basename",
         ["o"] = { "show_help", nowait=false, config = { title = "Order by", prefix_key = "o" }},
         ["oc"] = { "order_by_created", nowait = false },
         ["od"] = { "order_by_diagnostics", nowait = false },

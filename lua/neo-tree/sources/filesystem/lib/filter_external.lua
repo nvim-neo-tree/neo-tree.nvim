@@ -1,4 +1,3 @@
-local vim = vim
 local log = require("neo-tree.log")
 local Job = require("plenary.job")
 local utils = require("neo-tree.utils")
@@ -65,16 +64,16 @@ M.cancel = function()
   running_jobs:for_each(kill_job)
 end
 
----@class FileTypes
----@field file boolean
----@field directory boolean
----@field symlink boolean
----@field socket boolean
----@field pipe boolean
----@field executable boolean
----@field empty boolean
----@field block boolean Only for `find`
----@field character boolean Only for `find`
+---@class neotree.FileKind
+---@field file boolean?
+---@field directory boolean?
+---@field symlink boolean?
+---@field socket boolean?
+---@field pipe boolean?
+---@field executable boolean?
+---@field empty boolean?
+---@field block boolean? Only for `find`
+---@field character boolean? Only for `find`
 
 ---filter_files_external
 -- Spawns a filter command based on `cmd`
@@ -83,19 +82,19 @@ end
 ---@param glob string | nil If not nil, do glob search. Take precedence on `regex`
 ---@param regex string | nil If not nil, do regex search if command supports. if glob ~= nil, ignored
 ---@param full_path boolean If true, search agaist the absolute path
----@param types FileTypes | nil Return only true filetypes. If nil, all are returned.
+---@param kind neotree.FileKind | nil Return only true filetypes. If nil, all are returned.
 ---@param ignore { dotfiles: boolean?, gitignore: boolean? } If true, ignored from result. Default: false
 ---@param limit? integer | nil Maximim number of results. nil will return everything.
 ---@param find_args? string[] | table<string, string[]> Any additional options passed to command if any.
 ---@param on_insert? fun(err: string, line: string): any Executed for each line of stdout and stderr.
----@param on_exit? fun(return_val: table): any Executed at the end.
+---@param on_exit? fun(return_val: number): any Executed at the end.
 M.filter_files_external = function(
   cmd,
   path,
   glob,
   regex,
   full_path,
-  types,
+  kind,
   ignore,
   limit,
   find_args,
@@ -107,9 +106,9 @@ M.filter_files_external = function(
     log.warn("both glob and regex are set. glob will take precedence. " .. log_msg)
   end
   ignore = ignore or {}
-  types = types or {}
+  kind = kind or {}
   limit = limit or math.huge -- math.huge == no limit
-  local file_type_map = {
+  local file_kind_map = {
     file = "f",
     directory = "d",
     symlink = "l",
@@ -157,8 +156,8 @@ M.filter_files_external = function(
     if fd_supports_max_results and 0 < limit and limit < math.huge then
       append("--max-results", limit)
     end
-    for k, v in pairs(types) do
-      if v and file_type_map[k] ~= nil then
+    for k, v in pairs(kind) do
+      if v and file_kind_map[k] ~= nil then
         append("--type", k)
       end
     end
@@ -178,22 +177,22 @@ M.filter_files_external = function(
     append(path)
   elseif cmd == "find" then
     append(path)
-    local file_types = {}
-    for k, v in pairs(types) do
-      if v and file_type_map[k] ~= nil then
-        file_types[#file_types + 1] = file_type_map[k]
+    local file_kinds = {}
+    for k, v in pairs(kind) do
+      if v and file_kind_map[k] ~= nil then
+        file_kinds[#file_kinds + 1] = file_kind_map[k]
       end
     end
     if ignore.dotfiles then
       append("-name", ".*", "-prune", "-o")
     end
-    if #file_types > 0 then
-      append("-type", table.concat(file_types, ","))
+    if #file_kinds > 0 then
+      append("-type", table.concat(file_kinds, ","))
     end
-    if types.empty then
+    if kind.empty then
       append("-empty")
     end
-    if types.executable then
+    if kind.executable then
       append("-executable")
     end
     if glob ~= nil and not full_path then
@@ -223,6 +222,7 @@ M.filter_files_external = function(
     limit = math.huge -- `fd` manages limit on its own
   end
   local item_count = 0
+  ---@diagnostic disable-next-line: missing-fields
   local job = Job:new({
     command = cmd,
     cwd = path,

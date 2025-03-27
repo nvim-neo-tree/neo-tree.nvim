@@ -1,5 +1,5 @@
 -- This files holds code for scanning the filesystem to build the tree.
-local uv = vim.loop
+local uv = vim.uv or vim.loop
 
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
@@ -13,6 +13,9 @@ local events = require("neo-tree.events")
 local async = require("plenary.async")
 
 local M = {}
+
+--- how many entries to load per readdir
+local ENTRIES_BATCH_SIZE = 1000
 
 local on_directory_loaded = function(context, dir_path)
   local state = context.state
@@ -54,7 +57,7 @@ local dir_complete = function(context, dir_path)
   while #paths_to_load > 0 and not next_path do
     next_path = table.remove(paths_to_load)
     -- ensure that the path is still valid
-    local success, result = pcall(vim.loop.fs_stat, next_path)
+    local success, result = pcall(uv.fs_stat, next_path)
     -- ensure that the result is a directory
     if success and result and result.type == "directory" then
       -- ensure that it is not already loaded
@@ -181,7 +184,7 @@ local job_complete = function(context)
 end
 
 local function create_node(context, node)
-  local success3, item = pcall(file_items.create_item, context, node.path, node.type)
+  local success, item = pcall(file_items.create_item, context, node.path, node.type)
 end
 
 local function process_node(context, path)
@@ -198,8 +201,9 @@ end
 
 local function get_children_sync(path)
   local children = {}
-  local dir, err = uv.fs_opendir(path, nil, 1000)
-  if err then
+  local dir, err = uv.fs_opendir(path, nil, ENTRIES_BATCH_SIZE)
+  if not dir then
+    ---@cast err -nil
     if is_permission_error(err) then
       log.debug(err)
     else
@@ -207,13 +211,18 @@ local function get_children_sync(path)
     end
     return children
   end
-  local stats = uv.fs_readdir(dir)
-  if stats then
-    for _, stat in ipairs(stats) do
+  repeat
+    local stats = uv.fs_readdir(dir)
+    if not stats then
+      break
+    end
+    local more = false
+    for i, stat in ipairs(stats) do
+      more = i == ENTRIES_BATCH_SIZE
       local child_path = utils.path_join(path, stat.name)
       table.insert(children, { path = child_path, type = stat.type })
     end
-  end
+  until not more
   uv.fs_closedir(dir)
   return children
 end
@@ -230,17 +239,27 @@ local function get_children_async(path, callback)
       callback(children)
       return
     end
-    uv.fs_readdir(dir, function(_, stats)
+    local readdir_batch
+    ---@param _ string?
+    ---@param stats uv.fs_readdir.entry[]
+    readdir_batch = function(_, stats)
       if stats then
-        for _, stat in ipairs(stats) do
+        local more = false
+        for i, stat in ipairs(stats) do
+          more = i == ENTRIES_BATCH_SIZE
           local child_path = utils.path_join(path, stat.name)
           table.insert(children, { path = child_path, type = stat.type })
+        end
+        if more then
+          return uv.fs_readdir(dir, readdir_batch)
         end
       end
       uv.fs_closedir(dir)
       callback(children)
-    end)
-  end, 1000)
+    end
+
+    uv.fs_readdir(dir, readdir_batch)
+  end, ENTRIES_BATCH_SIZE)
 end
 
 local function scan_dir_sync(context, path)
@@ -398,25 +417,32 @@ local function sync_scan(context, path_to_scan)
     end
     job_complete(context)
   else -- scan_mode == "shallow"
-    local success, dir = pcall(vim.loop.fs_opendir, path_to_scan, nil, 1000)
-    if not success then
-      log.error("Error opening dir:", dir)
-    end
-    local success2, stats = pcall(vim.loop.fs_readdir, dir)
-    if success2 and stats then
-      for _, stat in ipairs(stats) do
-        local path = utils.path_join(path_to_scan, stat.name)
-        local success3, item = pcall(file_items.create_item, context, path, stat.type)
-        if success3 then
-          if context.recursive and stat.type == "directory" then
-            table.insert(context.paths_to_load, path)
-          end
-        else
-          log.error("error creating item for ", path)
+    local dir, err = uv.fs_opendir(path_to_scan, nil, ENTRIES_BATCH_SIZE)
+    if dir then
+      local stats = uv.fs_readdir(dir)
+      repeat
+        if not stats then
+          break
         end
-      end
+
+        local more = false
+        for i, stat in ipairs(stats) do
+          more = i == ENTRIES_BATCH_SIZE
+          local path = utils.path_join(path_to_scan, stat.name)
+          local success, _ = pcall(file_items.create_item, context, path, stat.type)
+          if success then
+            if context.recursive and stat.type == "directory" then
+              table.insert(context.paths_to_load, path)
+            end
+          else
+            log.error("error creating item for ", path)
+          end
+        end
+      until not more
+      uv.fs_closedir(dir)
+    else
+      log.error("Error opening dir:", err)
     end
-    vim.loop.fs_closedir(dir)
 
     local next_path = dir_complete(context, path_to_scan)
     if next_path then
@@ -498,7 +524,7 @@ local handle_refresh_or_up = function(context, async)
     end
     -- Ensure that there are no nested files in the list of folders to load
     context.paths_to_load = vim.tbl_filter(function(p)
-      local stats = vim.loop.fs_stat(p)
+      local stats = uv.fs_stat(p)
       return stats and stats.type == "directory" or false
     end, context.paths_to_load)
     if path_to_reveal then

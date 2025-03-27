@@ -7,6 +7,7 @@ on:
       - v2.x
       - v3.x
   pull_request:
+  workflow_dispatch:
 
 jobs:
   stylua-check:
@@ -22,23 +23,32 @@ jobs:
           args: --color always --check lua/
 
   plenary-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            rev: nightly/nvim-linux-x86_64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.8.3/nvim-linux64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.9.5/nvim-linux64.tar.gz
+          - os: ubuntu-22.04
+            rev: v0.10.4/nvim-linux-x86_64.tar.gz
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: date +%F > todays-date
       - name: Restore cache for today's nightly.
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-appimage-${{ hashFiles('todays-date') }}
-
+          key: ${{ runner.os }}-${{ matrix.rev }}-${{ hashFiles('todays-date') }}
       - name: Prepare
         run: |
           test -d build || {
             mkdir -p build
-            wget https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-            chmod +x nvim.appimage
-            mv nvim.appimage ./build/nvim
+            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/build"
           }
 
       # - name: Get Luver Cache Key
@@ -66,8 +76,9 @@ jobs:
 
       - name: Run tests
         run: |
-          export PATH="${PWD}/build/:${PATH}"
-          ./scripts/test.sh
+          export PATH="${PWD}/build/bin:${PATH}"
+          make setup
+          make test
 
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@v2

@@ -71,22 +71,23 @@ local render_content = function(config, node, state, context)
     local rendered_width = 0
 
     for _, item in ipairs(items) do
-      if item.enabled == false then
-        goto continue
-      end
-      local required_width = item.required_width or 0
-      if required_width > window_width then
-        goto continue
-      end
-      local rendered_item = renderer.render_component(item, node, state, context.available_width)
-      if rendered_item then
-        local align = item.align or "left"
-        should_pad[align] = add_padding(rendered_item, should_pad[align])
+      repeat
+        if item.enabled == false then
+          break
+        end
+        local required_width = item.required_width or 0
+        if required_width > window_width then
+          break
+        end
+        local rendered_item = renderer.render_component(item, node, state, context.available_width)
+        if rendered_item then
+          local align = item.align or "left"
+          should_pad[align] = add_padding(rendered_item, should_pad[align])
 
-        vim.list_extend(zindex_rendered[align], rendered_item)
-        rendered_width = rendered_width + calc_rendered_width(rendered_item)
-      end
-      ::continue::
+          vim.list_extend(zindex_rendered[align], rendered_item)
+          rendered_width = rendered_width + calc_rendered_width(rendered_item)
+        end
+      until true
     end
 
     max_width = math.max(max_width, rendered_width)
@@ -307,6 +308,7 @@ local merge_content = function(context)
   context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 
+---@param config neotree.Component.Common.Container
 M.render = function(config, node, state, available_width)
   local context = {
     wanted_width = 0,

@@ -1,6 +1,5 @@
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
-local vim = vim
 local M = {}
 
 ---@type integer
@@ -65,6 +64,15 @@ local function dec_to_hex(n, chars)
   return hex
 end
 
+local get_hl_by_name = function(name)
+  if vim.api.nvim_get_hl then
+    local hl = vim.api.nvim_get_hl(0, { name = name })
+    return { foreground = hl.fg, background = hl.bg }
+  end
+  ---TODO: remove in 4.0
+  ---@diagnostic disable-next-line: deprecated
+  return vim.api.nvim_get_hl_by_name(name, true)
+end
 ---If the given highlight group is not defined, define it.
 ---@param hl_group_name string The name of the highlight group.
 ---@param link_to_if_exists table A list of highlight groups to link to, in
@@ -77,10 +85,10 @@ end
 --to another group.
 ---@return table table The highlight group values.
 M.create_highlight_group = function(hl_group_name, link_to_if_exists, background, foreground, gui)
-  local success, hl_group = pcall(vim.api.nvim_get_hl_by_name, hl_group_name, true)
+  local success, hl_group = pcall(get_hl_by_name, hl_group_name, true)
   if not success or not hl_group.foreground or not hl_group.background then
     for _, link_to in ipairs(link_to_if_exists) do
-      success, hl_group = pcall(vim.api.nvim_get_hl_by_name, link_to, true)
+      success, hl_group = pcall(get_hl_by_name, link_to, true)
       if success then
         local new_group_has_settings = background or foreground or gui
         local link_to_has_settings = hl_group.foreground or hl_group.background
@@ -121,16 +129,16 @@ M.create_highlight_group = function(hl_group_name, link_to_if_exists, background
 end
 
 local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
-  local normal = vim.api.nvim_get_hl_by_name("Normal", true)
+  local normal = get_hl_by_name("Normal")
   if type(normal.foreground) ~= "number" then
-    if vim.api.nvim_get_option("background") == "dark" then
+    if vim.go.background == "dark" then
       normal.foreground = 0xffffff
     else
       normal.foreground = 0x000000
     end
   end
   if type(normal.background) ~= "number" then
-    if vim.api.nvim_get_option("background") == "dark" then
+    if vim.go.background == "dark" then
       normal.background = 0x000000
     else
       normal.background = 0xffffff
@@ -139,7 +147,7 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   local foreground = dec_to_hex(normal.foreground)
   local background = dec_to_hex(normal.background)
 
-  local hl_group = vim.api.nvim_get_hl_by_name(hl_group_name, true)
+  local hl_group = get_hl_by_name(hl_group_name)
   if type(hl_group.foreground) == "number" then
     foreground = dec_to_hex(hl_group.foreground)
   end
@@ -160,10 +168,10 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   if hl_group.undercurl then
     table.insert(gui, "undercurl")
   end
+
+  local hl
   if #gui > 0 then
-    gui = table.concat(gui, ",")
-  else
-    gui = nil
+    hl = table.concat(gui, ",")
   end
 
   local f_red = tonumber(foreground:sub(1, 2), 16)
@@ -184,7 +192,7 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   return {
     background = hl_group.background,
     foreground = new_foreground,
-    gui = gui,
+    gui = hl,
   }
 end
 

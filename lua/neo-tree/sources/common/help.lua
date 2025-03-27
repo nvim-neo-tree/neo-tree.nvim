@@ -38,8 +38,8 @@ end
 ---Shows a help screen for the mapped commands when will execute those commands
 ---when the corresponding key is pressed.
 ---@param state table state of the source.
----@param title string if this is a sub-menu for a multi-key mapping, the title for the window.
----@param prefix_key string if this is a sub-menu, the start of tehe multi-key mapping
+---@param title string? if this is a sub-menu for a multi-key mapping, the title for the window.
+---@param prefix_key string? if this is a sub-menu, the start of tehe multi-key mapping
 M.show = function(state, title, prefix_key)
   local tree_width = vim.api.nvim_win_get_width(state.winid)
   local keys = get_sub_keys(state, prefix_key)

@@ -1,8 +1,8 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
-local vim = vim
 local utils = require("neo-tree.utils")
+local _compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local events = require("neo-tree.events")
@@ -64,13 +64,13 @@ local follow_internal = function(callback, force_show, async)
 
   log.debug("follow file: ", path_to_reveal)
   local show_only_explicitly_opened = function()
-    state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+    state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
     local expanded_nodes = renderer.get_expanded_nodes(state.tree)
     local state_changed = false
     for _, id in ipairs(expanded_nodes) do
-      if not state.explicitly_opened_directories[id] then
+      if not state.explicitly_opened_nodes[id] then
         if path_to_reveal:sub(1, #id) == id then
-          state.explicitly_opened_directories[id] = state.follow_current_file.leave_dirs_open
+          state.explicitly_opened_nodes[id] = state.follow_current_file.leave_dirs_open
         else
           local node = state.tree:get_node(id)
           if node then
@@ -108,6 +108,9 @@ M.follow = function(callback, force_show)
 end
 
 local fs_stat = (vim.uv or vim.loop).fs_stat
+---@param path string?
+---@param path_to_reveal string?
+---@param callback function?
 M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   log.trace("navigate_internal", state.current_position, path, path_to_reveal)
   state.dirty = false
@@ -169,9 +172,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 end
 
 ---Navigate to the given path.
----@param path string Path to navigate to. If empty, will navigate to the cwd.
----@param path_to_reveal string Node to focus after the items are loaded.
----@param callback function Callback to call after the items are loaded.
+---@param path string? Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string? Node to focus after the items are loaded.
+---@param callback function? Callback to call after the items are loaded.
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state._ready = false
   log.trace("navigate", path, path_to_reveal, async)
@@ -195,7 +198,7 @@ M.reset_search = function(state, refresh, open_current_node)
     refresh = true
   end
   if state.open_folders_before_search then
-    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, _compat.noref())
   else
     state.force_open_folders = nil
   end
@@ -402,20 +405,20 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
   if node.type ~= "directory" then
     return
   end
-  state.explicitly_opened_directories = state.explicitly_opened_directories or {}
+  state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
   if node.loaded == false then
     local id = node:get_id()
-    state.explicitly_opened_directories[id] = true
+    state.explicitly_opened_nodes[id] = true
     renderer.position.set(state, nil)
     fs_scan.get_items(state, id, path_to_reveal, callback, false, recursive)
   elseif node:has_children() then
     local updated = false
     if node:is_expanded() then
       updated = node:collapse()
-      state.explicitly_opened_directories[node:get_id()] = false
+      state.explicitly_opened_nodes[node:get_id()] = false
     else
       updated = node:expand()
-      state.explicitly_opened_directories[node:get_id()] = true
+      state.explicitly_opened_nodes[node:get_id()] = true
     end
     if updated and not skip_redraw then
       renderer.redraw(state)

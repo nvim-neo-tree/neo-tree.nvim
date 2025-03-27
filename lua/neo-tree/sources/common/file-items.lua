@@ -1,7 +1,7 @@
-local vim = vim
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local uv = vim.uv or vim.loop
 
 local function sort_items(a, b)
   if a.type == b.type then
@@ -21,9 +21,10 @@ end
 
 ---Creates a sort function the will sort by the values returned by the field provider.
 ---@param field_provider function a function that takes an item and returns a value to
---                        sort by.
+---                       sort by.
 ---@param fallback_sort_function function a sort function to use if the field provider
---                                returns the same value for both items.
+---                               returns the same value for both items.
+---@return fun(a:any, b:any):boolean
 local function make_sort_function(field_provider, fallback_sort_function, direction)
   return function(a, b)
     if a.type == b.type then
@@ -65,7 +66,7 @@ local function deep_sort(tbl, sort_func, field_provider, direction)
   if sort_func == nil then
     local config = require("neo-tree").config
     if sort_function_is_valid(config.sort_function) then
-      sort_func = config.sort_function
+      sort_func = config.sort_function --[[@as fun(a, b):boolean]]
     elseif config.sort_case_insensitive then
       sort_func = sort_items_case_insensitive
     else
@@ -94,6 +95,7 @@ local create_item, set_parents
 
 function create_item(context, path, _type, bufnr)
   local parent_path, name = utils.split_path(utils.normalize_path(path))
+  name = name or ""
   local id = path
   if path == "[No Name]" and bufnr then
     parent_path = context.state.path
@@ -107,7 +109,7 @@ function create_item(context, path, _type, bufnr)
   end
 
   if _type == nil then
-    local stat = vim.loop.fs_stat(path)
+    local stat = uv.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
   local item = {
@@ -124,9 +126,9 @@ function create_item(context, path, _type, bufnr)
   end
   if item.type == "link" then
     item.is_link = true
-    item.link_to = vim.loop.fs_realpath(path)
+    item.link_to = uv.fs_realpath(path)
     if item.link_to ~= nil then
-      item.type = vim.loop.fs_stat(item.link_to).type
+      item.type = uv.fs_stat(item.link_to).type
     end
   end
   if item.type == "directory" then
@@ -151,6 +153,8 @@ function create_item(context, path, _type, bufnr)
   end
 
   item.is_reveal_target = (path == context.path_to_reveal)
+  item.contains_reveal_target = not item.is_reveal_target
+    and utils.is_subpath(path, context.path_to_reveal)
   local state = context.state
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)

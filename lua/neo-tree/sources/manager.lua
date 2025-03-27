@@ -1,8 +1,9 @@
 --This file should have all functions that are in the public api and either set
 --or read the state of this source.
 
-local vim = vim
+local nt = require("neo-tree")
 local utils = require("neo-tree.utils")
+local compat = require("neo-tree.utils._compat")
 local fs_scan = require("neo-tree.sources.filesystem.lib.fs_scan")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
@@ -34,13 +35,15 @@ local get_source_data = function(source_name)
 end
 
 local function create_state(tabid, sd, winid)
+  nt.ensure_config()
   local default_config = default_configs[sd.name]
-  local state = vim.deepcopy(default_config, { noref = 1 })
+  local state = vim.deepcopy(default_config, compat.noref())
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
   state.position = {}
   state.git_base = "HEAD"
+  state.sort = { label = "Name", direction = 1 }
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
@@ -523,8 +526,11 @@ M.refresh = function(source_name, callback)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- @deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead
+--- ```
 M.reveal_current_file = function(source_name, callback, force_cwd)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true })` instead]]
@@ -566,8 +572,12 @@ M.reveal_current_file = function(source_name, callback, force_cwd)
   end
 end
 
---- DEPRECATED: To be removed in 4.0
---- use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead
+---@deprecated
+--- To be removed in 4.0. Use:
+--- ```lua
+--- require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" }
+--- ```
+--- instead.
 M.reveal_in_split = function(source_name, callback)
   log.warn(
     [[DEPRECATED: use `require("neo-tree.command").execute({ source_name = source_name, action = "focus", reveal = true, position = "current" })` instead]]

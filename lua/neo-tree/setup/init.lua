@@ -201,7 +201,7 @@ M.buffer_enter_event = function()
   if prior_buf < 1 then
     return
   end
-  local prior_type = vim.api.nvim_buf_get_option(prior_buf, "filetype")
+  local prior_type = vim.bo[prior_buf].filetype
 
   -- there is nothing more we want to do with floating windows
   -- but when prior_type is neo-tree we might need to redirect buffer somewhere else.
@@ -248,6 +248,7 @@ M.buffer_enter_event = function()
     vim.schedule(function()
       -- try to delete the buffer, only because if it was new it would take
       -- on options from the neo-tree window that are undesirable.
+      ---@diagnostic disable-next-line: param-type-mismatch
       pcall(vim.cmd, "bdelete " .. bufname)
       local fake_state = {
         window = {
@@ -470,6 +471,8 @@ local merge_renderers = function(default_config, source_default_config, user_con
   end
 end
 
+---@param user_config neotree.Config?
+---@return neotree.Config._Full full_config
 M.merge_config = function(user_config)
   local default_config = vim.deepcopy(defaults)
   user_config = vim.deepcopy(user_config or {})
@@ -494,9 +497,20 @@ M.merge_config = function(user_config)
   define_events()
 
   -- Prevent accidentally opening another file in the neo-tree window.
+  vim.g.neotree_watching_bufenter = 1
   events.subscribe({
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
+  })
+  events.subscribe({
+    event = events.NEO_TREE_WINDOW_AFTER_OPEN,
+    handler = function(args)
+      if not vim.w[args.winid].neo_tree_settings_applied then
+        -- TODO: should figure out a less disorganized way to set window options
+        -- BufEnter doesn't trigger while vim is starting up so this will handle it instead.
+        M.buffer_enter_event()
+      end
+    end,
   })
 
   -- Setup autocmd for neo-tree BufLeave, to restore window settings.
@@ -528,7 +542,7 @@ M.merge_config = function(user_config)
   -- used to either limit the sources that or loaded, or add extra external sources
   local all_sources = {}
   local all_source_names = {}
-  for _, source in ipairs(user_config.sources or default_config.sources) do
+  for _, source in ipairs(user_config.sources or default_config.sources or {}) do
     local parts = utils.split(source, ".")
     local name = parts[#parts]
     local is_internal_ns, is_external_ns = false, false
@@ -614,11 +628,10 @@ M.merge_config = function(user_config)
   end
   --print(vim.inspect(default_config.filesystem))
 
-  -- Moving user_config.sources to user_config.orig_sources
-  user_config.orig_sources = user_config.sources and user_config.sources or {}
+  -- local orig_sources = user_config.sources and user_config.sources or {}
 
   -- apply the users config
-  M.config = vim.tbl_deep_extend("force", default_config, user_config)
+  M.config = vim.tbl_deep_extend("force", default_config, user_config) --[[@as neotree.Config._Full]]
 
   -- RE: 873, fixes issue with invalid source checking by overriding
   -- source table with name table

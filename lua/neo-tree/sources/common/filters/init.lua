@@ -1,18 +1,19 @@
 ---A generalization of the filter functionality to directly filter the
 ---source tree instead of relying on pre-filtered data, which is specific
 ---to the filesystem source.
-local vim = vim
 local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
+local compat = require("neo-tree.utils._compat")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
 local fzy = require("neo-tree.sources.common.filters.filter_fzy")
 
 local M = {}
 
+---@enum (key) neotree.FuzzyFinder.Commands
 local cmds = {
   move_cursor_down = function(state, scroll_padding)
     renderer.focus_node(state, nil, true, 1, scroll_padding)
@@ -39,7 +40,7 @@ local reset_filter = function(state, refresh, open_current_node)
 
   -- reset search state
   if state.open_folders_before_search then
-    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+    state.force_open_folders = vim.deepcopy(state.open_folders_before_search, compat.noref())
   else
     state.force_open_folders = nil
   end
@@ -205,7 +206,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
 
   -- create mappings and autocmd
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-  input:map("i", "<esc>", function(bufnr)
+  input:map("i", "<esc>", function()
     vim.cmd("stopinsert")
     input:unmount()
     if utils.truthy(state.search_pattern) then

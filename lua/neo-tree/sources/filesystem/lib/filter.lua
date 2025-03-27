@@ -1,6 +1,5 @@
 -- This file holds all code for the search function.
 
-local vim = vim
 local Input = require("nui.input")
 local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")
@@ -9,6 +8,7 @@ local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
+local compat = require("neo-tree.utils._compat")
 
 local M = {}
 
@@ -95,6 +95,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local has_pre_search_folders = utils.truthy(state.open_folders_before_search)
   if not has_pre_search_folders then
     log.trace("No search or pre-search folders, recording pre-search folders now")
+    ---@type table|nil
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 
@@ -147,7 +148,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
         log.trace("Resetting search in on_change")
         local original_open_folders = nil
         if type(state.open_folders_before_search) == "table" then
-          original_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+          original_open_folders = vim.deepcopy(state.open_folders_before_search, compat.noref())
         end
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders
@@ -159,6 +160,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
           state.sort_function_override = sort_by_score
           state.use_fzy = true
         end
+        ---@type function|nil
         local callback = select_first_file
         if fuzzy_finder_mode == "directory" then
           callback = nil

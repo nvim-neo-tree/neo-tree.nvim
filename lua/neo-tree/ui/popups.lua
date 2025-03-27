@@ -1,4 +1,3 @@
-local vim = vim
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
 local highlights = require("neo-tree.ui.highlights")
@@ -22,6 +21,7 @@ M.popup_options = function(title, min_width, override_options)
   if popup_last_col >= vim.o.columns then
     col = vim.o.columns - popup_last_col
   end
+  ---@type nui_popup_options
   local popup_options = {
     ns_id = highlights.ns_id,
     relative = "cursor",
@@ -34,6 +34,7 @@ M.popup_options = function(title, min_width, override_options)
       text = {
         top = popup_border_text,
       },
+      ---@diagnostic disable-next-line: assign-type-mismatch
       style = popup_border_style,
       highlight = highlights.FLOAT_BORDER,
     },
@@ -105,11 +106,11 @@ M.alert = function(title, message, size)
 
   local success, msg = pcall(vim.api.nvim_buf_set_lines, win.bufnr, 0, 0, false, lines)
   if success then
-    win:map("n", "<esc>", function(bufnr)
+    win:map("n", "<esc>", function()
       win:unmount()
     end, { noremap = true })
 
-    win:map("n", "<enter>", function(bufnr)
+    win:map("n", "<enter>", function()
       win:unmount()
     end, { noremap = true })
 

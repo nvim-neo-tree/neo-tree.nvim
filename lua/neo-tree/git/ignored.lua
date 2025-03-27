@@ -1,4 +1,5 @@
 local Job = require("plenary.job")
+local uv = vim.uv or vim.loop
 
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
@@ -67,7 +68,7 @@ M.mark_ignored = function(state, items, callback)
       --add the trailing slash to the path manually if not on Windows.
       log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
       for i, item in ipairs(result) do
-        local stat = vim.loop.fs_stat(item)
+        local stat = uv.fs_stat(item)
         if stat and stat.type == "directory" then
           result[i] = item .. sep
         end
@@ -129,6 +130,7 @@ M.mark_ignored = function(state, items, callback)
 
     for folder, folder_items in pairs(folders) do
       local args = { "-C", folder, "check-ignore", "--stdin" }
+      ---@diagnostic disable-next-line: missing-fields
       local job = Job:new({
         command = "git",
         args = args,
