@@ -322,22 +322,24 @@ local get_params_for_cwd = function(state)
   end
 end
 
+---@return string
 M.get_cwd = function(state)
   local winid, tabnr = get_params_for_cwd(state)
-  local success, cwd = false, ""
   if winid or tabnr then
-    success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
-  end
-  if success then
-    return cwd
-  else
-    success, cwd = pcall(vim.fn.getcwd)
+    local success, cwd = pcall(vim.fn.getcwd, winid, tabnr)
     if success then
       return cwd
-    else
-      return state.path
     end
   end
+
+  local success, cwd = pcall(vim.fn.getcwd)
+  if success then
+    return cwd
+  end
+
+  local err = cwd
+  log.debug(err)
+  return state.path or ""
 end
 
 M.set_cwd = function(state)
