@@ -128,6 +128,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   -- if path doesn't exist, navigate upwards until it does
   local orig_path = path
   local backed_out = false
+  ---@cast path -nil
   while not fs_stat(path) do
     log.debug(("navigate_internal: path %s didn't exist, going up a directory"):format(path))
     backed_out = true
