@@ -139,6 +139,10 @@ M.get_state_for_window = function(winid)
   end
 end
 
+---Gets the path to reveal.
+---@param include_terminals boolean?
+---@return string? bufname_path The non-canonical path (keeps the symlinks in the path without resolving them)
+---@return string? realpath The real path of the item to reveal
 M.get_path_to_reveal = function(include_terminals)
   local win_id = vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
@@ -149,14 +153,22 @@ M.get_path_to_reveal = function(include_terminals)
   if vim.bo.filetype == "neo-tree" then
     return nil
   end
-  local path = vim.fn.expand("%:p")
-  if not utils.truthy(path) then
+
+  local realpath = vim.fn.expand("%:p")
+  if not utils.truthy(realpath) then
     return nil
   end
-  if not include_terminals and path:match("term://") then
+  if not include_terminals and realpath:match("term://") then
     return nil
   end
-  return path
+
+  local relative_bufname = vim.fn.fnamemodify(vim.fn.expand("%"), ":.")
+  local bufname_path = vim.fs.normalize(utils.path_join(vim.fn.getcwd(win_id), relative_bufname))
+  if utils.is_windows then
+    bufname_path = utils.windowize_path(bufname_path)
+  end
+
+  return bufname_path, realpath
 end
 
 M.subscribe = function(source_name, event)
