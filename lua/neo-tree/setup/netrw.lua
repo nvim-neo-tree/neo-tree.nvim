@@ -8,18 +8,17 @@ local get_position = function(source_name)
   return pos
 end
 
+---@type neotree.Config.HijackNetrwBehavior[]
+local allowed_hijack_values = { "disabled", "open_default", "open_current" }
 M.get_hijack_behavior = function()
   nt.ensure_config()
-  local option = "filesystem.hijack_netrw_behavior"
-  local hijack_behavior = utils.get_value(nt.config, option, "open_default", true)
-  if hijack_behavior == "disabled" then
-    return hijack_behavior
-  elseif hijack_behavior == "open_default" then
-    return hijack_behavior
-  elseif hijack_behavior == "open_current" then
+  local hijack_behavior = nt.config.filesystem.hijack_netrw_behavior or "open_default"
+  if vim.tbl_contains(allowed_hijack_values, hijack_behavior) then
     return hijack_behavior
   else
-    require("neo-tree.log").error("Invalid value for " .. option .. ": " .. hijack_behavior)
+    require("neo-tree.log").error(
+      "Invalid value for filesystem.hijack_netrw_behavior" .. hijack_behavior
+    )
     return "disabled"
   end
 end

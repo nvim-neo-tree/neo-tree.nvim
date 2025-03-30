@@ -22,12 +22,7 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  local netrw = require("neo-tree.setup.netrw")
-  if netrw.get_hijack_behavior() ~= "disabled" then
-    vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack(path)
-  end
-  return false
+  return require("neo-tree.setup.netrw").hijack(path)
 end
 
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
