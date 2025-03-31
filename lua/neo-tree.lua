@@ -93,7 +93,7 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  return require("neo-tree.setup.netrw").hijack(path)
+  return require("neo-tree.setup.netrw").hijack()
 end
 
 ---@param config neotree.Config

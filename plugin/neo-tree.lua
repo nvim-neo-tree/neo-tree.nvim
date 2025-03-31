@@ -22,7 +22,7 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  return require("neo-tree.setup.netrw").hijack(path)
+  return require("neo-tree.setup.netrw").hijack()
 end
 
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
@@ -30,9 +30,7 @@ local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = t
 vim.api.nvim_create_autocmd("BufEnter", {
   group = augroup,
   callback = function(args)
-    if vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file) then
-      vim.api.nvim_del_augroup_by_id(augroup)
-    end
+    return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(file)
   end,
 })
 

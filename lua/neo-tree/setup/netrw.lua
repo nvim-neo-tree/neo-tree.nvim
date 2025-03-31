@@ -23,24 +23,19 @@ M.get_hijack_behavior = function()
   end
 end
 
----@param path string? Path to hijack (sometimes bufname doesn't set in time)
+---@param bufnr integer?
 ---@return boolean hijacked Whether the hijack was successful
-M.hijack = function(path)
+M.hijack = function(bufnr)
   local hijack_behavior = M.get_hijack_behavior()
   if hijack_behavior == "disabled" then
     return false
   end
 
   -- ensure this is a directory
-  local bufname = vim.api.nvim_buf_get_name(0)
-  if not utils.truthy(bufname) then
-    bufname = path or ""
-  end
-  local stats = uv.fs_stat(bufname)
-  if not stats then
-    return false
-  end
-  if stats.type ~= "directory" then
+  bufnr = bufnr or 0
+  local path_to_hijack = vim.b[bufnr].netrw_curdir or vim.api.nvim_buf_get_name(bufnr)
+  local stats = uv.fs_stat(path_to_hijack)
+  if not stats or stats.type ~= "directory" then
     return false
   end
 
