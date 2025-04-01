@@ -45,8 +45,19 @@ M.hijack = function()
     local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
-    local replace_with_bufnr = vim.api.nvim_create_buf(true, false)
+    local replace_with_bufnr = vim.fn.bufnr("#")
     local is_currently_neo_tree = false
+    if replace_with_bufnr > 0 then
+      if vim.bo[replace_with_bufnr].filetype == "neo-tree" then
+        -- don't hijack the current window if it's already a Neo-tree sidebar
+        local _, position = pcall(vim.api.nvim_buf_get_var, replace_with_bufnr, "neo_tree_position")
+        if position ~= "current" then
+          is_currently_neo_tree = true
+        else
+          replace_with_bufnr = -1
+        end
+      end
+    end
     if not should_open_current then
       if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
         replace_with_bufnr = vim.api.nvim_create_buf(true, false)
