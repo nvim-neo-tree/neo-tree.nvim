@@ -10,29 +10,22 @@ end
 
 ---@type neotree.Config.HijackNetrwBehavior[]
 local allowed_hijack_values = { "disabled", "open_default", "open_current" }
+
+---@return neotree.Config.HijackNetrwBehavior
 M.get_hijack_behavior = function()
   nt.ensure_config()
-  local hijack_behavior = nt.config.filesystem.hijack_netrw_behavior or "open_default"
-  if vim.tbl_contains(allowed_hijack_values, hijack_behavior) then
-    return hijack_behavior
-  else
-    require("neo-tree.log").error(
-      "Invalid value for filesystem.hijack_netrw_behavior" .. hijack_behavior
-    )
-    return "disabled"
-  end
+  return nt.config.filesystem.hijack_netrw_behavior
 end
 
----@param bufnr integer?
 ---@return boolean hijacked Whether the hijack was successful
-M.hijack = function(bufnr)
+M.hijack = function()
   local hijack_behavior = M.get_hijack_behavior()
   if hijack_behavior == "disabled" then
     return false
   end
 
   -- ensure this is a directory
-  bufnr = bufnr or 0
+  local bufnr = vim.api.nvim_get_current_buf()
   local path_to_hijack = vim.b[bufnr].netrw_curdir or vim.api.nvim_buf_get_name(bufnr)
   local stats = uv.fs_stat(path_to_hijack)
   if not stats or stats.type ~= "directory" then
@@ -52,19 +45,8 @@ M.hijack = function(bufnr)
     local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
-    local replace_with_bufnr = vim.fn.bufnr("#")
+    local replace_with_bufnr = vim.api.nvim_create_buf(true, false)
     local is_currently_neo_tree = false
-    if replace_with_bufnr > 0 then
-      if vim.bo[replace_with_bufnr].filetype == "neo-tree" then
-        -- don't hijack the current window if it's already a Neo-tree sidebar
-        local _, position = pcall(vim.api.nvim_buf_get_var, replace_with_bufnr, "neo_tree_position")
-        if position ~= "current" then
-          is_currently_neo_tree = true
-        else
-          replace_with_bufnr = -1
-        end
-      end
-    end
     if not should_open_current then
       if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
         replace_with_bufnr = vim.api.nvim_create_buf(true, false)
@@ -93,7 +75,12 @@ M.hijack = function(bufnr)
       manager.close_all_except("filesystem")
       state = manager.get_state("filesystem")
     end
-    require("neo-tree.sources.filesystem")._navigate_internal(state, bufname, nil, remove_dir_buf)
+    require("neo-tree.sources.filesystem")._navigate_internal(
+      state,
+      path_to_hijack,
+      nil,
+      remove_dir_buf
+    )
   end, 10, utils.debounce_strategy.CALL_LAST_ONLY)
 
   return true

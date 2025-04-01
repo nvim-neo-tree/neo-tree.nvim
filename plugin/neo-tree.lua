@@ -30,7 +30,7 @@ local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = t
 vim.api.nvim_create_autocmd("BufEnter", {
   group = augroup,
   callback = function(args)
-    return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(file)
+    return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file)
   end,
 })
 

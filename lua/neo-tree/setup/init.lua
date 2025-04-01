@@ -674,9 +674,17 @@ M.merge_config = function(user_config)
 
   ---@type neotree.Config.HijackNetrwBehavior[]
   local disable_netrw_values = { "open_default", "open_current" }
-  if vim.tbl_contains(disable_netrw_values, M.config.filesystem.hijack_netrw_behavior) then
+  local hijack_behavior = M.config.filesystem.hijack_netrw_behavior
+  if vim.tbl_contains(disable_netrw_values, hijack_behavior) then
     -- Disable netrw autocmds
     vim.cmd("silent! autocmd! FileExplorer *")
+  elseif hijack_behavior ~= "disabled" then
+    require("neo-tree.log").error(
+      "Invalid value for filesystem.hijack_netrw_behavior: '"
+        .. hijack_behavior
+        .. "', will default to 'disabled'"
+    )
+    M.config.filesystem.hijack_netrw_behavior = "disabled"
   end
 
   if not M.config.enable_git_status then
