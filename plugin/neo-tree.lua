@@ -27,11 +27,29 @@ end
 
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
 
-vim.api.nvim_create_autocmd("BufEnter", {
+vim.api.nvim_create_autocmd({ "BufEnter" }, {
   group = augroup,
   callback = function(args)
     return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file)
   end,
 })
+
+-- local function try_hijack_all_bufs()
+--   local start_win = vim.api.nvim_get_current_win()
+--   local start_buf = vim.api.nvim_win_get_buf(start_win)
+--   vim.print(vim.api.nvim_buf_get_name(start_buf))
+--   for _, winid in ipairs(vim.api.nvim_list_wins()) do
+--     local buf = vim.api.nvim_win_get_buf(winid)
+--     vim.api.nvim_win_call(winid, function()
+--       try_netrw_hijack(vim.api.nvim_buf_get_name(buf))
+--     end)
+--   end
+--   vim.api.nvim_create_autocmd("VimEnter", {
+--     callback = function()
+--       vim.api.nvim_set_current_win(start_win)
+--     end,
+--   })
+-- end
+-- try_hijack_all_bufs()
 
 vim.g.loaded_neo_tree = 1

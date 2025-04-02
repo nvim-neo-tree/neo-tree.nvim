@@ -25,8 +25,9 @@ M.hijack = function()
   end
 
   -- ensure this is a directory
-  local bufnr = vim.api.nvim_get_current_buf()
-  local path_to_hijack = vim.b[bufnr].netrw_curdir or vim.api.nvim_buf_get_name(bufnr)
+  local dir_bufnr = vim.api.nvim_get_current_buf()
+  local path_to_hijack = vim.b[dir_bufnr].netrw_curdir or vim.api.nvim_buf_get_name(dir_bufnr)
+  vim.print(path_to_hijack)
   local stats = uv.fs_stat(path_to_hijack)
   if not stats or stats.type ~= "directory" then
     return false
@@ -36,7 +37,6 @@ M.hijack = function()
   local pos = get_position("filesystem")
   local should_open_current = hijack_behavior == "open_current" or pos == "current"
   local winid = vim.api.nvim_get_current_win()
-  local dir_bufnr = vim.api.nvim_get_current_buf()
 
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
@@ -45,28 +45,28 @@ M.hijack = function()
     local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
-    local replace_with_bufnr = vim.fn.bufnr("#")
+    local replacement_buffer = vim.fn.bufnr("#")
     local is_currently_neo_tree = false
-    if replace_with_bufnr > 0 then
-      if vim.bo[replace_with_bufnr].filetype == "neo-tree" then
+    if replacement_buffer > 0 then
+      if vim.bo[replacement_buffer].filetype == "neo-tree" then
         -- don't hijack the current window if it's already a Neo-tree sidebar
-        local _, position = pcall(vim.api.nvim_buf_get_var, replace_with_bufnr, "neo_tree_position")
-        if position ~= "current" then
-          is_currently_neo_tree = true
+        local position = vim.b[replacement_buffer].neo_tree_position
+        if position == "current" then
+          replacement_buffer = -1
         else
-          replace_with_bufnr = -1
+          is_currently_neo_tree = true
         end
       end
     end
     if not should_open_current then
-      if replace_with_bufnr == dir_bufnr or replace_with_bufnr < 1 then
-        replace_with_bufnr = vim.api.nvim_create_buf(true, false)
-        log.trace("Created new buffer for netrw hijack", replace_with_bufnr)
+      if replacement_buffer == dir_bufnr or replacement_buffer < 1 then
+        replacement_buffer = vim.api.nvim_create_buf(true, false)
+        log.trace("Created new buffer for netrw hijack", replacement_buffer)
       end
     end
-    if replace_with_bufnr > 0 then
-      log.trace("Replacing buffer in netrw hijack", replace_with_bufnr)
-      pcall(vim.api.nvim_win_set_buf, winid, replace_with_bufnr)
+    if replacement_buffer > 0 then
+      log.trace("Replacing buffer in netrw hijack", replacement_buffer)
+      pcall(vim.api.nvim_win_set_buf, winid, replacement_buffer)
     end
     local remove_dir_buf = vim.schedule_wrap(function()
       log.trace("Deleting buffer in netrw hijack", dir_bufnr)
