@@ -8,9 +8,6 @@ local get_position = function(source_name)
   return pos
 end
 
----@type neotree.Config.HijackNetrwBehavior[]
-local allowed_hijack_values = { "disabled", "open_default", "open_current" }
-
 ---@return neotree.Config.HijackNetrwBehavior
 M.get_hijack_behavior = function()
   nt.ensure_config()
@@ -27,7 +24,6 @@ M.hijack = function()
   -- ensure this is a directory
   local dir_bufnr = vim.api.nvim_get_current_buf()
   local path_to_hijack = vim.b[dir_bufnr].netrw_curdir or vim.api.nvim_buf_get_name(dir_bufnr)
-  vim.print(path_to_hijack)
   local stats = uv.fs_stat(path_to_hijack)
   if not stats or stats.type ~= "directory" then
     return false
@@ -37,6 +33,7 @@ M.hijack = function()
   local pos = get_position("filesystem")
   local should_open_current = hijack_behavior == "open_current" or pos == "current"
   local winid = vim.api.nvim_get_current_win()
+  local was_starting = vim.v.vim_did_enter == 0
 
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
@@ -68,9 +65,18 @@ M.hijack = function()
       log.trace("Replacing buffer in netrw hijack", replacement_buffer)
       pcall(vim.api.nvim_win_set_buf, winid, replacement_buffer)
     end
-    local remove_dir_buf = vim.schedule_wrap(function()
+    local curwin = vim.api.nvim_get_current_win()
+
+    -- If we were entering vim, and a floating window pops up (e.g. lazy.nvim), we should prioritize that window instead
+    -- of neo-tree.
+    local should_restore_cursor = was_starting and utils.is_floating()
+
+    local cleanup = vim.schedule_wrap(function()
       log.trace("Deleting buffer in netrw hijack", dir_bufnr)
       pcall(vim.api.nvim_buf_delete, dir_bufnr, { force = true })
+      if should_restore_cursor then
+        vim.api.nvim_set_current_win(curwin)
+      end
     end)
 
     local state
@@ -86,12 +92,8 @@ M.hijack = function()
       manager.close_all_except("filesystem")
       state = manager.get_state("filesystem")
     end
-    require("neo-tree.sources.filesystem")._navigate_internal(
-      state,
-      path_to_hijack,
-      nil,
-      remove_dir_buf
-    )
+
+    require("neo-tree.sources.filesystem")._navigate_internal(state, path_to_hijack, nil, cleanup)
   end, 10, utils.debounce_strategy.CALL_LAST_ONLY)
 
   return true

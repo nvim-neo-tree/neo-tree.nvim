@@ -195,6 +195,11 @@ M.buffer_enter_event = function()
   end
   last_buffer_enter_filetype = vim.bo.filetype
 
+  -- if vim is trying to open a dir, then we hijack it
+  if netrw.hijack() then
+    return
+  end
+
   -- For all others, make sure another buffer is not hijacking our window
   -- ..but not if the position is "current"
   local prior_buf = vim.fn.bufnr("#")
@@ -206,11 +211,6 @@ M.buffer_enter_event = function()
   -- there is nothing more we want to do with floating windows
   -- but when prior_type is neo-tree we might need to redirect buffer somewhere else.
   if utils.is_floating() and prior_type ~= "neo-tree" then
-    return
-  end
-
-  -- if vim is trying to open a dir, then we hijack it
-  if netrw.hijack() then
     return
   end
 
