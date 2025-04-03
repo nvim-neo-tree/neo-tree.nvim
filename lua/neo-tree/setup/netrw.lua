@@ -32,12 +32,11 @@ M.hijack = function()
   -- record where we are now
   local pos = get_position("filesystem")
   local should_open_current = hijack_behavior == "open_current" or pos == "current"
-  local winid = vim.api.nvim_get_current_win()
-  local was_starting = vim.v.vim_did_enter == 0
+  local dir_window = vim.api.nvim_get_current_win()
 
   -- Now actually open the tree, with a very quick debounce because this may be
   -- called multiple times in quick succession.
-  utils.debounce("hijack_netrw_" .. winid, function()
+  utils.debounce("hijack_netrw_" .. dir_window, function()
     local manager = require("neo-tree.sources.manager")
     local log = require("neo-tree.log")
     -- We will want to replace the "directory" buffer with either the "alternate"
@@ -63,26 +62,26 @@ M.hijack = function()
     end
     if replacement_buffer > 0 then
       log.trace("Replacing buffer in netrw hijack", replacement_buffer)
-      pcall(vim.api.nvim_win_set_buf, winid, replacement_buffer)
+      pcall(vim.api.nvim_win_set_buf, dir_window, replacement_buffer)
     end
 
-    -- If we were entering vim, and a floating window pops up (e.g. lazy.nvim), we should prioritize that window instead
-    -- of neo-tree.
-    local should_restore_cursor = was_starting and utils.is_floating()
-    local curwin = vim.api.nvim_get_current_win()
+    -- If a window takes focus (e.g. lazy.nvim installing plugins on startup) in the time between the method call and
+    -- this debounced callback, we should focus that window over neo-tree.
+    local current_window = vim.api.nvim_get_current_win()
+    local should_restore_cursor = current_window ~= dir_window
 
     local cleanup = vim.schedule_wrap(function()
       log.trace("Deleting buffer in netrw hijack", dir_bufnr)
       pcall(vim.api.nvim_buf_delete, dir_bufnr, { force = true })
       if should_restore_cursor then
-        vim.api.nvim_set_current_win(curwin)
+        vim.api.nvim_set_current_win(current_window)
       end
     end)
 
     local state
     if should_open_current and not is_currently_neo_tree then
       log.debug("hijack_netrw: opening current")
-      state = manager.get_state("filesystem", nil, winid)
+      state = manager.get_state("filesystem", nil, dir_window)
       state.current_position = "current"
     elseif is_currently_neo_tree then
       log.debug("hijack_netrw: opening in existing Neo-tree")
