@@ -17,7 +17,7 @@ end
 ---@return boolean hijacked Whether the hijack was successful
 M.hijack = function()
   local hijack_behavior = M.get_hijack_behavior()
-  if hijack_behavior == "dqisabled" then
+  if hijack_behavior == "disabled" then
     return false
   end
 
