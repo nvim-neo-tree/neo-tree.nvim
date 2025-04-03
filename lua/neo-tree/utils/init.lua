@@ -573,6 +573,7 @@ M.is_filtered_by_pattern = function(pattern_list, path, name)
   return false
 end
 
+---@param win_id integer?
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)

@@ -195,6 +195,11 @@ M.buffer_enter_event = function()
   end
   last_buffer_enter_filetype = vim.bo.filetype
 
+  -- if vim is trying to open a dir, then we hijack it
+  if netrw.hijack() then
+    return
+  end
+
   -- For all others, make sure another buffer is not hijacking our window
   -- ..but not if the position is "current"
   local prior_buf = vim.fn.bufnr("#")
@@ -206,11 +211,6 @@ M.buffer_enter_event = function()
   -- there is nothing more we want to do with floating windows
   -- but when prior_type is neo-tree we might need to redirect buffer somewhere else.
   if utils.is_floating() and prior_type ~= "neo-tree" then
-    return
-  end
-
-  -- if vim is trying to open a dir, then we hijack it
-  if netrw.hijack() then
     return
   end
 
@@ -496,8 +496,10 @@ M.merge_config = function(user_config)
   events.clear_all_events()
   define_events()
 
-  -- Prevent accidentally opening another file in the neo-tree window.
+  -- Prevent netrw hijacking lazy-loading from conflicting with normal hijacking.
   vim.g.neotree_watching_bufenter = 1
+
+  -- Prevent accidentally opening another file in the neo-tree window.
   events.subscribe({
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
@@ -670,6 +672,21 @@ M.merge_config = function(user_config)
     )
   end
 
+  ---@type neotree.Config.HijackNetrwBehavior[]
+  local disable_netrw_values = { "open_default", "open_current" }
+  local hijack_behavior = M.config.filesystem.hijack_netrw_behavior
+  if vim.tbl_contains(disable_netrw_values, hijack_behavior) then
+    -- Disable netrw autocmds
+    vim.cmd("silent! autocmd! FileExplorer *")
+  elseif hijack_behavior ~= "disabled" then
+    require("neo-tree.log").error(
+      "Invalid value for filesystem.hijack_netrw_behavior: '"
+        .. hijack_behavior
+        .. "', will default to 'disabled'"
+    )
+    M.config.filesystem.hijack_netrw_behavior = "disabled"
+  end
+
   if not M.config.enable_git_status then
     M.config.git_status_async = false
   end
@@ -678,14 +695,7 @@ M.merge_config = function(user_config)
   -- aren't, remove them
   local source_selector_sources = {}
   for _, ss_source in ipairs(M.config.source_selector.sources or {}) do
-    local source_match = false
-    for _, source in ipairs(M.config.sources) do
-      if ss_source.source == source then
-        source_match = true
-        break
-      end
-    end
-    if source_match then
+    if vim.tbl_contains(M.config.sources, ss_source.source) then
       table.insert(source_selector_sources, ss_source)
     else
       log.debug(string.format("Unable to locate Neo-tree extension %s", ss_source.source))

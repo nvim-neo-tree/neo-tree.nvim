@@ -13,11 +13,13 @@ end
 local new_user_config = nil
 
 ---Updates the config of neo-tree using the latest user config passed through setup, if any.
+---@return neotree.Config._Full
 M.ensure_config = function()
   if not M.config or new_user_config then
     M.config = require("neo-tree.setup").merge_config(new_user_config)
     new_user_config = nil
   end
+  return M.config
 end
 
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
@@ -91,12 +93,7 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  local netrw = require("neo-tree.setup.netrw")
-  if netrw.get_hijack_behavior() ~= "disabled" then
-    vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack(path)
-  end
-  return false
+  return require("neo-tree.setup.netrw").hijack()
 end
 
 ---@param config neotree.Config
