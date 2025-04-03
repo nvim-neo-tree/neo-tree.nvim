@@ -34,7 +34,7 @@
 ---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
 
 ---@class neotree.Config.Filesystem.Window : neotree.Config.Source.Window
----@field fuzzy_finder_mappings table<string, neotree.FuzzyFinder.Commands|"close">?
+---@field fuzzy_finder_mappings table<string, neotree.FuzzyFinder.Commands>?
 
 ---@class (exact) neotree.Config.Filesystem : neotree.Config.Source
 ---@field async_directory_scan "auto"|"always"|"never"|nil

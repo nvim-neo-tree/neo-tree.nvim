@@ -190,63 +190,60 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       vim.api.nvim_win_set_height(winid, height)
     end
   end)
-  local close_input = function()
-    vim.cmd("stopinsert")
-    input:unmount()
-    -- If this was closed due to submit, that function will handle the reset_search
-    vim.defer_fn(function()
-      if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
-        fs.reset_search(state, true)
-      end
-    end, 100)
-    restore_height()
-  end
+  local cmds = {
+    move_cursor_down = function(_state, _scroll_padding)
+      renderer.focus_node(_state, nil, true, 1, _scroll_padding)
+    end,
 
-  input:on({ event.BufLeave, event.BufDelete }, close_input, { once = true })
+    move_cursor_up = function(_state, _scroll_padding)
+      renderer.focus_node(_state, nil, true, -1, _scroll_padding)
+      vim.cmd("redraw!")
+    end,
+
+    close = function()
+      vim.cmd("stopinsert")
+      input:unmount()
+      -- If this was closed due to submit, that function will handle the reset_search
+      vim.defer_fn(function()
+        if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
+          fs.reset_search(state, true)
+        end
+      end, 100)
+      restore_height()
+    end,
+  }
+
+  input:on({ event.BufLeave, event.BufDelete }, cmds.close, { once = true })
 
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
 
-  if fuzzy_finder_mode then
-    local cmds = {
-      move_cursor_down = function(_state, _scroll_padding)
-        renderer.focus_node(_state, nil, true, 1, _scroll_padding)
-      end,
+  if not fuzzy_finder_mode then
+    return
+  end
 
-      move_cursor_up = function(_state, _scroll_padding)
-        renderer.focus_node(_state, nil, true, -1, _scroll_padding)
-        vim.cmd("redraw!")
-      end,
-
-      close = function()
-        close_input()
-      end,
-    }
-    for lhs, cmd_name in pairs(require("neo-tree").config.filesystem.window.fuzzy_finder_mappings) do
-      local t = type(cmd_name)
-      if t == "string" then
-        local cmd = cmds[cmd_name]
-        if cmd then
-          input:map(
-            "i",
-            lhs,
-            create_input_mapping_handle(cmd, state, scroll_padding),
-            { noremap = true }
-          )
-        else
-          log.warn(
-            string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name)
-          )
-        end
-      elseif t == "function" then
+  for lhs, cmd_name in pairs(require("neo-tree").config.filesystem.window.fuzzy_finder_mappings) do
+    local t = type(cmd_name)
+    if t == "string" then
+      local cmd = cmds[cmd_name]
+      if cmd then
         input:map(
           "i",
           lhs,
-          create_input_mapping_handle(cmd_name, state, scroll_padding),
+          create_input_mapping_handle(cmd, state, scroll_padding),
           { noremap = true }
         )
       else
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
       end
+    elseif t == "function" then
+      input:map(
+        "i",
+        lhs,
+        create_input_mapping_handle(cmd_name, state, scroll_padding),
+        { noremap = true }
+      )
+    else
+      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
     end
   end
 end
