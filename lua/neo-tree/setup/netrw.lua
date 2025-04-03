@@ -17,13 +17,13 @@ end
 ---@return boolean hijacked Whether the hijack was successful
 M.hijack = function()
   local hijack_behavior = M.get_hijack_behavior()
-  if hijack_behavior == "disabled" then
+  if hijack_behavior == "dqisabled" then
     return false
   end
 
   -- ensure this is a directory
   local dir_bufnr = vim.api.nvim_get_current_buf()
-  local path_to_hijack = vim.b[dir_bufnr].netrw_curdir or vim.api.nvim_buf_get_name(dir_bufnr)
+  local path_to_hijack = vim.api.nvim_buf_get_name(dir_bufnr)
   local stats = uv.fs_stat(path_to_hijack)
   if not stats or stats.type ~= "directory" then
     return false
