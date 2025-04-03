@@ -65,11 +65,11 @@ M.hijack = function()
       log.trace("Replacing buffer in netrw hijack", replacement_buffer)
       pcall(vim.api.nvim_win_set_buf, winid, replacement_buffer)
     end
-    local curwin = vim.api.nvim_get_current_win()
 
     -- If we were entering vim, and a floating window pops up (e.g. lazy.nvim), we should prioritize that window instead
     -- of neo-tree.
     local should_restore_cursor = was_starting and utils.is_floating()
+    local curwin = vim.api.nvim_get_current_win()
 
     local cleanup = vim.schedule_wrap(function()
       log.trace("Deleting buffer in netrw hijack", dir_bufnr)
