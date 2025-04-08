@@ -147,7 +147,8 @@ local restore_local_window_settings = function(winid)
 end
 
 local last_buffer_enter_filetype = nil
-M.buffer_enter_event = function()
+---@param args neotree._vim.api.keyset.create_autocmd.callback_args
+M.buffer_enter_event = function(args)
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
     if last_buffer_enter_filetype == "neo-tree" then
@@ -242,6 +243,8 @@ M.buffer_enter_event = function()
     local bufname = vim.api.nvim_buf_get_name(0)
     log.debug("redirecting buffer " .. bufname .. " to new split")
     vim.cmd("b#")
+    local past_state = manager.get_state_for_window(current_winid) or {}
+    local past_win_width = past_state.win_width
     -- Using schedule at this point  fixes problem with syntax
     -- highlighting in the buffer. I also prevents errors with diagnostics
     -- trying to work with the buffer as it's being closed.
@@ -253,6 +256,7 @@ M.buffer_enter_event = function()
       local fake_state = {
         window = {
           position = position,
+          width = past_win_width or M.config.window.width,
         },
       }
       utils.open_file(fake_state, bufname)
