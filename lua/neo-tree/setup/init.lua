@@ -147,8 +147,7 @@ local restore_local_window_settings = function(winid)
 end
 
 local last_buffer_enter_filetype = nil
----@param args neotree._vim.api.keyset.create_autocmd.callback_args
-M.buffer_enter_event = function(args)
+M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
   if vim.bo.filetype == "neo-tree" then
     if last_buffer_enter_filetype == "neo-tree" then
