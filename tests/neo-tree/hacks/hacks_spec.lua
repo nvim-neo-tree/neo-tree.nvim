@@ -11,18 +11,20 @@ describe("Opening buffers in neo-tree window", function()
   end)
 
   local width = 33
-  it("should automatically redirect to other buffers", function()
-    require("neo-tree").setup({
-      window = {
-        width = width,
-      },
-    })
-    vim.cmd("e test.txt")
-    vim.cmd("Neotree")
-    local neotree = vim.api.nvim_get_current_win()
-    assert.are.equal(vim.api.nvim_win_get_width(neotree), width)
+  describe("should automatically redirect to other buffers", function()
+    it("without changing our own width", function()
+      require("neo-tree").setup({
+        window = {
+          width = width,
+        },
+      })
+      vim.cmd("e test.txt")
+      vim.cmd("Neotree")
+      local neotree = vim.api.nvim_get_current_win()
+      assert.are.equal(vim.api.nvim_win_get_width(neotree), width)
 
-    vim.cmd("bnext")
-    assert.are.equal(vim.api.nvim_win_get_width(neotree), width)
+      vim.cmd("bnext")
+      assert.are.equal(vim.api.nvim_win_get_width(neotree), width)
+    end)
   end)
 end)
