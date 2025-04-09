@@ -7,7 +7,7 @@ RUN apt install -y git ninja-build gettext libtool libtool-bin autoconf \
 
 # install neovim
 RUN git clone https://github.com/neovim/neovim
-RUN cd neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
+RUN cd neovim && git checkout release-0.11 && make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
 
 # install required plugins
 ARG PLUG_DIR="root/.local/share/nvim/site/pack/packer/start"
