@@ -242,6 +242,7 @@ M.buffer_enter_event = function()
     local bufname = vim.api.nvim_buf_get_name(0)
     log.debug("redirecting buffer " .. bufname .. " to new split")
     vim.cmd("b#")
+    local win_width = vim.api.nvim_win_get_width(current_winid)
     -- Using schedule at this point  fixes problem with syntax
     -- highlighting in the buffer. I also prevents errors with diagnostics
     -- trying to work with the buffer as it's being closed.
@@ -253,6 +254,7 @@ M.buffer_enter_event = function()
       local fake_state = {
         window = {
           position = position,
+          width = win_width or M.config.window.width,
         },
       }
       utils.open_file(fake_state, bufname)
