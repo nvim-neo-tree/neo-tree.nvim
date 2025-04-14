@@ -723,7 +723,7 @@ M.toggle_directory = function(state, toggle_directory)
   M.toggle_node(state, toggle_directory)
 end
 
----Open file or directory
+---Open file or expandable node
 ---@param state table The state of the source
 ---@param open_cmd string The vim command to use to open the file
 ---@param toggle_directory function The function to call to toggle a directory
@@ -731,9 +731,6 @@ end
 local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   local tree = state.tree
   local success, node = pcall(tree.get_node, tree)
-  if node.type == "message" then
-    return
-  end
   if not (success and node) then
     log.debug("Could not get node.")
     return
@@ -766,9 +763,9 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
     log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
     config.expand_nested_files = not config.no_expand_file
   end
-  if node.type == "directory" then
-    M.toggle_node(state, toggle_directory)
-  elseif node:has_children() and config.expand_nested_files and not node:is_expanded() then
+
+  -- Files might be expandable because of file nesting, exclude that for this command
+  if utils.is_expandable(node) and node.type ~= "file" then
     M.toggle_node(state, toggle_directory)
   else
     open()
