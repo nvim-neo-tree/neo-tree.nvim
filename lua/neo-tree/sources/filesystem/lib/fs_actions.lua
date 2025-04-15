@@ -635,7 +635,15 @@ local rename_node = function(msg, name, get_destination, path, callback)
 
     local destination = get_destination(new_name)
 
-    if not rename_is_safe(path, destination) then
+    -- Check for case changes
+    local is_case_change_only = false
+    local original_filename = vim.fn.fnamemodify(path, ":t")
+    if original_filename:lower() == new_name:lower() then
+      is_case_change_only = true
+    end
+
+    -- Only check for existing files if it's not just a case change
+    if not is_case_change_only and not rename_is_safe(path, destination) then
       log.warn(destination, " already exists, canceling")
       return
     end
