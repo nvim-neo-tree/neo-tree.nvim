@@ -15,22 +15,33 @@ local Path = require("plenary").path
 
 local M = {}
 
+---@param a uv.fs_stat.result?
+---@param b uv.fs_stat.result?
+---@return boolean equal Whether a and b are stats of the same file
+local same_file = function(a, b)
+  return a and b and a.dev == b.dev and a.ino == b.ino or false
+end
+
 ---Checks to see if a file can safely be renamed to its destination without data loss.
 ---Also prevents renames from going through if the rename will not do anything.
----Has an additional check for renaming files to a different case (e.g. for windows)
----@param original_path string
+---Has an additional check for case-insensitive filesystems (e.g. for windows)
+---@param source string
 ---@param destination string
 ---@return boolean rename_is_safe
-local function rename_is_safe(original_path, destination)
-  if not uv.fs_stat(destination) then
+local function rename_is_safe(source, destination)
+  local destination_file = uv.fs_stat(destination)
+  if not destination_file then
     return true
   end
 
-  if utils.is_windows then
-    -- check to see if we're just renaming the original to a different case
-    local orig = utils.normalize_path(original_path)
-    local dest = utils.normalize_path(destination)
-    return orig ~= dest and orig:lower() == dest:lower()
+  local src = utils.normalize_path(source)
+  local dest = utils.normalize_path(destination)
+  local changing_casing = src ~= dest and src:lower() == dest:lower()
+  if changing_casing then
+    local src_file = uv.fs_stat(src)
+    -- We check that the two paths resolve to the same canonical filename and file.
+    return same_file(src_file, destination_file)
+      and uv.fs_realpath(src) == uv.fs_realpath(destination)
   end
   return false
 end
