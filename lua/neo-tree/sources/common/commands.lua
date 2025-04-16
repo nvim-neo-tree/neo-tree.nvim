@@ -759,13 +759,16 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
   end
 
   local config = state.config or {}
-  if node.type ~= "directory" and config.no_expand_file ~= nil then
+  if node.type == "file" and config.no_expand_file ~= nil then
     log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
     config.expand_nested_files = not config.no_expand_file
   end
 
+  local should_expand_file = node.type == "file"
+    and config.expand_nested_files
+    and not node:is_expanded()
   -- Files might be expandable because of file nesting, exclude that for this command
-  if utils.is_expandable(node) and node.type ~= "file" then
+  if utils.is_expandable(node) and should_expand_file then
     M.toggle_node(state, toggle_directory)
   else
     open()
