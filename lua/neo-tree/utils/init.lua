@@ -914,6 +914,8 @@ if M.is_windows == true then
   M.path_separator = "\\"
 end
 
+M.is_macos = vim.fn.has("mac") == 1
+
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
 ---@return string string The path without any trailing separator.

@@ -26,7 +26,7 @@ local function rename_is_safe(original_path, destination)
     return true
   end
 
-  if utils.is_windows then
+  if utils.is_windows or utils.is_macos then
     -- check to see if we're just renaming the original to a different case
     local orig = utils.normalize_path(original_path)
     local dest = utils.normalize_path(destination)
@@ -635,15 +635,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
 
     local destination = get_destination(new_name)
 
-    -- Check for case changes
-    local is_case_change_only = false
-    local original_filename = vim.fn.fnamemodify(path, ":t")
-    if original_filename:lower() == new_name:lower() then
-      is_case_change_only = true
-    end
-
-    -- Only check for existing files if it's not just a case change
-    if not is_case_change_only and not rename_is_safe(path, destination) then
+    if not rename_is_safe(path, destination) then
       log.warn(destination, " already exists, canceling")
       return
     end
