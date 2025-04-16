@@ -1125,7 +1125,7 @@ M.truthy = function(value)
 end
 
 M.is_expandable = function(node)
-  return node.type == "directory" or node:has_children()
+  return node:has_children() or node.type == "directory"
 end
 
 M.windowize_path = function(path)
