@@ -116,7 +116,7 @@ end
 
 ---Expand all nodes
 ---@param state table The state of the source
----@param node table A node to expand
+---@param node table? A single node to expand (defaults to all root nodes)
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_nodes = function(state, node, prefetcher)
   local root_nodes = node and { node } or state.tree:get_nodes()
@@ -133,6 +133,14 @@ M.expand_all_nodes = function(state, node, prefetcher)
     log.debug("All nodes expanded - redrawing")
     renderer.redraw(state)
   end)
+end
+
+---Expand all subnodes
+---@param state table The state of the source
+---@param node table? A single node to expand (defaults to node under the cursor)
+---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+M.expand_all_subnodes = function(state, node, prefetcher)
+  M.expand_all_nodes(state, node or state.tree:get_node(), prefetcher)
 end
 
 M.close_node = function(state, callback)

@@ -220,6 +220,10 @@ z         = close_all_nodes: Close all nodes in the tree.
 
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
+        expand_all_subnodes: Same as expand_all_nodes but defaults to
+                             recursively expanding just the node under the
+                             cursor.
+
 P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode|
 
 l           = focus_preview: Focus the active preview window
