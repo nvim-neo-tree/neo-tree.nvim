@@ -48,3 +48,4 @@ tags
 luacov.*.out
 
 tests/repro
+.repro

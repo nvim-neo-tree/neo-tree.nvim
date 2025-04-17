@@ -445,6 +445,9 @@ end
 
 M.prefetcher = {
   prefetch = function(state, node)
+    if node.type ~= "directory" then
+      return
+    end
     log.debug("Running fs prefetch for: " .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
   end,

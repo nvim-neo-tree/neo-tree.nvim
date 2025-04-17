@@ -72,6 +72,10 @@ M.expand_all_nodes = function(state, node)
   cc.expand_all_nodes(state, node, fs.prefetcher)
 end
 
+M.expand_all_subnodes = function(state, node)
+  cc.expand_all_subnodes(state, node, fs.prefetcher)
+end
+
 ---Shows the filter input, which will filter the tree.
 M.filter_as_you_type = function(state)
   filter.show_filter(state, true)

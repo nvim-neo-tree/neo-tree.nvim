@@ -413,8 +413,10 @@ local config = {
       -- ["t"] = "open_tab_drop",
       ["w"] = "open_with_window_picker",
       ["C"] = "close_node",
+      --["C"] = "close_all_subnodes",
       ["z"] = "close_all_nodes",
       --["Z"] = "expand_all_nodes",
+      --["Z"] = "expand_all_subnodes",
       ["R"] = "refresh",
       ["a"] = {
         "add",
