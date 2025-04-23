@@ -29,7 +29,7 @@ local config = {
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   hide_root_node = false, -- Hide the root node.
-  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
+  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
@@ -39,7 +39,7 @@ local config = {
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
-  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  popup_border_style = "NC", -- "double", "rounded", "single", "solid", (or "" to use 'winborder' on Neovim v0.11+)
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
   --                           -- NOTE: this will speed up to 50 ms for 1 second following a resize
