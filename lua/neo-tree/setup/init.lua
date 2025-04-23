@@ -273,7 +273,7 @@ M.win_enter_event = function()
 
   if M.config.close_if_last_window then
     local tabid = vim.api.nvim_get_current_tabpage()
-    local wins = manager.prior_windows[tabid]
+    local wins = utils.prior_windows[tabid]
     local prior_exists = utils.truthy(wins)
     local non_floating_wins = vim.tbl_filter(function(win)
       return not utils.is_floating(win)
@@ -454,7 +454,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
 end
 
 ---@param user_config neotree.Config?
----@return neotree.Config full_config
+---@return neotree.Config.Base full_config
 M.merge_config = function(user_config)
   local default_config = vim.deepcopy(defaults)
   user_config = vim.deepcopy(user_config or {})
@@ -696,7 +696,7 @@ M.merge_config = function(user_config)
       M.config[source_name].commands =
         vim.tbl_extend("keep", M.config[source_name].commands or {}, M.config.commands)
     end
-    manager.setup(source_name, M.config[source_name], M.config, module)
+    manager.setup(source_name, M.config[source_name] --[[@as table]], M.config, module)
     manager.redraw(source_name)
   end
 

@@ -1479,4 +1479,7 @@ M.truncate_by_cell = function(str, col_limit, align)
   return short, strwidth(short)
 end
 
+---@type table<integer, integer[]>
+M.prior_windows = {}
+
 return M

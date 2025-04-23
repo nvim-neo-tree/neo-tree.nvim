@@ -13,7 +13,7 @@ end
 local new_user_config = nil
 
 ---Updates the config of neo-tree using the latest user config passed through setup, if any.
----@return neotree.Config
+---@return neotree.Config.Base
 M.ensure_config = function()
   if not M.config or new_user_config then
     M.config = require("neo-tree.setup").merge_config(new_user_config)
@@ -29,7 +29,7 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   ignore["neo-tree"] = true
 
   local tabid = vim.api.nvim_get_current_tabpage()
-  local wins = require("neo-tree.sources.manager").prior_windows[tabid]
+  local wins = utils.prior_windows[tabid]
   if wins == nil then
     return -1
   end

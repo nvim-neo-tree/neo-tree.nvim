@@ -666,7 +666,4 @@ M.setup = function(source_name, config, global_config, module)
   end
 end
 
----@type table<integer, integer[]>
-M.prior_windows = {}
-
 return M
