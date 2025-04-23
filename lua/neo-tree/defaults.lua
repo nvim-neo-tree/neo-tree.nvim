@@ -39,7 +39,7 @@ local config = {
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
-  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single", "solid", (or "" to use 'winborder' on nvim v0.11+)
+  popup_border_style = "NC", -- "double", "rounded", "shadow", "single", "solid", (or "" to use 'winborder' on Neovim v0.11+)
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
   --                           -- NOTE: this will speed up to 50 ms for 1 second following a resize

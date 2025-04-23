@@ -7,6 +7,7 @@ local log = require("neo-tree.log")
 local M = {}
 
 local winborder_option_exists = vim.fn.exists("&winborder") > 0
+local invalid_borders = { "", "none" }
 M.popup_options = function(title, min_width, override_options)
   if string.len(title) ~= 0 then
     title = " " .. title .. " "
@@ -16,11 +17,13 @@ M.popup_options = function(title, min_width, override_options)
 
   local popup_border_style = nt.config.popup_border_style
   if popup_border_style == "" then
-    if winborder_option_exists then
+    -- Try to use winborder or
+    -- fallback to single
+    if not winborder_option_exists or vim.tbl_contains(invalid_borders, vim.o.winborder) then
+      popup_border_style = "single"
+    else
+      ---@diagnostic disable-next-line: cast-local-type
       popup_border_style = vim.o.winborder
-    end
-    if popup_border_style == "" then
-      popup_border_style = "NC"
     end
   end
   local popup_border_text = NuiText(title, highlights.FLOAT_TITLE)
