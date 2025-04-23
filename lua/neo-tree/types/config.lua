@@ -139,7 +139,4 @@
 ---@field git_status neotree.Config.GitStatus
 ---@field document_symbols neotree.Config.DocumentSymbols
 
----@class (exact) neotree.Config._Full : neotree.Config.Base
----@field prior_windows table<string, integer[]>?
-
 ---@class (partial) neotree.Config : neotree.Config.Base

@@ -273,7 +273,7 @@ M.win_enter_event = function()
 
   if M.config.close_if_last_window then
     local tabid = vim.api.nvim_get_current_tabpage()
-    local wins = utils.get_value(M, "config.prior_windows", {})[tabid]
+    local wins = utils.prior_windows[tabid]
     local prior_exists = utils.truthy(wins)
     local non_floating_wins = vim.tbl_filter(function(win)
       return not utils.is_floating(win)
@@ -356,26 +356,6 @@ M.win_enter_event = function()
     end
     -- it's a neo-tree window, ignore
     return
-  end
-
-  M.config.prior_windows = M.config.prior_windows or {}
-
-  local tabid = vim.api.nvim_get_current_tabpage()
-  local tab_windows = M.config.prior_windows[tabid]
-  if tab_windows == nil then
-    tab_windows = {}
-    M.config.prior_windows[tabid] = tab_windows
-  end
-  table.insert(tab_windows, win_id)
-
-  -- prune the history when it gets too big
-  if #tab_windows > 100 then
-    local new_array = {}
-    local win_count = #tab_windows
-    for i = 80, win_count do
-      table.insert(new_array, tab_windows[i])
-    end
-    M.config.prior_windows[tabid] = new_array
   end
 end
 
@@ -474,7 +454,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
 end
 
 ---@param user_config neotree.Config?
----@return neotree.Config._Full full_config
+---@return neotree.Config.Base full_config
 M.merge_config = function(user_config)
   local default_config = vim.deepcopy(defaults)
   user_config = vim.deepcopy(user_config or {})
@@ -635,7 +615,7 @@ M.merge_config = function(user_config)
   -- local orig_sources = user_config.sources and user_config.sources or {}
 
   -- apply the users config
-  M.config = vim.tbl_deep_extend("force", default_config, user_config) --[[@as neotree.Config._Full]]
+  M.config = vim.tbl_deep_extend("force", default_config, user_config)
 
   -- RE: 873, fixes issue with invalid source checking by overriding
   -- source table with name table
@@ -716,7 +696,7 @@ M.merge_config = function(user_config)
       M.config[source_name].commands =
         vim.tbl_extend("keep", M.config[source_name].commands or {}, M.config.commands)
     end
-    manager.setup(source_name, M.config[source_name], M.config, module)
+    manager.setup(source_name, M.config[source_name] --[[@as table]], M.config, module)
     manager.redraw(source_name)
   end
 

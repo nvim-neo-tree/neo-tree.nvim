@@ -1106,7 +1106,7 @@ end
 
 ---Evaluate the truthiness of a value, according to js/python rules.
 ---@param value any
----@return boolean
+---@return boolean truthy
 M.truthy = function(value)
   if value == nil then
     return false
@@ -1121,7 +1121,7 @@ M.truthy = function(value)
     return value > 0
   end
   if type(value) == "table" then
-    return #vim.tbl_values(value) > 0
+    return next(value) ~= nil
   end
   return true
 end
@@ -1478,5 +1478,8 @@ M.truncate_by_cell = function(str, col_limit, align)
   end
   return short, strwidth(short)
 end
+
+---@type table<integer, integer[]>
+M.prior_windows = {}
 
 return M
