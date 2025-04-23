@@ -34,4 +34,31 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
   end,
 })
 
+vim.api.nvim_create_autocmd({ "WinEnter" }, {
+  callback = function(ev)
+    if vim.bo[ev.buf].filetype == "neo-tree" then
+      return
+    end
+
+    local manager = require("neo-tree.sources.manager")
+    local tabid = vim.api.nvim_get_current_tabpage()
+    local tab_windows = manager.prior_windows[tabid]
+    if tab_windows == nil then
+      tab_windows = {}
+      manager.prior_windows[tabid] = tab_windows
+    end
+    table.insert(tab_windows, vim.api.nvim_get_current_win())
+
+    -- prune history
+    if #tab_windows > 100 then
+      local new_array = {}
+      local win_count = #tab_windows
+      for i = 80, win_count do
+        table.insert(new_array, tab_windows[i])
+      end
+      manager.prior_windows[tabid] = new_array
+    end
+  end,
+})
+
 vim.g.loaded_neo_tree = 1
