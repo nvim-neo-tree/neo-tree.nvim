@@ -54,6 +54,11 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
     -- prune history
     local win_count = #tab_windows
     if win_count > 100 then
+      if table.move then
+        utils.prior_windows[tabid] = table.move(tab_windows, 80, win_count, 1, {})
+        return
+      end
+
       local new_array = {}
       for i = 80, win_count do
         table.insert(new_array, tab_windows[i])
