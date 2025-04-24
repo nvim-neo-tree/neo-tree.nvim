@@ -827,6 +827,7 @@ local set_buffer_mappings = function(state)
     local vfunc
     local config = {}
     if utils.truthy(func) then
+      local oldfunc = func
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
       else
@@ -871,8 +872,9 @@ local set_buffer_mappings = function(state)
             end, map_options)
           end
         else
-          log.warn("Invalid mapping for ", cmd, ": ", func)
-          resolved_mappings[cmd] = "<invalid>"
+          local invalid_desc = desc or func or oldfunc
+          log.warn("Invalid mapping for ", cmd, ": ", invalid_desc)
+          resolved_mappings[cmd] = { text = ("<invalid> (%s)"):format(invalid_desc) }
         end
       end
     end
