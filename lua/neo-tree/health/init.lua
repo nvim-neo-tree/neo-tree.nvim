@@ -4,23 +4,23 @@ local health = vim.health
 local function check_dependencies()
   local devicons_ok = pcall(require, "nvim-web-devicons")
   if devicons_ok then
-    health.ok("nvim-web-devicons installed")
+    health.ok("nvim-web-devicons is installed")
   else
     health.info("nvim-web-devicons not installed")
   end
 
   local plenary_ok = pcall(require, "plenary")
   if plenary_ok then
-    health.ok("plenary installed")
+    health.ok("plenary.nvim is installed")
   else
-    health.error("plenary not installed")
+    health.error("plenary.nvim is not installed")
   end
 
   local nui_ok = pcall(require, "nui.tree")
   if nui_ok then
-    health.ok("nui installed")
+    health.ok("nui.nvim is installed")
   else
-    health.error("nui not installed")
+    health.error("nui.nvim not installed")
   end
 end
 
@@ -127,7 +127,7 @@ function M.check_config(config)
   }
 
   if not validate("config", config, "table", false) then
-    health.error("config does not exist")
+    health.error("Config does not exist")
     return
   end
 
@@ -323,7 +323,7 @@ function M.check_config(config)
   end)
 
   if #errors == 0 then
-    health.ok("config conforms to schema")
+    health.ok("Configuration conforms to schema")
   else
     for _, err in ipairs(errors) do
       health.error(unpack(err))
@@ -336,6 +336,7 @@ function M.check()
   check_dependencies()
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
+  health.info("(Config schema checking is not comprehensive yet)")
 end
 
 return M
