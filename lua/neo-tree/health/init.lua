@@ -102,7 +102,6 @@ function M.check_config(config)
       ---@param window neotree.Config.Source.Window
       Window = function(window)
         validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
-        return true
       end,
     },
     SourceSelector = {
@@ -250,7 +249,6 @@ function M.check_config(config)
     validate("cwd_target", fs.cwd_target, function(cwd_target)
       validate("sidebar", cwd_target.sidebar, validator.literal({ "tab", "window", "global" }))
       validate("current", cwd_target.current, validator.literal({ "tab", "window", "global" }))
-      return true
     end)
     validate("check_gitignore_in_search", fs.check_gitignore_in_search, "boolean")
     validate("filtered_items", fs.filtered_items, function(filtered_items)
@@ -278,7 +276,6 @@ function M.check_config(config)
         filtered_items.never_show_by_pattern,
         validator.array("string")
       )
-      return true
     end)
     validate("find_by_full_path_words", fs.find_by_full_path_words, "boolean")
     validate("find_command", fs.find_command, "string", true)
@@ -311,12 +308,10 @@ function M.check_config(config)
     validate("terminals_first", buffers.terminals_first, "boolean")
     validate("renderers", buffers.renderers, schema.Renderers)
     validate("window", buffers.window, schema.Source.Window)
-    return true
   end)
   validate("git_status", config.git_status, function(git_status)
     validate("renderers", git_status.renderers, schema.Renderers)
     validate("window", git_status.window, schema.Source.Window)
-    return true
   end)
   validate("document_symbols", config.document_symbols, function(document_symbols)
     validate("follow_cursor", document_symbols.follow_cursor, "boolean")
@@ -325,7 +320,6 @@ function M.check_config(config)
     validate("kinds", document_symbols.kinds, "table")
     validate("renderers", document_symbols.renderers, schema.Renderers)
     validate("window", document_symbols.window, schema.Source.Window)
-    return true
   end)
 
   if #errors == 0 then
