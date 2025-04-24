@@ -58,6 +58,12 @@ local function create_floating_preview_window(state)
     return
   end
 
+  if height < 5 or width < 5 then
+    log.error(
+      "Preview cannot be used without any space, please resize the neo-tree split to allow for at least 5 cells of free space."
+    )
+    return
+  end
   local popups = require("neo-tree.ui.popups")
   local options = popups.popup_options(title, width, {
     ns_id = highlights.ns_id,
