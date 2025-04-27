@@ -24,6 +24,59 @@ local function check_dependencies()
   end
 end
 
+local vim_validate_new
+if vim.fn.has("nvim-0.11") == 1 then
+  vim_validate_new = vim.validate
+else
+  ---@alias neotree.Health.Type type|"callable"
+  ---@alias neotree.Health.Types neotree.Health.Type|(neotree.Health.Type[])
+
+  ---@param obj any
+  ---@param expected neotree.Health.Types
+  ---@return boolean matches
+  local matches_type = function(obj, expected)
+    if type(obj) == expected then
+      return true
+    end
+    if expected == "callable" and vim.is_callable(obj) then
+      return true
+    end
+    return false
+  end
+
+  vim_validate_new = function(name, value, validator, optional, message)
+    local matched, errmsg, errinfo
+    if type(validator) == "string" then
+      matched = matches_type(value, validator)
+    elseif type(validator) == "table" then
+      for _, v in ipairs(validator) do
+        matched = matches_type(value, v)
+        if matched then
+          break
+        end
+      end
+    elseif vim.is_callable(validator) and value ~= nil then
+      matched, errinfo = validator(value)
+    end
+    matched = matched or (optional and value == nil)
+    if not matched then
+      local expected_types = type(validator) == "string" and { validator } or validator
+      if optional then
+        expected_types[#expected_types + 1] = "nil"
+      end
+      local expected = vim.is_callable(expected_types) and "?" or table.concat(expected_types, "|")
+      errmsg = ("%s: %s, got %s"):format(
+        name,
+        message or ("expected " .. expected),
+        message and value or type(value)
+      )
+      if errinfo then
+        errmsg = errmsg .. ", Info: " .. errinfo
+      end
+      error(errmsg, 2)
+    end
+  end
+end
 ---@param config neotree.Config.Base
 function M.check_config(config)
   ---@type [string, string][]
@@ -55,7 +108,7 @@ function M.check_config(config)
     end
 
     -- do regular validate
-    local valid, errmsg = pcall(vim.validate, full_path .. name, value, validator, optional)
+    local valid, errmsg = pcall(vim_validate_new, full_path .. name, value, validator, optional)
     if not valid then
       -- if type(validator) == "string" then
       --   advice = advice or ("Change this option to a %s"):format(validator)
@@ -329,6 +382,7 @@ function M.check_config(config)
       health.error(unpack(err))
     end
   end
+  health.info("(Config schema checking is not comprehensive yet)")
 end
 
 function M.check()
@@ -336,7 +390,6 @@ function M.check()
   check_dependencies()
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
-  health.info("(Config schema checking is not comprehensive yet)")
 end
 
 return M
