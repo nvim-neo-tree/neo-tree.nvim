@@ -397,6 +397,7 @@ local config = {
       ["P"] = { "toggle_preview", config = {
         use_float = true,
         use_image_nvim = false,
+        -- force = nil,
         -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
       } },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
