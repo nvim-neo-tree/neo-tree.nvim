@@ -804,6 +804,24 @@ Anything that causes Neo-tree to lose focus will end preview mode. When
 `use_float = false`, the window that was taken over by preview mode will revert
 back to whatever was shown in that window before preview mode began.
 
+The `toggle_preview` command also takes a `force` option which will force the
+preview to open/close if set to true/false, respectively. This can be used for
+"auto-preview"-like behavior like:
+
+```lua
+    require('neo-tree').setup({
+      event_handlers = {
+        {
+          event = 'after_render',
+          handler = function(state)
+            state.config = { use_float = true, force = true }
+            state.commands.toggle_preview(state)
+          end
+        }
+      }
+    })
+```
+
 You can choose a custom title for the floating window by setting the `title` option in its config.
 
 If you want to work with the floating preview mode window in autocmds or other
