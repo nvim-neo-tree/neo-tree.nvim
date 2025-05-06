@@ -419,8 +419,8 @@ local function sync_scan(context, path_to_scan)
   else -- scan_mode == "shallow"
     local dir, err = uv.fs_opendir(path_to_scan, nil, ENTRIES_BATCH_SIZE)
     if dir then
-      local stats = uv.fs_readdir(dir)
       repeat
+        local stats = uv.fs_readdir(dir)
         if not stats then
           break
         end
