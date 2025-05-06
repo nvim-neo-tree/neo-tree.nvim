@@ -477,7 +477,6 @@ M.merge_config = function(user_config)
 
   if events_setup then
     events.clear_all_events()
-    events_setup = false
   end
   define_events()
 
