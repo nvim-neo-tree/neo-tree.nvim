@@ -475,7 +475,9 @@ M.merge_config = function(user_config)
   log.use_file(user_config.log_to_file, true)
   log.debug("setup")
 
-  events.clear_all_events()
+  if events_setup then
+    events.clear_all_events()
+  end
   define_events()
 
   -- Prevent netrw hijacking lazy-loading from conflicting with normal hijacking.
