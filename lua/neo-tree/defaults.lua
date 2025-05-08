@@ -375,7 +375,6 @@ local config = {
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
-    same_level = false, -- Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
     insert_as = "child", -- Affects how nodes get inserted into the tree during creation/pasting/moving of files if the node under the cursor is a directory:
                         -- "child":   Insert nodes as children of the directory under cursor.
                         -- "sibling": Insert nodes  as siblings of the directory under cursor.

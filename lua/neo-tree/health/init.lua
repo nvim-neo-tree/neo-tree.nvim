@@ -285,7 +285,6 @@ function M.check_config(config)
         true
       )
     end)
-    validate("same_level", window.same_level, "boolean")
     validate("insert_as", window.insert_as, validator.literal({ "child", "sibling", "nil" }))
     validate("mapping_options", window.mapping_options, "table") -- TODO: More specific validation
     validate("mappings", window.mappings, validator.array("table")) -- TODO: More specific validation for mapping items

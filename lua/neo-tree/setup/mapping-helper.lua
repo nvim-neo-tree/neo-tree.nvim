@@ -2,6 +2,7 @@ local utils = require("neo-tree.utils")
 
 local M = {}
 
+---@param key string
 M.normalize_map_key = function(key)
   if key == nil then
     return nil
@@ -33,6 +34,8 @@ M.normalize_map_key = function(key)
   return key
 end
 
+---@param map table<string, function|string>
+---@return table<string, function|string> new_map
 M.normalize_map = function(map)
   local new_map = {}
   for key, value in pairs(map) do
