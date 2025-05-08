@@ -5,6 +5,8 @@ local events = require("neo-tree.events")
 
 local M = {}
 
+---@param input NuiInput
+---@param callback function?
 M.show_input = function(input, callback)
   input:mount()
 
@@ -41,6 +43,11 @@ M.show_input = function(input, callback)
   end
 end
 
+---@param message string
+---@param default_value string?
+---@param callback function
+---@param options nui_popup_options?
+---@param completion string?
 M.input = function(message, default_value, callback, options, completion)
   if nt.config.use_popups_for_input then
     local popup_options = popups.popup_options(message, 10, options)
