@@ -215,15 +215,22 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
 
   input:on({ event.BufLeave, event.BufDelete }, cmds.close, { once = true })
 
-  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
-  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
+  local config = require("neo-tree").config
+  if config.use_default_mappings then
+    input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+    input:map(
+      "n",
+      "j",
+      utils.wrap(cmds.move_cursor_down, state, scroll_padding),
+      { noremap = true }
+    )
+    input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
+  end
 
   if not fuzzy_finder_mode then
     return
   end
 
-  local config = require("neo-tree").config
   local falsy_mappings = { "noop", "none" }
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
     local t = type(cmd)
