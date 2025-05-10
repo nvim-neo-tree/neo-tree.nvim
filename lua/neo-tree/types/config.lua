@@ -10,6 +10,7 @@
 
 ---@class neotree.Config.Source
 ---@field window neotree.Config.Window?
+---@field commands neotree.Config.Commands?
 ---@field renderers neotree.Component[]?
 
 ---@class neotree.Config.SourceSelector.Item
@@ -64,7 +65,7 @@
 
 ---@alias neotree.Config.Window.Command string|function|neotree.Config.Window.Command.Configured
 
----@class (exact) neotree.Config.Window.Commands
+---@class (exact) neotree.Config.Commands
 ---@field [string] function
 
 ---@class (exact) neotree.Config.Window.Mappings
