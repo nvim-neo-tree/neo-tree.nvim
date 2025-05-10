@@ -63,8 +63,12 @@
 ---@field border neotree.Config.BorderStyle?
 
 ---@alias neotree.Config.Window.Command string|function|neotree.Config.Window.Command.Configured
----@alias neotree.Config.Window.Commands table<string,function>
----@alias neotree.Config.Window.Mappings table<string,neotree.Config.Window.Command>
+
+---@class (exact) neotree.Config.Window.Commands
+---@field [string] function
+
+---@class (exact) neotree.Config.Window.Mappings
+---@field [string] neotree.Config.Window.Command
 
 ---@class neotree.Config.Window
 ---@field position string?
