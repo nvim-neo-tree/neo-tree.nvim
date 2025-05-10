@@ -215,7 +215,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
 
   -- create mappings and autocmd
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-  input:map("i", "<esc>", cmds.close, { noremap = true })
+  -- input:map("i", "<esc>", cmds.close, { noremap = true })
 
   local config = require("neo-tree").config
   for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
@@ -229,7 +229,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       end
     elseif t == "function" then
       input:map("i", lhs, utils.wrap(cmd_name, state, scroll_padding), { noremap = true })
-    else
+    elseif t ~= false then
       log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
     end
   end

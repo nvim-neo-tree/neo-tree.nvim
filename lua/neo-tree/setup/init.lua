@@ -11,7 +11,7 @@ local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
----@param config neotree.Config.Source
+---@param config neotree.Config.Base
 local normalize_mappings = function(config)
   if config == nil then
     return false
