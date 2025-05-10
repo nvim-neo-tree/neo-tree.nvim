@@ -33,8 +33,6 @@ M.pack = table.pack or function(...)
   return { n = select("#", ...), ... }
 end
 
-M.unpack = unpack or table.unpack
-
 local tracked_functions = {}
 ---@enum NeotreeDebounceStrategy
 M.debounce_strategy = {
@@ -1172,8 +1170,8 @@ M.wrap = function(func, ...)
   end
   local wrapped_args = { ... }
   return function(...)
-    local all_args = M.pack(table.unpack(wrapped_args), ...)
-    func(table.unpack(all_args))
+    local all_args = M.pack(unpack(wrapped_args), ...)
+    func(unpack(all_args))
   end
 end
 

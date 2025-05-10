@@ -5,7 +5,6 @@ local Queue = require("neo-tree.collections").Queue
 
 local M = {}
 local fd_supports_max_results = nil
-local unpack = unpack or table.unpack
 
 local test_for_max_results = function(cmd)
   if fd_supports_max_results == nil then

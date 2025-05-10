@@ -40,7 +40,7 @@ local default_config = {
 -- {{{ NO NEED TO CHANGE
 local log = {}
 
-local unpack = unpack or table.unpack
+local unpack = unpack
 
 local notify = function(message, level_config)
   if type(vim.notify) == "table" then
