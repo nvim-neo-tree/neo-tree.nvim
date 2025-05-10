@@ -216,34 +216,28 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   input:on({ event.BufLeave, event.BufDelete }, cmds.close, { once = true })
 
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
+  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
 
   if not fuzzy_finder_mode then
     return
   end
 
-  for lhs, cmd_name in pairs(require("neo-tree").config.filesystem.window.fuzzy_finder_mappings) do
-    local t = type(cmd_name)
+  local config = require("neo-tree").config
+  local falsy_mappings = { "noop", "none" }
+  for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
+    local t = type(cmd)
     if t == "string" then
-      local cmd = cmds[cmd_name]
-      if cmd then
-        input:map(
-          "i",
-          lhs,
-          create_input_mapping_handle(cmd, state, scroll_padding),
-          { noremap = true }
-        )
-      else
-        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+      local command = cmds[cmd]
+      if command then
+        input:map("i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
+      elseif not vim.tbl_contains(falsy_mappings, cmds) then
+        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, command))
       end
     elseif t == "function" then
-      input:map(
-        "i",
-        lhs,
-        create_input_mapping_handle(cmd_name, state, scroll_padding),
-        { noremap = true }
-      )
+      input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
     else
-      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd))
     end
   end
 end
