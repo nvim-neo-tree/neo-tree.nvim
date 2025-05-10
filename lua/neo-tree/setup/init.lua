@@ -11,18 +11,26 @@ local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
----@param config neotree.Config.Base
-local normalize_mappings = function(config)
-  if config == nil then
-    return false
+---@param source_config neotree.Config.Source
+local normalize_mappings = function(source_config)
+  if source_config == nil then
+    return
   end
-  local mappings = vim.tbl_get(config, { "window", "mappings" })
+  local mappings = vim.tbl_get(source_config, { "window", "mappings" })
   if mappings then
     local fixed = mapping_helper.normalize_map(mappings)
-    config.window.mappings = fixed
-    return true
-  else
-    return false
+    source_config.window.mappings = fixed
+  end
+end
+
+local normalize_fuzzy_mappings = function(source_config)
+  if source_config == nil then
+    return
+  end
+  local mappings = vim.tbl_get(source_config, { "window", "fuzzy_finder_mappings" })
+  if mappings then
+    local fixed = mapping_helper.normalize_map(mappings)
+    source_config.window.fuzzy_finder_mappings = fixed
   end
 end
 
@@ -562,6 +570,8 @@ M.merge_config = function(user_config)
   log.debug("Sources to load: ", vim.inspect(all_sources))
   require("neo-tree.command.parser").setup(all_source_names)
 
+  normalize_fuzzy_mappings(default_config.filesystem)
+  normalize_fuzzy_mappings(user_config.filesystem)
   -- setup the default values for all sources
   normalize_mappings(default_config)
   normalize_mappings(user_config)
@@ -613,7 +623,6 @@ M.merge_config = function(user_config)
       user_config[source_name].window.position = "left"
     end
   end
-  --print(vim.inspect(default_config.filesystem))
 
   -- local orig_sources = user_config.sources and user_config.sources or {}
 

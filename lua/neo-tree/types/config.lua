@@ -58,7 +58,7 @@
 ---@field width string|number?
 
 ---@class neotree.Config.Window.Popup
----@field title fun(state:table):string?
+---@field title (fun(state:table):string)?
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 
@@ -101,7 +101,7 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
----@class (exact) neotree.Config.Base
+---@class (exact) neotree.Config.Base : neotree.Config.Source
 ---@field sources string[]
 ---@field add_blank_line_at_top boolean
 ---@field auto_clean_after_session_restore boolean
@@ -131,10 +131,7 @@
 ---@field source_selector neotree.Config.SourceSelector
 ---@field event_handlers? neotree.Event.Handler[]
 ---@field default_component_configs neotree.Config.ComponentDefaults
----@field renderers neotree.Config.Renderers
 ---@field nesting_rules neotree.FileNesting.Rule[]
----@field commands table<string, fun()>
----@field window neotree.Config.Window
 ---
 ---@field filesystem neotree.Config.Filesystem
 ---@field buffers neotree.Config.Buffers
