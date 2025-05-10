@@ -11,11 +11,12 @@ local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
+---@param config neotree.Config.Base
 local normalize_mappings = function(config)
   if config == nil then
     return false
   end
-  local mappings = utils.get_value(config, "window.mappings", nil)
+  local mappings = vim.tbl_get(config, { "window", "mappings" })
   if mappings then
     local fixed = mapping_helper.normalize_map(mappings)
     config.window.mappings = fixed

@@ -1,21 +1,16 @@
 ---@meta
 
----@class neotree.Config.MappingOptions
+---@class neotree.Config.Mapping.Options
 ---@field noremap boolean?
 ---@field nowait boolean?
 
----@class neotree.Config.Mapping : neotree.Config.MappingOptions
+---@class neotree.Config.Window.Command.Configured : neotree.Config.Mapping.Options
 ---@field [1] string
----@field nowait boolean?
----@field noremap boolean?
 ---@field config table?
 
 ---@class neotree.Config.Source
----@field window neotree.Config.Source.Window?
+---@field window neotree.Config.Window?
 ---@field renderers neotree.Component[]?
-
----@class neotree.Config.Source.Window
----@field mappings table<string, string|neotree.Config.Mapping>?
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string?
@@ -38,8 +33,8 @@
 ---@field statusline boolean?
 ---@field show_scrolled_off_parent_node boolean?
 ---@field sources neotree.Config.SourceSelector.Item[]?
----@field content_layout string? "start"|"end"|"center"
----@field tabs_layout string? "equal"|"start"|"end"|"center"|"focus"
+---@field content_layout? "start"|"end"|"center"
+---@field tabs_layout? "equal"|"start"|"end"|"center"|"focus"
 ---@field truncation_character string
 ---@field tabs_min_width integer?
 ---@field tabs_max_width integer?
@@ -67,16 +62,23 @@
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 
+---@alias neotree.Config.Window.Command string|function|neotree.Config.Window.Command.Configured
+
+---@class (exact) neotree.Config.Window.Commands
+---@field [string] function
+
+---@class (exact) neotree.Config.Window.Mappings
+---@field [string] neotree.Config.Window.Command
+
 ---@class neotree.Config.Window
 ---@field position string?
 ---@field width integer?
 ---@field height integer?
 ---@field auto_expand_width boolean?
 ---@field popup neotree.Config.Window.Popup?
----@field same_level boolean?
 ---@field insert_as "child"|"sibling"|nil
----@field mapping_options neotree.Config.MappingOptions?
----@field mappings neotree.Config.Mapping[]?
+---@field mapping_options neotree.Config.Mapping.Options?
+---@field mappings neotree.Config.Window.Mappings?
 
 ---@class neotree.Config.Renderers
 ---@field directory neotree.Component.Common[]?

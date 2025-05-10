@@ -12,12 +12,6 @@ if ffi_available then
   ]])
 end
 
--- Backwards compatibility
-table.pack = table.pack or function(...)
-  return { n = select("#", ...), ... }
-end
-table.unpack = table.unpack or unpack
-
 local M = {}
 
 local diag_severity_to_string = function(severity)
@@ -32,6 +26,11 @@ local diag_severity_to_string = function(severity)
   else
     return nil
   end
+end
+
+-- Backwards compatibility
+M.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
 end
 
 local tracked_functions = {}
@@ -1171,8 +1170,8 @@ M.wrap = function(func, ...)
   end
   local wrapped_args = { ... }
   return function(...)
-    local all_args = table.pack(table.unpack(wrapped_args), ...)
-    func(table.unpack(all_args))
+    local all_args = M.pack(unpack(wrapped_args), ...)
+    func(unpack(all_args))
   end
 end
 

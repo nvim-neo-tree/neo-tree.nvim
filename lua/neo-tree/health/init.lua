@@ -24,9 +24,9 @@ local function check_dependencies()
   end
 end
 
-local vim_validate_new
+local softvalidate
 if vim.fn.has("nvim-0.11") == 1 then
-  vim_validate_new = vim.validate
+  softvalidate = vim.validate
 else
   ---@alias neotree.Health.Type type|"callable"
   ---@alias neotree.Health.Types neotree.Health.Type|(neotree.Health.Type[])
@@ -44,7 +44,7 @@ else
     return false
   end
 
-  vim_validate_new = function(name, value, validator, optional, message)
+  softvalidate = function(name, value, validator, optional, message)
     local matched, errmsg, errinfo
     if type(validator) == "string" then
       matched = matches_type(value, validator)
@@ -59,6 +59,7 @@ else
       matched, errinfo = validator(value)
     end
     matched = matched or (optional and value == nil)
+
     if not matched then
       local expected_types = type(validator) == "string" and { validator } or validator
       if optional then
@@ -108,7 +109,7 @@ function M.check_config(config)
     end
 
     -- do regular validate
-    local valid, errmsg = pcall(vim_validate_new, full_path .. name, value, validator, optional)
+    local valid, errmsg = pcall(softvalidate, full_path .. name, value, validator, optional)
     if not valid then
       -- if type(validator) == "string" then
       --   advice = advice or ("Change this option to a %s"):format(validator)
@@ -151,12 +152,10 @@ function M.check_config(config)
       end,
     },
 
-    Source = {
-      ---@param window neotree.Config.Source.Window
-      Window = function(window)
-        validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
-      end,
-    },
+    ---@param window neotree.Config.Window
+    Window = function(window)
+      validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
+    end,
     SourceSelector = {
       ---@param item neotree.Config.SourceSelector.Item
       Item = function(item)
@@ -285,7 +284,6 @@ function M.check_config(config)
         true
       )
     end)
-    validate("same_level", window.same_level, "boolean")
     validate("insert_as", window.insert_as, validator.literal({ "child", "sibling", "nil" }))
     validate("mapping_options", window.mapping_options, "table") -- TODO: More specific validation
     validate("mappings", window.mappings, validator.array("table")) -- TODO: More specific validation for mapping items
@@ -360,11 +358,11 @@ function M.check_config(config)
     validate("show_unloaded", buffers.show_unloaded, "boolean")
     validate("terminals_first", buffers.terminals_first, "boolean")
     validate("renderers", buffers.renderers, schema.Renderers)
-    validate("window", buffers.window, schema.Source.Window)
+    validate("window", buffers.window, schema.Window)
   end)
   validate("git_status", config.git_status, function(git_status)
     validate("renderers", git_status.renderers, schema.Renderers)
-    validate("window", git_status.window, schema.Source.Window)
+    validate("window", git_status.window, schema.Window)
   end)
   validate("document_symbols", config.document_symbols, function(document_symbols)
     validate("follow_cursor", document_symbols.follow_cursor, "boolean")
@@ -372,7 +370,7 @@ function M.check_config(config)
     validate("custom_kinds", document_symbols.custom_kinds, "table") -- TODO: More specific validation
     validate("kinds", document_symbols.kinds, "table")
     validate("renderers", document_symbols.renderers, schema.Renderers)
-    validate("window", document_symbols.window, schema.Source.Window)
+    validate("window", document_symbols.window, schema.Window)
   end)
 
   if #errors == 0 then

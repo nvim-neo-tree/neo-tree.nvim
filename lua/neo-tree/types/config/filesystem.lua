@@ -33,7 +33,7 @@
 
 ---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
 
----@class neotree.Config.Filesystem.Window : neotree.Config.Source.Window
+---@class neotree.Config.Filesystem.Window : neotree.Config.Window
 ---@field fuzzy_finder_mappings table<string, neotree.FuzzyFinder.Commands>?
 
 ---@class (exact) neotree.Config.Filesystem : neotree.Config.Source
