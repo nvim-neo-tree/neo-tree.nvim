@@ -572,6 +572,9 @@ M.merge_config = function(user_config)
 
   normalize_fuzzy_mappings(default_config.filesystem)
   normalize_fuzzy_mappings(user_config.filesystem)
+  if user_config.use_default_mappings == false then
+    default_config.filesystem.window.fuzzy_finder_mappings = {}
+  end
   -- setup the default values for all sources
   normalize_mappings(default_config)
   normalize_mappings(user_config)
