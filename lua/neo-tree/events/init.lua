@@ -23,6 +23,7 @@ local M = {
   STATE_CREATED = "state_created",
   NEO_TREE_BUFFER_ENTER = "neo_tree_buffer_enter",
   NEO_TREE_BUFFER_LEAVE = "neo_tree_buffer_leave",
+  NEO_TREE_CLIPBOARD_CHANGED = "neo_tree_clipboard_changed",
   NEO_TREE_LSP_UPDATE = "neo_tree_lsp_update",
   NEO_TREE_POPUP_BUFFER_ENTER = "neo_tree_popup_buffer_enter",
   NEO_TREE_POPUP_BUFFER_LEAVE = "neo_tree_popup_buffer_leave",
