@@ -6,6 +6,7 @@ local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 
 ---@class neotree.Clipboard.Shared.Opts
+---@field source string
 
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
 local pid = vim.uv.os_getpid()
@@ -18,17 +19,28 @@ local pid = vim.uv.os_getpid()
 local SharedClipboard = {}
 
 ---@param filename string
----@param purpose string
-local function try_create_file(filename, purpose)
-  purpose = purpose or "neo-tree internals"
+---@return boolean created
+local function file_touch(filename)
   local dir = vim.fn.fnamemodify(filename, ":h")
-  if not vim.uv.fs_stat(filename) then
-    local made_dir, err = vim.fn.mkdir(dir, "p")
-    if not made_dir then
-      log.error("Could not make directory for ", purpose, ":", err)
-      return false
-    end
+  if vim.uv.fs_stat(filename) then
+    return true
   end
+  local made_dir, err = pcall(vim.fn.mkdir, dir, "p")
+  if not made_dir then
+    return false
+  end
+  local file, file_err = io.open(dir .. "/" .. filename, "a+")
+  if not file then
+    return false
+  end
+
+  local _, write_err = file:write("")
+  if write_err then
+    return false
+  end
+
+  file:flush()
+  file:close()
   return true
 end
 
@@ -40,16 +52,13 @@ function SharedClipboard:new(opts)
   self.__index = self
 
   -- setup the clipboard file
-  local state_source = "filesystem" -- could be configurable in the future
+  local state_source = opts.source or "filesystem" -- could be configurable in the future
 
   local filename = ("%s/%s.json"):format(clipboard_states_dir, state_source)
 
-  if not vim.uv.fs_stat(filename) then
-    local made_dir, err = vim.fn.mkdir(clipboard_states_dir, "p")
-    if not made_dir then
-      log.error("Could not make shared clipboard directory:", err)
-      return nil
-    end
+  if file_touch(filename) then
+    log.error("Could not make shared clipboard directory:", err)
+    return nil
   end
 
   events.subscribe({
@@ -59,7 +68,7 @@ function SharedClipboard:new(opts)
         return
       end
       vim.schedule(function()
-        SharedClipboard._update_states(M._load())
+        SharedClipboard._update_states(self:_load())
       end)
     end,
   })
@@ -94,6 +103,7 @@ function SharedClipboard:_start()
   end
 end
 
+---@return neotree.Clipboard? valid_clipboard_or_nil
 function SharedClipboard:_load()
   local file = io.open(self.filename, "r")
   if not file then
