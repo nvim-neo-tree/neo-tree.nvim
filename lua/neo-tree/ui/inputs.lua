@@ -76,25 +76,32 @@ M.input = function(message, default_value, callback, options, completion)
   end
 end
 
+---@param message string
+---@param callback fun(confirmed: boolean)
+---@overload fun(message: string):boolean
 M.confirm = function(message, callback)
-  if nt.config.use_popups_for_input then
-    local popup_options = popups.popup_options(message, 10)
+  if callback then
+    if nt.config.use_popups_for_input then
+      local popup_options = popups.popup_options(message, 10)
 
-    ---@class NuiInput
-    local input = NuiInput(popup_options, {
-      prompt = " y/n: ",
-      on_close = function()
-        callback(false)
-      end,
-      on_submit = function(value)
-        callback(value == "y" or value == "Y")
-      end,
-    })
+      ---@class NuiInput
+      local input = NuiInput(popup_options, {
+        prompt = " y/n: ",
+        on_close = function()
+          callback(false)
+        end,
+        on_submit = function(value)
+          callback(value == "y" or value == "Y")
+        end,
+      })
 
-    input.prompt_type = "confirm"
-    M.show_input(input)
+      input.prompt_type = "confirm"
+      M.show_input(input)
+    else
+      callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
+    end
   else
-    callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
+    return vim.fn.confirm(message, "&Yes\n&No") == 1
   end
 end
 
