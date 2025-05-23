@@ -9,6 +9,9 @@ local M = {}
 local winborder_option_exists = vim.fn.exists("&winborder") > 0
 -- These borders will cause errors when trying to display border text with them
 local invalid_borders = { "", "none", "shadow" }
+---@param title string
+---@param min_width integer?
+---@param override_options table?
 M.popup_options = function(title, min_width, override_options)
   if string.len(title) ~= 0 then
     title = " " .. title .. " "
