@@ -660,6 +660,7 @@ M.delete_visual = function(state, selected_nodes, callback)
         "ATTN: Are you sure you want to delete root node " .. node_to_delete.path .. "?"
       )
       if not confirmed then
+        log.info("Cancelled visual deletion")
         return
       end
     end
