@@ -104,14 +104,19 @@ end
 ---@param event string
 ---@param args any?
 M.fire_event = function(event, args)
-  local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
-  local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
-  log.trace("Firing event: ", event, " with args: ", args)
+  local ev = event_definitions[event]
+  if not event_definitions[event] then
+    return
+  end
+  local freq = ev.debounce_frequency or 0
+  local strategy = ev.debounce_strategy or 0
   if freq > 0 then
-    utils.debounce("EVENT_FIRED: " .. event, function()
+    utils.debounce(event, function()
+      log.trace("Firing debounced event: ", event, " with args: ", args)
       fire_event_internal(event, args or {})
     end, freq, strategy)
   else
+    log.trace("Firing event: ", event, " with args: ", args)
     return fire_event_internal(event, args or {})
   end
 end

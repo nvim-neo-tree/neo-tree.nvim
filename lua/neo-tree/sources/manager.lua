@@ -514,14 +514,16 @@ M.refresh = function(source_name, callback)
     callback = nil
   end
   local current_tabid = vim.api.nvim_get_current_tabpage()
-  log.trace(source_name, "refresh")
   for i = 1, #all_states, 1 do
     local state = all_states[i]
     if state.tabid == current_tabid and state.path and renderer.window_exists(state) then
-      local success, err = pcall(M.navigate, state, state.path, nil, callback)
-      if not success then
-        log.error(err)
-      end
+      utils.debounce("refresh " .. source_name, function()
+        log.trace(source_name, "refresh")
+        local success, err = pcall(M.navigate, state, state.path, nil, callback)
+        if not success then
+          log.error(err)
+        end
+      end, 800, utils.debounce_strategy.CALL_FIRST_AND_LAST)
     else
       state.dirty = true
     end
