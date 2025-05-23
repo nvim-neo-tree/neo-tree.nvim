@@ -20,23 +20,24 @@ local SharedClipboard = {}
 
 ---@param filename string
 ---@return boolean created
+---@return string? err
 local function file_touch(filename)
   local dir = vim.fn.fnamemodify(filename, ":h")
   if vim.uv.fs_stat(filename) then
     return true
   end
-  local made_dir, err = pcall(vim.fn.mkdir, dir, "p")
-  if not made_dir then
-    return false
+  local code = vim.fn.mkdir(dir, "p")
+  if code ~= 1 then
+    return false, "couldn't make dir" .. dir
   end
   local file, file_err = io.open(dir .. "/" .. filename, "a+")
   if not file then
-    return false
+    return false, file_err
   end
 
   local _, write_err = file:write("")
   if write_err then
-    return false
+    return false, write_err
   end
 
   file:flush()
@@ -56,8 +57,8 @@ function SharedClipboard:new(opts)
 
   local filename = ("%s/%s.json"):format(clipboard_states_dir, state_source)
 
-  if file_touch(filename) then
-    log.error("Could not make shared clipboard directory:", err)
+  if not file_touch(filename) then
+    log.error("Could not make shared clipboard directory:", clipboard_states_dir)
     return nil
   end
 
@@ -68,7 +69,7 @@ function SharedClipboard:new(opts)
         return
       end
       vim.schedule(function()
-        SharedClipboard._update_states(self:_load())
+        SharedClipboard:_update_states(self:_load())
       end)
     end,
   })
@@ -98,9 +99,10 @@ function SharedClipboard:_start()
     end)
     return start_success == 0
   else
-    log.info("could not watch shared clipboard on file events, trying polling instead")
+    -- log.info("could not watch shared clipboard on file events, trying polling instead")
     -- simulate with uv.new_fs_poll
   end
+  return false
 end
 
 ---@return neotree.Clipboard? valid_clipboard_or_nil
@@ -113,9 +115,10 @@ function SharedClipboard:_load()
   local is_success, clipboard = pcall(vim.json.decode, content)
   if not is_success then
     local err = clipboard
-    log.error("Could not read from shared clipboard file @", self.filename, ":", err)
+    log.error("Read failed from shared clipboard file @", self.filename, ":", err)
     return nil
   end
+
   return clipboard
 end
 
