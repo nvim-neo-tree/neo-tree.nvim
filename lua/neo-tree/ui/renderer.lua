@@ -10,6 +10,7 @@ local keymap = require("nui.utils.keymap")
 local autocmd = require("nui.utils.autocmd")
 local log = require("neo-tree.log")
 local windows = require("neo-tree.ui.windows")
+local nt = require("neo-tree")
 
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = utils.keycode("<ESC>")
@@ -657,8 +658,14 @@ M.position = {
     end
   end,
   set = function(state, node_id)
-    if not type(node_id) == "string" and node_id > "" then
+    if type(node_id) ~= "string" or node_id == "" then
       return
+    end
+    if state.tree then
+      local node = state.tree:get_node(node_id)
+      if node and node.skip_node then
+        return
+      end
     end
     state.position.node_id = node_id
   end,
