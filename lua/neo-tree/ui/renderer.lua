@@ -660,7 +660,9 @@ M.position = {
     if not type(node_id) == "string" and node_id > "" then
       return
     end
-    if state.tree and state.tree:get_node(node_id).skip_node then
+    local manager = require("neo-tree.sources.manager")
+    local hide_root_node = require("neo-tree").config.hide_root_node
+    if hide_root_node and node_id == manager.get_cwd(state) then
       return
     end
     state.position.node_id = node_id
