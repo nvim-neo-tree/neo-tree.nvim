@@ -655,6 +655,15 @@ end
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
+    if node_to_delete.level == 0 then
+      local confirmed = inputs.confirm(
+        "ATTN: Are you sure you want to delete root node " .. node_to_delete.path .. "?"
+      )
+      if not confirmed then
+        return
+      end
+    end
+
     if node_to_delete.type == "file" or node_to_delete.type == "directory" then
       table.insert(paths_to_delete, node_to_delete.path)
     end
