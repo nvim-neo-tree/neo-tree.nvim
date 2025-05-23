@@ -76,9 +76,10 @@ M.input = function(message, default_value, callback, options, completion)
   end
 end
 
+---Blocks if callback is omitted
 ---@param message string
----@param callback fun(confirmed: boolean)
----@overload fun(message: string):boolean
+---@param callback? fun(confirmed: boolean)
+---@return boolean? confirmed_if_no_callback
 M.confirm = function(message, callback)
   if callback then
     if nt.config.use_popups_for_input then
