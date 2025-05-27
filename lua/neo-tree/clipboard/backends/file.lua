@@ -1,22 +1,22 @@
-local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
+local Clipboard = require("neo-tree.clipboard")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 
----@class neotree.Clipboard.Shared.Opts
+---@class neotree.Clipboard.Backend.File.Opts
 ---@field source string
 
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
 local pid = vim.uv.os_getpid()
 
----@class neotree.Clipboard.Shared
+---@class neotree.Clipboard.Backend.File : neotree.Clipboard.Backend
 ---@field handle uv.uv_fs_event_t
 ---@field filename string
 ---@field source string
 ---@field pid integer
-local SharedClipboard = {}
+local FileBackend = Clipboard:new()
 
 ---@param filename string
 ---@return boolean created
@@ -45,9 +45,9 @@ local function file_touch(filename)
   return true
 end
 
----@param opts neotree.Clipboard.Shared.Opts
----@return neotree.Clipboard.Shared?
-function SharedClipboard:new(opts)
+---@param opts neotree.Clipboard.Backend.File.Opts
+---@return neotree.Clipboard.Backend.File?
+function FileBackend:new(opts)
   local obj = {} -- create object if user does not provide one
   setmetatable(obj, self)
   self.__index = self
@@ -62,18 +62,6 @@ function SharedClipboard:new(opts)
     return nil
   end
 
-  events.subscribe({
-    event = events.STATE_CREATED,
-    handler = function(state)
-      if state.name ~= "filesystem" then
-        return
-      end
-      vim.schedule(function()
-        SharedClipboard:_update_states(self:_load())
-      end)
-    end,
-  })
-
   obj.filename = filename
   obj.source = state_source
   obj.pid = pid
@@ -82,10 +70,11 @@ function SharedClipboard:new(opts)
 end
 
 ---@return boolean started true if working
-function SharedClipboard:_start()
+function FileBackend:_start()
   if self.handle then
     return true
   end
+  -- monitor the file and make sure it doesn't update neo-tree
   local event_handle = uv.new_fs_event()
   if event_handle then
     self.handle = event_handle
@@ -95,67 +84,76 @@ function SharedClipboard:_start()
         event_handle:close()
         return
       end
-      self:_update_states(self:_load())
+      self:_sync_to_states(self:load())
     end)
     return start_success == 0
   else
-    -- log.info("could not watch shared clipboard on file events, trying polling instead")
-    -- simulate with uv.new_fs_poll
+    log.info("could not watch shared clipboard on file events")
   end
   return false
 end
 
----@return neotree.Clipboard? valid_clipboard_or_nil
-function SharedClipboard:_load()
-  local file = io.open(self.filename, "r")
-  if not file then
-    return nil
+function FileBackend:_sync_to_states(clipboard)
+  manager._for_each_state("filesystem", function(state)
+    state.clipboard = clipboard
+    renderer.redraw(state)
+  end)
+end
+
+---@return neotree.Clipboard.Backend.File? valid_clipboard_or_nil
+---@return string? err
+function FileBackend:load()
+  if not file_touch(self.filename) then
+    return nil, self.filename .. " could not be created"
+  end
+  local file, err = io.open(self.filename, "r")
+  if not file or err then
+    return nil, self.filename .. " could not be opened"
   end
   local content = file:read("*a")
   local is_success, clipboard = pcall(vim.json.decode, content)
   if not is_success then
-    local err = clipboard
-    log.error("Read failed from shared clipboard file @", self.filename, ":", err)
-    return nil
+    local decode_err = clipboard
+    local msg = "Read failed from shared clipboard file @" .. self.filename .. ":" .. decode_err
+    log.error(msg)
+    return nil, msg
   end
 
-  return clipboard
+  return clipboard.contents
 end
 
----@param clipboard neotree.Clipboard
-function SharedClipboard:save(clipboard)
-  local file = io.open(self.filename, "w+")
-  -- We want to erase data in the file if clipboard is nil instead writing null
-  if not clipboard or not file then
-    return
-  end
+---@class neotree.Clipboard.FileFormat
+---@field pid integer
+---@field time integer
+---@field contents neotree.Clipboard.Contents
 
-  local encode_ok, data = pcall(vim.json.encode, clipboard)
+---@param clipboard neotree.Clipboard.Contents?
+---@return boolean success
+function FileBackend:save(clipboard)
+  self.last_save = os.time()
+  local wrapped = {
+    pid = pid,
+    time = os.time(),
+    contents = clipboard,
+  }
+  local encode_ok, str = pcall(vim.json.encode, wrapped)
   if not encode_ok then
-    local err = data
-    log.error("Failed to save clipboard. JSON serialization error", err)
-    return
+    log.error("Could not write error")
   end
-
-  local _, write_err = file:write(data)
+  if not file_touch(self.filename) then
+    return false
+  end
+  local file, err = io.open(self.filename, "w")
+  if not file or err then
+    return false
+  end
+  local _, write_err = file:write(str)
   if write_err then
-    log.error("Saving shared clipboard error", write_err)
+    return false
   end
-
   file:flush()
-  local close_err = file:close()
-  if close_err then
-    log.error("Could not close shared clipboard file", write_err)
-  end
+  file:close()
+  return true
 end
 
-function SharedClipboard:_update_states(clipboard)
-  manager._for_each_state("filesystem", function(state)
-    state.clipboard = clipboard
-    vim.schedule(function()
-      renderer.redraw(state)
-    end)
-  end)
-end
-
-return SharedClipboard
+return FileBackend

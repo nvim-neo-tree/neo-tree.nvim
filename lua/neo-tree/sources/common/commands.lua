@@ -225,6 +225,7 @@ local copy_node_to_clipboard = function(state, node)
     state.clipboard[node.id] = { action = "copy", node = node }
     log.info("Copied " .. node.name .. " to clipboard")
   end
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
@@ -259,6 +260,7 @@ local cut_node_to_clipboard = function(state, node)
     state.clipboard[node.id] = { action = "cut", node = node }
     log.info("Cut " .. node.name .. " to clipboard")
   end
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
@@ -577,6 +579,7 @@ M.paste_from_clipboard = function(state, callback)
       table.insert(clipboard_list, item)
     end
     state.clipboard = nil
+    events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
     local handle_next_paste, paste_complete
 
     paste_complete = function(source, destination)

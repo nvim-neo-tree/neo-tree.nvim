@@ -101,11 +101,15 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
+---@class neotree.Config.Clipboard
+---@field backend neotree.Clipboard.BackendName
+
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]
 ---@field add_blank_line_at_top boolean
 ---@field auto_clean_after_session_restore boolean
 ---@field close_if_last_window boolean
+---@field clipboard neotree.Config.Clipboard
 ---@field default_source string
 ---@field enable_diagnostics boolean
 ---@field enable_git_status boolean
