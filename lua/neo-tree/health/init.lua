@@ -37,7 +37,7 @@ function M.check_config(config)
     config,
     function(cfg)
       ---@class neotree.Validator.Generators
-      local validator = {
+      local v = {
         array = function(validator)
           ---@generic T
           ---@param arr T[]
@@ -78,15 +78,10 @@ function M.check_config(config)
           Separator = function(sep)
             validate("left", sep.left, "string")
             validate("right", sep.right, "string")
-            validate(
-              "override",
-              sep.override,
-              validator.literal({ "right", "left", "active", "nil" }),
-              true
-            )
+            validate("override", sep.override, v.literal({ "right", "left", "active" }), true)
           end,
         },
-        Renderers = validator.array("table"),
+        Renderers = v.array("table"),
       }
 
       if not validate("config", cfg, "table") then
@@ -94,7 +89,7 @@ function M.check_config(config)
         return
       end
 
-      validate("sources", cfg.sources, validator.array("string"), false)
+      validate("sources", cfg.sources, v.array("string"), false)
       validate("add_blank_line_at_top", cfg.add_blank_line_at_top, "boolean")
       validate("auto_clean_after_session_restore", cfg.auto_clean_after_session_restore, "boolean")
       validate("close_if_last_window", cfg.close_if_last_window, "boolean")
@@ -116,20 +111,21 @@ function M.check_config(config)
       validate(
         "log_level",
         cfg.log_level,
-        validator.literal({ "trace", "debug", "info", "warn", "error", "fatal", "nil" })
+        v.literal({ "trace", "debug", "info", "warn", "error", "fatal" }),
+        true
       )
       validate("log_to_file", cfg.log_to_file, { "boolean", "string" })
       validate("open_files_in_last_window", cfg.open_files_in_last_window, "boolean")
       validate(
         "open_files_do_not_replace_types",
         cfg.open_files_do_not_replace_types,
-        validator.array("string")
+        v.array("string")
       )
       validate("open_files_using_relative_paths", cfg.open_files_using_relative_paths, "boolean")
       validate(
         "popup_border_style",
         cfg.popup_border_style,
-        validator.literal({ "NC", "rounded", "single", "solid", "double", "" })
+        v.literal({ "NC", "rounded", "single", "solid", "double", "" })
       )
       validate("resize_timer_interval", cfg.resize_timer_interval, "number")
       validate("sort_case_insensitive", cfg.sort_case_insensitive, "boolean")
@@ -140,16 +136,12 @@ function M.check_config(config)
         validate("winbar", ss.winbar, "boolean")
         validate("statusline", ss.statusline, "boolean")
         validate("show_scrolled_off_parent_node", ss.show_scrolled_off_parent_node, "boolean")
-        validate("sources", ss.sources, validator.array(schema.SourceSelector.Item))
-        validate(
-          "content_layout",
-          ss.content_layout,
-          validator.literal({ "start", "end", "center" })
-        )
+        validate("sources", ss.sources, v.array(schema.SourceSelector.Item))
+        validate("content_layout", ss.content_layout, v.literal({ "start", "end", "center" }))
         validate(
           "tabs_layout",
           ss.tabs_layout,
-          validator.literal({ "equal", "start", "end", "center", "focus" })
+          v.literal({ "equal", "start", "end", "center", "focus" })
         )
         validate("truncation_character", ss.truncation_character, "string", false)
         validate("tabs_min_width", ss.tabs_min_width, "number", true)
@@ -164,7 +156,7 @@ function M.check_config(config)
         validate("highlight_separator", ss.highlight_separator, "string")
         validate("highlight_separator_active", ss.highlight_separator_active, "string")
       end)
-      validate("event_handlers", cfg.event_handlers, validator.array("table"), true) -- TODO: More specific validation for event handlers
+      validate("event_handlers", cfg.event_handlers, v.array("table"), true) -- TODO: More specific validation for event handlers
       validate("default_component_configs", cfg.default_component_configs, function(defaults)
         validate("container", defaults.container, "table") -- TODO: More specific validation
         validate("indent", defaults.indent, "table") -- TODO: More specific validation
@@ -179,7 +171,7 @@ function M.check_config(config)
         validate("symlink_target", defaults.symlink_target, "table") -- TODO: More specific validation
       end)
       validate("renderers", cfg.renderers, schema.Renderers)
-      validate("nesting_rules", cfg.nesting_rules, validator.array("table"), true) -- TODO: More specific validation for nesting rules
+      validate("nesting_rules", cfg.nesting_rules, v.array("table"), true) -- TODO: More specific validation for nesting rules
       validate("commands", cfg.commands, "table", true) -- TODO: More specific validation for commands
       validate("window", cfg.window, function(window)
         validate("position", window.position, "string") -- TODO: More specific validation
@@ -195,53 +187,41 @@ function M.check_config(config)
           validate(
             "border",
             popup.border,
-            validator.literal({ "NC", "rounded", "single", "solid", "double", "" }),
+            v.literal({ "NC", "rounded", "single", "solid", "double", "" }),
             true
           )
         end)
-        validate("insert_as", window.insert_as, validator.literal({ "child", "sibling", "nil" }))
+        validate("insert_as", window.insert_as, v.literal({ "child", "sibling" }), true)
         validate("mapping_options", window.mapping_options, "table") -- TODO: More specific validation
-        validate("mappings", window.mappings, validator.array("table")) -- TODO: More specific validation for mapping items
+        validate("mappings", window.mappings, v.array("table")) -- TODO: More specific validation for mapping items
       end)
 
       validate("filesystem", cfg.filesystem, function(fs)
         validate(
           "async_directory_scan",
           fs.async_directory_scan,
-          validator.literal({ "auto", "always", "never" })
+          v.literal({ "auto", "always", "never" })
         )
-        validate("scan_mode", fs.scan_mode, validator.literal({ "shallow", "deep" }))
+        validate("scan_mode", fs.scan_mode, v.literal({ "shallow", "deep" }))
         validate("bind_to_cwd", fs.bind_to_cwd, "boolean")
         validate("cwd_target", fs.cwd_target, function(cwd_target)
-          validate("sidebar", cwd_target.sidebar, validator.literal({ "tab", "window", "global" }))
-          validate("current", cwd_target.current, validator.literal({ "tab", "window", "global" }))
+          validate("sidebar", cwd_target.sidebar, v.literal({ "tab", "window", "global" }))
+          validate("current", cwd_target.current, v.literal({ "tab", "window", "global" }))
         end)
         validate("check_gitignore_in_search", fs.check_gitignore_in_search, "boolean")
-        validate("filtered_items", fs.filtered_items, function(filtered_items)
-          validate("visible", filtered_items.visible, "boolean")
-          validate(
-            "force_visible_in_empty_folder",
-            filtered_items.force_visible_in_empty_folder,
-            "boolean"
-          )
-          validate("show_hidden_count", filtered_items.show_hidden_count, "boolean")
-          validate("hide_dotfiles", filtered_items.hide_dotfiles, "boolean")
-          validate("hide_gitignored", filtered_items.hide_gitignored, "boolean")
-          validate("hide_hidden", filtered_items.hide_hidden, "boolean")
-          validate("hide_by_name", filtered_items.hide_by_name, validator.array("string"))
-          validate("hide_by_pattern", filtered_items.hide_by_pattern, validator.array("string"))
-          validate("always_show", filtered_items.always_show, validator.array("string"))
-          validate(
-            "always_show_by_pattern",
-            filtered_items.always_show_by_pattern,
-            validator.array("string")
-          )
-          validate("never_show", filtered_items.never_show, validator.array("string"))
-          validate(
-            "never_show_by_pattern",
-            filtered_items.never_show_by_pattern,
-            validator.array("string")
-          )
+        validate("filtered_items", fs.filtered_items, function(f)
+          validate("visible", f.visible, "boolean")
+          validate("force_visible_in_empty_folder", f.force_visible_in_empty_folder, "boolean")
+          validate("show_hidden_count", f.show_hidden_count, "boolean")
+          validate("hide_dotfiles", f.hide_dotfiles, "boolean")
+          validate("hide_gitignored", f.hide_gitignored, "boolean")
+          validate("hide_hidden", f.hide_hidden, "boolean")
+          validate("hide_by_name", f.hide_by_name, v.array("string"))
+          validate("hide_by_pattern", f.hide_by_pattern, v.array("string"))
+          validate("always_show", f.always_show, v.array("string"))
+          validate("always_show_by_pattern", f.always_show_by_pattern, v.array("string"))
+          validate("never_show", f.never_show, v.array("string"))
+          validate("never_show_by_pattern", f.never_show_by_pattern, v.array("string"))
         end)
         validate("find_by_full_path_words", fs.find_by_full_path_words, "boolean")
         validate("find_command", fs.find_command, "string", true)
@@ -252,7 +232,7 @@ function M.check_config(config)
         validate(
           "hijack_netrw_behavior",
           fs.hijack_netrw_behavior,
-          validator.literal({ "open_default", "open_current", "disabled" }),
+          v.literal({ "open_default", "open_current", "disabled" }),
           true
         )
         validate("use_libuv_file_watcher", fs.use_libuv_file_watcher, "boolean")
@@ -279,13 +259,13 @@ function M.check_config(config)
         validate("renderers", git_status.renderers, schema.Renderers)
         validate("window", git_status.window, schema.Window)
       end)
-      validate("document_symbols", cfg.document_symbols, function(document_symbols)
-        validate("follow_cursor", document_symbols.follow_cursor, "boolean")
-        validate("client_filters", document_symbols.client_filters, { "string", "table" }) -- TODO: More specific validation
-        validate("custom_kinds", document_symbols.custom_kinds, "table") -- TODO: More specific validation
-        validate("kinds", document_symbols.kinds, "table")
-        validate("renderers", document_symbols.renderers, schema.Renderers)
-        validate("window", document_symbols.window, schema.Window)
+      validate("document_symbols", cfg.document_symbols, function(ds)
+        validate("follow_cursor", ds.follow_cursor, "boolean")
+        validate("client_filters", ds.client_filters, { "string", "table" }) -- TODO: More specific validation
+        validate("custom_kinds", ds.custom_kinds, "table") -- TODO: More specific validation
+        validate("kinds", ds.kinds, "table")
+        validate("renderers", ds.renderers, schema.Renderers)
+        validate("window", ds.window, schema.Window)
       end)
     end,
     false,
