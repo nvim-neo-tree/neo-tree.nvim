@@ -1,4 +1,4 @@
-local Clipboard = require("neo-tree.clipboard")
+local BaseBackend = require("neo-tree.clipboard.sync.base")
 local manager = require("neo-tree.sources.manager")
 local events = require("neo-tree.events")
 local renderer = require("neo-tree.ui.renderer")
@@ -16,7 +16,7 @@ local pid = vim.uv.os_getpid()
 ---@field filename string
 ---@field source string
 ---@field pid integer
-local FileBackend = Clipboard:new()
+local FileBackend = BaseBackend:new()
 
 ---@param filename string
 ---@return boolean created

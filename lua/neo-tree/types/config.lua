@@ -105,8 +105,8 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
----@class neotree.Config.Clipboard
----@field backend neotree.Clipboard.BackendName
+---@class (exact) neotree.Config.Clipboard
+---@field sync neotree.Config.Clipboard.Sync?
 
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]

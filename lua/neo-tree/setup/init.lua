@@ -704,7 +704,7 @@ M.merge_config = function(user_config)
     hijack_cursor.setup()
   end
 
-  require("neo-tree.clipboard.sync").setup(M.config.clipboard.backend)
+  require("neo-tree.clipboard").setup(M.config.clipboard)
 
   return M.config
 end
