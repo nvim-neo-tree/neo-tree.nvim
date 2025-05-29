@@ -20,6 +20,7 @@ end
 
 ---@type (fun(err:string))[]
 local errfuncs = {}
+local namestack = {}
 ---A comprehensive version of vim.validate that makes it easy to validate nested tables of various types
 ---@generic T
 ---@param name string
@@ -27,10 +28,11 @@ local errfuncs = {}
 ---@param validator neotree.Validator<T>
 ---@param optional? boolean Whether value can be nil
 ---@param message? string message when validation fails
----@param on_invalid? fun(err: string, value: T) What to do when a (nested) validation fails
+---@param on_invalid? fun(err: string, value: T):boolean? What to do when a (nested) validation fails, return true to throw error
 ---@return boolean valid
 function typecheck.validate(name, value, validator, optional, message, on_invalid)
   local matched, errmsg, errinfo
+  namestack[#namestack + 1] = name
   if type(validator) == "string" then
     matched = typecheck.match(value, validator)
   elseif type(validator) == "table" then
@@ -40,20 +42,20 @@ function typecheck.validate(name, value, validator, optional, message, on_invali
         break
       end
     end
-  elseif vim.is_callable(validator) and value ~= nil then
+  elseif type(validator) == "function" and value ~= nil then
     local ok = false
     if on_invalid then
       errfuncs[#errfuncs + 1] = on_invalid
     end
     ok, matched, errinfo = pcall(validator, value)
+    if on_invalid then
+      errfuncs[#errfuncs] = nil
+    end
     if not ok then
       errinfo = matched
       matched = false
     elseif matched == nil then
       matched = true
-    end
-    if on_invalid then
-      errfuncs[#errfuncs] = nil
     end
   end
   matched = matched or (optional and value == nil) or false
@@ -74,18 +76,21 @@ function typecheck.validate(name, value, validator, optional, message, on_invali
     end
 
     errmsg = ("%s: %s, got %s"):format(
-      name,
+      table.concat(namestack, "."),
       message or ("expected " .. expected),
       message and value or type(value)
     )
     if errinfo then
       errmsg = errmsg .. ", Info: " .. errinfo
     end
-    local errfunc = errfuncs[#errfuncs] or function(err)
-      error(err, 2)
+    local errfunc = errfuncs[#errfuncs]
+    local should_error = not errfunc or errfunc(errmsg)
+    if should_error then
+      namestack[#namestack] = nil
+      error(errmsg, 2)
     end
-    errfunc(errmsg)
   end
+  namestack[#namestack] = nil
   return matched
 end
 
