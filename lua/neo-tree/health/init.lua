@@ -27,6 +27,7 @@ end
 
 local validate = typecheck.validate
 
+---@module "neo-tree.types.config"
 ---@param config neotree.Config.Base
 function M.check_config(config)
   ---@type [string, string?][]
@@ -62,12 +63,10 @@ function M.check_config(config)
           end,
         },
 
-        Source = {
-          ---@param window neotree.Config.Source.Window
-          Window = function(window)
-            validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
-          end,
-        },
+        ---@param window neotree.Config.Window
+        Window = function(window)
+          validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
+        end,
         SourceSelector = {
           ---@param item neotree.Config.SourceSelector.Item
           Item = function(item)
@@ -274,11 +273,11 @@ function M.check_config(config)
         validate("show_unloaded", buffers.show_unloaded, "boolean")
         validate("terminals_first", buffers.terminals_first, "boolean")
         validate("renderers", buffers.renderers, schema.Renderers)
-        validate("window", buffers.window, schema.Source.Window)
+        validate("window", buffers.window, schema.Window)
       end)
       validate("git_status", cfg.git_status, function(git_status)
         validate("renderers", git_status.renderers, schema.Renderers)
-        validate("window", git_status.window, schema.Source.Window)
+        validate("window", git_status.window, schema.Window)
       end)
       validate("document_symbols", cfg.document_symbols, function(document_symbols)
         validate("follow_cursor", document_symbols.follow_cursor, "boolean")
@@ -286,7 +285,7 @@ function M.check_config(config)
         validate("custom_kinds", document_symbols.custom_kinds, "table") -- TODO: More specific validation
         validate("kinds", document_symbols.kinds, "table")
         validate("renderers", document_symbols.renderers, schema.Renderers)
-        validate("window", document_symbols.window, schema.Source.Window)
+        validate("window", document_symbols.window, schema.Window)
       end)
     end,
     false,
