@@ -32,7 +32,9 @@ local validate = typecheck.validate
 function M.check_config(config)
   ---@type [string, string?][]
   local errors = {}
-  validate(
+  local start = vim.uv.hrtime()
+  local verbose = vim.o.verbose > 0
+  local matched, missed = validate(
     "config",
     config,
     function(cfg)
@@ -272,8 +274,11 @@ function M.check_config(config)
     nil,
     function(err)
       errors[#errors + 1] = { err }
-    end
+    end,
+    true
   )
+  local _end = vim.uv.hrtime()
+  vim.print((_end - start) / 10e6 .. "ms")
 
   if #errors == 0 then
     health.ok("Configuration conforms to the neotree.Config.Base schema")
@@ -282,7 +287,14 @@ function M.check_config(config)
       health.error(unpack(err))
     end
   end
-  health.info("(Config schema checking is not comprehensive yet)")
+  if verbose then
+    health.info("[verbose] Config schema checking is not comprehensive yet, misses listed below:")
+    if missed then
+      for _, miss in ipairs(missed) do
+        health.info(miss)
+      end
+    end
+  end
 end
 
 function M.check()

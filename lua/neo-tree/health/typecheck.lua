@@ -1,10 +1,10 @@
-local typecheck = {}
+local M = {}
 
 ---Type but also supports "callable" like neovim does.
 ---@see _G.type
 ---@param obj any
 ---@param expected neotree.LuaType
-function typecheck.match(obj, expected)
+function M.match(obj, expected)
   if type(obj) == expected then
     return true
   end
@@ -19,8 +19,113 @@ end
 ---@alias neotree.Validator<T> elem_or_list<neotree.LuaType>|neotree.ValidatorFunction<T>
 
 ---@type (fun(err:string))[]
-local errfuncs = {}
-local namestack = {}
+M.errfuncs = {}
+---@type string[]
+M.namestack = {}
+
+---@param path string
+---@param tbl table
+---@param accesses string[]
+---@param missed_paths table<string, true?>
+local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
+  local mock_table = {}
+  local mt = {
+    __original_table = tbl,
+    accesses = accesses,
+  }
+
+  ---@return string[]
+  mt.get_missed_paths = function()
+    ---@type string[]
+    local missed_list = {}
+    if track_missed then
+      -- Iterate through the remaining paths in the shared set.
+      for p, _ in pairs(missed_paths) do
+        table.insert(missed_list, p)
+      end
+      table.sort(missed_list) -- Sort for consistent output
+    end
+    return missed_list
+  end
+
+  -- The __index metamethod is called when a key is accessed on the mock_table.
+  mt.__index = function(_, key)
+    local path_segment
+    if type(key) == "number" then
+      path_segment = string.format("[%d]", key)
+    else
+      path_segment = tostring(key)
+    end
+
+    local full_path
+    if path == "" then
+      full_path = path_segment
+    else
+      if type(key) == "number" then
+        full_path = path .. path_segment
+      else
+        full_path = path .. "." .. path_segment
+      end
+    end
+
+    -- Record the access in the shared 'accesses' list.
+    table.insert(mt.accesses, full_path)
+
+    -- If tracking unaccessed, remove this path from the potential paths set.
+    -- This marks it as 'accessed'.
+    if track_missed then
+      missed_paths[full_path] = nil
+    end
+
+    local value = mt.__original_table[key]
+
+    if type(value) == "table" then
+      return mock_recursive(full_path, value, mt.accesses, missed_paths, track_missed)
+    end
+    return value
+  end
+
+  -- Set the metatable for the newly created mock_table.
+  setmetatable(mock_table, mt)
+  return mock_table
+end
+
+--- Wraps a given table in a special mock table that tracks all accesses
+--- (reads) to its fields and sub-fields. Optionally tracks unaccessed fields.
+---
+---@param name string The base name for the table, this forms the root of the access paths.
+---@param tbl table The table to be mocked.
+---@param track_missed boolean? Track which fields were NOT accessed.
+---@return table mocked The mock table. Its metatable will contain:
+---  - `accesses`: A list of all recorded accessed paths.
+---  - `get_missed_paths()`: A function that returns a list of unaccessed paths (if track_unaccessed is true).
+function M.mock(name, tbl, track_missed)
+  local accesses = {}
+  local path_set = {}
+  track_missed = track_missed or false
+
+  if track_missed then
+    -- Generate another mock table and fully traverse that one first
+    local root_mock = M.mock(name, tbl, false)
+    ---@param current_table table
+    local function deep_traverse_mock(current_table)
+      for k, v in pairs(getmetatable(current_table).__original_table) do
+        if type(v) == "table" then
+          deep_traverse_mock(current_table[k])
+        end
+      end
+    end
+    deep_traverse_mock(root_mock)
+    accesses = getmetatable(root_mock).accesses
+    for _, path in ipairs(accesses) do
+      path_set[path] = true
+    end
+  end
+
+  -- Start the recursive mocking process, passing all necessary shared tracking data.
+  return mock_recursive(name, tbl, accesses, path_set, track_missed)
+end
+
 ---A comprehensive version of vim.validate that makes it easy to validate nested tables of various types
 ---@generic T
 ---@param name string
@@ -29,15 +134,17 @@ local namestack = {}
 ---@param optional? boolean Whether value can be nil
 ---@param message? string message when validation fails
 ---@param on_invalid? fun(err: string, value: T):boolean? What to do when a (nested) validation fails, return true to throw error
+---@param track_missed? boolean Whether to return a second table that contains every non-checked field
 ---@return boolean valid
-function typecheck.validate(name, value, validator, optional, message, on_invalid)
+---@return string[]? missed
+function M.validate(name, value, validator, optional, message, on_invalid, track_missed)
   local matched, errmsg, errinfo
-  namestack[#namestack + 1] = name
+  M.namestack[#M.namestack + 1] = name
   if type(validator) == "string" then
-    matched = typecheck.match(value, validator)
+    matched = M.match(value, validator)
   elseif type(validator) == "table" then
     for _, v in ipairs(validator) do
-      matched = typecheck.match(value, v)
+      matched = M.match(value, v)
       if matched then
         break
       end
@@ -45,11 +152,14 @@ function typecheck.validate(name, value, validator, optional, message, on_invali
   elseif type(validator) == "function" and value ~= nil then
     local ok = false
     if on_invalid then
-      errfuncs[#errfuncs + 1] = on_invalid
+      M.errfuncs[#M.errfuncs + 1] = on_invalid
+    end
+    if track_missed and type(value) == "table" then
+      value = M.mock(name, value, true)
     end
     ok, matched, errinfo = pcall(validator, value)
     if on_invalid then
-      errfuncs[#errfuncs] = nil
+      M.errfuncs[#M.errfuncs] = nil
     end
     if not ok then
       errinfo = matched
@@ -66,32 +176,37 @@ function typecheck.validate(name, value, validator, optional, message, on_invali
     if vim.is_callable(validator) then
       expected = "?"
     else
+      ---@cast validator -function
       local expected_types = type(validator) == "string" and { validator } or validator
       ---@cast expected_types -string
       if optional then
         expected_types[#expected_types + 1] = "nil"
       end
-      ---@cast expected_types -function
       expected = table.concat(expected_types, "|")
     end
 
     errmsg = ("%s: %s, got %s"):format(
-      table.concat(namestack, "."),
+      table.concat(M.namestack, "."),
       message or ("expected " .. expected),
       message and value or type(value)
     )
     if errinfo then
       errmsg = errmsg .. ", Info: " .. errinfo
     end
-    local errfunc = errfuncs[#errfuncs]
+    local errfunc = M.errfuncs[#M.errfuncs]
     local should_error = not errfunc or errfunc(errmsg)
     if should_error then
-      namestack[#namestack] = nil
+      M.namestack[#M.namestack] = nil
       error(errmsg, 2)
     end
   end
-  namestack[#namestack] = nil
+  M.namestack[#M.namestack] = nil
+
+  if track_missed then
+    local missed = getmetatable(value).get_missed_paths()
+    return matched, missed
+  end
   return matched
 end
 
-return typecheck
+return M
