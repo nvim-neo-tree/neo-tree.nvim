@@ -288,7 +288,9 @@ function M.check_config(config)
     end
   end
   if verbose then
-    health.info("[verbose] Config schema checking is not comprehensive yet, misses listed below:")
+    health.info(
+      "[verbose] Config schema checking is not comprehensive yet, unchecked keys listed below:"
+    )
     if missed then
       for _, miss in ipairs(missed) do
         health.info(miss)
