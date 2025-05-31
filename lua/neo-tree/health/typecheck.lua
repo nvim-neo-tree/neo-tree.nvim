@@ -23,28 +23,32 @@ M.errfuncs = {}
 ---@type string[]
 M.namestack = {}
 
+---@generic T : table
 ---@param path string
----@param tbl table
+---@param tbl T
 ---@param accesses string[]
 ---@param missed_paths table<string, true?>
+---@return T mocked_tbl
 local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
   local mock_table = {}
+
+  ---@class neotree.Health.Mock.Metatable<T> : metatable
+  ---@field accesses string[]
   local mt = {
     __original_table = tbl,
     accesses = accesses,
   }
 
-  ---@return string[]
+  ---@return string[] missed_paths
   mt.get_missed_paths = function()
     ---@type string[]
     local missed_list = {}
     if track_missed then
-      -- Iterate through the remaining paths in the shared set.
       for p, _ in pairs(missed_paths) do
         table.insert(missed_list, p)
       end
-      table.sort(missed_list) -- Sort for consistent output
     end
+    table.sort(missed_list)
     return missed_list
   end
 
@@ -52,7 +56,7 @@ local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
   mt.__index = function(_, key)
     local path_segment
     if type(key) == "number" then
-      path_segment = string.format("[%d]", key)
+      path_segment = ("[%02d]"):format(key)
     else
       path_segment = tostring(key)
     end
@@ -60,19 +64,14 @@ local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
     local full_path
     if path == "" then
       full_path = path_segment
+    elseif type(key) == "number" then
+      full_path = path .. path_segment
     else
-      if type(key) == "number" then
-        full_path = path .. path_segment
-      else
-        full_path = path .. "." .. path_segment
-      end
+      full_path = path .. "." .. path_segment
     end
 
-    -- Record the access in the shared 'accesses' list.
-    table.insert(mt.accesses, full_path)
-
-    -- If tracking unaccessed, remove this path from the potential paths set.
-    -- This marks it as 'accessed'.
+    -- Track accesses and missed accesses
+    mt.accesses[#mt.accesses + 1] = full_path
     if track_missed then
       missed_paths[full_path] = nil
     end
@@ -93,12 +92,11 @@ end
 --- Wraps a given table in a special mock table that tracks all accesses
 --- (reads) to its fields and sub-fields. Optionally tracks unaccessed fields.
 ---
+---@generic T : table
 ---@param name string The base name for the table, this forms the root of the access paths.
----@param tbl table The table to be mocked.
+---@param tbl T The table to be mocked.
 ---@param track_missed boolean? Track which fields were NOT accessed.
----@return table mocked The mock table. Its metatable will contain:
----  - `accesses`: A list of all recorded accessed paths.
----  - `get_missed_paths()`: A function that returns a list of unaccessed paths (if track_unaccessed is true).
+---@return T mocked
 function M.mock(name, tbl, track_missed)
   local accesses = {}
   local path_set = {}
@@ -107,11 +105,16 @@ function M.mock(name, tbl, track_missed)
   if track_missed then
     -- Generate another mock table and fully traverse that one first
     local root_mock = M.mock(name, tbl, false)
+
     ---@param current_table table
     local function deep_traverse_mock(current_table)
-      for k, v in pairs(getmetatable(current_table).__original_table) do
+      ---@type neotree.Health.Mock.Metatable
+      local mt = getmetatable(current_table)
+      for k, v in pairs(mt.__original_table) do
         if type(v) == "table" then
           deep_traverse_mock(current_table[k])
+        else
+          mt.__index(nil, k)
         end
       end
     end
