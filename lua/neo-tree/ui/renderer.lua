@@ -1283,7 +1283,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
 
   local config = require("neo-tree").config
   if config.hide_root_node then
-    if sourceItems and not parentId then
+    if not parentId then
       sourceItems[1].skip_node = true
       if not (sourceItems[1].children and #sourceItems[1].children > 0) then
         sourceItems[1].is_empty_with_hidden_root = true
