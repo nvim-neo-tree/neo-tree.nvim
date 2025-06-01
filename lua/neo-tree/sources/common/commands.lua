@@ -645,24 +645,34 @@ end
 M.delete = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
-  if node.type == "file" or node.type == "directory" then
-    fs_actions.delete_node(node.path, callback)
-  else
+  if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `delete` command can only be used on files and directories")
+    return
   end
+  if node:get_depth() == 1 then
+    log.error(
+      "Will not delete root node "
+        .. node.path
+        .. ", please back out of the current directory if you want to delete the root node."
+    )
+    return
+  end
+  fs_actions.delete_node(node.path, callback)
 end
 
+---@param selected_nodes NuiTree.Node[]
+---@param callback function
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
-    if node_to_delete.level == 0 then
-      local confirmed = inputs.confirm(
-        "ATTN: Are you sure you want to delete root node " .. node_to_delete.path .. "?"
+    if node_to_delete:get_depth() == 1 then
+      -- There is pretty much no case where someone would want to delete the root of the tree.
+      log.error(
+        "Will not delete top-level node "
+          .. node_to_delete.path
+          .. ", please back out of the current directory if you want to delete the root node."
       )
-      if not confirmed then
-        log.info("Cancelled visual deletion")
-        return
-      end
+      return
     end
 
     if node_to_delete.type == "file" or node_to_delete.type == "directory" then
