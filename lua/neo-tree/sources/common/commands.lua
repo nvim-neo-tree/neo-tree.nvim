@@ -678,7 +678,17 @@ M.delete = function(state, callback)
   local node = assert(state.tree:get_node())
   if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `delete` command can only be used on files and directories")
+    return
   end
+  if node:get_depth() == 1 then
+    log.error(
+      "Will not delete root node "
+        .. node.path
+        .. ", please back out of the current directory if you want to delete the root node."
+    )
+    return
+  end
+  fs_actions.delete_node(node.path, callback)
 end
 
 ---@param state neotree.State
@@ -687,6 +697,15 @@ end
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
+    if node_to_delete:get_depth() == 1 then
+      log.error(
+        "Will not delete root node "
+          .. node_to_delete.path
+          .. ", please back out of the current directory if you want to delete the root node."
+      )
+      return
+    end
+
     if node_to_delete.type == "file" or node_to_delete.type == "directory" then
       table.insert(paths_to_delete, node_to_delete.path)
     end

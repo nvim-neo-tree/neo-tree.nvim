@@ -1259,13 +1259,16 @@ local function group_empty_dirs(node)
 end
 
 ---Shows the given items as a tree.
---@param sourceItems table The list of items to transform.
---@param state table The current state of the plugin.
---@param parentId string Optional. The id of the parent node to display these nodes
---at; defaults to nil.
+---@param sourceItems table? The list of items to transform.
+---@param state table The current state of the plugin.
+---@param parentId string? The id of the parent node to display these nodes at
+---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)
   --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabid)
   --utils.debounce(id, function()
+  if not sourceItems then
+    return
+  end
   events.fire_event(events.BEFORE_RENDER, state)
   state.longest_width_exact = 0
   local parent
