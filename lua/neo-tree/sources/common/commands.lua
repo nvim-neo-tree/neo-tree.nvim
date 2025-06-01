@@ -666,9 +666,8 @@ M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
     if node_to_delete:get_depth() == 1 then
-      -- There is pretty much no case where someone would want to delete the root of the tree.
       log.error(
-        "Will not delete top-level node "
+        "Will not delete root node "
           .. node_to_delete.path
           .. ", please back out of the current directory if you want to delete the root node."
       )

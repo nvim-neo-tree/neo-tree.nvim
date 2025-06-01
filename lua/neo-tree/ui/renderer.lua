@@ -1283,7 +1283,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
 
   local config = require("neo-tree").config
   if config.hide_root_node then
-    if not parentId then
+    if sourceItems and not parentId then
       sourceItems[1].skip_node = true
       if not (sourceItems[1].children and #sourceItems[1].children > 0) then
         sourceItems[1].is_empty_with_hidden_root = true
@@ -1341,9 +1341,11 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     end
   end
 
-  if sourceItems then
+  ---@type table?
+  local maybeSourceItems = sourceItems
+  if maybeSourceItems then
     -- normal path
-    local nodes = create_nodes(sourceItems, state, level)
+    local nodes = create_nodes(maybeSourceItems, state, level)
     draw(nodes, state, parentId)
   else
     -- this was a force grouping of a lazy loaded folder
