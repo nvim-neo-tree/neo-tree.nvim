@@ -12,12 +12,12 @@ local async = require("plenary.async")
 local node_expander = require("neo-tree.sources.common.node_expander")
 
 ---Gets the node parent folder
----@param state table to look for nodes
+---@param state neotree.State
 ---@return table? node
 local function get_folder_node(state)
   local tree = state.tree
   local node = tree:get_node()
-  local last_id = node:get_id()
+  local last_id = assert(node):get_id()
 
   while node do
     local insert_as_local = state.config.insert_as
@@ -50,7 +50,7 @@ end
 
 ---The using_root_directory is used to decide what part of the filename to show
 -- the user when asking for a new filename to e.g. create, copy to or move to.
----@param state table The state of the source
+---@param state table
 ---@return string The root path from which the relative source path should be taken
 local function get_using_root_directory(state)
   -- default to showing only the basename of the path
@@ -89,7 +89,7 @@ M._add_common_commands = function(to_source_command_module, pattern)
 end
 
 ---Add a new file or dir at the current node
----@param state table The state of the source
+---@param state table
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add = function(state, callback)
   local node = get_folder_node(state)
@@ -102,7 +102,7 @@ M.add = function(state, callback)
 end
 
 ---Add a new file or dir at the current node
----@param state table The state of the source
+---@param state neotree.State
 ---@param callback function The callback to call when the command is done. Called with the parent node as the argument.
 M.add_directory = function(state, callback)
   local node = get_folder_node(state)
@@ -115,7 +115,7 @@ M.add_directory = function(state, callback)
 end
 
 ---Expand all nodes
----@param state table The state of the source
+---@param state neotree.State
 ---@param node table? A single node to expand (defaults to all root nodes)
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_nodes = function(state, node, prefetcher)
@@ -136,13 +136,14 @@ M.expand_all_nodes = function(state, node, prefetcher)
 end
 
 ---Expand all subnodes
----@param state table The state of the source
+---@param state neotree.State
 ---@param node table? A single node to expand (defaults to node under the cursor)
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_subnodes = function(state, node, prefetcher)
   M.expand_all_nodes(state, node or state.tree:get_node(), prefetcher)
 end
 
+---@param callback function
 M.close_node = function(state, callback)
   local tree = state.tree
   local node = tree:get_node()
@@ -168,10 +169,11 @@ M.close_node = function(state, callback)
   end
 end
 
+---@param state neotree.State
 M.close_all_subnodes = function(state)
   local tree = state.tree
-  local node = tree:get_node()
-  local parent_node = tree:get_node(node:get_parent_id())
+  local node = assert(tree:get_node())
+  local parent_node = assert(tree:get_node(node:get_parent_id()))
   local target_node
 
   if node:has_children() and node:is_expanded() then
@@ -188,16 +190,19 @@ M.close_all_subnodes = function(state)
   end
 end
 
+---@param state neotree.State
 M.close_all_nodes = function(state)
   state.explicitly_opened_nodes = {}
   renderer.collapse_all_nodes(state.tree)
   renderer.redraw(state)
 end
 
+---@param state neotree.State
 M.close_window = function(state)
   renderer.close(state)
 end
 
+---@param state neotree.State
 M.toggle_auto_expand_width = function(state)
   if state.window.position == "float" then
     return
@@ -216,6 +221,7 @@ M.toggle_auto_expand_width = function(state)
   renderer.redraw(state)
 end
 
+---@param state neotree.State
 local copy_node_to_clipboard = function(state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
@@ -228,8 +234,9 @@ local copy_node_to_clipboard = function(state, node)
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
+---@param state neotree.State
 M.copy_to_clipboard = function(state, callback)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -239,6 +246,7 @@ M.copy_to_clipboard = function(state, callback)
   end
 end
 
+---@param state neotree.State
 M.copy_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
@@ -250,6 +258,8 @@ M.copy_to_clipboard_visual = function(state, selected_nodes, callback)
   end
 end
 
+---@param state neotree.State
+---@param node NuiTree.Node
 local cut_node_to_clipboard = function(state, node)
   state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
@@ -262,14 +272,16 @@ local cut_node_to_clipboard = function(state, node)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
+---@param state neotree.State
 M.cut_to_clipboard = function(state, callback)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   cut_node_to_clipboard(state, node)
   if callback then
     callback()
   end
 end
 
+---@param state neotree.State
 M.cut_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
@@ -285,8 +297,9 @@ end
 -- Git commands
 --------------------------------------------------------------------------------
 
+---@param state neotree.State
 M.git_add_file = function(state)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -296,12 +309,14 @@ M.git_add_file = function(state)
   events.fire_event(events.GIT_EVENT)
 end
 
+---@param state neotree.State
 M.git_add_all = function(state)
   local cmd = { "git", "add", "-A" }
   vim.fn.system(cmd)
   events.fire_event(events.GIT_EVENT)
 end
 
+---@param state neotree.State
 M.git_commit = function(state, and_push)
   local width = vim.fn.winwidth(0) - 2
   local row = vim.api.nvim_win_get_height(0) - 3
@@ -336,10 +351,12 @@ M.git_commit = function(state, and_push)
   end, popup_options)
 end
 
+---@param state neotree.State
 M.git_commit_and_push = function(state)
   M.git_commit(state, true)
 end
 
+---@param state neotree.State
 M.git_push = function(state)
   inputs.confirm("Are you sure you want to push your changes?", function(yes)
     if yes then
@@ -350,8 +367,9 @@ M.git_push = function(state)
   end)
 end
 
+---@param state neotree.State
 M.git_unstage_file = function(state)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -361,8 +379,9 @@ M.git_unstage_file = function(state)
   events.fire_event(events.GIT_EVENT)
 end
 
+---@param state neotree.State
 M.git_revert_file = function(state)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -386,6 +405,7 @@ local get_sources = function()
   return config.source_selector.sources or config.sources
 end
 
+---@param state neotree.State
 M.next_source = function(state)
   local sources = get_sources()
   local next_source = sources[1]
@@ -406,6 +426,7 @@ M.next_source = function(state)
   })
 end
 
+---@param state neotree.State
 M.prev_source = function(state)
   local sources = get_sources()
   local next_source = sources[#sources]
@@ -426,6 +447,7 @@ M.prev_source = function(state)
   })
 end
 
+---@param state neotree.State
 local function set_sort(state, label)
   local sort = state.sort or { label = "Name", direction = -1 }
   if sort.label == label then
@@ -437,6 +459,7 @@ local function set_sort(state, label)
   state.sort = sort
 end
 
+---@param state neotree.State
 M.order_by_created = function(state)
   set_sort(state, "Created")
   state.sort_field_provider = function(node)
@@ -446,6 +469,7 @@ M.order_by_created = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_modified = function(state)
   set_sort(state, "Last Modified")
   state.sort_field_provider = function(node)
@@ -455,6 +479,7 @@ M.order_by_modified = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_name = function(state)
   set_sort(state, "Name")
   local config = require("neo-tree").config
@@ -470,6 +495,7 @@ M.order_by_name = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_size = function(state)
   set_sort(state, "Size")
   state.sort_field_provider = function(node)
@@ -479,6 +505,7 @@ M.order_by_size = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_type = function(state)
   set_sort(state, "Type")
   state.sort_field_provider = function(node)
@@ -487,6 +514,7 @@ M.order_by_type = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_git_status = function(state)
   set_sort(state, "Git Status")
 
@@ -507,6 +535,7 @@ M.order_by_git_status = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.order_by_diagnostics = function(state)
   set_sort(state, "Diagnostics")
 
@@ -526,13 +555,15 @@ M.order_by_diagnostics = function(state)
   require("neo-tree.sources.manager").refresh(state.name)
 end
 
+---@param state neotree.State
 M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
 local default_filetime_format = "%Y-%m-%d %I:%M %p"
+---@param state neotree.State
 M.show_file_details = function(state)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -566,8 +597,8 @@ M.show_file_details = function(state)
 end
 
 ---Pastes all items from the clipboard to the current directory.
----@param state table The state of the source
----@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+---@param state neotree.State
+---@param callback fun(node: NuiTree.Node?, destination: string) The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
   if state.clipboard then
     local folder = get_folder_node(state):get_id()
@@ -619,10 +650,10 @@ M.paste_from_clipboard = function(state, callback)
 end
 
 ---Copies a node to a new location, using typed input.
----@param state table The state of the source
----@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+---@param state neotree.State
+---@param callback fun(parent_node: NuiTree.Node)
 M.copy = function(state, callback)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -631,10 +662,10 @@ M.copy = function(state, callback)
 end
 
 ---Moves a node to a new location, using typed input.
----@param state table The state of the source
----@param callback function The callback to call when the command is done. Called with the parent node as the argument.
+---@param state neotree.State
+---@param callback fun(parent_node: NuiTree.Node)
 M.move = function(state, callback)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node.type == "message" then
     return
   end
@@ -642,16 +673,17 @@ M.move = function(state, callback)
   fs_actions.move_node(node.path, nil, callback, using_root_directory)
 end
 
+---@param state neotree.State
 M.delete = function(state, callback)
-  local tree = state.tree
-  local node = tree:get_node()
-  if node.type == "file" or node.type == "directory" then
-    fs_actions.delete_node(node.path, callback)
-  else
+  local node = assert(state.tree:get_node())
+  if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `delete` command can only be used on files and directories")
   end
 end
 
+---@param state neotree.State
+---@param selected_nodes NuiTree.Node[]
+---@param callback function
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do
@@ -662,6 +694,7 @@ M.delete_visual = function(state, selected_nodes, callback)
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
+---@param state neotree.State
 M.preview = function(state)
   Preview.show(state)
 end
@@ -671,6 +704,7 @@ M.revert_preview = function()
 end
 --
 -- Multi-purpose function to back out of whatever we are in
+---@param state neotree.State
 M.cancel = function(state)
   if Preview.is_active() then
     Preview.hide()
@@ -681,14 +715,17 @@ M.cancel = function(state)
   end
 end
 
+---@param state neotree.State
 M.toggle_preview = function(state)
   Preview.toggle(state)
 end
 
+---@param state neotree.State
 M.scroll_preview = function(state)
   Preview.scroll(state)
 end
 
+---@param state neotree.State
 M.focus_preview = function(state)
   if Preview.is_active() then
     Preview.focus()
@@ -700,9 +737,10 @@ M.focus_preview = function(state)
 end
 
 ---Expands or collapses the current node.
+---@param state neotree.State
 M.toggle_node = function(state, toggle_directory)
   local tree = state.tree
-  local node = tree:get_node()
+  local node = assert(tree:get_node())
   if not utils.is_expandable(node) then
     return
   end
@@ -722,9 +760,10 @@ M.toggle_node = function(state, toggle_directory)
 end
 
 ---Expands or collapses the current node.
+---@param state neotree.State
 M.toggle_directory = function(state, toggle_directory)
   local tree = state.tree
-  local node = tree:get_node()
+  local node = assert(tree:get_node())
   if node.type ~= "directory" then
     return
   end
@@ -732,7 +771,7 @@ M.toggle_directory = function(state, toggle_directory)
 end
 
 ---Open file or expandable node
----@param state table The state of the source
+---@param state neotree.State
 ---@param open_cmd string The vim command to use to open the file
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
@@ -781,7 +820,7 @@ local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
 end
 
 ---Open file or directory in the closest window
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open = function(state, toggle_directory)
@@ -789,7 +828,7 @@ M.open = function(state, toggle_directory)
 end
 
 ---Open file or directory in a split of the closest window
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_split = function(state, toggle_directory)
@@ -797,7 +836,7 @@ M.open_split = function(state, toggle_directory)
 end
 
 ---Open file or directory in a vertical split of the closest window
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_vsplit = function(state, toggle_directory)
@@ -805,7 +844,7 @@ M.open_vsplit = function(state, toggle_directory)
 end
 
 ---Open file or directory in a right below vertical split of the closest window
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_rightbelow_vs = function(state, toggle_directory)
@@ -813,7 +852,7 @@ M.open_rightbelow_vs = function(state, toggle_directory)
 end
 
 ---Open file or directory in a left above vertical split of the closest window
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_leftabove_vs = function(state, toggle_directory)
@@ -821,7 +860,7 @@ M.open_leftabove_vs = function(state, toggle_directory)
 end
 
 ---Open file or directory in a new tab
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_tabnew = function(state, toggle_directory)
@@ -829,7 +868,7 @@ M.open_tabnew = function(state, toggle_directory)
 end
 
 ---Open file or directory or focus it if a buffer already exists with it
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_drop = function(state, toggle_directory)
@@ -837,25 +876,27 @@ M.open_drop = function(state, toggle_directory)
 end
 
 ---Open file or directory in new tab or focus it if a buffer already exists with it
----@param state table The state of the source
+---@param state neotree.State
 ---@param toggle_directory function The function to call to toggle a directory
 ---open/closed
 M.open_tab_drop = function(state, toggle_directory)
   open_with_cmd(state, "tab drop", toggle_directory)
 end
 
+---@param state neotree.State
 M.rename = function(state, callback)
   local tree = state.tree
-  local node = tree:get_node()
+  local node = assert(tree:get_node())
   if node.type == "message" then
     return
   end
   fs_actions.rename_node(node.path, callback)
 end
 
+---@param state neotree.State
 M.rename_basename = function(state, callback)
   local tree = state.tree
-  local node = tree:get_node()
+  local node = assert(tree:get_node())
   if node.type == "message" then
     return
   end
@@ -863,7 +904,7 @@ M.rename_basename = function(state, callback)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
----@param state table The state of the source
+---@param state neotree.State
 ---@param path string The path to open
 ---@param cmd string Command that is used to perform action on picked window
 local use_window_picker = function(state, path, cmd)
@@ -900,20 +941,24 @@ local use_window_picker = function(state, path, cmd)
 end
 
 ---Marks potential windows with letters and will open the give node in the picked window.
+---@param state neotree.State
 M.open_with_window_picker = function(state, toggle_directory)
   open_with_cmd(state, "edit", toggle_directory, use_window_picker)
 end
 
 ---Marks potential windows with letters and will open the give node in a split next to the picked window.
+---@param state neotree.State
 M.split_with_window_picker = function(state, toggle_directory)
   open_with_cmd(state, "split", toggle_directory, use_window_picker)
 end
 
 ---Marks potential windows with letters and will open the give node in a vertical split next to the picked window.
+---@param state neotree.State
 M.vsplit_with_window_picker = function(state, toggle_directory)
   open_with_cmd(state, "vsplit", toggle_directory, use_window_picker)
 end
 
+---@param state neotree.State
 M.show_help = function(state)
   local title = state.config and state.config.title or nil
   local prefix_key = state.config and state.config.prefix_key or nil

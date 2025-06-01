@@ -41,6 +41,7 @@ local get_root_for_item = function(item)
   return root
 end
 
+---@param state neotree.State
 M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")

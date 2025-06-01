@@ -281,19 +281,21 @@ M.date = function(format, seconds)
   return formatted_date
 end
 
+---@class (exact) neotree.utils.DiagnosticCounts
+---@field severity_number integer
+---@field severity_string string
+---@field Error integer?
+---@field Warn integer?
+---@field Info integer?
+---@field Hint integer?
+
+---@alias neotree.utils.DiagnosticLookup table<string, neotree.utils.DiagnosticCounts?>
+
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
 ---severity_number and severity_string refer to the highest severity with
 ---non-zero diagnostics count.
 ---Entry is nil if all counts are 0
----@return table table
----{ [file_path] = {
----    severity_number = int,
----    severity_string = string,
----    Error = int or nil,
----    Warn = int or nil,
----    Info = int or nil
----    Hint = int or nil,
----  } or nil }
+---@return neotree.utils.DiagnosticLookup
 M.get_diagnostic_counts = function()
   local lookup = {}
 
@@ -375,17 +377,22 @@ end
 ---@deprecated
 ---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table<string, boolean> opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
+  local copy = {}
   for bufname, bufinfo in pairs(opened_buffers) do
-    opened_buffers[bufname] = bufinfo.modified
+    copy[bufname] = bufinfo.modified
   end
-  return opened_buffers
+  return copy
 end
 
+---@class neotree.utils.OpenedBuffers
+---@field modified boolean
+---@field loaded boolean
+
 ---Gets a lookup of all open buffers keyed by path with additional information
----@return table opened_buffers { [buffer_name] = { modified = bool } }
+---@return table<string, neotree.utils.OpenedBuffers> opened_buffers
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
@@ -395,8 +402,8 @@ M.get_opened_buffers = function()
         buffer_name = "[No Name]#" .. buffer
       end
       opened_buffers[buffer_name] = {
-        ["modified"] = vim.bo[buffer].modified,
-        ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
+        modified = vim.bo[buffer].modified,
+        loaded = vim.api.nvim_buf_is_loaded(buffer),
       }
     end
   end
@@ -405,9 +412,10 @@ end
 
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
----@param functionOrString any The object to resolve.
----@param node table The current node, which is passed to the function if it is a function.
----@param state any The current state, which is passed to the function if it is a function.
+---@param functionOrString fun(node: NuiTree.Node, state: neotree.State):string The object to resolve.
+---@param node NuiTree.Node The current node, which is passed to the function if it is a function.
+---@param state neotree.State The current state, which is passed to the function if it is a function.
+---@overload fun(functionOrString: string):string
 ---@return string string The resolved string.
 M.getStringValue = function(functionOrString, node, state)
   if type(functionOrString) == "function" then
@@ -1266,11 +1274,11 @@ local brace_expand_contents = function(s)
     return items
   end
 
-  ---@alias neotree.Utils.Resolver fun(from: string, to: string, step: string): string[]
+  ---@alias neotree.utils.Resolver fun(from: string, to: string, step: string): string[]
 
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func neotree.Utils.Resolver
+  ---@param resolve_func neotree.utils.Resolver
   ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
@@ -1300,7 +1308,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
-  ---@type table<string, neotree.Utils.Resolver>
+  ---@type table<string, neotree.utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },

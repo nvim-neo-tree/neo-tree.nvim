@@ -32,7 +32,7 @@ M.namestack = {}
 local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
   local mock_table = {}
 
-  ---@class neotree.Health.Mock.Metatable<T> : metatable
+  ---@class neotree.health.Mock.Metatable<T> : metatable
   ---@field accesses string[]
   local mt = {
     __original_table = tbl,
@@ -108,7 +108,7 @@ function M.mock(name, tbl, track_missed)
 
     ---@param current_table table
     local function deep_traverse_mock(current_table)
-      ---@type neotree.Health.Mock.Metatable
+      ---@type neotree.health.Mock.Metatable
       local mt = getmetatable(current_table)
       for k, v in pairs(mt.__original_table) do
         if type(v) == "table" then
