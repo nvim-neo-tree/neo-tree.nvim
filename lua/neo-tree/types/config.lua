@@ -132,7 +132,7 @@
 ---@field event_handlers? neotree.Event.Handler[]
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
----@field nesting_rules neotree.FileNesting.Rule[]
+---@field nesting_rules neotree.filenesting.Rule[]
 ---@field commands table<string, fun()>
 ---@field window neotree.Config.Window
 ---

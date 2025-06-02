@@ -49,33 +49,44 @@ end
 ---@field last_user_width integer
 
 ---@class (exact) neotree.State
+---@field name string
 ---@field tabid integer
 ---@field id integer
 ---@field dirty boolean
 ---@field position table
----@field current_position string?
 ---@field git_base string
 ---@field sort table
+---@field clipboard table
+---@field current_position string?
 ---@field disposed boolean?
 ---@field winid integer?
 ---@field path string?
 ---@field tree NuiTree
----@field name string?
 ---window
----@field window neotree.State.Window
+---@field window neotree.State.Window?
 ---@field win_width integer?
 ---@field longest_width_exact integer?
 ---extras
 ---@field opened_buffers neotree.utils.OpenedBuffers?
 ---@field diagnostics_lookup neotree.utils.DiagnosticLookup?
 ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
----@field git_status_lookup neotree.git.Context
 ---@field sort_field_provider fun(node: NuiTree.Node):any
----@field clipboard table
 ---@field explicitly_opened_nodes table<string, boolean>?
+---@field filtered_items neotree.Config.Filesystem.FilteredItems?
+---git
+---@field git_status_lookup neotree.git.Context?
 ---optional mapping args
----@field fallback string
+---@field fallback string?
 ---@field config table?
+---@field default_expanded_nodes NuiTree.Node[]?
+---@field force_open_folders table?
+---@field enable_source_selector boolean?
+---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
+---lsp
+---@field lsp_winid number?
+---@field lsp_bufnr number?
+---private-ish
+---@field _ready boolean?
 
 ---@class (partial) neotree.StatePartial : neotree.State
 
@@ -89,6 +100,7 @@ local function create_state(tabid, sd, winid)
   nt.ensure_config()
   local default_config = default_configs[sd.name]
   local state = vim.deepcopy(default_config, compat.noref())
+  assert(state.name)
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
@@ -477,7 +489,7 @@ M.dispose_invalid_tabs = function()
   end
 end
 
----@param winid string
+---@param winid number
 M.dispose_window = function(winid)
   assert(winid, "dispose_window: winid cannot be nil")
   -- Iterate in reverse because we are removing items during loop
@@ -551,6 +563,7 @@ M.navigate = function(state_or_source_name, path, path_to_reveal, callback, asyn
     source_name = state.name
   else
     log.error("navigate: state_or_source_name must be a string or a table")
+    return
   end
   log.trace("navigate", source_name, path, path_to_reveal)
   local mod = get_source_data(source_name).module

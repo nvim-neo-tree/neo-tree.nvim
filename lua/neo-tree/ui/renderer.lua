@@ -1180,8 +1180,8 @@ render_tree = function(state)
 end
 
 ---Draws the given nodes on the screen.
---@param nodes table The nodes to draw.
---@param state table The current state of the source.
+---@param nodes NuiTree.Node[] The nodes to draw.
+---@param state neotree.State The current state of the source.
 draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
@@ -1219,7 +1219,7 @@ draw = function(nodes, state, parent_id)
   end
   if parent_id ~= nil then
     -- this is a dynamic fetch of children that were not previously loaded
-    local node = state.tree:get_node(parent_id)
+    local node = assert(state.tree:get_node(parent_id))
     node.loaded = true
     node:expand()
   else

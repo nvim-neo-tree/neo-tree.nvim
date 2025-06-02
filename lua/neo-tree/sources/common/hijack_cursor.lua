@@ -24,6 +24,9 @@ local hijack_cursor_handler = function()
     return
   end
   local node = state.tree:get_node()
+  if not node then
+    return
+  end
   log.debug("Cursor moved in tree window, hijacking cursor position")
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row = cursor[1]
