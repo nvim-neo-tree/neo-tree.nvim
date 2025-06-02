@@ -48,6 +48,8 @@ end
 ---@field win_width integer
 ---@field last_user_width integer
 
+---@alias neotree.State.Position "top"|"bottom"|"left"|"right"|"current"|"float"
+
 ---@class (exact) neotree.State
 ---@field name string
 ---@field tabid integer
@@ -57,11 +59,12 @@ end
 ---@field git_base string
 ---@field sort table
 ---@field clipboard table
----@field current_position string?
+---@field current_position neotree.State.Position?
 ---@field disposed boolean?
 ---@field winid integer?
 ---@field path string?
 ---@field tree NuiTree
+---@field components table<string, neotree.Component>
 ---window
 ---@field window neotree.State.Window?
 ---@field win_width integer?
@@ -73,6 +76,7 @@ end
 ---@field sort_field_provider fun(node: NuiTree.Node):any
 ---@field explicitly_opened_nodes table<string, boolean>?
 ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
+---@field skip_marker_at_level table<integer, boolean>?
 ---git
 ---@field git_status_lookup neotree.git.Context?
 ---optional mapping args
@@ -85,6 +89,8 @@ end
 ---lsp
 ---@field lsp_winid number?
 ---@field lsp_bufnr number?
+---search
+---@field search_pattern string?
 ---private-ish
 ---@field _ready boolean?
 
@@ -716,10 +722,13 @@ M.validate_source = function(source_name, module)
   end
 end
 
+---@class neotree.Source.Module
+---@field setup fun(config: neotree.Config.Source)
+
 ---Configures the plugin, should be called before the plugin is used.
 ---@param source_name string Name of the source.
----@param config table Configuration table containing merged configuration for the source.
----@param global_config table Global configuration table, shared between all sources.
+---@param config neotree.Config.Source Configuration table containing merged configuration for the source.
+---@param global_config neotree.Config.Base Global configuration table, shared between all sources.
 ---@param module table Module containing the source's code.
 M.setup = function(source_name, config, global_config, module)
   log.debug(source_name, " setup ", config)

@@ -39,8 +39,13 @@ M.refresh = function()
   manager.refresh(M.name)
 end
 
+---@class neotree.Config.GitStatus.Renderers : neotree.Config.Renderers
+
+---@class (exact) neotree.Config.GitStatus : neotree.Config.Source
+---@field renderers neotree.Config.GitStatus.Renderers?
+
 ---Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
+---@param config neotree.Config.GitStatus Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   if config.before_render then

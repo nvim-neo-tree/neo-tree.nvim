@@ -11,6 +11,8 @@
 ---@class neotree.Config.Source
 ---@field window neotree.Config.Window?
 ---@field renderers neotree.Component[]?
+---@field before_render fun(state: neotree.State)?
+---@field bind_to_cwd boolean?
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string?
@@ -58,7 +60,7 @@
 ---@field width string|number?
 
 ---@class neotree.Config.Window.Popup
----@field title fun(state:table):string?
+---@field title fun(state:neotree.State):string?
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 

@@ -489,11 +489,11 @@ M.register_stat_provider = function(name, func)
 end
 
 ---Handles null coalescing into a table at any depth.
+---Use vim.tbl_get instead.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any|nil The default value to return if the value is nil.
----@param strict_type_check boolean? Whether to require the type of the value is
----the same as the default value.
+---@param defaultValue any? The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is the same as the default value.
 ---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
@@ -655,6 +655,9 @@ M.map = function(tbl, fn)
   return t
 end
 
+---Finds an appropriate window to open a file from neo-tree
+---@param state neotree.State
+---@param ignore_winfixbuf boolean?
 M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- Avoid triggering autocommands when switching windows
   local eventignore = vim.o.eventignore
@@ -760,7 +763,7 @@ M.force_new_split = function(current_position, escaped_path)
 end
 
 ---Open file in the appropriate window.
----@param state table The state of the source
+---@param state neotree.State
 ---@param path string The file to open
 ---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
@@ -857,6 +860,9 @@ M.reverse_list = function(list)
   return result
 end
 
+---@param state neotree.State|neotree.Config.Base
+---@param config_option string
+---@param default_value any
 M.resolve_config_option = function(state, config_option, default_value)
   local opt = M.get_value(state, config_option, default_value, false)
   if type(opt) == "function" then

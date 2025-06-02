@@ -510,6 +510,7 @@ M.indent = function(config, node, state)
 
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
+  ---@cast skip_marker -nil
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
   local level = node.level
