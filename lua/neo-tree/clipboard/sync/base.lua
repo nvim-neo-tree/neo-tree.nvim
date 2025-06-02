@@ -1,10 +1,10 @@
----@class neotree.Clipboard.Backend
-local Backend = { balance = 0 }
+---@class neotree.clipboard.Backend
+local Backend = {}
 
----@class neotree.Clipboard.Contents
+---@class neotree.clipboard.Contents
 ---@field [string] NuiTree.Node
 
----@return neotree.Clipboard.Backend?
+---@return neotree.clipboard.Backend?
 function Backend:new()
   local o = {}
   setmetatable(o, self)
@@ -12,14 +12,21 @@ function Backend:new()
   return o
 end
 
----Loads the clipboard to the backend
----@return neotree.Clipboard.Contents? valid_clipboard_or_nil
-function Backend:load(v)
-  return nil
+---Loads the clipboard from the backend
+---Return a nil clipboard to not make any changes.
+---@param state table
+---@return neotree.clipboard.Contents? clipboard
+---@return string? err
+function Backend:load(state)
+  vim.print("base load")
+  return nil, nil
 end
 
 ---Writes the clipboard to the backend
----@param clipboard neotree.Clipboard.Contents?
-function Backend:save(clipboard) end
+---@param state table
+function Backend:save(state)
+  vim.print("base save")
+  return true
+end
 
 return Backend

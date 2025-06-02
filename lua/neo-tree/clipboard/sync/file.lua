@@ -5,13 +5,13 @@ local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 
----@class neotree.Clipboard.Backend.File.Opts
+---@class neotree.clipboard.FileBackend.Opts
 ---@field source string
 
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
 local pid = vim.uv.os_getpid()
 
----@class neotree.Clipboard.Backend.File : neotree.Clipboard.Backend
+---@class neotree.clipboard.FileBackend : neotree.clipboard.Backend
 ---@field handle uv.uv_fs_event_t
 ---@field filename string
 ---@field source string
@@ -45,8 +45,8 @@ local function file_touch(filename)
   return true
 end
 
----@param opts neotree.Clipboard.Backend.File.Opts
----@return neotree.Clipboard.Backend.File?
+---@param opts neotree.clipboard.FileBackend.Opts
+---@return neotree.clipboard.FileBackend?
 function FileBackend:new(opts)
   local obj = {} -- create object if user does not provide one
   setmetatable(obj, self)
@@ -57,15 +57,15 @@ function FileBackend:new(opts)
 
   local filename = ("%s/%s.json"):format(clipboard_states_dir, state_source)
 
-  if not file_touch(filename) then
-    log.error("Could not make shared clipboard directory:", clipboard_states_dir)
+  local success, err = file_touch(filename)
+  if not success then
+    log.error("Could not make shared clipboard file:", clipboard_states_dir, err)
     return nil
   end
 
   obj.filename = filename
   obj.source = state_source
   obj.pid = pid
-  table.insert(require("neo-tree.clipboard").shared, obj)
   return obj
 end
 
@@ -84,7 +84,6 @@ function FileBackend:_start()
         event_handle:close()
         return
       end
-      self:_sync_to_states(self:load())
     end)
     return start_success == 0
   else
@@ -93,15 +92,6 @@ function FileBackend:_start()
   return false
 end
 
-function FileBackend:_sync_to_states(clipboard)
-  manager._for_each_state("filesystem", function(state)
-    state.clipboard = clipboard
-    renderer.redraw(state)
-  end)
-end
-
----@return neotree.Clipboard.Backend.File? valid_clipboard_or_nil
----@return string? err
 function FileBackend:load()
   if not file_touch(self.filename) then
     return nil, self.filename .. " could not be created"
@@ -111,6 +101,7 @@ function FileBackend:load()
     return nil, self.filename .. " could not be opened"
   end
   local content = file:read("*a")
+  ---@type boolean, neotree.clipboard.FileBackend.FileFormat|any
   local is_success, clipboard = pcall(vim.json.decode, content)
   if not is_success then
     local decode_err = clipboard
@@ -119,18 +110,21 @@ function FileBackend:load()
     return nil, msg
   end
 
+  if not clipboard then
+    return nil, nil
+  end
+
   return clipboard.contents
 end
 
----@class neotree.Clipboard.FileFormat
+---@class neotree.clipboard.FileBackend.FileFormat
 ---@field pid integer
 ---@field time integer
----@field contents neotree.Clipboard.Contents
+---@field contents neotree.clipboard.Contents
 
----@param clipboard neotree.Clipboard.Contents?
----@return boolean success
-function FileBackend:save(clipboard)
-  self.last_save = os.time()
+function FileBackend:save(state)
+  local clipboard = state.clipboard
+  ---@type neotree.clipboard.FileBackend.FileFormat
   local wrapped = {
     pid = pid,
     time = os.time(),
