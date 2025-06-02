@@ -17,17 +17,15 @@ local source_data = {}
 local all_states = {}
 local default_configs = {}
 
----@class neotree.SourceCommands
----@field navigate fun(state: neotree.State, path: string?, path_to_reveal: string?, callback: function?, async: boolean?)
-
 ---@class neotree.SourceData
 ---@field name string
 ---@field state_by_tab table<integer, neotree.State>
 ---@field state_by_win table<integer, neotree.State>
 ---@field subscriptions table
----@field module neotree.SourceCommands?
+---@field module neotree.Source?
 
 ---@param source_name string
+---@return neotree.SourceData
 local get_source_data = function(source_name)
   assert(source_name, "get_source_data: source_name cannot be nil")
   local sd = source_data[source_name]
@@ -66,6 +64,7 @@ end
 ---@field tree NuiTree
 ---@field components table<string, neotree.Component>
 ---window
+---@field bind_to_cwd boolean?
 ---@field window neotree.State.Window?
 ---@field win_width integer?
 ---@field longest_width_exact integer?
@@ -164,6 +163,9 @@ end
 --TODO: we need to track state per window when working with netwrw style "current"
 --position. How do we know which one to return when this is called?
 ---@param source_name string
+---@param tabid integer?
+---@param winid integer?
+---@return neotree.State
 M.get_state = function(source_name, tabid, winid)
   assert(source_name, "get_state: source_name cannot be nil")
   tabid = tabid or vim.api.nvim_get_current_tabpage()
@@ -175,23 +177,22 @@ M.get_state = function(source_name, tabid, winid)
       sd.state_by_win[winid] = win_state
     end
     return win_state
-  else
-    local tab_state = sd.state_by_tab[tabid]
-    if tab_state and tab_state.winid then
-      -- just in case tab and window get tangled up, tab state replaces window
-      sd.state_by_win[tab_state.winid] = nil
-    end
-    if not tab_state then
-      tab_state = create_state(tabid, sd)
-      sd.state_by_tab[tabid] = tab_state
-    end
-    return tab_state
   end
+  local tab_state = sd.state_by_tab[tabid]
+  if tab_state and tab_state.winid then
+    -- just in case tab and window get tangled up, tab state replaces window
+    sd.state_by_win[tab_state.winid] = nil
+  end
+  if not tab_state then
+    tab_state = create_state(tabid, sd)
+    sd.state_by_tab[tabid] = tab_state
+  end
+  return tab_state
 end
 
 ---Returns the state for the current buffer, assuming it is a neo-tree buffer.
 ---@param winid number? The window id to use, if nil, the current window is used.
----@return table? state The state for the current buffer, if it's a neo-tree buffer.
+---@return neotree.State? state The state for the current buffer, if it's a neo-tree buffer.
 M.get_state_for_window = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_win_get_buf(winid)
@@ -576,7 +577,6 @@ M.navigate = function(state_or_source_name, path, path_to_reveal, callback, asyn
   if not mod then
     mod = require("neo-tree.sources." .. source_name)
   end
-  ---@cast mod neotree.SourceCommands
   mod.navigate(state, path, path_to_reveal, callback, async)
 end
 
@@ -701,6 +701,9 @@ M.show_in_split = function(source_name, callback)
   M.navigate(state, state.path, nil, callback)
 end
 
+local validate = require("neo-tree.health.typecheck").validate
+---@param source_name string
+---@param module neotree.Source
 M.validate_source = function(source_name, module)
   if source_name == nil then
     error("register_source: source_name cannot be nil")
@@ -711,25 +714,21 @@ M.validate_source = function(source_name, module)
   if type(module) ~= "table" then
     error("register_source: module must be a table")
   end
-  local required_functions = {
-    "navigate",
-    "setup",
-  }
-  for _, name in ipairs(required_functions) do
-    if type(module[name]) ~= "function" then
-      error("Source " .. source_name .. " must have a " .. name .. " function")
-    end
-  end
+  validate(source_name, module, function(mod)
+    validate("navigate", mod.navigate, "function")
+    validate("setup", mod.setup, "function")
+  end)
 end
 
----@class neotree.Source.Module
----@field setup fun(config: neotree.Config.Source)
+---@class neotree.Source
+---@field setup fun(config: neotree.Config.Source, global_config: neotree.Config.Base)
+---@field navigate fun(state: neotree.State, path: string?, path_to_reveal: string?, callback: function?, async: boolean?)
 
 ---Configures the plugin, should be called before the plugin is used.
 ---@param source_name string Name of the source.
 ---@param config neotree.Config.Source Configuration table containing merged configuration for the source.
 ---@param global_config neotree.Config.Base Global configuration table, shared between all sources.
----@param module table Module containing the source's code.
+---@param module neotree.Source Module containing the source's code.
 M.setup = function(source_name, config, global_config, module)
   log.debug(source_name, " setup ", config)
   M.unsubscribe_all(source_name)

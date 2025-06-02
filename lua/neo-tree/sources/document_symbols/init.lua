@@ -7,6 +7,7 @@ local utils = require("neo-tree.utils")
 local symbols = require("neo-tree.sources.document_symbols.lib.symbols_utils")
 local renderer = require("neo-tree.ui.renderer")
 
+---@class neotree.sources.DocumentSymbols : neotree.Source
 local M = {
   name = "document_symbols",
   display_name = "  Symbols ",

@@ -11,6 +11,7 @@ local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
+---@class neotree.sources.Filesystem : neotree.Source
 local M = {
   name = "filesystem",
   display_name = " 󰉓 Files ",
@@ -108,6 +109,8 @@ M.follow = function(callback, force_show)
 end
 
 local fs_stat = (vim.uv or vim.loop).fs_stat
+
+---@param state neotree.State
 ---@param path string?
 ---@param path_to_reveal string?
 ---@param callback function?

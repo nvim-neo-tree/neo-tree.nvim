@@ -7,6 +7,7 @@ local items = require("neo-tree.sources.git_status.lib.items")
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 
+---@class neotree.sources.GitStatus : neotree.Source
 local M = {
   name = "git_status",
   display_name = " 󰊢 Git ",

@@ -8,6 +8,7 @@ local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 
+---@class neotree.sources.Buffers : neotree.Source
 local M = {
   name = "buffers",
   display_name = " 󰈚 Buffers ",

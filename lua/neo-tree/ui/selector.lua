@@ -196,7 +196,7 @@ M.get_scrolled_off_node_text = function(state)
   if win_top_line == nil or win_top_line == 1 then
     return
   end
-  local node = state.tree:get_node(win_top_line)
+  local node = assert(state.tree:get_node(win_top_line))
   return "   " .. vim.fn.fnamemodify(node.path, ":~:h")
 end
 
