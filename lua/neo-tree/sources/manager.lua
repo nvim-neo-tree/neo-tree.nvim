@@ -57,10 +57,10 @@ end
 ---@field id integer
 ---@field bufnr integer?
 ---@field dirty boolean
----@field position neotree.State.Position
+---@field position table
 ---@field git_base string
 ---@field sort table
----@field clipboard table
+---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.CurrentPosition?
 ---@field disposed boolean?
 ---@field winid integer?
@@ -70,7 +70,6 @@ end
 ---private-ish
 ---@field orig_tree NuiTree?
 ---@field _ready boolean?
----@field _in_pre_render boolean?
 ---@field loading boolean?
 ---window
 ---@field window neotree.State.Window?
@@ -104,7 +103,7 @@ end
 ---@field search_pattern string?
 ---@field use_fzy boolean?
 ---@field fzy_sort_result_scores table<string, integer?>?
----@field fuzzy_finder_mode "directory"|boolean?
+---@field fuzzy_finder_mode string?
 ---@field open_folders_before_search table?
 ---sort
 ---@field sort_function_override neotree.Config.SortFunction?
@@ -132,6 +131,7 @@ local function create_state(tabid, sd, winid)
   state.position = {}
   state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
+  state.clipboard = {}
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
