@@ -105,9 +105,6 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
----@class (exact) neotree.Config.Clipboard
----@field sync neotree.Config.Clipboard.Sync?
-
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]
 ---@field add_blank_line_at_top boolean

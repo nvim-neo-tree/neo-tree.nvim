@@ -313,6 +313,9 @@ function M.check_config(config)
         validate("renderers", ds.renderers, schema.Renderers)
         validate("window", ds.window, schema.Window)
       end)
+      validate("clipboard", cfg.clipboard, function(clip)
+        validate("follow_cursor", clip.sync, { "function", "string" }, true)
+      end, true)
     end,
     false,
     nil,

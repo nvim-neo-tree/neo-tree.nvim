@@ -28,6 +28,7 @@ Configuration ............... |neo-tree-configuration|
   Components and Renderers .. |neo-tree-renderers|
   Buffer Variables .......... |neo-tree-buffer-variables|
   Popups .................... |neo-tree-popups|
+  Clipboard ................. |neo-tree-clipboard|
 Other Sources ............... |neo-tree-sources|
   Buffers ................... |neo-tree-buffers|
   Git Status ................ |neo-tree-git-status-source|
@@ -2038,4 +2039,14 @@ Currently, this source supports the following commands:
     ["P"] = "preview", (and related commands)
     ["s"] = "split", (and related commands)
 <
+
+CLIPBOARD                                                   *neo-tree-clipboard*
+
+Neo-tree's clipboard can be synced globally (within the same Neovim instance) or
+universally (across multiple Neovim instances). The default is to not sync at
+all. To change this option, change the `clipboard.sync` option (options are
+`"none"|"global"|"universal"`). You can also implement your own backend and pass
+it to that option as well - reading the source code at `lua/neo-tree/clipboard`
+is a good way to do it.
+
 vim:tw=80:ts=2:et:ft=help:
