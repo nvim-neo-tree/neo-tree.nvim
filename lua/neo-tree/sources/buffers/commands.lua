@@ -6,7 +6,7 @@ local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 
 ---@class neotree.sources.Buffers.Commands
----@field [string] neotree.Command|neotree.CommandVisual|nil
+---@field [string] neotree.CommandNormal|neotree.CommandVisual|nil
 local M = {}
 
 local refresh = utils.wrap(manager.refresh, "buffers")

@@ -3,14 +3,19 @@
 ---@class neotree.Config.Mapping.Options
 ---@field noremap boolean?
 ---@field nowait boolean?
+---@field desc string?
+
+---@alias neotree.CommandOrCommandName string|neotree.Command|neotree.CommandVisual
 
 ---@class neotree.Config.Window.Command.Configured : neotree.Config.Mapping.Options
----@field [1] string
+---@field [1] string?
+---@field command string?
 ---@field config table?
 
 ---@class neotree.Config.Source
 ---@field window neotree.Config.Window?
----@field renderers neotree.Component[]?
+---@field renderers neotree.Config.Renderers?
+---@field commands table<string, neotree.Command?>?
 ---@field before_render fun(state: neotree.State)?
 ---@field bind_to_cwd boolean?
 
@@ -64,13 +69,13 @@
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 
----@alias neotree.Config.Window.Command string|function|neotree.Config.Window.Command.Configured
+---@alias neotree.Config.Window.Command string|neotree.Command|neotree.CommandVisual|neotree.Config.Window.Command.Configured
 
 ---@class (exact) neotree.Config.Window.Commands
 ---@field [string] function
 
 ---@class (exact) neotree.Config.Window.Mappings
----@field [string] neotree.Config.Window.Command
+---@field [string] neotree.Config.Window.Command?
 
 ---@class neotree.Config.Window
 ---@field position string?
@@ -103,6 +108,8 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
+---@alias neotree.Config.SortFunction fun(a: NuiTree.Node|any, b: NuiTree.Node|any):boolean?
+
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]
 ---@field add_blank_line_at_top boolean
@@ -127,7 +134,7 @@
 ---@field popup_border_style neotree.Config.BorderStyle
 ---@field resize_timer_interval integer|-1
 ---@field sort_case_insensitive boolean
----@field sort_function? fun(a: any, b: any):boolean
+---@field sort_function? neotree.Config.SortFunction
 ---@field use_popups_for_input boolean
 ---@field use_default_mappings boolean
 ---@field source_selector neotree.Config.SourceSelector
@@ -135,7 +142,7 @@
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
 ---@field nesting_rules neotree.filenesting.Rule[]
----@field commands table<string, fun()>
+---@field commands table<string, neotree.Command?>
 ---@field window neotree.Config.Window
 ---
 ---@field filesystem neotree.Config.Filesystem

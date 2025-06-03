@@ -15,6 +15,7 @@ local M = {}
 local source_data = {}
 ---@type neotree.State[]
 local all_states = {}
+---@type table<string, neotree.Config.Source?>
 local default_configs = {}
 
 ---@class neotree.SourceData
@@ -48,10 +49,11 @@ end
 
 ---@alias neotree.State.Position "top"|"bottom"|"left"|"right"|"current"|"float"
 
----@class (exact) neotree.State
+---@class neotree.State : neotree.Config.Source
 ---@field name string
 ---@field tabid integer
 ---@field id integer
+---@field bufnr integer?
 ---@field dirty boolean
 ---@field position table
 ---@field git_base string
@@ -61,8 +63,11 @@ end
 ---@field disposed boolean?
 ---@field winid integer?
 ---@field path string?
----@field tree NuiTree
+---@field tree NuiTree?
 ---@field components table<string, neotree.Component>
+---private-ish
+---@field orig_tree NuiTree?
+---@field _ready boolean?
 ---window
 ---@field bind_to_cwd boolean?
 ---@field window neotree.State.Window?
@@ -73,9 +78,9 @@ end
 ---@field diagnostics_lookup neotree.utils.DiagnosticLookup?
 ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
 ---@field sort_field_provider fun(node: NuiTree.Node):any
----@field explicitly_opened_nodes table<string, boolean>?
+---@field explicitly_opened_nodes table<string, boolean?>?
 ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
----@field skip_marker_at_level table<integer, boolean>?
+---@field skip_marker_at_level table<integer, boolean?>?
 ---git
 ---@field git_status_lookup neotree.git.Context?
 ---optional mapping args
@@ -90,12 +95,20 @@ end
 ---@field lsp_bufnr number?
 ---search
 ---@field search_pattern string?
----private-ish
----@field _ready boolean?
+---@field use_fzy boolean?
+---@field fzy_sort_result_scores table<string, integer?>?
+---@field fuzzy_finder_mode string?
+---@field open_folders_before_search table?
+---@field sort_function_override neotree.Config.SortFunction?
+---display
+---@field group_empty_dirs boolean?
+---@field longest_node integer?
+---keymaps
+---@field resolved_mappings table<string, neotree.State.ResolvedMapping?>?
 
----@class (partial) neotree.StatePartial : neotree.State
-
----@class neotree.State.CwdTarget
+---@class (exact) neotree.StateWithTree : neotree.State
+---@field tree NuiTree
+local a = {}
 
 ---@param tabid integer
 ---@param sd table
@@ -103,9 +116,9 @@ end
 ---@return neotree.State
 local function create_state(tabid, sd, winid)
   nt.ensure_config()
-  local default_config = default_configs[sd.name]
+  local default_config = assert(default_configs[sd.name])
   local state = vim.deepcopy(default_config, compat.noref())
-  assert(state.name)
+  ---@cast state neotree.State
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
@@ -149,6 +162,7 @@ M._clear_state = function()
 end
 
 ---@param source_name string
+---@param config neotree.Config.Source
 M.set_default_config = function(source_name, config)
   if source_name == nil then
     error("set_default_config: source_name cannot be nil")

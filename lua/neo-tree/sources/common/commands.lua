@@ -11,11 +11,12 @@ local Preview = require("neo-tree.sources.common.preview")
 local async = require("plenary.async")
 local node_expander = require("neo-tree.sources.common.node_expander")
 
----@alias neotree.Command fun(state: neotree.State, ...: any)
----@alias neotree.CommandVisual fun(state: neotree.State, selected_nodes: NuiTree.Node[], ...: any)
+---@alias neotree.CommandNormal fun(state: neotree.StateWithTree, ...: any)
+---@alias neotree.CommandVisual fun(state: neotree.StateWithTree, selected_nodes: NuiTree.Node[], ...: any)
+---@alias neotree.Command neotree.CommandNormal|neotree.CommandVisual
 
 ---Gets the node parent folder
----@param state neotree.State
+---@param state neotree.StateWithTree
 ---@return NuiTree.Node? node
 local function get_folder_node(state)
   local tree = state.tree
@@ -53,7 +54,7 @@ end
 
 ---The using_root_directory is used to decide what part of the filename to show
 -- the user when asking for a new filename to e.g. create, copy to or move to.
----@param state neotree.State
+---@param state neotree.StateWithTree
 ---@return string root_path The root path from which the relative source path should be taken
 local function get_using_root_directory(state)
   -- default to showing only the basename of the path
@@ -76,7 +77,7 @@ local function get_using_root_directory(state)
 end
 
 ---@class neotree.sources.Common.Commands
----@field [string] neotree.Command|neotree.CommandVisual
+---@field [string] neotree.Command
 local M = {}
 
 ---Adds all missing common commands to the given module
@@ -173,7 +174,6 @@ M.close_node = function(state, callback)
   end
 end
 
----@param state neotree.State
 M.close_all_subnodes = function(state)
   local tree = state.tree
   local node = assert(tree:get_node())

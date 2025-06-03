@@ -14,7 +14,7 @@ local fzy = require("neo-tree.sources.common.filters.filter_fzy")
 local M = {}
 
 ---Reset the current filter to the empty string.
----@param state any
+---@param state neotree.State
 ---@param refresh boolean? whether to refresh the source tree
 ---@param open_current_node boolean? whether to open the current node
 local reset_filter = function(state, refresh, open_current_node)
@@ -95,7 +95,7 @@ end
 
 ---Main entry point for the filter functionality.
 ---This will display a filter input popup and filter the source tree on change and on submit
----@param state table the source state
+---@param state neotree.State the source state
 ---@param search_as_you_type boolean? whether to filter as you type or only on submit
 ---@param keep_filter_on_submit boolean? whether to keep the filter on <CR> or reset it
 M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)

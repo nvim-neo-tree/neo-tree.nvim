@@ -67,7 +67,12 @@ end
 local get_hl_by_name = function(name)
   if vim.api.nvim_get_hl then
     local hl = vim.api.nvim_get_hl(0, { name = name })
-    return { foreground = hl.fg, background = hl.bg }
+    local a = hl
+    ---@diagnostic disable-next-line: inject-field
+    hl.foreground = hl.fg
+    ---@diagnostic disable-next-line: inject-field
+    hl.background = hl.bg
+    return hl
   end
   ---TODO: remove in 4.0
   ---@diagnostic disable-next-line: deprecated

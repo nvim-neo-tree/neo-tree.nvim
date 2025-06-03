@@ -28,6 +28,7 @@ M.show_migrations = function()
   end
 end
 
+---@param config neotree.Config.Base
 M.migrate = function(config)
   migrations = {}
 

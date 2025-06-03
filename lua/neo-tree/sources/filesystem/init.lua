@@ -197,6 +197,7 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
 end
 
+---@param state neotree.State
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
   -- Cancel any pending search
@@ -205,7 +206,6 @@ M.reset_search = function(state, refresh, open_current_node)
   state.fuzzy_finder_mode = nil
   state.use_fzy = nil
   state.fzy_sort_result_scores = nil
-  state.fzy_sort_file_list_cache = nil
   state.sort_function_override = nil
 
   if refresh == nil then

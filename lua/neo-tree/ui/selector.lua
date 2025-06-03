@@ -220,7 +220,7 @@ end
 
 ---get_selector:
 -- Does everything to generate the string for source_selector in winbar / statusline.
----@param state table:
+---@param state neotree.State:
 ---@param width integer: width of the entire window where the source_selector is displayed
 ---@return string | nil
 M.get_selector = function(state, width)
@@ -367,7 +367,7 @@ end
 
 ---set_source_selector:
 -- (public): Directly set source_selector to current window's winbar / statusline
----@param state table: state
+---@param state neotree.State: state
 ---@return nil
 M.set_source_selector = function(state)
   if state.enable_source_selector == false then
