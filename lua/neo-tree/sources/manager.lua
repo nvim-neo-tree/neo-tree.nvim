@@ -34,16 +34,28 @@ local get_source_data = function(source_name)
   return sd
 end
 
+---@type metatable
+local state_mt = {
+  __eq = function(t1, t2)
+    return t1.id == t2.id and t1.name == t2.name
+  end,
+}
+
+local id_count = 0
 local function create_state(tabid, sd, winid)
   nt.ensure_config()
   local default_config = default_configs[sd.name]
   local state = vim.deepcopy(default_config, compat.noref())
   state.tabid = tabid
   state.id = winid or tabid
+  state._id = id_count
+  id_count = id_count + 1
   state.dirty = true
   state.position = {}
   state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
+  state.clipboard = {}
+  setmetatable(state, state_mt)
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state

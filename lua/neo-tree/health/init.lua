@@ -2,29 +2,6 @@ local typecheck = require("neo-tree.health.typecheck")
 local M = {}
 local health = vim.health
 
-local function check_dependencies()
-  local devicons_ok = pcall(require, "nvim-web-devicons")
-  if devicons_ok then
-    health.ok("nvim-web-devicons is installed")
-  else
-    health.info("nvim-web-devicons not installed")
-  end
-
-  local plenary_ok = pcall(require, "plenary")
-  if plenary_ok then
-    health.ok("plenary.nvim is installed")
-  else
-    health.error("plenary.nvim is not installed")
-  end
-
-  local nui_ok = pcall(require, "nui.tree")
-  if nui_ok then
-    health.ok("nui.nvim is installed")
-  else
-    health.error("nui.nvim not installed")
-  end
-end
-
 local validate = typecheck.validate
 
 ---@module "neo-tree.types.config"
@@ -269,6 +246,9 @@ function M.check_config(config)
         validate("renderers", ds.renderers, schema.Renderers)
         validate("window", ds.window, schema.Window)
       end)
+      validate("clipboard", cfg.clipboard, function(clip)
+        validate("follow_cursor", clip.sync, { "function", "string" }, true)
+      end, true)
     end,
     false,
     nil,
@@ -301,7 +281,27 @@ end
 
 function M.check()
   health.start("Neo-tree")
-  check_dependencies()
+  local devicons_ok = pcall(require, "nvim-web-devicons")
+  if devicons_ok then
+    health.ok("nvim-web-devicons is installed")
+  else
+    health.info("nvim-web-devicons not installed")
+  end
+
+  local plenary_ok = pcall(require, "plenary")
+  if plenary_ok then
+    health.ok("plenary.nvim is installed")
+  else
+    health.error("plenary.nvim is not installed")
+  end
+
+  local nui_ok = pcall(require, "nui.tree")
+  if nui_ok then
+    health.ok("nui.nvim is installed")
+  else
+    health.error("nui.nvim not installed")
+  end
+
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
 end
