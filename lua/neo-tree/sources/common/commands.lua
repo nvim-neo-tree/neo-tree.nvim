@@ -361,6 +361,24 @@ M.git_unstage_file = function(state)
   events.fire_event(events.GIT_EVENT)
 end
 
+M.git_undo_last_commit = function(state)
+  inputs.confirm("Are you sure you want to undo the last commit? (keeps changes)", function(yes)
+    if yes then
+      local cmd = { "git", "reset", "--soft", "HEAD~1" }
+      local result = vim.fn.systemlist(cmd)
+      if vim.v.shell_error ~= 0 then
+        popups.alert("ERROR: git reset --soft HEAD~1", result)
+        return
+      end
+      events.fire_event(events.GIT_EVENT)
+      popups.alert(
+        "git reset --soft HEAD~1",
+        { "Last commit undone successfully", "Changes kept in staging area" }
+      )
+    end
+  end)
+end
+
 M.git_revert_file = function(state)
   local node = state.tree:get_node()
   if node.type == "message" then
