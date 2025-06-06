@@ -27,7 +27,7 @@ local on_directory_loaded = function(context, dir_path)
     local root = context.folders[dir_path]
     if root then
       local target_path = root.is_link and root.link_to or root.path
-      local fs_watch_callback = vim.schedule_wrap(function(err, fname)
+      local fs_watch_callback = function(err, fname, ev)
         if err then
           log.error("file_event_callback: ", err)
           return
@@ -36,9 +36,11 @@ local on_directory_loaded = function(context, dir_path)
           -- don't fire events for nodes that are designated as "never show"
           return
         else
-          events.fire_event(events.FS_EVENT, { afile = target_path })
+          vim.schedule(function()
+            events.fire_event(events.FS_EVENT, { afile = target_path, events = ev })
+          end)
         end
-      end)
+      end
 
       log.trace("Adding fs watcher for ", target_path)
       fs_watch.watch_folder(target_path, fs_watch_callback)

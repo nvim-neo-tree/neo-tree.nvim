@@ -102,9 +102,7 @@ M.follow = function(callback, force_show)
   if utils.is_floating() then
     return false
   end
-  utils.debounce("neo-tree-follow", function()
-    return follow_internal(callback, force_show)
-  end, 100, utils.debounce_strategy.CALL_LAST_ONLY)
+  return follow_internal(callback, force_show)
 end
 
 local fs_stat = (vim.uv or vim.loop).fs_stat
@@ -189,9 +187,7 @@ end
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state._ready = false
   log.trace("navigate", path, path_to_reveal, async)
-  utils.debounce("filesystem_navigate", function()
-    M._navigate_internal(state, path, path_to_reveal, callback, async)
-  end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
+  M._navigate_internal(state, path, path_to_reveal, callback, async)
 end
 
 M.reset_search = function(state, refresh, open_current_node)
