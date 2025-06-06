@@ -8,6 +8,7 @@ local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 
+---@class neotree.sources.Buffers : neotree.Source
 local M = {
   name = "buffers",
   display_name = " 󰈚 Buffers ",
@@ -105,6 +106,16 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
     vim.schedule(callback)
   end
 end
+
+---@class neotree.Config.Buffers.Renderers : neotree.Config.Renderers
+
+---@class (exact) neotree.Config.Buffers : neotree.Config.Source
+---@field bind_to_cwd boolean?
+---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
+---@field group_empty_dirs boolean?
+---@field show_unloaded boolean?
+---@field terminals_first boolean?
+---@field renderers neotree.Config.Buffers.Renderers?
 
 ---Configures the plugin, should be called before the plugin is used.
 ---@param config table Configuration table containing any keys that the user

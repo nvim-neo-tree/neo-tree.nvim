@@ -239,7 +239,7 @@ function set_parents(context, item, siblings)
 end
 
 ---Create context to be used in other file-items functions.
----@param state table|nil The state of the file-items.
+---@param state neotree.State|nil The state of the file-items.
 ---@return table
 local create_context = function(state)
   local context = {}

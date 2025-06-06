@@ -5,6 +5,7 @@ local manager = require("neo-tree.sources.manager")
 local inputs = require("neo-tree.ui.inputs")
 local filters = require("neo-tree.sources.common.filters")
 
+---@class neotree.sources.DocumentSymbols.Commands
 local M = {}
 local SOURCE_NAME = "document_symbols"
 M.refresh = utils.wrap(manager.refresh, SOURCE_NAME)

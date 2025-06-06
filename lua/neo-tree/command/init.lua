@@ -94,6 +94,7 @@ M.execute = function(args)
   end
 
   -- Now get the correct state
+  ---@type neotree.State
   local state
   local requested_position = args.position or nt.config[args.source].window.position
   if requested_position == "current" then

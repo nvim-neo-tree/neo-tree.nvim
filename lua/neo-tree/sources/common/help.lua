@@ -37,7 +37,7 @@ end
 
 ---Shows a help screen for the mapped commands when will execute those commands
 ---when the corresponding key is pressed.
----@param state table state of the source.
+---@param state neotree.State state of the source.
 ---@param title string? if this is a sub-menu for a multi-key mapping, the title for the window.
 ---@param prefix_key string? if this is a sub-menu, the start of tehe multi-key mapping
 M.show = function(state, title, prefix_key)
@@ -55,7 +55,9 @@ M.show = function(state, title, prefix_key)
   lines[4] = header
   local max_width = #lines[1]:content()
   for _, key in ipairs(keys) do
+    ---@type neotree.State.ResolvedMapping
     local value = state.resolved_mappings[key]
+      or { text = "<error mapping for key " .. key .. ">", handler = function() end }
     local nline = NuiLine()
     nline:append(string.format(" %14s", key_minus_prefix(key, prefix_key)), highlights.FILTER_TERM)
     nline:append(" -> ", highlights.DIM_TEXT)
@@ -147,6 +149,7 @@ M.show = function(state, title, prefix_key)
     -- map everything except for <escape>
     if string.match(key:lower(), "^<esc") == nil then
       local value = state.resolved_mappings[key]
+        or { text = "<error mapping for key " .. key .. ">", handler = function() end }
       popup:map("n", key_minus_prefix(key, prefix_key), function()
         popup:unmount()
         vim.api.nvim_set_current_win(state.winid)

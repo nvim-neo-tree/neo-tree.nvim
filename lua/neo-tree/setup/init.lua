@@ -743,6 +743,9 @@ M.merge_config = function(user_config)
     event = events.VIM_WIN_CLOSED,
     handler = function(args)
       local winid = tonumber(args.afile)
+      if not winid then
+        return
+      end
       log.debug("VIM_WIN_CLOSED: disposing state for window", winid)
       manager.dispose_window(winid)
     end,

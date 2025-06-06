@@ -13,7 +13,7 @@ format:
 
 # Dependencies:
 
-DEPS := ./.dependencies/site/pack/vendor/start
+DEPS := ${CURDIR}/.dependencies/site/pack/vendor/start
 
 $(DEPS):
 	mkdir -p "$(DEPS)"
@@ -34,9 +34,9 @@ setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim
 clean:
 	rm -rf "$(DEPS)"
 
-CONFIGURATION = .luarc.json
+CONFIGURATION = ${CURDIR}/.luarc.json
 luals-check: setup
 	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" lua-language-server --configpath=$(CONFIGURATION) --check=.
 
 emmylua-check: setup
-	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" emmylua_check -c $(CONFIGURATION) .
+	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" emmylua_check -c $(CONFIGURATION) -i ".dependencies/**" --  .

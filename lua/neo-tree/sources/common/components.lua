@@ -385,6 +385,7 @@ end
 ---@param config neotree.Component.Common.Icon
 M.icon = function(config, node, state)
   -- calculate default icon
+  ---@type neotree.Render.Node
   local icon =
     { text = config.default or " ", highlight = config.highlight or highlights.FILE_ICON }
   if node.type == "directory" then
@@ -510,6 +511,7 @@ M.indent = function(config, node, state)
 
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
+  ---@cast skip_marker -nil
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
   local level = node.level
