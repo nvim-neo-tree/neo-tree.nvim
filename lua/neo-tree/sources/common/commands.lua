@@ -371,7 +371,10 @@ M.git_undo_last_commit = function(state)
         return
       end
       events.fire_event(events.GIT_EVENT)
-      popups.alert("git reset --soft HEAD~1", { "Last commit undone successfully", "Changes kept in staging area" })
+      popups.alert(
+        "git reset --soft HEAD~1",
+        { "Last commit undone successfully", "Changes kept in staging area" }
+      )
     end
   end)
 end
