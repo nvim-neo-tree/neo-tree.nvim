@@ -1448,7 +1448,6 @@ NeoTreeGitDeleted         File name when the git status is deleted.
 NeoTreeGitIgnored         File name when the git status is ignored.
 NeoTreeGitModified        File name when the git status is modified.
 NeoTreeGitUnstaged        Used for git unstaged symbol.
-NeoTreeGitUndoLastCommit  Used for git undo last commit.
 NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeGitStaged          Used for git staged symbol.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
