@@ -5,8 +5,7 @@ local buffers = require("neo-tree.sources.buffers")
 local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 
----@class neotree.sources.Buffers.Commands
----@field [string] neotree.CommandNormal|neotree.CommandVisual|nil
+---@class neotree.sources.Buffers.Commands : neotree.sources.Common.Commands
 local M = {}
 
 local refresh = utils.wrap(manager.refresh, "buffers")
@@ -36,7 +35,7 @@ M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, redraw)
 end
 
----@param selected_nodes NuiTree.Node
+---@type neotree.TreeCommandVisual
 M.copy_to_clipboard_visual = function(state, selected_nodes)
   cc.copy_to_clipboard_visual(state, selected_nodes, redraw)
 end
@@ -46,7 +45,7 @@ M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, redraw)
 end
 
----@param selected_nodes NuiTree.Node
+---@type neotree.TreeCommandVisual
 M.cut_to_clipboard_visual = function(state, selected_nodes)
   cc.cut_to_clipboard_visual(state, selected_nodes, redraw)
 end

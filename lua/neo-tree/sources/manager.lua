@@ -105,6 +105,7 @@ end
 ---@field longest_node integer?
 ---keymaps
 ---@field resolved_mappings table<string, neotree.State.ResolvedMapping?>?
+---@field commands table<string, neotree.TreeCommand?>?
 
 ---@class (exact) neotree.StateWithTree : neotree.State
 ---@field tree NuiTree

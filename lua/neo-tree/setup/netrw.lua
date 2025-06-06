@@ -78,6 +78,7 @@ M.hijack = function()
       end
     end)
 
+    ---@type neotree.State
     local state
     if should_open_current and not is_currently_neo_tree then
       log.debug("hijack_netrw: opening current")

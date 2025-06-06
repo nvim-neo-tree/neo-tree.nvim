@@ -67,7 +67,6 @@ end
 local get_hl_by_name = function(name)
   if vim.api.nvim_get_hl then
     local hl = vim.api.nvim_get_hl(0, { name = name })
-    local a = hl
     ---@diagnostic disable-next-line: inject-field
     hl.foreground = hl.fg
     ---@diagnostic disable-next-line: inject-field
@@ -80,15 +79,11 @@ local get_hl_by_name = function(name)
 end
 ---If the given highlight group is not defined, define it.
 ---@param hl_group_name string The name of the highlight group.
----@param link_to_if_exists table A list of highlight groups to link to, in
---order of priority. The first one that exists will be used.
----@param background string|nil The background color to use, in hex, if the highlight group
---is not defined and it is not linked to another group.
----@param foreground string|nil The foreground color to use, in hex, if the highlight group
---is not defined and it is not linked to another group.
----@gui string|nil The gui to use, if the highlight group is not defined and it is not linked
---to another group.
----@return table table The highlight group values.
+---@param link_to_if_exists string[] A list of highlight groups to link to, in order of priority. The first one that exists will be used.
+---@param background string? The background color to use, in hex, if the highlight group is not defined and it is not linked to another group.
+---@param foreground string? The foreground color to use, in hex, if the highlight group is not defined and it is not linked to another group.
+---@param gui string? The gui to use, if the highlight group is not defined and it is not linked to another group.
+---@return table hlgroups The highlight group values.
 M.create_highlight_group = function(hl_group_name, link_to_if_exists, background, foreground, gui)
   local success, hl_group = pcall(get_hl_by_name, hl_group_name, true)
   if not success or not hl_group.foreground or not hl_group.background then

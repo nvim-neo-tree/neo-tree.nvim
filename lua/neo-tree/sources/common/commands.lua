@@ -11,9 +11,9 @@ local Preview = require("neo-tree.sources.common.preview")
 local async = require("plenary.async")
 local node_expander = require("neo-tree.sources.common.node_expander")
 
----@alias neotree.CommandNormal fun(state: neotree.StateWithTree, ...: any)
----@alias neotree.CommandVisual fun(state: neotree.StateWithTree, selected_nodes: NuiTree.Node[], ...: any)
----@alias neotree.Command neotree.CommandNormal|neotree.CommandVisual
+---@alias neotree.TreeCommandNormal fun(state: neotree.StateWithTree, ...: any)
+---@alias neotree.TreeCommandVisual fun(state: neotree.StateWithTree, selected_nodes: NuiTree.Node[], ...: any)
+---@alias neotree.TreeCommand neotree.TreeCommandNormal|neotree.TreeCommandVisual
 
 ---Gets the node parent folder
 ---@param state neotree.StateWithTree
@@ -77,7 +77,7 @@ local function get_using_root_directory(state)
 end
 
 ---@class neotree.sources.Common.Commands
----@field [string] neotree.Command
+---@field [string] neotree.TreeCommand
 local M = {}
 
 ---Adds all missing common commands to the given module
@@ -250,7 +250,7 @@ M.copy_to_clipboard = function(state, callback)
   end
 end
 
----@type neotree.CommandVisual
+---@type neotree.TreeCommandVisual
 M.copy_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
@@ -284,7 +284,7 @@ M.cut_to_clipboard = function(state, callback)
   end
 end
 
----@type neotree.CommandVisual
+---@type neotree.TreeCommandVisual
 M.cut_to_clipboard_visual = function(state, selected_nodes, callback)
   for _, node in ipairs(selected_nodes) do
     if node.type ~= "message" then
@@ -675,7 +675,7 @@ M.delete = function(state, callback)
 end
 
 ---@param callback function
----@type neotree.CommandVisual
+---@type neotree.TreeCommandVisual
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
   for _, node_to_delete in pairs(selected_nodes) do

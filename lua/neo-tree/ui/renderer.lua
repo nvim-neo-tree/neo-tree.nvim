@@ -806,6 +806,7 @@ create_tree = function(state)
   })
 end
 
+---@return NuiTree.Node[]?
 local get_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
@@ -843,7 +844,7 @@ local set_buffer_mappings = function(state)
   local mappings = state.window.mappings or {}
   local mapping_options = state.window.mapping_options or { noremap = true }
   for cmd, func in pairs(mappings) do
-    ---@type neotree.CommandVisual?
+    ---@type neotree.TreeCommandVisual?
     local vfunc
     local config = {}
     repeat
@@ -877,7 +878,7 @@ local set_buffer_mappings = function(state)
         vfunc = state.commands[func .. "_visual"]
         func = state.commands[func]
       elseif type(func) == "function" then
-        ---@cast func neotree.Command
+        ---@cast func neotree.TreeCommand
         helptext = desc or "<function>"
       else
         error("mapping needs to be either a function or a valid name of a command")
@@ -908,6 +909,7 @@ local set_buffer_mappings = function(state)
           vim.schedule(function()
             local selected_nodes = get_selected_nodes(state)
             if utils.truthy(selected_nodes) then
+              ---@cast selected_nodes -nil
               state.config = config
               vfunc(state, selected_nodes)
             end

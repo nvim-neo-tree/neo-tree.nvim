@@ -5,8 +5,6 @@
 ---@field nowait boolean?
 ---@field desc string?
 
----@alias neotree.CommandOrCommandName string|neotree.Command|neotree.CommandVisual
-
 ---@class neotree.Config.Window.Command.Configured : neotree.Config.Mapping.Options
 ---@field [1] string?
 ---@field command string?
@@ -15,7 +13,7 @@
 ---@class neotree.Config.Source
 ---@field window neotree.Config.Window?
 ---@field renderers neotree.Config.Renderers?
----@field commands table<string, neotree.Command?>?
+---@field commands table<string, neotree.Config.TreeCommand?>?
 ---@field before_render fun(state: neotree.State)?
 ---@field bind_to_cwd boolean?
 
@@ -69,13 +67,13 @@
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 
----@alias neotree.Config.Window.Command string|neotree.Command|neotree.CommandVisual|neotree.Config.Window.Command.Configured
+---@alias neotree.Config.TreeCommand string|neotree.TreeCommand|neotree.Config.Window.Command.Configured
 
 ---@class (exact) neotree.Config.Window.Commands
 ---@field [string] function
 
 ---@class (exact) neotree.Config.Window.Mappings
----@field [string] neotree.Config.Window.Command?
+---@field [string] neotree.Config.TreeCommand?
 
 ---@class neotree.Config.Window
 ---@field position string?
@@ -142,7 +140,7 @@
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
 ---@field nesting_rules neotree.filenesting.Rule[]
----@field commands table<string, neotree.Command?>
+---@field commands table<string, neotree.Config.TreeCommand?>
 ---@field window neotree.Config.Window
 ---
 ---@field filesystem neotree.Config.Filesystem

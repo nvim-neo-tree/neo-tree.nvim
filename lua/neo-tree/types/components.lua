@@ -11,4 +11,4 @@
 ---@field enabled boolean?
 ---@field highlight string?
 
----@alias neotree.IconProvider fun(icon: table, node: NuiTree.Node, state: neotree.State):(neotree.Render.Node|neotree.Render.Node[]|nil)
+---@alias neotree.IconProvider fun(icon: neotree.Render.Node, node: NuiTree.Node, state: neotree.State):(neotree.Render.Node|neotree.Render.Node[]|nil)

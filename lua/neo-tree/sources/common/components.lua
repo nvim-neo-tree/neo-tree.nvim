@@ -385,6 +385,7 @@ end
 ---@param config neotree.Component.Common.Icon
 M.icon = function(config, node, state)
   -- calculate default icon
+  ---@type neotree.Render.Node
   local icon =
     { text = config.default or " ", highlight = config.highlight or highlights.FILE_ICON }
   if node.type == "directory" then
