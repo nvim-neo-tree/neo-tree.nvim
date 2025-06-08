@@ -114,6 +114,8 @@ local create_item, set_parents
 ---@field pattern boolean?
 ---@field dotfiles boolean?
 ---@field hidden boolean?
+---@field gitignored boolean?
+---@field show_gitignored boolean?
 
 ---@class (exact) neotree.FileItemExtra
 ---@field status string? Git status
