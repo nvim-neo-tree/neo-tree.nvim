@@ -49,6 +49,8 @@ end
 
 ---@alias neotree.State.Position "top"|"bottom"|"left"|"right"|"current"|"float"
 
+---@alias neotree.Internal.SortFieldProvider fun(node: NuiTree.Node):any
+
 ---@class neotree.State : neotree.Config.Source
 ---@field name string
 ---@field tabid integer
@@ -68,12 +70,14 @@ end
 ---private-ish
 ---@field orig_tree NuiTree?
 ---@field _ready boolean?
+---@field loading boolean?
 ---window
----@field bind_to_cwd boolean?
 ---@field window neotree.State.Window?
 ---@field win_width integer?
 ---@field longest_width_exact integer?
+---@field longest_node integer?
 ---extras
+---@field bind_to_cwd boolean?
 ---@field opened_buffers neotree.utils.OpenedBuffers?
 ---@field diagnostics_lookup neotree.utils.DiagnosticLookup?
 ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
@@ -81,13 +85,15 @@ end
 ---@field explicitly_opened_nodes table<string, boolean?>?
 ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
 ---@field skip_marker_at_level table<integer, boolean?>?
+---@field group_empty_dirs boolean?
 ---git
----@field git_status_lookup neotree.git.Context?
+---@field git_status_lookup neotree.git.Status?
 ---optional mapping args
 ---@field fallback string?
 ---@field config table?
+---internal
 ---@field default_expanded_nodes NuiTree.Node[]?
----@field force_open_folders table?
+---@field force_open_folders string[]?
 ---@field enable_source_selector boolean?
 ---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
 ---lsp
@@ -99,16 +105,15 @@ end
 ---@field fzy_sort_result_scores table<string, integer?>?
 ---@field fuzzy_finder_mode string?
 ---@field open_folders_before_search table?
+---sort
 ---@field sort_function_override neotree.Config.SortFunction?
----display
----@field group_empty_dirs boolean?
----@field longest_node integer?
 ---keymaps
 ---@field resolved_mappings table<string, neotree.State.ResolvedMapping?>?
 ---@field commands table<string, neotree.TreeCommand?>?
 
 ---@class (exact) neotree.StateWithTree : neotree.State
 ---@field tree NuiTree
+
 local a = {}
 
 ---@param tabid integer

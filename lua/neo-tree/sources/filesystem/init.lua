@@ -11,7 +11,7 @@ local manager = require("neo-tree.sources.manager")
 local git = require("neo-tree.git")
 local glob = require("neo-tree.sources.filesystem.lib.globtopattern")
 
----@class neotree.sources.Filesystem : neotree.Source
+---@class neotree.sources.filesystem : neotree.Source
 local M = {
   name = "filesystem",
   display_name = " 󰉓 Files ",
@@ -21,8 +21,9 @@ local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
+---@return neotree.sources.filesystem.State
 local get_state = function(tabid)
-  return manager.get_state(M.name, tabid)
+  return manager.get_state(M.name, tabid) --[[@as neotree.sources.filesystem.State]]
 end
 
 local follow_internal = function(callback, force_show, async)
@@ -110,7 +111,7 @@ end
 
 local fs_stat = (vim.uv or vim.loop).fs_stat
 
----@param state neotree.State
+---@param state neotree.sources.filesystem.State
 ---@param path string?
 ---@param path_to_reveal string?
 ---@param callback function?
@@ -314,9 +315,18 @@ end
 ---@class neotree.Config.Filesystem.Window : neotree.Config.Window
 ---@field fuzzy_finder_mappings table<string, neotree.FuzzyFinder.Commands>?
 
+---@alias neotree.Config.Filesystem.AsyncDirectoryScan
+---|"auto"
+---|"always"
+---|"never"
+
+---@alias neotree.Config.Filesystem.ScanMode
+---|"shallow"
+---|"deep"
+
 ---@class (exact) neotree.Config.Filesystem : neotree.Config.Source
----@field async_directory_scan "auto"|"always"|"never"|nil
----@field scan_mode "shallow"|"deep"|nil
+---@field async_directory_scan neotree.Config.Filesystem.AsyncDirectoryScan?
+---@field scan_mode neotree.Config.Filesystem.ScanMode?
 ---@field bind_to_cwd boolean?
 ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
 ---@field check_gitignore_in_search boolean?
@@ -332,9 +342,9 @@ end
 ---@field renderers neotree.Config.Filesystem.Renderers?
 ---@field window neotree.Config.Filesystem.Window?
 ---@field enable_git_status boolean?
+
 ---Configures the plugin, should be called before the plugin is used.
----@param config neotree.Config.Filesystem Configuration table containing any keys that the user wants to change from the defaults. May be
----empty to accept default values.
+---@param config neotree.Config.Filesystem Configuration table containing any keys that the user wants to change from the defaults. May be empty to accept default values.
 ---@param global_config neotree.Config.Base
 M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
@@ -466,6 +476,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
+---@param state neotree.sources.filesystem.State
 M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive, callback)
   local tree = state.tree
   if not node then

@@ -55,8 +55,7 @@ end
 ---@field exclude_directories boolean
 ---@field lines_parsed integer
 
----@class neotree.git.Status
----@field [string] string
+---@alias neotree.git.Status table<string, string>
 
 ---@param context neotree.git.Context
 local parse_git_status_line = function(context, line)

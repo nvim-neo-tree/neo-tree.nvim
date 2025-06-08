@@ -345,7 +345,7 @@ M.win_enter_event = function()
             return
           end
           -- create a new tree for this window
-          local state = manager.get_state("filesystem", nil, current_winid)
+          local state = manager.get_state("filesystem", nil, current_winid) --[[@as neotree.sources.filesystem.State]]
           state.path = old_state.path
           state.current_position = "current"
           local renderer = require("neo-tree.ui.renderer")
