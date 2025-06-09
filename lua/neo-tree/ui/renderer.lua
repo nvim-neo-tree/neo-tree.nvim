@@ -109,7 +109,7 @@ local start_resize_monitor = function()
 end
 
 ---Safely closes the window and deletes the buffer associated with the state
----@param state table State of the source to close
+---@param state neotree.State State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
 M.close = function(state, focus_prior_window)
   log.debug("Closing window, but saving position first.")
@@ -238,7 +238,7 @@ local create_nodes
 ---@param source_items table The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for
 --the given source, but they must contain at least an id field.
----@param state table The current state of the plugin.
+---@param state neotree.State The current state of the plugin.
 ---@param level integer Optional. The current level of the tree, defaults to 0.
 ---@return table A collection of TreeNodes.
 create_nodes = function(source_items, state, level)
@@ -256,7 +256,11 @@ create_nodes = function(source_items, state, level)
   local show_indent_marker_for_message
   local msg = state.renderers.message or {}
   if msg[1] and msg[1][1] == "indent" then
-    show_indent_marker_for_message = msg[1].with_markers
+    local indent = msg[1]
+    ---these types might need a slight rework but this cast is correct.
+    ---@diagnostic disable-next-line: cast-type-mismatch
+    ---@cast indent neotree.Component.Common.Indent
+    show_indent_marker_for_message = indent.with_markers
   end
 
   for i, item in ipairs(source_items) do
@@ -284,7 +288,6 @@ create_nodes = function(source_items, state, level)
       level = level,
       is_last_child = is_last_child,
     }
-    local indent = (state.renderers[item.type] or {}).indent_size or 4
 
     local node_children = nil
     if item.children ~= nil then
@@ -467,7 +470,7 @@ local prepare_node = function(item, state)
 end
 
 ---Sets the cursor at the specified node.
----@param state table The current state of the source.
+---@param state neotree.State The current state of the source.
 ---@param id string? The id of the node to set the cursor at.
 ---@return boolean boolean True if the node was found and focused, false
 ---otherwise.
@@ -504,7 +507,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
   if M.window_exists(state) then
     if not linenr then
       M.expand_to_node(state, node)
-      node, linenr = tree:get_node(id)
+      node, linenr = assert(tree:get_node(id))
       if not linenr then
         log.debug("focus_node cannot get linenr for node with id ", id)
         return false
@@ -643,59 +646,62 @@ M.expand_to_node = function(state, node)
 end
 
 ---Functions to save and restore the focused node.
-M.position = {
-  save = function(state)
-    if state.position.topline and state.position.lnum then
-      log.debug("There's already a position saved to be restored. Cannot save another.")
+M.position = {}
+---@param state neotree.State
+M.position.save = function(state)
+  if state.position.topline and state.position.lnum then
+    log.debug("There's already a position saved to be restored. Cannot save another.")
+    return
+  end
+  if state.tree and M.window_exists(state) then
+    local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
+    state.position.topline = win_state.topline
+    state.position.lnum = win_state.lnum
+    log.debug("Saved cursor position with lnum: " .. state.position.lnum)
+    log.debug("Saved window position with topline: " .. state.position.topline)
+  end
+end
+---@param state neotree.State
+M.position.set = function(state, node_id)
+  if type(node_id) ~= "string" or node_id == "" then
+    return
+  end
+  if state.tree then
+    local node = state.tree:get_node(node_id)
+    if node and node.skip_node then
       return
     end
-    if state.tree and M.window_exists(state) then
-      local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
-      state.position.topline = win_state.topline
-      state.position.lnum = win_state.lnum
-      log.debug("Saved cursor position with lnum: " .. state.position.lnum)
-      log.debug("Saved window position with topline: " .. state.position.topline)
-    end
-  end,
-  set = function(state, node_id)
-    if type(node_id) ~= "string" or node_id == "" then
-      return
-    end
-    if state.tree then
-      local node = state.tree:get_node(node_id)
-      if node and node.skip_node then
-        return
-      end
-    end
-    state.position.node_id = node_id
-  end,
-  clear = function(state)
-    log.debug("Forget about cursor position.")
-    -- Clear saved position, so that we can save another position later.
-    state.position.topline = nil
-    state.position.lnum = nil
-    -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
-    -- focus on it anymore
-    state.position.node_id = nil
-  end,
-  restore = function(state)
-    if state.position.topline and state.position.lnum then
-      log.debug("Restoring window position to topline: " .. state.position.topline)
-      log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
-      vim.api.nvim_win_call(state.winid, function()
-        vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
-      end)
-    end
-    if state.position.node_id then
-      log.debug("Focusing on node_id: " .. state.position.node_id)
-      M.focus_node(state, state.position.node_id, true)
-    end
-    M.position.clear(state)
-  end,
-}
+  end
+  state.position.node_id = node_id
+end
+---@param state neotree.State
+M.position.clear = function(state)
+  log.debug("Forget about cursor position.")
+  -- Clear saved position, so that we can save another position later.
+  state.position.topline = nil
+  state.position.lnum = nil
+  -- After focusing a node, we clear it so that subsequent renderer.position.restore don't
+  -- focus on it anymore
+  state.position.node_id = nil
+end
+---@param state neotree.State
+M.position.restore = function(state)
+  if state.position.topline and state.position.lnum then
+    log.debug("Restoring window position to topline: " .. state.position.topline)
+    log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
+    vim.api.nvim_win_call(state.winid, function()
+      vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
+    end)
+  end
+  if state.position.node_id then
+    log.debug("Focusing on node_id: " .. state.position.node_id)
+    M.focus_node(state, state.position.node_id, true)
+  end
+  M.position.clear(state)
+end
 
 ---Redraw the tree without relaoding from the source.
----@param state table State of the tree.
+---@param state neotree.State State of the tree.
 M.redraw = function(state)
   if state.tree and M.tree_is_visible(state) then
     log.trace("Redrawing tree", state.name, state.id)
@@ -800,6 +806,7 @@ create_tree = function(state)
   })
 end
 
+---@return NuiTree.Node[]?
 local get_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
@@ -821,70 +828,95 @@ local get_selected_nodes = function(state)
   return selected_nodes
 end
 
+---@class neotree.State.ResolvedMapping
+---@field text string
+---@field handler function
+
+---@param state neotree.StateWithTree
 local set_buffer_mappings = function(state)
+  ---@type table<string, neotree.State.ResolvedMapping?>
   local resolved_mappings = {}
   local skip_this_mapping = {
     ["none"] = true,
     ["nop"] = true,
     ["noop"] = true,
   }
-  local mappings = utils.get_value(state, "window.mappings", {}, true)
-  local mapping_options = utils.get_value(state, "window.mapping_options", { noremap = true }, true)
+  local mappings = state.window.mappings or {}
+  local mapping_options = state.window.mapping_options or { noremap = true }
   for cmd, func in pairs(mappings) do
+    ---@type neotree.TreeCommandVisual?
     local vfunc
     local config = {}
-    if utils.truthy(func) then
-      local oldfunc = func
+    repeat
+      if not utils.truthy(func) then
+        break
+      end
       if skip_this_mapping[func] then
         log.trace("Skipping mapping for %s", cmd)
-      else
-        local map_options = vim.deepcopy(mapping_options)
-        local desc
-        if type(func) == "table" then
-          for key, value in pairs(func) do
-            if key ~= "command" and key ~= 1 and key ~= "config" then
-              map_options[key] = value
-            end
-          end
-          desc = func.desc
-          config = func.config or {}
-          func = func.command or func[1]
-        end
-        if type(func) == "string" then
-          resolved_mappings[cmd] = { text = desc or func }
-          map_options.desc = map_options.desc or func
-          vfunc = state.commands[func .. "_visual"]
-          func = state.commands[func]
-        elseif type(func) == "function" then
-          resolved_mappings[cmd] = { text = desc or "<function>" }
-        end
-        if type(func) == "function" then
-          local fallback = utils.keycode(cmd)
-          resolved_mappings[cmd].handler = function()
-            state.config = config
-            state.fallback = fallback
-            return func(state)
-          end
-          keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
-          if type(vfunc) == "function" then
-            keymap.set(state.bufnr, "v", cmd, function()
-              vim.api.nvim_feedkeys(ESC_KEY, "i", true)
-              vim.schedule(function()
-                local selected_nodes = get_selected_nodes(state)
-                if utils.truthy(selected_nodes) then
-                  state.config = config
-                  vfunc(state, selected_nodes)
-                end
-              end)
-            end, map_options)
-          end
-        else
-          local invalid_desc = desc or func or oldfunc
-          log.warn("Invalid mapping for ", cmd, ": ", invalid_desc)
-          resolved_mappings[cmd] = { text = ("<invalid> (%s)"):format(invalid_desc) }
-        end
+        break
       end
-    end
+      local oldfunc = func
+      local map_options = vim.deepcopy(mapping_options)
+      local desc
+      if type(func) == "table" then
+        ---@cast func neotree.Config.Window.Command.Configured
+        for key, value in pairs(func) do
+          if key ~= "command" and key ~= 1 and key ~= "config" then
+            map_options[key] = value
+          end
+        end
+        desc = func.desc
+        config = func.config or {}
+        func = func.command or func[1]
+      end
+
+      ---@type string?
+      local helptext
+      if type(func) == "string" then
+        helptext = desc or func
+        map_options.desc = map_options.desc or func
+        vfunc = state.commands[func .. "_visual"]
+        func = state.commands[func]
+      elseif type(func) == "function" then
+        ---@cast func neotree.TreeCommand
+        helptext = desc or "<function>"
+      else
+        error("mapping needs to be either a function or a valid name of a command")
+      end
+
+      if type(func) ~= "function" then
+        local invalid_desc = desc or func or oldfunc
+        log.warn("Invalid mapping for ", cmd, ": ", invalid_desc)
+        resolved_mappings[cmd] = {
+          text = ("<invalid> (%s)"):format(invalid_desc),
+          handler = function() end,
+        }
+        break
+      end
+      local fallback = utils.keycode(cmd)
+      resolved_mappings[cmd] = {
+        text = helptext,
+        handler = function()
+          state.config = config
+          state.fallback = fallback
+          return func(state)
+        end,
+      }
+      keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
+      if type(vfunc) == "function" then
+        keymap.set(state.bufnr, "v", cmd, function()
+          vim.api.nvim_feedkeys(ESC_KEY, "i", true)
+          vim.schedule(function()
+            local selected_nodes = get_selected_nodes(state)
+            if utils.truthy(selected_nodes) then
+              ---@cast selected_nodes -nil
+              state.config = config
+              vfunc(state, selected_nodes)
+            end
+          end)
+        end, map_options)
+      end
+    until true
   end
   state.resolved_mappings = resolved_mappings
 end
@@ -1093,7 +1125,7 @@ M.is_window_valid = function(winid)
 end
 
 ---Determines if the window exists and is valid.
----@param state table The current state of the plugin.
+---@param state neotree.State The current state of the plugin.
 ---@return boolean True if the window exists and is valid, false otherwise.
 M.window_exists = function(state)
   local window_exists
@@ -1133,14 +1165,14 @@ M.window_exists = function(state)
 end
 
 ---Determines if a specific tree is open.
----@param state table The current state of the plugin.
+---@param state neotree.State The current state of the plugin.
 ---@return boolean
 M.tree_is_visible = function(state)
   return M.window_exists(state) and vim.api.nvim_win_get_buf(state.winid) == state.bufnr
 end
 
 ---Renders the given tree and expands window width if needed
---@param state table The state containing tree to render. Almost same as state.tree:render()
+--@param state neotree.State The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
   local add_blank_line_at_top = require("neo-tree").config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
@@ -1180,8 +1212,8 @@ render_tree = function(state)
 end
 
 ---Draws the given nodes on the screen.
---@param nodes table The nodes to draw.
---@param state table The current state of the source.
+---@param nodes NuiTree.Node[] The nodes to draw.
+---@param state neotree.State The current state of the source.
 draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
@@ -1219,7 +1251,7 @@ draw = function(nodes, state, parent_id)
   end
   if parent_id ~= nil then
     -- this is a dynamic fetch of children that were not previously loaded
-    local node = state.tree:get_node(parent_id)
+    local node = assert(state.tree:get_node(parent_id))
     node.loaded = true
     node:expand()
   else
@@ -1260,7 +1292,7 @@ end
 
 ---Shows the given items as a tree.
 ---@param sourceItems table? The list of items to transform.
----@param state table The current state of the plugin.
+---@param state neotree.State The current state of the plugin.
 ---@param parentId string? The id of the parent node to display these nodes at
 ---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)

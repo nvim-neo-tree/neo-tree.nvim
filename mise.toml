@@ -2,4 +2,4 @@
 cargo-binstall = "latest"
 "cargo:emmylua_check" = "latest"
 "cargo:emmylua_ls" = "latest"
-lua-language-server = "3.13.9"
+lua-language-server = "latest"

@@ -55,6 +55,8 @@ M.EXPANDER = "NeoTreeExpander"
 M.WINDOWS_HIDDEN = "NeoTreeWindowsHidden"
 M.PREVIEW = "NeoTreePreview"
 
+---@param n integer
+---@param chars integer?
 local function dec_to_hex(n, chars)
   chars = chars or 6
   local hex = string.format("%0" .. chars .. "x", n)
@@ -64,10 +66,15 @@ local function dec_to_hex(n, chars)
   return hex
 end
 
+---@param name string
 local get_hl_by_name = function(name)
   if vim.api.nvim_get_hl then
     local hl = vim.api.nvim_get_hl(0, { name = name })
-    return { foreground = hl.fg, background = hl.bg }
+    ---@diagnostic disable-next-line: inject-field
+    hl.foreground = hl.fg
+    ---@diagnostic disable-next-line: inject-field
+    hl.background = hl.bg
+    return hl
   end
   ---TODO: remove in 4.0
   ---@diagnostic disable-next-line: deprecated
@@ -75,15 +82,11 @@ local get_hl_by_name = function(name)
 end
 ---If the given highlight group is not defined, define it.
 ---@param hl_group_name string The name of the highlight group.
----@param link_to_if_exists table A list of highlight groups to link to, in
---order of priority. The first one that exists will be used.
----@param background string|nil The background color to use, in hex, if the highlight group
---is not defined and it is not linked to another group.
----@param foreground string|nil The foreground color to use, in hex, if the highlight group
---is not defined and it is not linked to another group.
----@gui string|nil The gui to use, if the highlight group is not defined and it is not linked
---to another group.
----@return table table The highlight group values.
+---@param link_to_if_exists string[] A list of highlight groups to link to, in order of priority. The first one that exists will be used.
+---@param background string? The background color to use, in hex, if the highlight group is not defined and it is not linked to another group.
+---@param foreground string? The foreground color to use, in hex, if the highlight group is not defined and it is not linked to another group.
+---@param gui string? The gui to use, if the highlight group is not defined and it is not linked to another group.
+---@return table hlgroups The highlight group values.
 M.create_highlight_group = function(hl_group_name, link_to_if_exists, background, foreground, gui)
   local success, hl_group = pcall(get_hl_by_name, hl_group_name, true)
   if not success or not hl_group.foreground or not hl_group.background then
@@ -128,6 +131,8 @@ M.create_highlight_group = function(hl_group_name, link_to_if_exists, background
   return hl_group
 end
 
+---@param hl_group_name string
+---@param fade_percentage number
 local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
   local normal = get_hl_by_name("Normal")
   if type(normal.foreground) ~= "number" then
@@ -197,6 +202,8 @@ local calculate_faded_highlight_group = function(hl_group_name, fade_percentage)
 end
 
 local faded_highlight_group_cache = {}
+---@param hl_group_name string
+---@param fade_percentage number
 M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
   if type(hl_group_name) ~= "string" then
     error("hl_group_name must be a string")

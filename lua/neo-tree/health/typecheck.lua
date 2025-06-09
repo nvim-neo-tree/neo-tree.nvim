@@ -1,6 +1,6 @@
 local M = {}
 
----Type but also supports "callable" like neovim does.
+---Like type() but also supports "callable" like neovim does.
 ---@see _G.type
 ---@param obj any
 ---@param expected neotree.LuaType
@@ -15,8 +15,8 @@ function M.match(obj, expected)
 end
 
 ---@alias neotree.LuaType type|"callable"
----@alias neotree.ValidatorFunction<T> fun(value: T):boolean?,string?
----@alias neotree.Validator<T> elem_or_list<neotree.LuaType>|neotree.ValidatorFunction<T>
+---@alias neotree.health.ValidatorFunction<T> fun(value: T):boolean?,string?
+---@alias neotree.health.Validator<T> elem_or_list<neotree.LuaType>|neotree.health.ValidatorFunction<T>
 
 ---@type (fun(err:string))[]
 M.errfuncs = {}
@@ -32,7 +32,7 @@ M.namestack = {}
 local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
   local mock_table = {}
 
-  ---@class neotree.Health.Mock.Metatable<T> : metatable
+  ---@class neotree.health.Mock.Metatable<T> : metatable
   ---@field accesses string[]
   local mt = {
     __original_table = tbl,
@@ -52,7 +52,6 @@ local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
     return missed_list
   end
 
-  -- The __index metamethod is called when a key is accessed on the mock_table.
   mt.__index = function(_, key)
     local path_segment
     if type(key) == "number" then
@@ -84,7 +83,6 @@ local function mock_recursive(path, tbl, accesses, missed_paths, track_missed)
     return value
   end
 
-  -- Set the metatable for the newly created mock_table.
   setmetatable(mock_table, mt)
   return mock_table
 end
@@ -108,7 +106,7 @@ function M.mock(name, tbl, track_missed)
 
     ---@param current_table table
     local function deep_traverse_mock(current_table)
-      ---@type neotree.Health.Mock.Metatable
+      ---@type neotree.health.Mock.Metatable
       local mt = getmetatable(current_table)
       for k, v in pairs(mt.__original_table) do
         if type(v) == "table" then
@@ -133,7 +131,7 @@ end
 ---@generic T
 ---@param name string
 ---@param value T
----@param validator neotree.Validator<T>
+---@param validator neotree.health.Validator<T>
 ---@param optional? boolean Whether value can be nil
 ---@param message? string message when validation fails
 ---@param on_invalid? fun(err: string, value: T):boolean? What to do when a (nested) validation fails, return true to throw error

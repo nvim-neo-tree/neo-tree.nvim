@@ -93,7 +93,7 @@ local Preview = {}
 local instance = nil
 
 ---Creates a new preview.
----@param state table The state of the source.
+---@param state neotree.State The state of the source.
 ---@return table preview A new preview. A preview is a table consisting of the following keys:
 --  active = boolean           Whether the preview is active.
 --  winid = number             The id of the window being used to preview.
@@ -209,7 +209,7 @@ function Preview:unsubscribe()
 end
 
 ---Finds the appropriate window and updates the preview accordingly.
----@param state table The state of the source.
+---@param state neotree.State The state of the source.
 function Preview:findWindow(state)
   local winid, is_neo_tree_window
   if self.config.use_float then

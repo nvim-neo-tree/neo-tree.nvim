@@ -34,13 +34,13 @@ M.pack = table.pack or function(...)
 end
 
 local tracked_functions = {}
----@enum NeotreeDebounceStrategy
+---@enum neotree.utils.DebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
----@enum NeotreeDebounceAction
+---@enum neotree.utils.DebounceAction?
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
@@ -50,8 +50,8 @@ M.debounce_action = {
 ---Part of debounce. Moved out of the function to eliminate memory leaks.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction?? The debounce_action to use, determines how the function is invoked
 local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
@@ -76,8 +76,8 @@ end
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -281,19 +281,21 @@ M.date = function(format, seconds)
   return formatted_date
 end
 
+---@class (exact) neotree.utils.DiagnosticCounts
+---@field severity_number integer
+---@field severity_string string
+---@field Error integer?
+---@field Warn integer?
+---@field Info integer?
+---@field Hint integer?
+
+---@alias neotree.utils.DiagnosticLookup table<string, neotree.utils.DiagnosticCounts?>
+
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
 ---severity_number and severity_string refer to the highest severity with
 ---non-zero diagnostics count.
 ---Entry is nil if all counts are 0
----@return table table
----{ [file_path] = {
----    severity_number = int,
----    severity_string = string,
----    Error = int or nil,
----    Warn = int or nil,
----    Info = int or nil
----    Hint = int or nil,
----  } or nil }
+---@return neotree.utils.DiagnosticLookup
 M.get_diagnostic_counts = function()
   local lookup = {}
 
@@ -375,17 +377,22 @@ end
 ---@deprecated
 ---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table<string, boolean> opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
+  local copy = {}
   for bufname, bufinfo in pairs(opened_buffers) do
-    opened_buffers[bufname] = bufinfo.modified
+    copy[bufname] = bufinfo.modified
   end
-  return opened_buffers
+  return copy
 end
 
+---@class neotree.utils.OpenedBuffers
+---@field modified boolean
+---@field loaded boolean
+
 ---Gets a lookup of all open buffers keyed by path with additional information
----@return table opened_buffers { [buffer_name] = { modified = bool } }
+---@return table<string, neotree.utils.OpenedBuffers> opened_buffers
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
@@ -395,8 +402,8 @@ M.get_opened_buffers = function()
         buffer_name = "[No Name]#" .. buffer
       end
       opened_buffers[buffer_name] = {
-        ["modified"] = vim.bo[buffer].modified,
-        ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
+        modified = vim.bo[buffer].modified,
+        loaded = vim.api.nvim_buf_is_loaded(buffer),
       }
     end
   end
@@ -405,9 +412,10 @@ end
 
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
----@param functionOrString any The object to resolve.
----@param node table The current node, which is passed to the function if it is a function.
----@param state any The current state, which is passed to the function if it is a function.
+---@param functionOrString fun(node: NuiTree.Node, state: neotree.State):string The object to resolve.
+---@param node NuiTree.Node The current node, which is passed to the function if it is a function.
+---@param state neotree.State The current state, which is passed to the function if it is a function.
+---@overload fun(functionOrString: string):string
 ---@return string string The resolved string.
 M.getStringValue = function(functionOrString, node, state)
   if type(functionOrString) == "function" then
@@ -418,9 +426,9 @@ M.getStringValue = function(functionOrString, node, state)
 end
 
 ---Return the keys of a given table.
----@param tbl table The table to get the keys of.
+---@param tbl string[] The table to get the keys of.
 ---@param sorted boolean Whether to sort the keys.
----@return table table The keys of the table.
+---@return string[] keys The keys of the table.
 M.get_keys = function(tbl, sorted)
   local keys = {}
   for k, _ in pairs(tbl) do
@@ -444,25 +452,24 @@ M.get_inner_win_width = function(winid)
   return vim.o.columns
 end
 
+---@type table<string, fun(node: NuiTree.Node):uv.fs_stat.result?>
 local stat_providers = {
   default = function(node)
     return uv.fs_stat(node.path)
   end,
 }
 
+---@class neotree.utils.StatTime
+--- @field sec number
+---@class neotree.utils.StatTable
+--- @field birthtime neotree.utils.StatTime
+--- @field mtime neotree.utils.StatTime
+--- @field size number
+
 --- Gets the statics for a node in the file system. The `stat` object will be cached
 --- for the lifetime of the node.
----
 ---@param node table The Nui TreeNode node to get the stats for.
----@return StatTable | table
----
----@class StatTime
---- @field sec number
----
----@class StatTable
---- @field birthtime StatTime
---- @field mtime StatTime
---- @field size number
+---@return neotree.utils.StatTable | table
 M.get_stat = function(node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]
@@ -481,11 +488,11 @@ M.register_stat_provider = function(name, func)
 end
 
 ---Handles null coalescing into a table at any depth.
+---Use vim.tbl_get instead.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any|nil The default value to return if the value is nil.
----@param strict_type_check boolean? Whether to require the type of the value is
----the same as the default value.
+---@param defaultValue any? The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is the same as the default value.
 ---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
@@ -647,6 +654,9 @@ M.map = function(tbl, fn)
   return t
 end
 
+---Finds an appropriate window to open a file from neo-tree
+---@param state neotree.State
+---@param ignore_winfixbuf boolean?
 M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- Avoid triggering autocommands when switching windows
   local eventignore = vim.o.eventignore
@@ -752,7 +762,7 @@ M.force_new_split = function(current_position, escaped_path)
 end
 
 ---Open file in the appropriate window.
----@param state table The state of the source
+---@param state neotree.State
 ---@param path string The file to open
 ---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
@@ -849,6 +859,9 @@ M.reverse_list = function(list)
   return result
 end
 
+---@param state neotree.State|neotree.Config.Base
+---@param config_option string
+---@param default_value any
 M.resolve_config_option = function(state, config_option, default_value)
   local opt = M.get_value(state, config_option, default_value, false)
   if type(opt) == "function" then
@@ -1266,11 +1279,11 @@ local brace_expand_contents = function(s)
     return items
   end
 
-  ---@alias neotree.Utils.Resolver fun(from: string, to: string, step: string): string[]
+  ---@alias neotree.utils.Resolver fun(from: string, to: string, step: string): string[]
 
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func neotree.Utils.Resolver
+  ---@param resolve_func neotree.utils.Resolver
   ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
@@ -1300,7 +1313,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
-  ---@type table<string, neotree.Utils.Resolver>
+  ---@type table<string, neotree.utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },

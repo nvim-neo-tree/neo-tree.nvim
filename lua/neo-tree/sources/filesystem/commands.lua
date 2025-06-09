@@ -8,6 +8,7 @@ local renderer = require("neo-tree.ui.renderer")
 local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 
+---@class neotree.sources.Filesystem.Commands : neotree.sources.Common.Commands
 local M = {}
 local refresh = function(state)
   fs._navigate_internal(state, nil, nil, nil, false)
@@ -38,6 +39,7 @@ M.copy_to_clipboard = function(state)
   cc.copy_to_clipboard(state, utils.wrap(redraw, state))
 end
 
+---@type neotree.TreeCommandVisual
 M.copy_to_clipboard_visual = function(state, selected_nodes)
   cc.copy_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
 end
@@ -47,6 +49,7 @@ M.cut_to_clipboard = function(state)
   cc.cut_to_clipboard(state, utils.wrap(redraw, state))
 end
 
+---@type neotree.TreeCommandVisual
 M.cut_to_clipboard_visual = function(state, selected_nodes)
   cc.cut_to_clipboard_visual(state, selected_nodes, utils.wrap(redraw, state))
 end
@@ -64,6 +67,7 @@ M.delete = function(state)
   cc.delete(state, utils.wrap(refresh, state))
 end
 
+---@type neotree.TreeCommandVisual
 M.delete_visual = function(state, selected_nodes)
   cc.delete_visual(state, selected_nodes, utils.wrap(refresh, state))
 end
