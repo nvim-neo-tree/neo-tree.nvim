@@ -5,12 +5,16 @@ local popups = require("neo-tree.ui.popups")
 local highlights = require("neo-tree.ui.highlights")
 local M = {}
 
+---@param text string
+---@param highlight string?
 local add_text = function(text, highlight)
   local line = NuiLine()
   line:append(text, highlight)
   return line
 end
 
+---@param state neotree.State
+---@param prefix_key string?
 local get_sub_keys = function(state, prefix_key)
   local keys = utils.get_keys(state.resolved_mappings, true)
   if prefix_key then
@@ -27,6 +31,8 @@ local get_sub_keys = function(state, prefix_key)
   end
 end
 
+---@param key string
+---@param prefix string?
 local function key_minus_prefix(key, prefix)
   if prefix then
     return key:sub(prefix:len() + 1)

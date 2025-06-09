@@ -477,10 +477,15 @@ end
 
 ---Expands or collapses the current node.
 ---@param state neotree.sources.filesystem.State
+---@param node NuiTree.Node
+---@param path_to_reveal string
+---@param skip_redraw boolean?
+---@param recursive boolean?
+---@param callback function?
 M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursive, callback)
   local tree = state.tree
   if not node then
-    node = tree:get_node()
+    node = assert(tree:get_node())
   end
   if node.type ~= "directory" then
     return
@@ -513,6 +518,8 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
 end
 
 M.prefetcher = {
+  ---@param state neotree.sources.filesystem.State
+  ---@param node NuiTree.Node
   prefetch = function(state, node)
     if node.type ~= "directory" then
       return

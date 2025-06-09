@@ -81,7 +81,11 @@ M.buffers_changed = function()
 end
 
 ---Navigate to the given path.
+---@param state neotree.State
 ---@param path string? Path to navigate to. If empty, will navigate to the cwd.
+---@param path_to_reveal string?
+---@param callback function?
+---@param async boolean?
 M.navigate = function(state, path, path_to_reveal, callback, async)
   state.dirty = false
   local path_changed = false
@@ -118,8 +122,8 @@ end
 ---@field renderers neotree.Config.Buffers.Renderers?
 
 ---Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
---wants to change from the defaults. May be empty to accept default values.
+---@param config neotree.Config.Buffers Configuration table containing any keys that the user wants to change from the defaults. May be empty to accept default values.
+---@param global_config neotree.Config.Base
 M.setup = function(config, global_config)
   --Configure events for before_render
   if config.before_render then

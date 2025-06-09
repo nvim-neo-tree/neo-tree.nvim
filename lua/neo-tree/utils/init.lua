@@ -34,13 +34,13 @@ M.pack = table.pack or function(...)
 end
 
 local tracked_functions = {}
----@enum NeotreeDebounceStrategy
+---@enum neotree.utils.DebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
----@enum NeotreeDebounceAction
+---@enum neotree.utils.DebounceAction?
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
@@ -50,8 +50,8 @@ M.debounce_action = {
 ---Part of debounce. Moved out of the function to eliminate memory leaks.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction?? The debounce_action to use, determines how the function is invoked
 local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
@@ -76,8 +76,8 @@ end
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -426,9 +426,9 @@ M.getStringValue = function(functionOrString, node, state)
 end
 
 ---Return the keys of a given table.
----@param tbl table The table to get the keys of.
+---@param tbl string[] The table to get the keys of.
 ---@param sorted boolean Whether to sort the keys.
----@return table table The keys of the table.
+---@return string[] keys The keys of the table.
 M.get_keys = function(tbl, sorted)
   local keys = {}
   for k, _ in pairs(tbl) do
@@ -452,25 +452,24 @@ M.get_inner_win_width = function(winid)
   return vim.o.columns
 end
 
+---@type table<string, fun(node: NuiTree.Node):uv.fs_stat.result?>
 local stat_providers = {
   default = function(node)
     return uv.fs_stat(node.path)
   end,
 }
 
+---@class neotree.utils.StatTime
+--- @field sec number
+---@class neotree.utils.StatTable
+--- @field birthtime neotree.utils.StatTime
+--- @field mtime neotree.utils.StatTime
+--- @field size number
+
 --- Gets the statics for a node in the file system. The `stat` object will be cached
 --- for the lifetime of the node.
----
 ---@param node table The Nui TreeNode node to get the stats for.
----@return StatTable | table
----
----@class StatTime
---- @field sec number
----
----@class StatTable
---- @field birthtime StatTime
---- @field mtime StatTime
---- @field size number
+---@return neotree.utils.StatTable | table
 M.get_stat = function(node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]

@@ -44,6 +44,8 @@ local follow_symbol = function()
   end
 end
 
+---@class neotree.sources.documentsymbols.DebounceArgs
+
 ---Follow the cursor with debouncing
 ---@param args { afile: string }
 local follow_debounced = function(args)
