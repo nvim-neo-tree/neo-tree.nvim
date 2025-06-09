@@ -8,6 +8,9 @@ local git_utils = require("neo-tree.git.utils")
 local M = {}
 local sep = utils.path_separator
 
+---@param ignored string[]
+---@param path string
+---@param _type neotree.Filetype
 M.is_ignored = function(ignored, path, _type)
   if _type == "directory" and not utils.is_windows then
     path = path .. sep
@@ -41,6 +44,8 @@ local get_root_for_item = function(item)
   return root
 end
 
+---@param state neotree.State
+---@param items neotree.FileItem[]
 M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")

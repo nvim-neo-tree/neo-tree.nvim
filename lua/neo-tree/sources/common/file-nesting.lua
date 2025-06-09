@@ -5,36 +5,36 @@ local log = require("neo-tree.log")
 -- File nesting a la JetBrains (#117).
 local M = {}
 
----@alias neotree.FileNesting.Callback fun(item: table, siblings: table[], rule: neotree.FileNesting.Rule): neotree.FileNesting.Matches
+---@alias neotree.filenesting.Callback fun(item: table, siblings: table[], rule: neotree.filenesting.Rule): neotree.filenesting.Matches
 
----@class neotree.FileNesting.Matcher
----@field rules table<string, neotree.FileNesting.Rule>|neotree.FileNesting.Rule[]
----@field get_children neotree.FileNesting.Callback
----@field get_nesting_callback fun(item: table): neotree.FileNesting.Callback|nil A callback that returns all the files
+---@class neotree.filenesting.Matcher
+---@field rules table<string, neotree.filenesting.Rule>|neotree.filenesting.Rule[]
+---@field get_children neotree.filenesting.Callback
+---@field get_nesting_callback fun(item: table): neotree.filenesting.Callback|nil A callback that returns all the files
 
 local DEFAULT_PATTERN_PRIORITY = 100
----@class neotree.FileNesting.Rule
+---@class neotree.filenesting.Rule
 ---@field priority number? Default is 100. Higher is prioritized.
 ---@field _priority number The internal priority, lower is prioritized. Determined through priority and the key for the rule at setup.
 
----@class neotree.FileNesting.Rule.Pattern : neotree.FileNesting.Rule
+---@class neotree.filenesting.Rule.Pattern : neotree.filenesting.Rule
 ---@field files string[]
 ---@field files_exact string[]?
 ---@field files_glob string[]?
 ---@field ignore_case boolean? Default is false
 ---@field pattern string
 
----@class neotree.FileNesting.Matcher.Pattern : neotree.FileNesting.Matcher
----@field rules neotree.FileNesting.Rule.Pattern[]
+---@class neotree.filenesting.Matcher.Pattern : neotree.filenesting.Matcher
+---@field rules neotree.filenesting.Rule.Pattern[]
 local pattern_matcher = {
   rules = {},
 }
 
----@class neotree.FileNesting.Rule.Extension : neotree.FileNesting.Rule
+---@class neotree.filenesting.Rule.Extension : neotree.filenesting.Rule
 ---@field [integer] string
 
----@class neotree.FileNesting.Matcher.Extension : neotree.FileNesting.Matcher
----@field rules table<string, neotree.FileNesting.Rule.Extension>
+---@class neotree.filenesting.Matcher.Extension : neotree.filenesting.Matcher
+---@field rules table<string, neotree.filenesting.Rule.Extension>
 local extension_matcher = {
   rules = {},
 }
@@ -44,7 +44,7 @@ local matchers = {
   exts = extension_matcher,
 }
 
----@class neotree.FileNesting.Matches
+---@class neotree.filenesting.Matches
 ---@field priority number
 ---@field parent table
 ---@field children table[]
@@ -63,7 +63,7 @@ extension_matcher.get_nesting_callback = function(item)
   return nil
 end
 
----@type neotree.FileNesting.Callback
+---@type neotree.filenesting.Callback
 extension_matcher.get_children = function(item, siblings, rule)
   local matching_files = {}
   if siblings == nil then
@@ -80,12 +80,12 @@ extension_matcher.get_children = function(item, siblings, rule)
       end
     end
   end
-  ---@type neotree.FileNesting.Matches
+  ---@type neotree.filenesting.Matches
   return matching_files
 end
 
 pattern_matcher.get_nesting_callback = function(item)
-  ---@type neotree.FileNesting.Rule.Pattern[]
+  ---@type neotree.filenesting.Rule.Pattern[]
   local matching_rules = {}
   for _, rule in ipairs(pattern_matcher.rules) do
     if item.name:match(rule.pattern) then
@@ -96,10 +96,10 @@ pattern_matcher.get_nesting_callback = function(item)
   if #matching_rules > 0 then
     return function(inner_item, siblings)
       local match_set = {}
-      ---@type neotree.FileNesting.Matches[]
+      ---@type neotree.filenesting.Matches[]
       local all_item_matches = {}
       for _, rule in ipairs(matching_rules) do
-        ---@type neotree.FileNesting.Matches
+        ---@type neotree.filenesting.Matches
         local item_matches = {
           priority = rule._priority,
           parent = inner_item,
@@ -141,7 +141,7 @@ local pattern_matcher_types = {
   },
 }
 
----@type neotree.FileNesting.Callback
+---@type neotree.filenesting.Callback
 pattern_matcher.get_children = function(item, siblings, rule)
   local matching_files = {}
   if siblings == nil then
@@ -151,7 +151,7 @@ pattern_matcher.get_children = function(item, siblings, rule)
   for type, type_functions in pairs(pattern_matcher_types) do
     for _, pattern in pairs(rule[type] or {}) do
       repeat
-        ---@cast rule neotree.FileNesting.Rule.Pattern
+        ---@cast rule neotree.filenesting.Rule.Pattern
         local item_name = rule.ignore_case and item.name:lower() or item.name
 
         local success, replaced_pattern = pcall(string.gsub, item_name, rule.pattern, pattern)
@@ -174,7 +174,7 @@ pattern_matcher.get_children = function(item, siblings, rule)
   return matching_files
 end
 
----@type neotree.FileNesting.Matcher[]
+---@type neotree.filenesting.Matcher[]
 local enabled_matchers = {}
 
 function M.is_enabled()
@@ -187,7 +187,7 @@ function M.nest_items(context)
   end
 
   -- First collect all nesting relationships
-  ---@type neotree.FileNesting.Matches[]
+  ---@type neotree.filenesting.Matches[]
   local nesting_relationships = {}
   for _, parent in pairs(context.nesting) do
     local siblings = context.folders[parent.parent_path].children
@@ -266,7 +266,7 @@ local function case_insensitive_pattern(pattern)
 end
 
 ---Setup the module with the given config
----@param config table<string, neotree.FileNesting.Rule>
+---@param config table<string, neotree.filenesting.Rule>
 function M.setup(config)
   config = config or {}
   enabled_matchers = {}
@@ -290,7 +290,7 @@ function M.setup(config)
     rule._priority = real_priority
     real_priority = real_priority + 1
     if rule.pattern then
-      ---@cast rule neotree.FileNesting.Rule.Pattern
+      ---@cast rule neotree.filenesting.Rule.Pattern
       rule.ignore_case = rule.ignore_case or false
       if rule.ignore_case then
         rule.pattern = case_insensitive_pattern(rule.pattern)
@@ -311,7 +311,7 @@ function M.setup(config)
       -- priority does matter for pattern.rules
       table.insert(matchers.pattern.rules, rule)
     else
-      ---@cast rule neotree.FileNesting.Rule.Extension
+      ---@cast rule neotree.filenesting.Rule.Extension
       matchers.exts.rules[key] = rule
     end
   end

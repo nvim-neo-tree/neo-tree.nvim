@@ -12,12 +12,14 @@ local compat = require("neo-tree.utils._compat")
 
 local M = {}
 
+---@param state neotree.State
 local function create_input_mapping_handle(cmd, state, scroll_padding)
   return function()
     cmd(state, scroll_padding)
   end
 end
 
+---@param state neotree.sources.filesystem.State
 M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local popup_options
   local winid = vim.api.nvim_get_current_win()
@@ -63,6 +65,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     })
   end
 
+  ---@type neotree.Config.SortFunction
   local sort_by_score = function(a, b)
     -- `state.fzy_sort_result_scores` should be defined in
     -- `sources.filesystem.lib.filter_external.fzy_sort_files`

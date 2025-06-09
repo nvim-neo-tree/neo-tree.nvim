@@ -15,7 +15,7 @@ function M.check_config(config)
     "config",
     config,
     function(cfg)
-      ---@class neotree.Validator.Generators
+      ---@class neotree.health.Validator.Generators
       local v = {
         array = function(validator)
           ---@generic T

@@ -6,7 +6,7 @@ local M = {}
 --- Recursively expand all loaded nodes under the given node
 --- returns table with all discovered nodes that need to be loaded
 ---@param node table a node to expand
----@param state table current state of the source
+---@param state neotree.State current state of the source
 ---@return table discovered nodes that need to be loaded
 local function expand_loaded(node, state, prefetcher)
   local function rec(current_node, to_load)
@@ -39,7 +39,7 @@ end
 --- Then run prefetcher on all unloaded nodes. Finally, expand loded nodes.
 --- async method
 ---@param node table a node to expand
----@param state table current state of the source
+---@param state neotree.State current state of the source
 local function expand_and_load(node, state, prefetcher)
   local to_load = expand_loaded(node, state, prefetcher)
   for _, _node in ipairs(to_load) do
@@ -52,7 +52,7 @@ end
 --- Expands given node recursively loading all descendant nodes if needed
 --- Nodes will be loaded using given prefetcher
 --- async method
----@param state table current state of the source
+---@param state neotree.State current state of the source
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_directory_recursively = function(state, node, prefetcher)

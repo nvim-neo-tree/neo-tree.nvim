@@ -7,6 +7,7 @@ local utils = require("neo-tree.utils")
 local symbols = require("neo-tree.sources.document_symbols.lib.symbols_utils")
 local renderer = require("neo-tree.ui.renderer")
 
+---@class neotree.sources.DocumentSymbols : neotree.Source
 local M = {
   name = "document_symbols",
   display_name = "  Symbols ",
@@ -43,6 +44,8 @@ local follow_symbol = function()
   end
 end
 
+---@class neotree.sources.documentsymbols.DebounceArgs
+
 ---Follow the cursor with debouncing
 ---@param args { afile: string }
 local follow_debounced = function(args)
@@ -70,9 +73,24 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   end
 end
 
+---@class neotree.Config.LspKindDisplay
+---@field icon string
+---@field hl string
+
+---@class neotree.Config.DocumentSymbols.Renderers : neotree.Config.Renderers
+---@field root neotree.Component.DocumentSymbols[]?
+---@field symbol neotree.Component.DocumentSymbols[]?
+
+---@class (exact) neotree.Config.DocumentSymbols : neotree.Config.Source
+---@field follow_cursor boolean?
+---@field client_filters neotree.lsp.ClientFilter?
+---@field custom_kinds table<integer, string>?
+---@field kinds table<string, neotree.Config.LspKindDisplay>?
+---@field renderers neotree.Config.DocumentSymbols.Renderers?
+
 ---Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
----wants to change from the defaults. May be empty to accept default values.
+---@param config neotree.Config.DocumentSymbols
+---@param global_config neotree.Config.Base
 M.setup = function(config, global_config)
   symbols.setup(config)
 

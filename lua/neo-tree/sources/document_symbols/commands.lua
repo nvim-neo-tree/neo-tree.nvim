@@ -5,6 +5,8 @@ local manager = require("neo-tree.sources.manager")
 local inputs = require("neo-tree.ui.inputs")
 local filters = require("neo-tree.sources.common.filters")
 
+---@class neotree.sources.DocumentSymbols.Commands : neotree.sources.Common.Commands
+---@field [string] neotree.TreeCommand
 local M = {}
 local SOURCE_NAME = "document_symbols"
 M.refresh = utils.wrap(manager.refresh, SOURCE_NAME)
@@ -14,6 +16,7 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
+---@param node NuiTree.Node
 M.jump_to_symbol = function(state, node)
   node = node or state.tree:get_node()
   if node:get_depth() == 1 then
@@ -26,12 +29,13 @@ M.jump_to_symbol = function(state, node)
 end
 
 M.rename = function(state)
-  local node = state.tree:get_node()
+  local node = assert(state.tree:get_node())
   if node:get_depth() == 1 then
     return
   end
   local old_name = node.name
 
+  ---@param new_name string?
   local callback = function(new_name)
     if not new_name or new_name == "" or new_name == old_name then
       return

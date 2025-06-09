@@ -128,7 +128,7 @@ end
 
 ---Callback function for lsp request
 ---@param lsp_resp table<integer, neotree.lsp.RespRaw> the response of the lsp clients
----@param state table the state of the source
+---@param state neotree.State the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then
     return
@@ -137,7 +137,7 @@ local on_lsp_resp = function(lsp_resp, state)
   -- filter the response to get only the desired LSP
   local resp = filters.filter_resp(lsp_resp)
 
-  local bufname = state.path
+  local bufname = assert(state.path)
   local items = {}
 
   -- parse each client's response
