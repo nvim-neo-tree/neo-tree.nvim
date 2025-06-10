@@ -7,10 +7,9 @@ local M = {}
 ---@enum (key) neotree.clipboard.BackendNames.Builtin
 local builtins = {
   none = require("neo-tree.clipboard.sync.base"),
-  file = require("neo-tree.clipboard.sync.file"),
   global = require("neo-tree.clipboard.sync.global"),
+  universal = require("neo-tree.clipboard.sync.universal"),
 }
-vim.print(builtins)
 
 ---@type table<string, neotree.clipboard.Backend?>
 M.backends = builtins
@@ -43,9 +42,13 @@ M.setup = function(opts)
 
   events.subscribe({
     event = events.STATE_CREATED,
+    ---@param new_state neotree.State
     handler = function(new_state)
-      local clipboard = M.current_backend:load(new_state) or {}
+      local clipboard, err = M.current_backend:load(new_state)
       if not clipboard then
+        if err then
+          log.error(err)
+        end
         return
       end
       new_state.clipboard = clipboard
@@ -54,25 +57,35 @@ M.setup = function(opts)
 
   events.subscribe({
     event = events.NEO_TREE_CLIPBOARD_CHANGED,
+    ---@param state neotree.State
     handler = function(state)
       local ok, err = M.current_backend:save(state)
       if ok == false then
         log.error(err)
       end
-
-      -- try loading the changed clipboard into all other states
-      manager._for_each_state(nil, function(other_state)
-        if state == other_state then
-          return
-        end
-        local modified_clipboard = M.current_backend:load(other_state)
-        if not modified_clipboard then
-          return
-        end
-        vim.print("changed clipboard of " .. ("%s%s"):format(other_state.name, other_state.id))
-        other_state.clipboard = modified_clipboard
-      end)
+      M.sync_to_clipboards(state)
     end,
   })
 end
+
+---@param exclude_state neotree.State?
+function M.sync_to_clipboards(exclude_state)
+  -- try loading the changed clipboard into all other states
+  vim.schedule(function()
+    manager._for_each_state(nil, function(state)
+      if exclude_state == state then
+        return
+      end
+      local modified_clipboard, err = M.current_backend:load(state)
+      if not modified_clipboard then
+        if err then
+          log.error(err)
+        end
+        return
+      end
+      state.clipboard = modified_clipboard
+    end)
+  end)
+end
+
 return M

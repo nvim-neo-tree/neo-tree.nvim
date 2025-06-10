@@ -1,8 +1,11 @@
 ---@class neotree.clipboard.Backend
 local Backend = {}
 
----@class neotree.clipboard.Contents
----@field [string] NuiTree.Node
+---@class neotree.clipboard.Node
+---@field action string
+---@field node NuiTree.Node
+
+---@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
 
 ---@return neotree.clipboard.Backend?
 function Backend:new()
@@ -14,18 +17,16 @@ end
 
 ---Loads the clipboard from the backend
 ---Return a nil clipboard to not make any changes.
----@param state table
----@return neotree.clipboard.Contents? clipboard
+---@param state neotree.State
+---@return neotree.clipboard.Contents|false? clipboard
 ---@return string? err
-function Backend:load(state)
-  vim.print("base load")
-  return nil, nil
-end
+function Backend:load(state) end
 
 ---Writes the clipboard to the backend
----@param state table
+---Returns nil when nothing was saved
+---@param state neotree.State
+---@return boolean? success_or_noop
 function Backend:save(state)
-  vim.print("base save")
   return true
 end
 

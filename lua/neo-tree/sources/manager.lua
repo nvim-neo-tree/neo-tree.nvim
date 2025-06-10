@@ -43,14 +43,6 @@ local get_source_data = function(source_name)
   return sd
 end
 
----@type metatable
-local state_mt = {
-  __eq = function(t1, t2)
-    return t1.id == t2.id and t1.name == t2.name
-  end,
-}
-
-local id_count = 0
 ---@class neotree.State.Window : neotree.Config.Window
 ---@field win_width integer
 ---@field last_user_width integer
@@ -68,7 +60,7 @@ local id_count = 0
 ---@field position table
 ---@field git_base string
 ---@field sort table
----@field clipboard table
+---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.Position?
 ---@field disposed boolean?
 ---@field winid integer?
@@ -135,14 +127,11 @@ local function create_state(tabid, sd, winid)
   ---@cast state neotree.State
   state.tabid = tabid
   state.id = winid or tabid
-  state._id = id_count
-  id_count = id_count + 1
   state.dirty = true
   state.position = {}
   state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
   state.clipboard = {}
-  setmetatable(state, state_mt)
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state

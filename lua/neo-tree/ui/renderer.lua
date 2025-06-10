@@ -817,7 +817,6 @@ local get_selected_nodes = function(state)
     -- I'm not sure if this could actually happen, but just in case
     start_pos, end_pos = end_pos, start_pos
   end
-  vim.print(start_pos)
   local selected_nodes = {}
   while start_pos <= end_pos do
     local node = state.tree:get_node(start_pos)
