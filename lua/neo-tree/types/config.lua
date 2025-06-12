@@ -15,7 +15,6 @@
 ---@field renderers neotree.Config.Renderers?
 ---@field commands table<string, neotree.Config.TreeCommand?>?
 ---@field before_render fun(state: neotree.State)?
----@field bind_to_cwd boolean?
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string?
@@ -147,5 +146,6 @@
 ---@field buffers neotree.Config.Buffers
 ---@field git_status neotree.Config.GitStatus
 ---@field document_symbols neotree.Config.DocumentSymbols
+---@field bind_to_cwd boolean?
 
 ---@class (partial) neotree.Config : neotree.Config.Base
