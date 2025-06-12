@@ -277,6 +277,7 @@ local function modify_parent_scores(result_scores, path, score)
   end
 end
 
+---@param state neotree.State
 M.fzy_sort_files = function(opts, state)
   state = state or {}
   local filters = opts.filtered_items

@@ -86,13 +86,15 @@ M.popup_options = function(title, min_width, override_options)
   end
 end
 
+---@param title string
+---@param message elem_or_list<string|integer>
+---@param size integer?
 M.alert = function(title, message, size)
   local lines = {}
   local max_line_width = title:len()
+  ---@param line any
   local add_line = function(line)
-    if not type(line) == "string" then
-      line = tostring(line)
-    end
+    line = tostring(line)
     if line:len() > max_line_width then
       max_line_width = line:len()
     end

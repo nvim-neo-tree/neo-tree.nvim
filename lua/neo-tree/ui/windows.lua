@@ -1,6 +1,6 @@
 local locations = {}
 
-local get_location = function(location)
+locations.get_location = function(location)
   local tab = vim.api.nvim_get_current_tabpage()
   if not locations[tab] then
     locations[tab] = {}
@@ -24,4 +24,4 @@ local get_location = function(location)
   return loc
 end
 
-return { get_location = get_location }
+return locations
