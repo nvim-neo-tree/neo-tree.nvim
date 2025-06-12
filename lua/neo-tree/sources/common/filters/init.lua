@@ -216,6 +216,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     none = nil,
   }
 
+  local config = require("neo-tree").config
   -- create mappings and autocmd
   if config.use_default_mappings then
     input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
@@ -228,7 +229,6 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
   end
 
-  local config = require("neo-tree").config
   local falsy_mappings = { "noop", "none" }
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
     local t = type(cmd)
