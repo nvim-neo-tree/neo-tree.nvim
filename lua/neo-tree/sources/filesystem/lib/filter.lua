@@ -196,10 +196,12 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local cmds = {
     move_cursor_down = function(_state, _scroll_padding)
       renderer.focus_node(_state, nil, true, 1, _scroll_padding)
+      vim.api.nvim_set_current_win(input.winid)
     end,
 
     move_cursor_up = function(_state, _scroll_padding)
       renderer.focus_node(_state, nil, true, -1, _scroll_padding)
+      vim.api.nvim_set_current_win(input.winid)
       vim.cmd("redraw!")
     end,
 
@@ -229,6 +231,13 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     )
     input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
   end
+  input:map("n", "<esc>", cmds.close)
+  input:on("QuitPre", function()
+    vim.o.confirm = false
+    vim.schedule(function()
+      vim.o.confirm = true
+    end)
+  end)
 
   if not fuzzy_finder_mode then
     return
@@ -241,7 +250,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       local command = cmds[cmd]
       if command then
         input:map("i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
-      elseif not vim.tbl_contains(falsy_mappings, cmds) then
+      elseif not vim.tbl_contains(falsy_mappings, cmd) then
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, command))
       end
     elseif t == "function" then
