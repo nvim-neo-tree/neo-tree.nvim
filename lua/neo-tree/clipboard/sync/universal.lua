@@ -1,6 +1,5 @@
----A backend for the clipboard that uses a file in stdpath('state')/neo-tree.nvim/clipboards/ to  sync the clipboard
----.. self.filename
----between everything
+---A backend for the clipboard that uses a file in stdpath('state')/neo-tree.nvim/clipboards/ .. self.filename
+---to sync the clipboard between everything.
 local BaseBackend = require("neo-tree.clipboard.sync.base")
 local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
@@ -13,9 +12,10 @@ local uv = vim.uv or vim.loop
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
 local pid = vim.uv.os_getpid()
 
----@class neotree.clipboard.FileBackend.FileFormat
+---@class (exact) neotree.clipboard.FileBackend.FileFormat
 ---@field pid integer
 ---@field time integer
+---@field state_name string
 ---@field contents neotree.clipboard.Contents
 
 ---@class neotree.clipboard.FileBackend : neotree.clipboard.Backend
@@ -24,7 +24,7 @@ local pid = vim.uv.os_getpid()
 ---@field source string
 ---@field pid integer
 ---@field cached_contents neotree.clipboard.Contents
----@field last_time_saved neotree.clipboard.Contents
+---@field last_time_saved integer
 ---@field saving boolean
 local FileBackend = BaseBackend:new()
 
@@ -36,9 +36,9 @@ local function file_touch(filename)
     return true
   end
   local dir = vim.fn.fnamemodify(filename, ":h")
-  local code = vim.fn.mkdir(dir, "p")
-  if code ~= 1 then
-    return false, "couldn't make dir" .. dir
+  local mkdir_ok = vim.fn.mkdir(dir, "p")
+  if mkdir_ok == 0 then
+    return false, "couldn't make dir " .. dir
   end
   local file, file_err = io.open(filename, "a+")
   if not file then
@@ -93,6 +93,9 @@ function FileBackend:_start()
   if event_handle then
     self.handle = event_handle
     local start_success = event_handle:start(self.filename, {}, function(err, _, fs_events)
+      local write_time = uv.fs_stat(self.filename).mtime.nsec
+      if self.last_time_saved == write_time then
+      end
       if err then
         event_handle:close()
         return
@@ -118,6 +121,7 @@ local validate_clipboard_from_file = function(wrapped_clipboard)
     validate("contents", c.contents, "table")
     validate("pid", c.pid, "number")
     validate("time", c.time, "number")
+    validate("state_name", c.state_name, "string")
   end, false, "Clipboard from file could not be validated")
 end
 
@@ -147,7 +151,23 @@ function FileBackend:load(state)
   end
 
   if not validate_clipboard_from_file(clipboard_file) then
-    return nil, "could not validate clipboard from file"
+    if
+      require("neo-tree.ui.inputs").confirm(
+        "Neo-tree clipboard file seems invalid, clear out clipboard?"
+      )
+    then
+      local success, delete_err = os.remove(self.filename)
+      if not success then
+        log.error(delete_err)
+      end
+
+      -- try creating a new file without content
+      state.clipboard = {}
+      self:save(state)
+      -- clear the current clipboard
+      return {}
+    end
+    return nil, "could not parse a valid clipboard from clipboard file"
   end
 
   return clipboard_file.contents
@@ -163,6 +183,7 @@ function FileBackend:save(state)
   local wrapped = {
     pid = pid,
     time = os.time(),
+    state_name = assert(state.name),
     contents = c,
   }
   if not file_touch(self.filename) then
@@ -170,7 +191,8 @@ function FileBackend:save(state)
   end
   local encode_ok, str = pcall(vim.json.encode, wrapped)
   if not encode_ok then
-    return false, "couldn't encode clipboard into json"
+    local encode_err = str
+    return false, "couldn't encode clipboard into json: " .. encode_err
   end
   local file, err = io.open(self.filename, "w")
   if not file or err then
@@ -182,6 +204,7 @@ function FileBackend:save(state)
   end
   file:flush()
   file:close()
+  self.last_time_saved = uv.fs_stat(self.filename).mtime.nsec
   return true
 end
 
