@@ -14,7 +14,7 @@ local M = {}
 
 ---@param state neotree.sources.filesystem.State
 ---@param search_as_you_type boolean?
----@param fuzzy_finder_mode boolean|string?
+---@param fuzzy_finder_mode "directory"|boolean?
 ---@param use_fzy boolean?
 ---@param keep_filter_on_submit boolean?
 M.show_filter = function(
