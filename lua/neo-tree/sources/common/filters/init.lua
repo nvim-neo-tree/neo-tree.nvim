@@ -193,7 +193,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
   end)
 
   local cmds
-  ---@enum (key) neotree.FuzzyFinder.Commands
+  ---@enum (key) neotree.FuzzyFinder.BuiltinCommands
   cmds = {
     move_cursor_down = function(state_, scroll_padding_)
       renderer.focus_node(state_, nil, true, 1, scroll_padding_)
