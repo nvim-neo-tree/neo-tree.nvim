@@ -200,12 +200,10 @@ M.show_filter = function(
   cmds = {
     move_cursor_down = function(_state, _scroll_padding)
       renderer.focus_node(_state, nil, true, 1, _scroll_padding)
-      vim.api.nvim_set_current_win(input.winid)
     end,
 
     move_cursor_up = function(_state, _scroll_padding)
       renderer.focus_node(_state, nil, true, -1, _scroll_padding)
-      vim.api.nvim_set_current_win(input.winid)
       vim.cmd("redraw!")
     end,
 
@@ -235,8 +233,8 @@ M.show_filter = function(
       cmds.close()
     end,
 
-    noop = function() end,
-    none = function() end,
+    noop = nil,
+    none = nil,
   }
 
   input:on({ event.BufLeave, event.BufDelete }, cmds.close, { once = true })
@@ -252,11 +250,19 @@ M.show_filter = function(
   input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
   input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
   input:map("n", "<esc>", cmds.close)
+  -- NOTE(pynappo): if users have a bind that rebinds a/i to cc on empty line, they can't go back to insert mode. i
+  -- think this is just inherent to the prompt buftype so the users could just fix their binds, but maybe we can rebind
+  -- a/A/i/I to revert to stock?
+
   -- hacky bugfix for quitting from the filter window
   input:on("QuitPre", function()
+    if vim.api.nvim_get_current_win() == input.winid then
+      return
+    end
+    local old_confirm = vim.o.confirm
     vim.o.confirm = false
     vim.schedule(function()
-      vim.o.confirm = true
+      vim.o.confirm = old_confirm
     end)
   end)
 
@@ -284,7 +290,7 @@ M.show_filter = function(
       mode = cmd.mode
     end
     local t = type(cmd)
-    if t == "string" then
+    if t == "string" and not vim.tbl_contains(falsy_mappings, t) then
       try_map(lhs, cmd, mode)
     elseif t == "function" then
       input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })

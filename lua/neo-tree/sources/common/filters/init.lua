@@ -238,12 +238,23 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       utils.wrap(cmds.move_cursor_down, state, scroll_padding),
       { noremap = true }
     )
-    input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
-    input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
     input:map("i", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
-    input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
     input:map("i", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
   end
+  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
+  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
+  input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
+  input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
+  input:on("QuitPre", function()
+    if vim.api.nvim_get_current_win() == input.winid then
+      return
+    end
+    local old_confirm = vim.o.confirm
+    vim.o.confirm = false
+    vim.schedule(function()
+      vim.o.confirm = old_confirm
+    end)
+  end)
 
   local falsy_mappings = { "noop", "none" }
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
