@@ -445,10 +445,10 @@ local config = {
         ["H"] = "toggle_hidden",
         ["/"] = "fuzzy_finder",
         --["/"] = {"fuzzy_finder", config = { keep_filter_on_submit = true }},
-        ["D"] = "fuzzy_finder_directory",
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
-        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
+        ["D"] = "fuzzy_finder_directory",
         -- ["D"] = "fuzzy_sorter_directory",
+        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["<bs>"] = "navigate_up",

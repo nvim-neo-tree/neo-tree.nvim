@@ -246,7 +246,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
   input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
   input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
   input:on("QuitPre", function()
-    if vim.api.nvim_get_current_win() == input.winid then
+    if vim.api.nvim_get_current_win() ~= input.winid then
       return
     end
     local old_confirm = vim.o.confirm

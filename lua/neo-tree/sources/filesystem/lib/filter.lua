@@ -256,7 +256,7 @@ M.show_filter = function(
 
   -- hacky bugfix for quitting from the filter window
   input:on("QuitPre", function()
-    if vim.api.nvim_get_current_win() == input.winid then
+    if vim.api.nvim_get_current_win() ~= input.winid then
       return
     end
     local old_confirm = vim.o.confirm
