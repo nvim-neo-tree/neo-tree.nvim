@@ -1,10 +1,17 @@
 local NuiText = require("nui.text")
 local NuiPopup = require("nui.popup")
+local nt = require("neo-tree")
 local highlights = require("neo-tree.ui.highlights")
 local log = require("neo-tree.log")
 
 local M = {}
 
+local winborder_option_exists = vim.fn.exists("&winborder") > 0
+-- These borders will cause errors when trying to display border text with them
+local invalid_borders = { "", "none", "shadow" }
+---@param title string
+---@param min_width integer?
+---@param override_options table?
 M.popup_options = function(title, min_width, override_options)
   if string.len(title) ~= 0 then
     title = " " .. title .. " "
@@ -12,8 +19,16 @@ M.popup_options = function(title, min_width, override_options)
   min_width = min_width or 30
   local width = string.len(title) + 2
 
-  local nt = require("neo-tree")
   local popup_border_style = nt.config.popup_border_style
+  if popup_border_style == "" then
+    -- Try to use winborder
+    if not winborder_option_exists or vim.tbl_contains(invalid_borders, vim.o.winborder) then
+      popup_border_style = "single"
+    else
+      ---@diagnostic disable-next-line: cast-local-type
+      popup_border_style = vim.o.winborder
+    end
+  end
   local popup_border_text = NuiText(title, highlights.FLOAT_TITLE)
   local col = 0
   -- fix popup position when using multigrid
@@ -71,13 +86,15 @@ M.popup_options = function(title, min_width, override_options)
   end
 end
 
+---@param title string
+---@param message elem_or_list<string|integer>
+---@param size integer?
 M.alert = function(title, message, size)
   local lines = {}
   local max_line_width = title:len()
+  ---@param line any
   local add_line = function(line)
-    if not type(line) == "string" then
-      line = tostring(line)
-    end
+    line = tostring(line)
     if line:len() > max_line_width then
       max_line_width = line:len()
     end

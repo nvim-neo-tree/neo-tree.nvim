@@ -56,6 +56,10 @@ so we can fix it.
 
 ## Minimal Quickstart
 
+> [!NOTE]
+> You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
+> configuration.
+
 #### Minimal Example for Lazy:
 ```lua
 {
@@ -66,7 +70,13 @@ so we can fix it.
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
     -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
-  }
+  },
+  lazy = false, -- neo-tree will lazily load itself
+  ---@module "neo-tree"
+  ---@type neotree.Config?
+  opts = {
+    -- fill any relevant options here
+  },
 }
 ```
 
@@ -142,16 +152,35 @@ return {
         end,
       },
     },
+    lazy = false,
+    -----Instead of using `config`, you can use `opts` instead, if you'd like:
+    -----@module "neo-tree"
+    -----@type neotree.Config
+    --opts = {},
     config = function()
-      -- If you want icons for diagnostic errors, you'll need to define them somewhere:
-      vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
-      vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
-      vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
-      vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+      -- If you want icons for diagnostic errors, you'll need to define them somewhere.
+      -- In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
+      --
+      -- vim.diagnostic.config({
+      --   signs = {
+      --     text = {
+      --       [vim.diagnostic.severity.ERROR] = '',
+      --       [vim.diagnostic.severity.WARN] = '',
+      --       [vim.diagnostic.severity.INFO] = '',
+      --       [vim.diagnostic.severity.HINT] = '󰌵',
+      --     },
+      --   }
+      -- })
+      --
+      -- In older versions, you can define the signs manually:
+      -- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
+      -- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
+      -- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
+      -- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
 
       require("neo-tree").setup({
         close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
-        popup_border_style = "rounded",
+        popup_border_style = "NC", -- or "" to use 'winborder' on Neovim v0.11+
         enable_git_status = true,
         enable_diagnostics = true,
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
@@ -287,6 +316,7 @@ return {
             -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
+            --["Z"] = "expand_all_subnodes",
             ["a"] = {
               "add",
               -- this command supports BASH style brace expansion ("x{a,b,c}" -> xa,xb,xc). see `:h neo-tree-file-actions` for details
@@ -442,6 +472,7 @@ return {
             mappings = {
               ["A"] = "git_add_all",
               ["gu"] = "git_unstage_file",
+              ["gU"]  = "git_undo_last_commit",
               ["ga"] = "git_add_file",
               ["gr"] = "git_revert_file",
               ["gc"] = "git_commit",

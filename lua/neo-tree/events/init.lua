@@ -62,9 +62,9 @@ end
 
 ---@param event_name neotree.Event|string
 ---@param autocmds string[]
----@param debounce_frequency integer
----@param seed_fn function
----@param nested boolean
+---@param debounce_frequency integer?
+---@param seed_fn function?
+---@param nested boolean?
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
   log.debug("Defining autocmd event: %s", event_name)
   local augroup_name = "NeoTreeEvent_" .. event_name
@@ -79,9 +79,9 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
           group = augroup,
           nested = nested,
           callback = function(args)
-            ---@class neotree.Event.Autocmd.CallbackArgs : vim.api.keyset.create_autocmd.callback_args
+            ---@class neotree.Event.Autocmd.CallbackArgs : neotree._vim.api.keyset.create_autocmd.callback_args
             ---@field afile string
-            local event_args = args
+            local event_args = args --[[@as neotree._vim.api.keyset.create_autocmd.callback_args]]
             event_args.afile = args.file or ""
             M.fire_event(event_name, event_args)
           end,

@@ -13,20 +13,8 @@ local fzy = require("neo-tree.sources.common.filters.filter_fzy")
 
 local M = {}
 
----@enum (key) neotree.FuzzyFinder.Commands
-local cmds = {
-  move_cursor_down = function(state, scroll_padding)
-    renderer.focus_node(state, nil, true, 1, scroll_padding)
-  end,
-
-  move_cursor_up = function(state, scroll_padding)
-    renderer.focus_node(state, nil, true, -1, scroll_padding)
-    vim.cmd("redraw!")
-  end,
-}
-
 ---Reset the current filter to the empty string.
----@param state any
+---@param state neotree.State
 ---@param refresh boolean? whether to refresh the source tree
 ---@param open_current_node boolean? whether to open the current node
 local reset_filter = function(state, refresh, open_current_node)
@@ -107,7 +95,7 @@ end
 
 ---Main entry point for the filter functionality.
 ---This will display a filter input popup and filter the source tree on change and on submit
----@param state table the source state
+---@param state neotree.State the source state
 ---@param search_as_you_type boolean? whether to filter as you type or only on submit
 ---@param keep_filter_on_submit boolean? whether to keep the filter on <CR> or reset it
 M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
@@ -204,16 +192,29 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     end
   end)
 
+  ---@enum (key) neotree.FuzzyFinder.Commands
+  local cmds = {
+    move_cursor_down = function(state_, scroll_padding_)
+      renderer.focus_node(state_, nil, true, 1, scroll_padding_)
+    end,
+
+    move_cursor_up = function(state_, scroll_padding_)
+      renderer.focus_node(state_, nil, true, -1, scroll_padding_)
+      vim.cmd("redraw!")
+    end,
+
+    close = function()
+      vim.cmd("stopinsert")
+      input:unmount()
+      if utils.truthy(state.search_pattern) then
+        reset_filter(state, true)
+      end
+      restore_height()
+    end,
+  }
+
   -- create mappings and autocmd
   input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-  input:map("i", "<esc>", function()
-    vim.cmd("stopinsert")
-    input:unmount()
-    if utils.truthy(state.search_pattern) then
-      reset_filter(state, true)
-    end
-    restore_height()
-  end, { noremap = true })
 
   local config = require("neo-tree").config
   for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do

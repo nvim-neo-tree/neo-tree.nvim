@@ -49,12 +49,15 @@ local function get_priority_git_status_code(status, other_status)
   end
 end
 
----@class neotree.Git.Context
----@field status neotree.Git.Status
+---@class (exact) neotree.git.Context
+---@field git_status neotree.git.Status
+---@field git_root string
+---@field exclude_directories boolean
+---@field lines_parsed integer
 
----@class neotree.Git.Status
----@field [string] string
+---@alias neotree.git.Status table<string, string>
 
+---@param context neotree.git.Context
 local parse_git_status_line = function(context, line)
   context.lines_parsed = context.lines_parsed + 1
   if type(line) ~= "string" then
@@ -124,7 +127,7 @@ end
 ---@base git ref base
 ---@exclude_directories boolean Whether to skip bubling up status to directories
 ---@path string Path to run the git status command in, defaults to cwd.
----@return neotree.Git.Status, string? git_status the neotree.Git.Status of the given root
+---@return neotree.git.Status, string? git_status the neotree.Git.Status of the given root
 M.status = function(base, exclude_directories, path)
   local git_root = git_utils.get_repository_root(path)
   if not utils.truthy(git_root) then
@@ -217,6 +220,7 @@ M.status_async = function(path, base, opts)
     end
 
     local event_id = "git_status_" .. git_root
+    ---@type neotree.git.Context
     local context = {
       git_root = git_root,
       git_status = {},

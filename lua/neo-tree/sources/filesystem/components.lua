@@ -12,7 +12,6 @@
 
 local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
-local utils = require("neo-tree.utils")
 
 ---@alias neotree.Component.Filesystem._Key
 ---|"current_filter"

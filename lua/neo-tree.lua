@@ -13,13 +13,17 @@ end
 local new_user_config = nil
 
 ---Updates the config of neo-tree using the latest user config passed through setup, if any.
+---@return neotree.Config.Base
 M.ensure_config = function()
   if not M.config or new_user_config then
     M.config = require("neo-tree.setup").merge_config(new_user_config)
     new_user_config = nil
   end
+  return M.config
 end
 
+---@param ignore_filetypes string[]?
+---@param ignore_winfixbuf boolean?
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   local utils = require("neo-tree.utils")
   ignore_filetypes = ignore_filetypes or {}
@@ -27,7 +31,7 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   ignore["neo-tree"] = true
 
   local tabid = vim.api.nvim_get_current_tabpage()
-  local wins = utils.get_value(M, "config.prior_windows", {}, true)[tabid]
+  local wins = utils.prior_windows[tabid]
   if wins == nil then
     return -1
   end
@@ -52,14 +56,18 @@ end
 
 M.paste_default_config = function()
   local utils = require("neo-tree.utils")
-  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$")
+  ---@type string
+  local base_path = assert(debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$"))
+  ---@type string
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
+  ---@type string[]?
   local lines = vim.fn.readfile(config_path)
   if lines == nil then
     error("Could not read neo-tree.defaults")
   end
 
   -- read up to the end of the config, jut to omit the final return
+  ---@type string[]
   local config = {}
   for _, line in ipairs(lines) do
     table.insert(config, line)
@@ -91,12 +99,7 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  local netrw = require("neo-tree.setup.netrw")
-  if netrw.get_hijack_behavior() ~= "disabled" then
-    vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack(path)
-  end
-  return false
+  return require("neo-tree.setup.netrw").hijack()
 end
 
 ---@param config neotree.Config

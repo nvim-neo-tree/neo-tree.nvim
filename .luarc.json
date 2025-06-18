@@ -25,7 +25,9 @@
     ],
     "ignoreDir": [
       ".dependencies",
-      ".luarocks"
+      ".luarocks",
+      ".lua",
+      ".repro"
     ]
   }
 }

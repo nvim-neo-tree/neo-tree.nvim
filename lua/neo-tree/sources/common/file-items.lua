@@ -3,6 +3,7 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 
+---@type neotree.Config.SortFunction
 local function sort_items(a, b)
   if a.type == b.type then
     return a.path < b.path
@@ -11,6 +12,7 @@ local function sort_items(a, b)
   end
 end
 
+---@type neotree.Config.SortFunction
 local function sort_items_case_insensitive(a, b)
   if a.type == b.type then
     return a.path:lower() < b.path:lower()
@@ -20,11 +22,9 @@ local function sort_items_case_insensitive(a, b)
 end
 
 ---Creates a sort function the will sort by the values returned by the field provider.
----@param field_provider function a function that takes an item and returns a value to
----                       sort by.
----@param fallback_sort_function function a sort function to use if the field provider
----                               returns the same value for both items.
----@return fun(a:any, b:any):boolean
+---@param field_provider neotree.Internal.SortFieldProvider a function that takes an item and returns a value to sort by.
+---@param fallback_sort_function neotree.Config.SortFunction a sort function to use if the field provider returns the same value for both items.
+---@return neotree.Config.SortFunction
 local function make_sort_function(field_provider, fallback_sort_function, direction)
   return function(a, b)
     if a.type == b.type then
@@ -45,6 +45,8 @@ local function make_sort_function(field_provider, fallback_sort_function, direct
   end
 end
 
+---@param func neotree.Config.SortFunction?
+---@return boolean
 local function sort_function_is_valid(func)
   if func == nil then
     return false
@@ -62,16 +64,21 @@ local function sort_function_is_valid(func)
   return false
 end
 
+---@param tbl table
+---@param sort_func neotree.Config.SortFunction?
+---@param field_provider neotree.Internal.SortFieldProvider?
+---@param direction? 1|0
 local function deep_sort(tbl, sort_func, field_provider, direction)
   if sort_func == nil then
     local config = require("neo-tree").config
     if sort_function_is_valid(config.sort_function) then
-      sort_func = config.sort_function --[[@as fun(a, b):boolean]]
+      sort_func = config.sort_function
     elseif config.sort_case_insensitive then
       sort_func = sort_items_case_insensitive
     else
       sort_func = sort_items
     end
+    ---@cast sort_func -nil
     if field_provider ~= nil then
       sort_func = make_sort_function(field_provider, sort_func, direction)
     end
@@ -84,6 +91,7 @@ local function deep_sort(tbl, sort_func, field_provider, direction)
   end
 end
 
+---@param state neotree.State
 local advanced_sort = function(tbl, state)
   local sort_func = state.sort_function_override
   local field_provider = state.sort_field_provider
@@ -93,6 +101,59 @@ end
 
 local create_item, set_parents
 
+---@alias neotree.Filetype
+---|"file"
+---|"link"
+---|"directory"
+---|"unknown"
+
+---@class neotree.FileItemFilters
+---@field never_show boolean?
+---@field always_show boolean?
+---@field name boolean?
+---@field pattern boolean?
+---@field dotfiles boolean?
+---@field hidden boolean?
+---@field gitignored boolean?
+---@field show_gitignored boolean?
+
+---@class (exact) neotree.FileItemExtra
+---@field status string? Git status
+
+---@class (exact) neotree.FileItem
+---@field id string
+---@field name string
+---@field parent_path string?
+---@field path string
+---@field type neotree.Filetype|string
+---@field is_reveal_target boolean
+---@field contains_reveal_target boolean
+---@field filtered_by neotree.FileItemFilters?
+---@field extra neotree.FileItemExtra?
+---@field status string? Git status
+
+---@class (exact) neotree.FileItem.File : neotree.FileItem
+---@field children table<string, neotree.FileItem?>?
+---@field nesting_callback neotree.filenesting.Callback
+---@field base string
+---@field ext string
+---@field exts string
+---@field name_lcase string
+
+---@class (exact) neotree.FileItem.Link : neotree.FileItem
+---@field is_link boolean
+---@field link_to string?
+
+---@class (exact) neotree.FileItem.Directory : neotree.FileItem
+---@field children table<string, neotree.FileItem?>
+---@field loaded boolean
+---@field search_pattern string?
+
+---@param context neotree.FileItemContext
+---@param path string
+---@param _type neotree.Filetype?
+---@param bufnr integer?
+---@return neotree.FileItem
 function create_item(context, path, _type, bufnr)
   local parent_path, name = utils.split_path(utils.normalize_path(path))
   name = name or ""
@@ -112,12 +173,16 @@ function create_item(context, path, _type, bufnr)
     local stat = uv.fs_stat(path)
     _type = stat and stat.type or "unknown"
   end
+  local is_reveal_target = (path == context.path_to_reveal)
+  ---@type neotree.FileItem
   local item = {
     id = id,
     name = name,
     parent_path = parent_path,
     path = path,
     type = _type,
+    is_reveal_target = is_reveal_target,
+    contains_reveal_target = is_reveal_target and utils.is_subpath(path, context.path_to_reveal),
   }
   if utils.is_windows then
     if vim.fn.getftype(path) == "link" then
@@ -125,6 +190,7 @@ function create_item(context, path, _type, bufnr)
     end
   end
   if item.type == "link" then
+    ---@cast item neotree.FileItem.Link
     item.is_link = true
     item.link_to = uv.fs_realpath(path)
     if item.link_to ~= nil then
@@ -132,6 +198,7 @@ function create_item(context, path, _type, bufnr)
     end
   end
   if item.type == "directory" then
+    ---@cast item neotree.FileItem.Directory
     item.children = {}
     item.loaded = false
     context.folders[path] = item
@@ -139,6 +206,7 @@ function create_item(context, path, _type, bufnr)
       table.insert(context.state.default_expanded_nodes, item.id)
     end
   else
+    ---@cast item neotree.FileItem.File
     item.base = item.name:match("^([-_,()%s%w%i]+)%.")
     item.ext = item.name:match("%.([-_,()%s%w%i]+)$")
     item.exts = item.name:match("^[-_,()%s%w%i]+%.(.*)")
@@ -152,10 +220,7 @@ function create_item(context, path, _type, bufnr)
     end
   end
 
-  item.is_reveal_target = (path == context.path_to_reveal)
-  item.contains_reveal_target = not item.is_reveal_target
-    and utils.is_subpath(path, context.path_to_reveal)
-  local state = context.state
+  local state = assert(context.state)
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)
   if f and is_not_root then
@@ -207,7 +272,9 @@ function create_item(context, path, _type, bufnr)
 end
 
 -- function to set (or create) parent folder
-function set_parents(context, item, siblings)
+---@param context neotree.FileItemContext
+---@param item neotree.FileItem
+function set_parents(context, item)
   -- we can get duplicate items if we navigate up with open folders
   -- this is probably hacky, but it works
   if context.item_exists[item.id] then
@@ -227,6 +294,7 @@ function set_parents(context, item, siblings)
     if not success then
       log.error("error creating item for ", item.parent_path)
     end
+    ---@cast parent neotree.FileItem.Directory
     context.folders[parent.id] = parent
     set_parents(context, parent)
   end
@@ -238,9 +306,17 @@ function set_parents(context, item, siblings)
   end
 end
 
+---@class (exact) neotree.FileItemContext
+---@field state neotree.State?
+---@field folders table<string, neotree.FileItem.Directory|neotree.FileItem.Link?>
+---@field nesting neotree.FileItem[]
+---@field item_exists table<string, boolean?>
+---@field all_items table<string, neotree.FileItem?>
+---@field path_to_reveal string?
+
 ---Create context to be used in other file-items functions.
----@param state table|nil The state of the file-items.
----@return table
+---@param state neotree.State? The state of the file-items.
+---@return neotree.FileItemContext
 local create_context = function(state)
   local context = {}
   -- Make the context a weak table so that it can be garbage collected
