@@ -235,20 +235,22 @@ M.show_filter = function(
 
     noop = nil,
     none = nil,
+    ["<Nop>"] = nil,
   }
+  local falsy_mappings = { "noop", "none", "<Nop>" }
 
   input:on({ event.BufLeave, event.BufDelete }, cmds.close, { once = true })
 
   local config = require("neo-tree").config
   if config.use_default_mappings then
     input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-    input:map("i", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
-    input:map("i", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
+    input:map("i", "<S-CR>", cmds.close_keep_filter, { noremap = true })
+    input:map("i", "<C-CR>", cmds.close_clear_filter, { noremap = true })
   end
   input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
   input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
-  input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
-  input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
+  input:map("n", "<S-CR>", cmds.close_keep_filter, { noremap = true })
+  input:map("n", "<C-CR>", cmds.close_clear_filter, { noremap = true })
   input:map("n", "<esc>", cmds.close)
   -- NOTE(pynappo): if users have a bind that rebinds a/i to cc on empty line, they can't go back to insert mode. i
   -- think this is just inherent to the prompt buftype so the users could just fix their binds, but maybe we can rebind
@@ -259,6 +261,7 @@ M.show_filter = function(
     if vim.api.nvim_get_current_win() ~= input.winid then
       return
     end
+    ---
     local old_confirm = vim.o.confirm
     vim.o.confirm = false
     vim.schedule(function()
@@ -270,28 +273,29 @@ M.show_filter = function(
     return
   end
 
-  local falsy_mappings = { "noop", "none" }
-  ---@param lhs string
-  ---@param cmd string|fun(state: neotree.sources.filesystem.State, scroll_padding: integer)
-  ---@param mode string?
-  local try_map = function(lhs, cmd, mode)
-    local command = cmds[cmd]
-    if command then
-      input:map(mode or "i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
-    else
-      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, string))
-    end
-  end
+  ---@alias neotree.FuzzyFinder.Command neotree.FuzzyFinder.BuiltinCommands|fun(state, scroll_padding)
+
+  ---@class neotree.FuzzyFinder.VerboseCommand
+  ---@field [1] neotree.FuzzyFinder.Command
+  ---@field mode string?
+
+  ---@alias neotree.Config.FuzzyFinder.Mappings table<string, neotree.FuzzyFinder.Command|neotree.FuzzyFinder.VerboseCommand>?
 
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
     local mode
     if type(cmd) == "table" then
-      cmd = cmd[1]
       mode = cmd.mode
+      cmd = cmd[1]
     end
+
     local t = type(cmd)
     if t == "string" and not vim.tbl_contains(falsy_mappings, t) then
-      try_map(lhs, cmd, mode)
+      local command = cmds[cmd]
+      if command then
+        input:map(mode or "i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
+      else
+        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, string))
+      end
     elseif t == "function" then
       input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
     else
