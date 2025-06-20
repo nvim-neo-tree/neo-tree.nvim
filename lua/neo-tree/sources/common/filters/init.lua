@@ -192,8 +192,19 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     end
   end)
 
+  ---@alias neotree.FuzzyFinder.BuiltinCommandNames
+  ---|"move_cursor_down"
+  ---|"move_cursor_up"
+  ---|"close"
+  ---|"close_clear_filter"
+  ---|"close_keep_filter"
+  ---|neotree.FuzzyFinder.FalsyMappingNames
+
+  ---@alias neotree.FuzzyFinder.Command fun(state: neotree.State, scroll_padding: integer)
+
+  ---@class neotree.FuzzyFinder.BuiltinCommands
+  ---@field [string] neotree.FuzzyFinder.Command?
   local cmds
-  ---@enum (key) neotree.FuzzyFinder.BuiltinCommands
   cmds = {
     move_cursor_down = function(state_, scroll_padding_)
       renderer.focus_node(state_, nil, true, 1, scroll_padding_)
@@ -204,66 +215,82 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       vim.cmd("redraw!")
     end,
 
-    close = function()
+    close = function(_state)
       vim.cmd("stopinsert")
       input:unmount()
-      if utils.truthy(state.search_pattern) then
-        reset_filter(state, true)
+      if utils.truthy(_state.search_pattern) then
+        reset_filter(_state, true)
       end
       restore_height()
     end,
 
-    close_keep_filter = function()
+    close_keep_filter = function(_state, _scroll_padding)
       log.info("Persisting the search filter")
       keep_filter_on_submit = true
-      cmds.close()
+      cmds.close(_state, _scroll_padding)
     end,
-    close_clear_filter = function()
+    close_clear_filter = function(_state, _scroll_padding)
       log.info("Clearing the search filter")
       keep_filter_on_submit = false
-      cmds.close()
+      cmds.close(_state, _scroll_padding)
     end,
-
-    noop = nil,
-    none = nil,
   }
 
-  local config = require("neo-tree").config
-  -- create mappings and autocmd
-  if config.use_default_mappings then
-    input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-    input:map(
-      "n",
-      "j",
-      utils.wrap(cmds.move_cursor_down, state, scroll_padding),
-      { noremap = true }
-    )
-    input:map("i", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
-    input:map("i", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
-  end
-  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
-  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
-  input:map("n", "<S-CR>", utils.wrap(cmds.close_keep_filter), { noremap = true })
-  input:map("n", "<C-CR>", utils.wrap(cmds.close_clear_filter), { noremap = true })
+  M.setup_hooks(input, cmds, state, scroll_padding)
+  M.setup_mappings(input, cmds, state, scroll_padding)
+end
+
+---@param input NuiInput
+---@param cmds neotree.FuzzyFinder.BuiltinCommands
+---@param state neotree.State
+---@param scroll_padding integer
+function M.setup_hooks(input, cmds, state, scroll_padding)
+  input:on(
+    { event.BufLeave, event.BufDelete },
+    utils.wrap(cmds.close, state, scroll_padding),
+    { once = true }
+  )
+
+  -- hacky bugfix for quitting from the filter window
   input:on("QuitPre", function()
     if vim.api.nvim_get_current_win() ~= input.winid then
       return
     end
+    ---'confirm' can cause blocking user input on exit, so this hack disables it.
     local old_confirm = vim.o.confirm
     vim.o.confirm = false
     vim.schedule(function()
       vim.o.confirm = old_confirm
     end)
   end)
+end
 
-  local falsy_mappings = { "noop", "none" }
+---@enum neotree.FuzzyFinder.FalsyMappingNames
+M._falsy_mapping_names = { "noop", "none" }
+
+---@param input NuiInput
+---@param cmds neotree.FuzzyFinder.BuiltinCommands
+---@param state neotree.State
+---@param scroll_padding integer
+function M.setup_mappings(input, cmds, state, scroll_padding)
+  local config = require("neo-tree").config
+  if config.use_default_mappings then
+    input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+    input:map("i", "<S-CR>", cmds.close_keep_filter, { noremap = true })
+    input:map("i", "<C-CR>", cmds.close_clear_filter, { noremap = true })
+  end
+  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
+  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
+  input:map("n", "<S-CR>", cmds.close_keep_filter, { noremap = true })
+  input:map("n", "<C-CR>", cmds.close_clear_filter, { noremap = true })
+  input:map("n", "<esc>", cmds.close)
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
     local t = type(cmd)
     if t == "string" then
       local command = cmds[cmd]
       if command then
         input:map("i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
-      elseif not vim.tbl_contains(falsy_mappings, cmds) then
+      elseif not vim.tbl_contains(M._falsy_mapping_names, cmds) then
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, command))
       end
     elseif t == "function" then

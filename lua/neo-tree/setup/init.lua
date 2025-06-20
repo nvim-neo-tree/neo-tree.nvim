@@ -23,7 +23,7 @@ local normalize_mappings = function(source_config)
   end
 end
 
----@alias neotree.Config.FuzzyFinder.Mappings table<string, neotree.FuzzyFinder.BuiltinCommands|fun(state: neotree.State, scroll_padding: integer)>?
+---@alias neotree.Config.FuzzyFinder.Mappings table<string, neotree.FuzzyFinder.BuiltinCommandNames|fun(state: neotree.State, scroll_padding: integer)>?
 ---@param source_config { window: { fuzzy_finder_mappings: neotree.Config.FuzzyFinder.Mappings } }
 local normalize_fuzzy_mappings = function(source_config)
   if source_config == nil then
