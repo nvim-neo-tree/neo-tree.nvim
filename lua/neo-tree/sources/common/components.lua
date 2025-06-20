@@ -681,13 +681,13 @@ end
 
 ---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Component
 ---@field [1] "symlink_target"?
----@field text_format string
+---@field text_format string?
 
 ---@param config neotree.Component.Common.SymlinkTarget
 M.symlink_target = function(config, node, _)
   if node.is_link then
     return {
-      text = string.format(config.text_format, node.link_to),
+      text = string.format(config.text_format or "-> %s", node.link_to),
       highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
     }
   else

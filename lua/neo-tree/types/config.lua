@@ -15,7 +15,6 @@
 ---@field renderers neotree.Config.Renderers?
 ---@field commands table<string, neotree.Config.TreeCommand?>?
 ---@field before_render fun(state: neotree.State)?
----@field bind_to_cwd boolean?
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string?
@@ -63,13 +62,13 @@
 ---@field width string|number?
 
 ---@class neotree.Config.Window.Popup
----@field title fun(state:neotree.State):string?
+---@field title (fun(state:table):string)?
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
 
 ---@alias neotree.Config.TreeCommand string|neotree.TreeCommand|neotree.Config.Window.Command.Configured
 
----@class (exact) neotree.Config.Window.Commands
+---@class (exact) neotree.Config.Commands
 ---@field [string] function
 
 ---@class (exact) neotree.Config.Window.Mappings
@@ -147,5 +146,6 @@
 ---@field buffers neotree.Config.Buffers
 ---@field git_status neotree.Config.GitStatus
 ---@field document_symbols neotree.Config.DocumentSymbols
+---@field bind_to_cwd boolean?
 
 ---@class (partial) neotree.Config : neotree.Config.Base

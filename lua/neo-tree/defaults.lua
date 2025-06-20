@@ -444,10 +444,11 @@ local config = {
       mappings = {
         ["H"] = "toggle_hidden",
         ["/"] = "fuzzy_finder",
-        ["D"] = "fuzzy_finder_directory",
+        --["/"] = {"fuzzy_finder", config = { keep_filter_on_submit = true }},
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
-        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
+        ["D"] = "fuzzy_finder_directory",
         -- ["D"] = "fuzzy_sorter_directory",
+        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["<bs>"] = "navigate_up",
@@ -471,6 +472,7 @@ local config = {
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
         ["<esc>"] = "close"
+        -- ["<esc>"] = "noop", -- if you want to use normal mode, for example
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
