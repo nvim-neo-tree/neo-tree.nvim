@@ -274,27 +274,37 @@ M._falsy_mapping_names = { "noop", "none" }
 ---@param scroll_padding integer
 function M.setup_mappings(input, cmds, state, scroll_padding)
   local config = require("neo-tree").config
+
+  ---@param command neotree.FuzzyFinder.Command
+  local function setup_command(command)
+    return utils.wrap(command, state, scroll_padding)
+  end
+
   if config.use_default_mappings then
     input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-    input:map("i", "<S-CR>", cmds.close_keep_filter, { noremap = true })
-    input:map("i", "<C-CR>", cmds.close_clear_filter, { noremap = true })
+    input:map("i", "<S-CR>", setup_command(cmds.close_keep_filter), { noremap = true })
+    input:map("i", "<C-CR>", setup_command(cmds.close_clear_filter), { noremap = true })
   end
-  input:map("n", "j", utils.wrap(cmds.move_cursor_down, state, scroll_padding), { noremap = true })
-  input:map("n", "k", utils.wrap(cmds.move_cursor_up, state, scroll_padding), { noremap = true })
-  input:map("n", "<S-CR>", cmds.close_keep_filter, { noremap = true })
-  input:map("n", "<C-CR>", cmds.close_clear_filter, { noremap = true })
-  input:map("n", "<esc>", cmds.close)
+  input:map("n", "j", setup_command(cmds.move_cursor_down), { noremap = true })
+  input:map("n", "k", setup_command(cmds.move_cursor_up), { noremap = true })
+  input:map("n", "<S-CR>", setup_command(cmds.close_keep_filter), { noremap = true })
+  input:map("n", "<C-CR>", setup_command(cmds.close_clear_filter), { noremap = true })
+  input:map("n", "<esc>", setup_command(cmds.close))
+
+  ---@alias neotree.FuzzyFinder.CommandOrName neotree.FuzzyFinder.Command|neotree.FuzzyFinder.BuiltinCommandNames
+  ---@alias neotree.Config.FuzzyFinder.Mappings table<string, neotree.FuzzyFinder.CommandOrName|neotree.FuzzyFinder.Command>
+
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
     local t = type(cmd)
     if t == "string" then
       local command = cmds[cmd]
       if command then
-        input:map("i", lhs, utils.wrap(command, state, scroll_padding), { noremap = true })
+        input:map("i", lhs, setup_command(command), { noremap = true })
       elseif not vim.tbl_contains(M._falsy_mapping_names, cmds) then
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, command))
       end
     elseif t == "function" then
-      input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
+      input:map("i", lhs, setup_command(cmd), { noremap = true })
     else
       log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd))
     end
