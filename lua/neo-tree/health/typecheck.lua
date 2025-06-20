@@ -139,14 +139,14 @@ end
 ---@return boolean valid
 ---@return string[]? missed
 function M.validate(name, value, validator, optional, message, on_invalid, track_missed)
-  local matched, errmsg, errinfo
+  local valid, errmsg, errinfo
   M.namestack[#M.namestack + 1] = name
   if type(validator) == "string" then
-    matched = M.match(value, validator)
+    valid = M.match(value, validator)
   elseif type(validator) == "table" then
     for _, v in ipairs(validator) do
-      matched = M.match(value, v)
-      if matched then
+      valid = M.match(value, v)
+      if valid then
         break
       end
     end
@@ -158,20 +158,21 @@ function M.validate(name, value, validator, optional, message, on_invalid, track
     if track_missed and type(value) == "table" then
       value = M.mock(name, value, true)
     end
-    ok, matched, errinfo = pcall(validator, value)
+    ok, valid, errinfo = pcall(validator, value)
     if on_invalid then
       M.errfuncs[#M.errfuncs] = nil
     end
     if not ok then
-      errinfo = matched
-      matched = false
-    elseif matched == nil then
-      matched = true
+      errinfo = valid
+      valid = false
+    elseif valid == nil then
+      -- for conciseness, assume that it's valid
+      valid = true
     end
   end
-  matched = matched or (optional and value == nil) or false
+  valid = valid or (optional and value == nil) or false
 
-  if not matched then
+  if not valid then
     ---@type string
     local expected
     if vim.is_callable(validator) then
@@ -205,9 +206,9 @@ function M.validate(name, value, validator, optional, message, on_invalid, track
 
   if track_missed then
     local missed = getmetatable(value).get_missed_paths()
-    return matched, missed
+    return valid, missed
   end
-  return matched
+  return valid
 end
 
 return M
