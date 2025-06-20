@@ -471,7 +471,9 @@ local config = {
         ["<C-n>"] = "move_cursor_down",
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
-        ["<esc>"] = "close"
+        ["<Esc>"] = "close",
+        ["<S-Esc>"] = "close_keep_filter",
+        ["<C-Esc>"] = "close_clear_filter"
         -- ["<esc>"] = "noop", -- if you want to use normal mode, for example
       },
     },

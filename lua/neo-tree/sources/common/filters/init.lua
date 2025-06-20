@@ -200,10 +200,10 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
   ---|"close_keep_filter"
   ---|neotree.FuzzyFinder.FalsyMappingNames
 
-  ---@alias neotree.FuzzyFinder.Command fun(state: neotree.State, scroll_padding: integer)
+  ---@alias neotree.FuzzyFinder.CommandFunction fun(state: neotree.State, scroll_padding: integer)
 
   ---@class neotree.FuzzyFinder.BuiltinCommands
-  ---@field [string] neotree.FuzzyFinder.Command?
+  ---@field [string] neotree.FuzzyFinder.CommandFunction?
   local cmds
   cmds = {
     move_cursor_down = function(state_, scroll_padding_)
@@ -275,7 +275,7 @@ M._falsy_mapping_names = { "noop", "none" }
 function M.setup_mappings(input, cmds, state, scroll_padding)
   local config = require("neo-tree").config
 
-  ---@param command neotree.FuzzyFinder.Command
+  ---@param command neotree.FuzzyFinder.CommandFunction
   local function setup_command(command)
     return utils.wrap(command, state, scroll_padding)
   end
@@ -291,20 +291,35 @@ function M.setup_mappings(input, cmds, state, scroll_padding)
   input:map("n", "<C-CR>", setup_command(cmds.close_clear_filter), { noremap = true })
   input:map("n", "<esc>", setup_command(cmds.close))
 
-  ---@alias neotree.FuzzyFinder.CommandOrName neotree.FuzzyFinder.Command|neotree.FuzzyFinder.BuiltinCommandNames
-  ---@alias neotree.Config.FuzzyFinder.Mappings table<string, neotree.FuzzyFinder.CommandOrName|neotree.FuzzyFinder.Command>
+  ---@alias neotree.FuzzyFinder.CommandOrName neotree.FuzzyFinder.CommandFunction|neotree.FuzzyFinder.BuiltinCommandNames
+  ---@class neotree.FuzzyFinder.VerboseCommand
+  ---@field mode string?
+  ---@field [1] string
+  ---@field [2] neotree.FuzzyFinder.CommandOrName|neotree.FuzzyFinder.CommandFunction?
+
+  ---@class neotree.Config.FuzzyFinder.Mappings
+  ---@field [string] neotree.FuzzyFinder.CommandOrName|neotree.FuzzyFinder.CommandFunction?
+  ---@field [integer] neotree.FuzzyFinder.VerboseCommand
 
   for lhs, cmd in pairs(config.filesystem.window.fuzzy_finder_mappings) do
+    local mode
+    if type(lhs) == "number" then
+      ---@cast cmd neotree.FuzzyFinder.VerboseCommand
+      mode = cmd.mode
+      lhs = cmd[1]
+      cmd = cmd[2]
+    end
+    mode = mode or "i"
     local t = type(cmd)
     if t == "string" then
       local command = cmds[cmd]
       if command then
-        input:map("i", lhs, setup_command(command), { noremap = true })
+        input:map(mode, lhs, setup_command(command), { noremap = true })
       elseif not vim.tbl_contains(M._falsy_mapping_names, cmds) then
         log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, command))
       end
     elseif t == "function" then
-      input:map("i", lhs, setup_command(cmd), { noremap = true })
+      input:map(mode, lhs, setup_command(cmd), { noremap = true })
     else
       log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd))
     end
