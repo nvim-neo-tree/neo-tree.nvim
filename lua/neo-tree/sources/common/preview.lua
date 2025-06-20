@@ -413,10 +413,10 @@ function Preview:clearHighlight()
   end
 end
 
-local toggle_state = false
+local showing = false
 
 Preview.hide = function()
-  toggle_state = false
+  showing = false
   if instance then
     instance:revert()
   end
@@ -448,12 +448,15 @@ Preview.show = function(state)
 end
 
 Preview.toggle = function(state)
-  if toggle_state then
+  state.config = state.config or {}
+  local should_hide = state.config.force and (state.config.force == false) or showing
+  local should_show = state.config.force and (state.config.force == true) or not showing
+  if should_hide then
     Preview.hide()
-  else
+  elseif should_show then
     Preview.show(state)
     if instance and instance.active then
-      toggle_state = true
+      showing = true
     else
       Preview.hide()
       return
@@ -464,7 +467,7 @@ Preview.toggle = function(state)
       event = events.VIM_CURSOR_MOVED,
       handler = function()
         local did_enter_preview = vim.api.nvim_get_current_win() == instance.winid
-        if not toggle_state or (did_enter_preview and instance.config.use_float) then
+        if not showing or (did_enter_preview and instance.config.use_float) then
           return
         end
         if vim.api.nvim_get_current_win() == winid then
