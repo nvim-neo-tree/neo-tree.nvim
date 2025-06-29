@@ -313,7 +313,7 @@ end
 ---@class neotree.Config.Filesystem.Renderers : neotree.Config.Renderers
 
 ---@class neotree.Config.Filesystem.Window : neotree.Config.Window
----@field fuzzy_finder_mappings table<string, neotree.FuzzyFinder.Commands>?
+---@field fuzzy_finder_mappings neotree.Config.FuzzyFinder.Mappings?
 
 ---@alias neotree.Config.Filesystem.AsyncDirectoryScan
 ---|"auto"

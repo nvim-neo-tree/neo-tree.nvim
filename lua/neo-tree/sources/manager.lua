@@ -103,7 +103,7 @@ end
 ---@field search_pattern string?
 ---@field use_fzy boolean?
 ---@field fzy_sort_result_scores table<string, integer?>?
----@field fuzzy_finder_mode string?
+---@field fuzzy_finder_mode "directory"|boolean?
 ---@field open_folders_before_search table?
 ---sort
 ---@field sort_function_override neotree.Config.SortFunction?

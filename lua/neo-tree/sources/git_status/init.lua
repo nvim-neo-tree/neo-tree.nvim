@@ -43,6 +43,7 @@ end
 ---@class neotree.Config.GitStatus.Renderers : neotree.Config.Renderers
 
 ---@class (exact) neotree.Config.GitStatus : neotree.Config.Source
+---@field bind_to_cwd boolean?
 ---@field renderers neotree.Config.GitStatus.Renderers?
 
 ---Configures the plugin, should be called before the plugin is used.

@@ -432,7 +432,8 @@ return {
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
               ["<esc>"] = "close",
-              -- ['<key>'] = function(state, scroll_padding) ... end,
+              -- ["<esc>"] = "noop", -- if you want to use normal mode
+              -- ["key"] = function(state, scroll_padding) ... end,
             },
           },
 

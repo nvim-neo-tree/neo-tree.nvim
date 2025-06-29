@@ -81,36 +81,48 @@ M.expand_all_subnodes = function(state, node)
 end
 
 ---Shows the filter input, which will filter the tree.
+---@param state neotree.sources.filesystem.State
 M.filter_as_you_type = function(state)
-  filter.show_filter(state, true)
+  local config = state.config or {}
+  filter.show_filter(state, true, false, false, config.keep_filter_on_submit or false)
 end
 
 ---Shows the filter input, which will filter the tree.
+---@param state neotree.sources.filesystem.State
 M.filter_on_submit = function(state)
-  filter.show_filter(state, false)
+  filter.show_filter(state, false, false, false, true)
 end
 
 ---Shows the filter input in fuzzy finder mode.
+---@param state neotree.sources.filesystem.State
 M.fuzzy_finder = function(state)
-  filter.show_filter(state, true, true)
+  local config = state.config or {}
+  filter.show_filter(state, true, true, false, config.keep_filter_on_submit or false)
 end
 
 ---Shows the filter input in fuzzy finder mode.
+---@param state neotree.sources.filesystem.State
 M.fuzzy_finder_directory = function(state)
-  filter.show_filter(state, true, "directory")
+  local config = state.config or {}
+  filter.show_filter(state, true, "directory", false, config.keep_filter_on_submit or false)
 end
 
 ---Shows the filter input in fuzzy sorter
+---@param state neotree.sources.filesystem.State
 M.fuzzy_sorter = function(state)
-  filter.show_filter(state, true, true, true)
+  local config = state.config or {}
+  filter.show_filter(state, true, true, true, config.keep_filter_on_submit or false)
 end
 
 ---Shows the filter input in fuzzy sorter with only directories
+---@param state neotree.sources.filesystem.State
 M.fuzzy_sorter_directory = function(state)
-  filter.show_filter(state, true, "directory", true)
+  local config = state.config or {}
+  filter.show_filter(state, true, "directory", true, config.keep_filter_on_submit or false)
 end
 
 ---Navigate up one level.
+---@param state neotree.sources.filesystem.State
 M.navigate_up = function(state)
   local parent_path, _ = utils.split_path(state.path)
   if not utils.truthy(parent_path) then
@@ -178,10 +190,12 @@ local focus_next_git_modified = function(state, reverse)
   end
 end
 
+---@param state neotree.sources.filesystem.State
 M.next_git_modified = function(state)
   focus_next_git_modified(state, false)
 end
 
+---@param state neotree.sources.filesystem.State
 M.prev_git_modified = function(state)
   focus_next_git_modified(state, true)
 end
@@ -227,6 +241,7 @@ M.rename = function(state)
   cc.rename(state, utils.wrap(refresh, state))
 end
 
+---@param state neotree.sources.filesystem.State
 M.set_root = function(state)
   if state.search_pattern then
     fs.reset_search(state, false)
@@ -246,6 +261,7 @@ M.set_root = function(state)
 end
 
 ---Toggles whether hidden files are shown or not.
+---@param state neotree.sources.filesystem.State
 M.toggle_hidden = function(state)
   state.filtered_items.visible = not state.filtered_items.visible
   log.info("Toggling hidden files: " .. tostring(state.filtered_items.visible))
@@ -253,6 +269,7 @@ M.toggle_hidden = function(state)
 end
 
 ---Toggles whether the tree is filtered by gitignore or not.
+---@param state neotree.sources.filesystem.State
 M.toggle_gitignore = function(state)
   log.warn("`toggle_gitignore` has been removed, running toggle_hidden instead.")
   M.toggle_hidden(state)
