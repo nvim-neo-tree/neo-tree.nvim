@@ -472,9 +472,18 @@ local config = {
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
         ["<Esc>"] = "close",
-        ["<S-Esc>"] = "close_keep_filter",
-        ["<C-Esc>"] = "close_clear_filter"
-        -- ["<esc>"] = "noop", -- if you want to use normal mode, for example
+        ["<S-CR>"] = "close_keep_filter",
+        ["<C-CR>"] = "close_clear_filter",
+        ["<C-w>"] = { "<C-S-w>", raw = true },
+        {
+          n = {
+            ["j"] = "move_cursor_down",
+            ["k"] = "move_cursor_down",
+            ["<S-CR>"] = "close_keep_filter",
+            ["<C-CR>"] = "close_clear_filter",
+            ["<esc>"] = "close",
+          }
+        }
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.

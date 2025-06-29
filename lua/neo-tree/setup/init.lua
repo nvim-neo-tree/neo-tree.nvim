@@ -18,20 +18,20 @@ local normalize_mappings = function(source_config)
   end
   local mappings = vim.tbl_get(source_config, { "window", "mappings" })
   if mappings then
-    local fixed = mapping_helper.normalize_map(mappings)
-    source_config.window.mappings = fixed
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.mappings = fixed --[[@as neotree.Config.Window.Mappings]]
   end
 end
 
----@param source_config { window: { fuzzy_finder_mappings: neotree.Config.FuzzyFinder.Mappings } }
+---@param source_config neotree.Config.Filesystem
 local normalize_fuzzy_mappings = function(source_config)
   if source_config == nil then
     return
   end
-  local mappings = vim.tbl_get(source_config, { "window", "fuzzy_finder_mappings" })
+  local mappings = source_config.window and source_config.window.fuzzy_finder_mappings
   if mappings then
-    local fixed = mapping_helper.normalize_map(mappings)
-    source_config.window.fuzzy_finder_mappings = fixed
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.fuzzy_finder_mappings = fixed --[[@as neotree.Config.FuzzyFinder.Mappings]]
   end
 end
 
