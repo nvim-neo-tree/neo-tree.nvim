@@ -303,7 +303,7 @@ local function apply_simple_mappings(input, cmds, state, scroll_padding, mode, m
         ---type doesn't narrow properly
         ---@cast rhs -neotree.FuzzyFinder.FalsyMappingNames
         raw = rhs.raw
-        opts = rhs[2]
+        opts = rhs
         cmd = rhs[1]
       else
         ---type also doesn't narrow properly
