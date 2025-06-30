@@ -439,7 +439,7 @@ return {
                 -- normal mode mappings
                 n = {
                   ["j"] = "move_cursor_down",
-                  ["k"] = "move_cursor_down",
+                  ["k"] = "move_cursor_up",
                   ["<S-CR>"] = "close_keep_filter",
                   ["<C-CR>"] = "close_clear_filter",
                   ["<esc>"] = "close",
