@@ -476,6 +476,7 @@ local config = {
         ["<C-CR>"] = "close_clear_filter",
         ["<C-w>"] = { "<C-S-w>", raw = true },
         {
+          -- normal mode mappings
           n = {
             ["j"] = "move_cursor_down",
             ["k"] = "move_cursor_down",
@@ -484,6 +485,8 @@ local config = {
             ["<esc>"] = "close",
           }
         }
+        -- ["<esc>"] = "noop", -- if you want to use normal mode
+        -- ["key"] = function(state, scroll_padding) ... end,
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.

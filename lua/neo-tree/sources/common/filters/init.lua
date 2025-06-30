@@ -295,7 +295,6 @@ local function apply_simple_mappings(input, cmds, state, scroll_padding, mode, m
   local function setup_command(command)
     return utils.wrap(command, state, scroll_padding)
   end
-  vim.print(mappings)
   for lhs, rhs in pairs(mappings) do
     if type(lhs) == "string" then
       ---@cast rhs neotree.FuzzyFinder.Command
