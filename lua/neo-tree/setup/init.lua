@@ -11,18 +11,27 @@ local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
----@param config neotree.Config.Base
-local normalize_mappings = function(config)
-  if config == nil then
-    return false
+---@param source_config { window: {mappings: neotree.Config.Window.Mappings} }
+local normalize_mappings = function(source_config)
+  if source_config == nil then
+    return
   end
-  local mappings = vim.tbl_get(config, { "window", "mappings" })
+  local mappings = vim.tbl_get(source_config, { "window", "mappings" })
   if mappings then
-    local fixed = mapping_helper.normalize_map(mappings)
-    config.window.mappings = fixed
-    return true
-  else
-    return false
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.mappings = fixed --[[@as neotree.Config.Window.Mappings]]
+  end
+end
+
+---@param source_config neotree.Config.Filesystem
+local normalize_fuzzy_mappings = function(source_config)
+  if source_config == nil then
+    return
+  end
+  local mappings = source_config.window and source_config.window.fuzzy_finder_mappings
+  if mappings then
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.fuzzy_finder_mappings = fixed --[[@as neotree.Config.FuzzyFinder.Mappings]]
   end
 end
 
@@ -562,6 +571,11 @@ M.merge_config = function(user_config)
   log.debug("Sources to load: ", vim.inspect(all_sources))
   require("neo-tree.command.parser").setup(all_source_names)
 
+  normalize_fuzzy_mappings(default_config.filesystem)
+  normalize_fuzzy_mappings(user_config.filesystem)
+  if user_config.use_default_mappings == false then
+    default_config.filesystem.window.fuzzy_finder_mappings = {}
+  end
   -- setup the default values for all sources
   normalize_mappings(default_config)
   normalize_mappings(user_config)
@@ -613,7 +627,6 @@ M.merge_config = function(user_config)
       user_config[source_name].window.position = "left"
     end
   end
-  --print(vim.inspect(default_config.filesystem))
 
   -- local orig_sources = user_config.sources and user_config.sources or {}
 

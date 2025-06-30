@@ -432,7 +432,21 @@ return {
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
               ["<esc>"] = "close",
-              -- ['<key>'] = function(state, scroll_padding) ... end,
+              ["<S-CR>"] = "close_keep_filter",
+              ["<C-CR>"] = "close_clear_filter",
+              ["<C-w>"] = { "<C-S-w>", raw = true },
+              {
+                -- normal mode mappings
+                n = {
+                  ["j"] = "move_cursor_down",
+                  ["k"] = "move_cursor_up",
+                  ["<S-CR>"] = "close_keep_filter",
+                  ["<C-CR>"] = "close_clear_filter",
+                  ["<esc>"] = "close",
+                }
+              }
+              -- ["<esc>"] = "noop", -- if you want to use normal mode
+              -- ["key"] = function(state, scroll_padding) ... end,
             },
           },
 

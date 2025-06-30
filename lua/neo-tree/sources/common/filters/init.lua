@@ -192,8 +192,20 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     end
   end)
 
-  ---@enum (key) neotree.FuzzyFinder.Commands
-  local cmds = {
+  ---@alias neotree.FuzzyFinder.BuiltinCommandNames
+  ---|"move_cursor_down"
+  ---|"move_cursor_up"
+  ---|"close"
+  ---|"close_clear_filter"
+  ---|"close_keep_filter"
+  ---|neotree.FuzzyFinder.FalsyMappingNames
+
+  ---@alias neotree.FuzzyFinder.CommandFunction fun(state: neotree.State, scroll_padding: integer):string?
+
+  ---@class neotree.FuzzyFinder.BuiltinCommands
+  ---@field [string] neotree.FuzzyFinder.CommandFunction?
+  local cmds
+  cmds = {
     move_cursor_down = function(state_, scroll_padding_)
       renderer.focus_node(state_, nil, true, 1, scroll_padding_)
     end,
@@ -203,33 +215,137 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       vim.cmd("redraw!")
     end,
 
-    close = function()
+    close = function(_state)
       vim.cmd("stopinsert")
       input:unmount()
-      if utils.truthy(state.search_pattern) then
-        reset_filter(state, true)
+      if utils.truthy(_state.search_pattern) then
+        reset_filter(_state, true)
       end
       restore_height()
     end,
+
+    close_keep_filter = function(_state, _scroll_padding)
+      log.info("Persisting the search filter")
+      keep_filter_on_submit = true
+      cmds.close(_state, _scroll_padding)
+    end,
+    close_clear_filter = function(_state, _scroll_padding)
+      log.info("Clearing the search filter")
+      keep_filter_on_submit = false
+      cmds.close(_state, _scroll_padding)
+    end,
   }
 
-  -- create mappings and autocmd
-  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
+  M.setup_hooks(input, cmds, state, scroll_padding)
+  M.setup_mappings(input, cmds, state, scroll_padding)
+end
 
-  local config = require("neo-tree").config
-  for lhs, cmd_name in pairs(config.filesystem.window.fuzzy_finder_mappings) do
-    local t = type(cmd_name)
-    if t == "string" then
-      local cmd = cmds[cmd_name]
-      if cmd then
-        input:map("i", lhs, utils.wrap(cmd, state, scroll_padding), { noremap = true })
+---@param input NuiInput
+---@param cmds neotree.FuzzyFinder.BuiltinCommands
+---@param state neotree.State
+---@param scroll_padding integer
+function M.setup_hooks(input, cmds, state, scroll_padding)
+  input:on(
+    { event.BufLeave, event.BufDelete },
+    utils.wrap(cmds.close, state, scroll_padding),
+    { once = true }
+  )
+
+  -- hacky bugfix for quitting from the filter window
+  input:on("QuitPre", function()
+    if vim.api.nvim_get_current_win() ~= input.winid then
+      return
+    end
+    ---'confirm' can cause blocking user input on exit, so this hack disables it.
+    local old_confirm = vim.o.confirm
+    vim.o.confirm = false
+    vim.schedule(function()
+      vim.o.confirm = old_confirm
+    end)
+  end)
+end
+
+---@enum neotree.FuzzyFinder.FalsyMappingNames
+M._falsy_mapping_names = { "noop", "none" }
+
+---@alias neotree.FuzzyFinder.CommandOrName neotree.FuzzyFinder.CommandFunction|neotree.FuzzyFinder.BuiltinCommandNames
+
+---@class neotree.FuzzyFinder.VerboseCommand
+---@field [1] neotree.FuzzyFinder.Command
+---@field [2] vim.keymap.set.Opts?
+---@field raw boolean?
+
+---@alias neotree.FuzzyFinder.Command neotree.FuzzyFinder.CommandOrName|neotree.FuzzyFinder.VerboseCommand|string
+
+---@class neotree.FuzzyFinder.SimpleMappings : neotree.SimpleMappings
+---@field [string] neotree.FuzzyFinder.Command?
+
+---@class neotree.Config.FuzzyFinder.Mappings : neotree.FuzzyFinder.SimpleMappings, neotree.Mappings
+---@field [integer] table<string, neotree.FuzzyFinder.SimpleMappings>
+
+---@param input NuiInput
+---@param cmds neotree.FuzzyFinder.BuiltinCommands
+---@param state neotree.State
+---@param scroll_padding integer
+---@param mappings neotree.FuzzyFinder.SimpleMappings
+---@param mode string
+local function apply_simple_mappings(input, cmds, state, scroll_padding, mode, mappings)
+  ---@param command neotree.FuzzyFinder.CommandFunction
+  ---@return function
+  local function setup_command(command)
+    return utils.wrap(command, state, scroll_padding)
+  end
+  for lhs, rhs in pairs(mappings) do
+    if type(lhs) == "string" then
+      ---@cast rhs neotree.FuzzyFinder.Command
+      local cmd, raw, opts
+      if type(rhs) == "table" then
+        ---type doesn't narrow properly
+        ---@cast rhs -neotree.FuzzyFinder.FalsyMappingNames
+        raw = rhs.raw
+        opts = rhs
+        cmd = rhs[1]
       else
-        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+        ---type also doesn't narrow properly
+        ---@cast rhs -neotree.FuzzyFinder.VerboseCommand
+        cmd = rhs
       end
-    elseif t == "function" then
-      input:map("i", lhs, utils.wrap(cmd_name, state, scroll_padding), { noremap = true })
-    else
-      log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
+
+      local cmdtype = type(cmd)
+      if cmdtype == "string" then
+        if raw then
+          input:map(mode, lhs, cmd, opts)
+        else
+          local command = cmds[cmd]
+          if command then
+            input:map(mode, lhs, setup_command(command), opts)
+          elseif not vim.tbl_contains(M._falsy_mapping_names, cmd) then
+            log.warn(
+              string.format("Invalid command in fuzzy_finder_mappings: ['%s'] = '%s'", lhs, cmd)
+            )
+          end
+        end
+      elseif cmdtype == "function" then
+        ---@cast cmd -neotree.FuzzyFinder.VerboseCommand
+        input:map(mode, lhs, setup_command(cmd), opts)
+      end
+    end
+  end
+end
+
+---@param input NuiInput
+---@param cmds neotree.FuzzyFinder.BuiltinCommands
+---@param state neotree.State
+---@param scroll_padding integer
+function M.setup_mappings(input, cmds, state, scroll_padding)
+  local config = require("neo-tree").config
+
+  local ff_mappings = config.filesystem.window.fuzzy_finder_mappings or {}
+  apply_simple_mappings(input, cmds, state, scroll_padding, "i", ff_mappings)
+
+  for _, mappings_by_mode in ipairs(ff_mappings) do
+    for mode, mappings in pairs(mappings_by_mode) do
+      apply_simple_mappings(input, cmds, state, scroll_padding, mode, mappings)
     end
   end
 end
