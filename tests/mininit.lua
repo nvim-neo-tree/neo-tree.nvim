@@ -7,6 +7,3 @@ vim.opt.rtp = {
   root_dir,
   vim.env.VIMRUNTIME,
 }
-
--- For debugging
-P = vim.print
