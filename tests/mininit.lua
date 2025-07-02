@@ -1,28 +1,13 @@
--- Need the absolute path as when doing the testing we will issue things like `tcd` to change directory
--- to where our temporary filesystem lives
-local root_dir = vim.fn.fnamemodify(vim.trim(vim.fn.system("git rev-parse --show-toplevel")), ":p")
+local root_dir = vim.fs.find("neo-tree.nvim", { upward = true, limit = 1 })[1]
+assert(root_dir, "no neo-tree found")
 
-package.path = string.format("%s;%s?.lua;%s?/init.lua", package.path, root_dir, root_dir)
-
-vim.opt.packpath:prepend(root_dir .. ".dependencies/site")
+package.path = ("%s;%s/?.lua;%s/?/init.lua"):format(package.path, root_dir, root_dir)
+vim.opt.packpath:prepend(root_dir .. "/.dependencies")
 
 vim.opt.rtp = {
   root_dir,
   vim.env.VIMRUNTIME,
 }
 
-vim.cmd([[
-  filetype on
-  packadd plenary.nvim
-  packadd nui.nvim
-  packadd nvim-web-devicons
-]])
-
-vim.opt.swapfile = false
-
-vim.cmd([[
-  runtime plugin/neo-tree.lua
-]])
-
--- For debugging
-P = vim.print
+-- need this for tests to work
+vim.cmd.source(root_dir .. "/plugin/neo-tree.lua")
