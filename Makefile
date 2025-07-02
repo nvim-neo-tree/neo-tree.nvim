@@ -13,7 +13,7 @@ format:
 
 # Dependencies:
 
-DEPS := ${CURDIR}/.dependencies/site/pack/vendor/start
+DEPS := ${CURDIR}/.dependencies/pack/vendor/start
 
 $(DEPS):
 	mkdir -p "$(DEPS)"
