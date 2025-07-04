@@ -27,6 +27,7 @@ end
 
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
 
+-- lazy load until bufenter/netrw hijack
 vim.api.nvim_create_autocmd({ "BufEnter" }, {
   group = augroup,
   callback = function(args)
@@ -34,6 +35,7 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
   end,
 })
 
+-- track window order
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
   callback = function(ev)
     local win = vim.api.nvim_get_current_win()
@@ -55,7 +57,8 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
     local win_count = #tab_windows
     if win_count > 100 then
       if table.move then
-        utils.prior_windows[tabid] = table.move(tab_windows, 80, win_count, 1, {})
+        utils.prior_windows[tabid] =
+          require("neo-tree.utils._compat").table_move(tab_windows, 80, win_count, 1, {})
         return
       end
 
@@ -64,6 +67,15 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
         table.insert(new_array, tab_windows[i])
       end
       utils.prior_windows[tabid] = new_array
+    end
+  end,
+})
+
+-- setup session loading
+vim.api.nvim_create_autocmd("SessionLoadPost", {
+  callback = function()
+    if require("neo-tree").ensure_config().auto_clean_after_session_restore then
+      require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
     end
   end,
 })
