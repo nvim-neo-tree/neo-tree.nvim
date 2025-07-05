@@ -397,7 +397,7 @@ local config = {
         "toggle_preview",
         config = {
           use_float = true,
-          use_snacks_image = true, -- will use snacks if possible
+          use_snacks_image = true,
           use_image_nvim = true,
           -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
         }
