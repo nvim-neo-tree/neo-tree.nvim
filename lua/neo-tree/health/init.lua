@@ -23,6 +23,22 @@ local function check_dependencies()
   else
     health.error("nui.nvim not installed")
   end
+
+  health.info("Optional dependencies for preview image support (only need one):")
+  -- optional
+  local snacks_ok = pcall(require, "snacks.image")
+  if snacks_ok then
+    health.ok("snacks.image is installed")
+  else
+    health.info("nui.nvim not installed")
+  end
+
+  local image_ok = pcall(require, "image")
+  if image_ok then
+    health.ok("image.nvim is installed")
+  else
+    health.info("nui.nvim not installed")
+  end
 end
 
 local validate = typecheck.validate
@@ -300,8 +316,9 @@ function M.check_config(config)
 end
 
 function M.check()
-  health.start("Neo-tree")
+  health.start("Dependencies")
   check_dependencies()
+  health.start("Configuration")
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
 end

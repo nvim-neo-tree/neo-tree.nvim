@@ -18,6 +18,7 @@
       "$PWD/.dependencies/pack/vendor/start/plenary.nvim",
       "$PWD/.dependencies/pack/vendor/start/nui.nvim",
       "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons",
+      "$PWD/.dependencies/pack/vendor/start/snacks.nvim",
       "${3rd}/luassert",
       "${3rd}/busted",
       "${3rd}/luv",

@@ -96,7 +96,7 @@ function Queue:for_each(func)
         node_is_next = true
         self._list:remove_node(node_to_remove)
       elseif type(result) == "table" then
-        if type(result.handled) == "boolean" and result.handled == true then
+        if result.handled == true then
           log.trace(
             "Handler ",
             node.value.id,

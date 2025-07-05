@@ -2,7 +2,7 @@ local q = require("neo-tree.events.queue")
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 
----@class neotree.Event.Functions
+---@class neotree.event.Functions
 local M = {
   -- Well known event names, you can make up your own
   AFTER_RENDER = "after_render",
@@ -31,6 +31,7 @@ local M = {
   NEO_TREE_WINDOW_AFTER_OPEN = "neo_tree_window_after_open",
   NEO_TREE_WINDOW_BEFORE_CLOSE = "neo_tree_window_before_close",
   NEO_TREE_WINDOW_BEFORE_OPEN = "neo_tree_window_before_open",
+  NEO_TREE_PREVIEW_BEFORE_RENDER = "neo_tree_preview_before_render",
   VIM_AFTER_SESSION_LOAD = "vim_after_session_load",
   VIM_BUFFER_ADDED = "vim_buffer_added",
   VIM_BUFFER_CHANGED = "vim_buffer_changed",
@@ -60,7 +61,7 @@ local parse_autocmd_string = function(autocmds)
   return parsed[1], parsed[2]
 end
 
----@param event_name neotree.Event|string
+---@param event_name neotree.EventName|string
 ---@param autocmds string[]
 ---@param debounce_frequency integer?
 ---@param seed_fn function?
@@ -79,7 +80,7 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
           group = augroup,
           nested = nested,
           callback = function(args)
-            ---@class neotree.Event.Autocmd.CallbackArgs : neotree._vim.api.keyset.create_autocmd.callback_args
+            ---@class neotree.event.Autocmd.CallbackArgs : neotree._vim.api.keyset.create_autocmd.callback_args
             ---@field afile string
             local event_args = args --[[@as neotree._vim.api.keyset.create_autocmd.callback_args]]
             event_args.afile = args.file or ""

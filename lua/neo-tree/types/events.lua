@@ -1,6 +1,6 @@
 ---@meta
 
----@enum neotree.Event
+---@enum neotree.EventName
 local _ = {
   AFTER_RENDER = "after_render",
   BEFORE_FILE_ADD = "before_file_add",
