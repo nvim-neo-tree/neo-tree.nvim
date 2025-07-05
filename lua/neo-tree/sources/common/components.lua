@@ -72,8 +72,7 @@ end
 
 ---@param config neotree.Component.Common.Clipboard
 M.clipboard = function(config, node, state)
-  local clipboard = state.clipboard or {}
-  local clipboard_state = clipboard[node:get_id()]
+  local clipboard_state = state.clipboard[node:get_id()]
   if not clipboard_state then
     return {}
   end

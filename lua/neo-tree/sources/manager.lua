@@ -60,7 +60,7 @@ end
 ---@field position table
 ---@field git_base string
 ---@field sort table
----@field clipboard table
+---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.Position?
 ---@field disposed boolean?
 ---@field winid integer?
@@ -131,6 +131,7 @@ local function create_state(tabid, sd, winid)
   state.position = {}
   state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
+  state.clipboard = {}
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
