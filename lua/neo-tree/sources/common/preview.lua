@@ -325,37 +325,47 @@ local get_bufsize = function(bufnr)
 end
 
 events.subscribe({
-  event = "neo_tree_preview_before_render",
+  event = events.NEO_TREE_PREVIEW_BEFORE_RENDER,
   ---@param args neotree.event.args.PREVIEW_BEFORE_RENDER
   handler = function(args)
     local preview = args.preview
     local bufnr = args.bufnr
 
-    if preview.config.use_snacks_image then
-      -- check if snacks.image is available
-      local snacks_image_ok, image = pcall(require, "snacks.image")
-      if not snacks_image_ok then
-        local image_nvim_url = "https://github.com/3rd/image.nvim"
-        log.debug("you'll need to install snacks.nvim to use this command: " .. image_nvim_url)
-        return
-      end
-      local bufname = vim.api.nvim_buf_get_name(bufnr)
-      -- try attaching it
-      if image.supports(bufname) then
-        image.placement.new(preview.bufnr, bufname)
-        vim.bo[preview.bufnr].modifiable = true
-        return -- let snacks.image handle the rest
-      end
+    if not preview.config.use_snacks_image then
+      return
     end
+    -- check if snacks.image is available
+    local snacks_image_ok, image = pcall(require, "snacks.image")
+    if not snacks_image_ok then
+      local image_nvim_url = "https://github.com/3rd/image.nvim"
+      log.debug("you'll need to install snacks.nvim to use this command: " .. image_nvim_url)
+      return
+    end
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    -- try attaching it
+    if image.supports(bufname) then
+      image.placement.new(preview.bufnr, bufname)
+      vim.bo[preview.bufnr].modifiable = true
+      return { handled = true } -- let snacks.image handle the rest
+    end
+  end,
+})
+events.subscribe({
+  event = events.NEO_TREE_PREVIEW_BEFORE_RENDER,
+  ---@param args neotree.event.args.PREVIEW_BEFORE_RENDER
+  handler = function(args)
+    local preview = args.preview
+    local bufnr = args.bufnr
 
     if preview.config.use_image_nvim and try_load_image_nvim_buf(preview.winid, bufnr) then
       -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
       -- really long anyways
       vim.api.nvim_win_set_buf(preview.winid, bufnr)
-      try_load_image_nvim_buf(preview.winid, bufnr)
+      return { handled = try_load_image_nvim_buf(preview.winid, bufnr) }
     end
   end,
 })
+
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
 ---@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
@@ -371,7 +381,6 @@ function Preview:setBuffer(bufnr)
     local args = {
       preview = self,
       bufnr = bufnr,
-      old_eventignore = eventignore,
     }
     events.fire_event(events.NEO_TREE_PREVIEW_BEFORE_RENDER, args)
 
