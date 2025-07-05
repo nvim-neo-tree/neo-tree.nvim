@@ -135,7 +135,7 @@
 ---@field use_popups_for_input boolean
 ---@field use_default_mappings boolean
 ---@field source_selector neotree.Config.SourceSelector
----@field event_handlers? neotree.Event.Handler[]
+---@field event_handlers? neotree.event.Handler[]
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
 ---@field nesting_rules neotree.filenesting.Rule[]
