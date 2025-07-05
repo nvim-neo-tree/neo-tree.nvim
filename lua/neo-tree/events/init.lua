@@ -61,7 +61,7 @@ local parse_autocmd_string = function(autocmds)
   return parsed[1], parsed[2]
 end
 
----@param event_name neotree.EventName|string|string
+---@param event_name neotree.EventName|string
 ---@param autocmds string[]
 ---@param debounce_frequency integer?
 ---@param seed_fn function?
