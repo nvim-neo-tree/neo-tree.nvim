@@ -60,7 +60,7 @@ so we can fix it.
 > You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
 > configuration.
 
-#### Minimal Example for Lazy:
+#### Minimal Example for lazy.nvim:
 ```lua
 {
   "nvim-neo-tree/neo-tree.nvim",
@@ -69,13 +69,16 @@ so we can fix it.
     "nvim-lua/plenary.nvim",
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
-    -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- Optional image support for file preview: See `# Preview Mode` for more information.
+    -- {"3rd/image.nvim", opts = {}},
+    -- OR use snacks.nvim's image module:
+    -- "folke/snacks.nvim",
   },
   lazy = false, -- neo-tree will lazily load itself
   ---@module "neo-tree"
   ---@type neotree.Config?
   opts = {
-    -- fill any relevant options here
+    -- add options here
   },
 }
 ```
@@ -89,7 +92,10 @@ use({
     "nvim-lua/plenary.nvim",
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
-    -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- { "3rd/image.nvim", config = function() require('image').setup({}) end },
+    -- OR use snacks.nvim's image module:
+    -- "folke/snacks.nvim",
   }
 })
 ```
@@ -153,10 +159,6 @@ return {
       },
     },
     lazy = false,
-    -----Instead of using `config`, you can use `opts` instead, if you'd like:
-    -----@module "neo-tree"
-    -----@type neotree.Config
-    --opts = {},
     config = function()
       -- If you want icons for diagnostic errors, you'll need to define them somewhere.
       -- In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
@@ -177,6 +179,8 @@ return {
       -- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
       -- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
       -- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+
+      vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
 
       require("neo-tree").setup({
         close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
@@ -514,8 +518,6 @@ return {
           },
         },
       })
-
-      vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
     end,
   },
 }
