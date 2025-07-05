@@ -294,7 +294,9 @@ local function try_load_image_nvim_buf(winid, bufnr)
     local image_available, image = pcall(require, "image")
     if not image_available then
       local image_nvim_url = "https://github.com/3rd/image.nvim"
-      log.debug("You'll need to install image.nvim to use this command: " .. image_nvim_url)
+      log.debug(
+        "use_image_nvim was set but image.nvim was not found. Install from: " .. image_nvim_url
+      )
       return false
     end
     log.warn("image.nvim was not setup. Calling require('image').setup().")
@@ -337,8 +339,10 @@ events.subscribe({
     -- check if snacks.image is available
     local snacks_image_ok, image = pcall(require, "snacks.image")
     if not snacks_image_ok then
-      local image_nvim_url = "https://github.com/3rd/image.nvim"
-      log.debug("you'll need to install snacks.nvim to use this command: " .. image_nvim_url)
+      local snacks_nvim_url = "https://github.com/folke/snacks.nvim"
+      log.debug(
+        "use_snacks_image was set but snacks.nvim was not found. Install from: " .. snacks_nvim_url
+      )
       return
     end
     local bufname = vim.api.nvim_buf_get_name(bufnr)
