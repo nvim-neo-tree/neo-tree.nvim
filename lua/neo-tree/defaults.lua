@@ -395,7 +395,8 @@ local config = {
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
       ["P"] = { "toggle_preview", config = {
         use_float = true,
-        use_image_nvim = false,
+        use_snacks_image = true, -- will use snacks if possible
+        use_image_nvim = true,
         -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
       } },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },

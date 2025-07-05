@@ -1,3 +1,4 @@
+local deprecations = require("neo-tree.health.deprecations")
 local typecheck = require("neo-tree.health.typecheck")
 local M = {}
 local health = vim.health
@@ -304,6 +305,7 @@ function M.check()
   check_dependencies()
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
+  deprecations.check()
 end
 
 return M

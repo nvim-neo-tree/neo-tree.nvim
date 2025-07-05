@@ -6,6 +6,27 @@ local log = require("neo-tree.log")
 local renderer = require("neo-tree.ui.renderer")
 local NuiPopup = require("nui.popup")
 
+---@class neotree.Preview.Config
+---@field use_float boolean?
+---@field use_image_nvim boolean?
+---@field use_snacks_image boolean?
+
+---@class neotree.Preview
+---@field config neotree.Preview.Config?
+---@field active boolean           Whether the preview is active.
+---@field winid integer             The id of the window being used to preview.
+---@field is_neo_tree_window boolean Whether the preview window belongs to neo-tree.
+---@field bufnr number             The buffer that is currently in the preview window.
+---@field start_pos integer[] An array-like table specifying the (0-indexed) starting position of the previewed text.
+---@field end_pos integer[] An array-like table specifying the (0-indexed) ending position of the preview text.
+---@field truth table              A table containing information to be restored when the preview ends.
+---@field events string[]             A list of events the preview is subscribed to.
+
+local Preview = {}
+
+---@type neotree.Preview?
+local instance = nil
+
 local neo_tree_preview_namespace = vim.api.nvim_create_namespace("neo_tree_preview")
 
 local function create_floating_preview_window(state)
@@ -89,20 +110,9 @@ local function create_floating_preview_window(state)
   return win
 end
 
-local Preview = {}
-local instance = nil
-
 ---Creates a new preview.
 ---@param state neotree.State The state of the source.
----@return table preview A new preview. A preview is a table consisting of the following keys:
---  active = boolean           Whether the preview is active.
---  winid = number             The id of the window being used to preview.
---  is_neo_tree_window boolean Whether the preview window belongs to neo-tree.
---  bufnr = number             The buffer that is currently in the preview window.
---  start_pos = array or nil   An array-like table specifying the (0-indexed) starting position of the previewed text.
---  end_pos = array or nil     An array-like table specifying the (0-indexed) ending position of the preview text.
---  truth = table              A table containing information to be restored when the preview ends.
---  events = array             A list of events the preview is subscribed to.
+---@return neotree.Preview preview A new preview. A preview is a table consisting of the following keys:
 --These keys should not be altered directly. Note that the keys `start_pos`, `end_pos` and `truth`
 --may be inaccurate if `active` is false.
 function Preview:new(state)
@@ -310,6 +320,38 @@ local get_bufsize = function(bufnr)
   end)
 end
 
+events.subscribe({
+  event = "neo_tree_preview_before_render",
+  ---@param args neotree.event.args.PREVIEW_BEFORE_RENDER
+  handler = function(args)
+    local preview = args.preview
+    local bufnr = args.bufnr
+
+    if preview.config.use_snacks_image then
+      -- check if snacks.image is available
+      local snacks_image_ok, image = pcall(require, "snacks.image")
+      if not snacks_image_ok then
+        local image_nvim_url = "https://github.com/3rd/image.nvim"
+        log.debug("you'll need to install snacks.nvim to use this command: " .. image_nvim_url)
+        return
+      end
+      local bufname = vim.api.nvim_buf_get_name(bufnr)
+      -- try attaching it
+      if image.supports(bufname) then
+        image.placement.new(preview.bufnr, bufname)
+        vim.bo[preview.bufnr].modifiable = true
+        return -- let snacks.image handle the rest
+      end
+    end
+
+    if preview.config.use_image_nvim and try_load_image_nvim_buf(preview.winid, bufnr) then
+      -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
+      -- really long anyways
+      vim.api.nvim_win_set_buf(preview.winid, bufnr)
+      try_load_image_nvim_buf(preview.winid, bufnr)
+    end
+  end,
+})
 ---Set the buffer in the preview window without executing BufEnter or BufWinEnter autocommands.
 ---@param bufnr number The buffer number of the buffer to set.
 function Preview:setBuffer(bufnr)
@@ -321,13 +363,13 @@ function Preview:setBuffer(bufnr)
   vim.opt.eventignore:append("BufEnter,BufWinEnter")
 
   repeat
-    if self.config.use_image_nvim and try_load_image_nvim_buf(self.winid, bufnr) then
-      -- calling the try method twice should be okay here, image.nvim should cache the image and displaying the image takes
-      -- really long anyways
-      vim.api.nvim_win_set_buf(self.winid, bufnr)
-      try_load_image_nvim_buf(self.winid, bufnr)
-      break -- goto end
-    end
+    ---@class neotree.event.args.PREVIEW_BEFORE_RENDER
+    local args = {
+      preview = self,
+      bufnr = bufnr,
+      old_eventignore = eventignore,
+    }
+    events.fire_event(events.NEO_TREE_PREVIEW_BEFORE_RENDER, args)
 
     if self.config.use_float then
       -- Workaround until https://github.com/neovim/neovim/issues/24973 is resolved or maybe 'previewpopup' comes in?
