@@ -430,7 +430,14 @@ an existing split by configuring the command like this:
     require("neo-tree").setup({
       window = {
         mappings = {
-          ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+          ["P"] = {
+            "toggle_preview",
+            config = {
+              use_float = false,
+              use_snacks_image = true,
+              use_image_nvim = true
+            }
+          },
           ["l"] = "focus_preview",
           ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
           ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
@@ -450,10 +457,15 @@ variable `neo_tree_preview` set to `1` to indicate that it is being used as a
 preview window. You can refer to this in statusline and winbar configs to mark a
 window as being used as a preview.
 
-If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
-mode supports image rendering by default using kitty graphics protocol or ueberzug.
-However, if you do not want this feature, you can disable it by changing the option
-`use_image_nvim = false` in the mappings config mentioned above.
+If you have folke/snacks.nvim or 3rd/image.nvim installed, preview mode supports
+image rendering by default using kitty graphics protocol or ueberzug.
+
+- https://github.com/folke/snacks.nvim/blob/main/docs/image.md
+- https://github.com/3rd/image.nvim
+
+However, if you do not want this feature, you can disable it by setting
+`use_snacks_image = false` or `use_image_nvim = false` in the mappings config
+mentioned above.
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 

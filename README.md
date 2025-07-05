@@ -300,7 +300,14 @@ return {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-            ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true } },
+            ["P"] = {
+              "toggle_preview",
+              config = {
+                use_float = true,
+                use_snacks_image = true,
+                use_image_nvim = true,
+              },
+            },
             -- Read `# Preview Mode` for more information
             ["l"] = "focus_preview",
             ["S"] = "open_split",
@@ -807,6 +814,7 @@ require("neo-tree").setup({
         config = {
           use_float = false,
           -- use_image_nvim = true,
+          -- use_snacks_image = true,
           -- title = 'Neo-tree Preview',
         },
       },
@@ -831,11 +839,13 @@ window as being used as a preview.
 
 #### Image Support in Preview Mode
 
-If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
+If you have [folke/snacks.nvim](https://github.com/folke/snacks.nvim/blob/main/docs/image.md)
+or [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
 mode supports image rendering by default using kitty graphics protocol or ueberzug
 ([Video](https://user-images.githubusercontent.com/41065736/277180763-b7152637-f310-43a5-b8c3-4bcba135629d.mp4)).
-However, if you do not want this feature, you can disable it by changing the option
-`use_image_nvim = false` in the mappings config mentioned above.
+
+However, if you do not want this feature, you can disable it by setting
+`use_snacks_image = false` or `use_image_nvim = false` in the mappings config mentioned above.
 
 ## Configuration and Customization
 
