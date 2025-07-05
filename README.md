@@ -300,7 +300,7 @@ return {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-            ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true } },
+            ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true, force = nil } },
             -- Read `# Preview Mode` for more information
             ["l"] = "focus_preview",
             ["S"] = "open_split",
@@ -311,7 +311,6 @@ return {
             -- ["<cr>"] = "open_drop",
             -- ["t"] = "open_tab_drop",
             ["w"] = "open_with_window_picker",
-            --["P"] = "toggle_preview", -- enter preview mode, which shows the current node without focusing
             ["C"] = "close_node",
             -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
@@ -807,6 +806,7 @@ require("neo-tree").setup({
         config = {
           use_float = false,
           -- use_image_nvim = true,
+          -- force = nil,
           -- title = 'Neo-tree Preview',
         },
       },
@@ -818,6 +818,24 @@ require("neo-tree").setup({
 Anything that causes Neo-tree to lose focus will end preview mode. When
 `use_float = false`, the window that was taken over by preview mode will revert
 back to whatever was shown in that window before preview mode began.
+
+The `toggle_preview` command also takes a `force` option which will force the
+preview to open/close if set to true/false, respectively. This can be used for
+"auto-preview"-like behavior like:
+
+```lua
+    require('neo-tree').setup({
+      event_handlers = {
+        {
+          event = 'after_render',
+          handler = function(state)
+            state.config = { use_float = true, force = true }
+            state.commands.toggle_preview(state)
+          end
+        }
+      }
+    })
+```
 
 You can choose a custom title for the floating window by setting the `title` option in its config.
 
