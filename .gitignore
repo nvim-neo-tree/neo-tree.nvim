@@ -44,4 +44,8 @@ tags
 
 # Others
 .testcache
+.dependencies
 luacov.*.out
+
+tests/repro
+.repro

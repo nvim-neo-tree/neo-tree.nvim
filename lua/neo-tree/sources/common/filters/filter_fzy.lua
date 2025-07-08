@@ -46,6 +46,7 @@ function M.has_match(needle, haystack, case_sensitive)
     haystack = string.lower(haystack)
   end
 
+  ---@type integer?
   local j = 1
   for i = 1, string.len(needle) do
     j = string.find(haystack, needle:sub(i, i), j, true)

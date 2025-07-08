@@ -11,7 +11,7 @@ end, {
 })
 
 ---@param path string? The path to check
----@return boolean hijacked Whether the hijack worked
+---@return boolean hijacked Whether we hijacked a buffer
 local function try_netrw_hijack(path)
   if not path or #path == 0 then
     return false
@@ -22,21 +22,60 @@ local function try_netrw_hijack(path)
     return false
   end
 
-  local netrw = require("neo-tree.setup.netrw")
-  if netrw.get_hijack_behavior() ~= "disabled" then
-    vim.cmd("silent! autocmd! FileExplorer *")
-    return netrw.hijack()
-  end
-  return false
+  return require("neo-tree.setup.netrw").hijack()
 end
 
 local augroup = vim.api.nvim_create_augroup("NeoTree_NetrwDeferred", { clear = true })
 
-vim.api.nvim_create_autocmd("BufEnter", {
+-- lazy load until bufenter/netrw hijack
+vim.api.nvim_create_autocmd({ "BufEnter" }, {
   group = augroup,
   callback = function(args)
-    if try_netrw_hijack(args.file) then
-      vim.api.nvim_del_augroup_by_id(augroup)
+    return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file)
+  end,
+})
+
+-- track window order
+vim.api.nvim_create_autocmd({ "WinEnter" }, {
+  callback = function(ev)
+    local win = vim.api.nvim_get_current_win()
+    local utils = require("neo-tree.utils")
+    if utils.is_floating(win) then
+      return
+    end
+
+    if vim.bo[ev.buf].filetype == "neo-tree" then
+      return
+    end
+
+    local tabid = vim.api.nvim_get_current_tabpage()
+    utils.prior_windows[tabid] = utils.prior_windows[tabid] or {}
+    local tab_windows = utils.prior_windows[tabid]
+    table.insert(tab_windows, win)
+
+    -- prune history
+    local win_count = #tab_windows
+    if win_count > 100 then
+      if table.move then
+        utils.prior_windows[tabid] =
+          require("neo-tree.utils._compat").table_move(tab_windows, 80, win_count, 1, {})
+        return
+      end
+
+      local new_array = {}
+      for i = 80, win_count do
+        table.insert(new_array, tab_windows[i])
+      end
+      utils.prior_windows[tabid] = new_array
+    end
+  end,
+})
+
+-- setup session loading
+vim.api.nvim_create_autocmd("SessionLoadPost", {
+  callback = function()
+    if require("neo-tree").ensure_config().auto_clean_after_session_restore then
+      require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
     end
   end,
 })

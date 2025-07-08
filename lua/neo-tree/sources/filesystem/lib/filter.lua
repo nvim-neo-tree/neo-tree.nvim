@@ -1,24 +1,29 @@
 -- This file holds all code for the search function.
 
-local vim = vim
 local Input = require("nui.input")
-local event = require("nui.utils.autocmd").event
 local fs = require("neo-tree.sources.filesystem")
 local popups = require("neo-tree.ui.popups")
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local manager = require("neo-tree.sources.manager")
+local compat = require("neo-tree.utils._compat")
+local common_filter = require("neo-tree.sources.common.filters")
 
 local M = {}
 
-local function create_input_mapping_handle(cmd, state, scroll_padding)
-  return function()
-    cmd(state, scroll_padding)
-  end
-end
-
-M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
+---@param state neotree.sources.filesystem.State
+---@param search_as_you_type boolean?
+---@param fuzzy_finder_mode "directory"|boolean?
+---@param use_fzy boolean?
+---@param keep_filter_on_submit boolean?
+M.show_filter = function(
+  state,
+  search_as_you_type,
+  fuzzy_finder_mode,
+  use_fzy,
+  keep_filter_on_submit
+)
   local popup_options
   local winid = vim.api.nvim_get_current_win()
   local height = vim.api.nvim_win_get_height(winid)
@@ -63,6 +68,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
     })
   end
 
+  ---@type neotree.Config.SortFunction
   local sort_by_score = function(a, b)
     -- `state.fzy_sort_result_scores` should be defined in
     -- `sources.filesystem.lib.filter_external.fzy_sort_files`
@@ -95,6 +101,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
   local has_pre_search_folders = utils.truthy(state.open_folders_before_search)
   if not has_pre_search_folders then
     log.trace("No search or pre-search folders, recording pre-search folders now")
+    ---@type table|nil
     state.open_folders_before_search = renderer.get_expanded_nodes(state.tree)
   end
 
@@ -106,7 +113,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       if value == "" then
         fs.reset_search(state)
       else
-        if search_as_you_type and fuzzy_finder_mode then
+        if search_as_you_type and fuzzy_finder_mode and not keep_filter_on_submit then
           fs.reset_search(state, true, true)
           return
         end
@@ -147,7 +154,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
         log.trace("Resetting search in on_change")
         local original_open_folders = nil
         if type(state.open_folders_before_search) == "table" then
-          original_open_folders = vim.deepcopy(state.open_folders_before_search, { noref = 1 })
+          original_open_folders = vim.deepcopy(state.open_folders_before_search, compat.noref())
         end
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders
@@ -159,6 +166,7 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
           state.sort_function_override = sort_by_score
           state.use_fzy = true
         end
+        ---@type function|nil
         local callback = select_first_file
         if fuzzy_finder_mode == "directory" then
           callback = nil
@@ -188,65 +196,52 @@ M.show_filter = function(state, search_as_you_type, fuzzy_finder_mode, use_fzy)
       vim.api.nvim_win_set_height(winid, height)
     end
   end)
-  local close_input = function()
-    vim.cmd("stopinsert")
-    input:unmount()
-    -- If this was closed due to submit, that function will handle the reset_search
-    vim.defer_fn(function()
-      if fuzzy_finder_mode and utils.truthy(state.search_pattern) then
-        fs.reset_search(state, true)
-      end
-    end, 100)
-    restore_height()
-  end
+  ---@class neotree.sources.filesystem.FuzzyFinder.BuiltinCommands : neotree.FuzzyFinder.BuiltinCommands
+  local cmds
+  cmds = {
+    move_cursor_down = function(_state, _scroll_padding)
+      renderer.focus_node(_state, nil, true, 1, _scroll_padding)
+    end,
 
-  input:on({ event.BufLeave, event.BufDelete }, close_input, { once = true })
+    move_cursor_up = function(_state, _scroll_padding)
+      renderer.focus_node(_state, nil, true, -1, _scroll_padding)
+      vim.cmd("redraw!")
+    end,
 
-  input:map("i", "<C-w>", "<C-S-w>", { noremap = true })
-
-  if fuzzy_finder_mode then
-    local cmds = {
-      move_cursor_down = function(_state, _scroll_padding)
-        renderer.focus_node(_state, nil, true, 1, _scroll_padding)
-      end,
-
-      move_cursor_up = function(_state, _scroll_padding)
-        renderer.focus_node(_state, nil, true, -1, _scroll_padding)
-        vim.cmd("redraw!")
-      end,
-
-      close = function()
-        close_input()
-      end,
-    }
-    for lhs, cmd_name in pairs(require("neo-tree").config.filesystem.window.fuzzy_finder_mappings) do
-      local t = type(cmd_name)
-      if t == "string" then
-        local cmd = cmds[cmd_name]
-        if cmd then
-          input:map(
-            "i",
-            lhs,
-            create_input_mapping_handle(cmd, state, scroll_padding),
-            { noremap = true }
-          )
-        else
-          log.warn(
-            string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name)
-          )
+    close = function(_state, _scroll_padding)
+      vim.cmd("stopinsert")
+      input:unmount()
+      -- If this was closed due to submit, that function will handle the reset_search
+      vim.defer_fn(function()
+        if
+          fuzzy_finder_mode
+          and utils.truthy(state.search_pattern)
+          and not keep_filter_on_submit
+        then
+          fs.reset_search(state, true)
         end
-      elseif t == "function" then
-        input:map(
-          "i",
-          lhs,
-          create_input_mapping_handle(cmd_name, state, scroll_padding),
-          { noremap = true }
-        )
-      else
-        log.warn(string.format("Invalid command in fuzzy_finder_mappings: %s = %s", lhs, cmd_name))
-      end
-    end
+      end, 100)
+      restore_height()
+    end,
+    close_keep_filter = function(_state, _scroll_padding)
+      log.info("Persisting the search filter")
+      keep_filter_on_submit = true
+      cmds.close(_state, _scroll_padding)
+    end,
+    close_clear_filter = function(_state, _scroll_padding)
+      log.info("Clearing the search filter")
+      keep_filter_on_submit = false
+      cmds.close(_state, _scroll_padding)
+    end,
+  }
+
+  common_filter.setup_hooks(input, cmds, state, scroll_padding)
+
+  if not fuzzy_finder_mode then
+    return
   end
+
+  common_filter.setup_mappings(input, cmds, state, scroll_padding)
 end
 
 return M

@@ -83,7 +83,7 @@ describe("Filesystem netrw hijack", function()
   --    if #vim.api.nvim_list_wins() ~= 2 then
   --      return false
   --    end
-  --    return vim.api.nvim_buf_get_option(0, "filetype") == "neo-tree"
+  --    return vim.bo[0].filetype == "neo-tree"
   --  end, "neotree is not in the second window")
   --end)
 end)

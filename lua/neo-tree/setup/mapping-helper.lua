@@ -2,6 +2,7 @@ local utils = require("neo-tree.utils")
 
 local M = {}
 
+---@param key string
 M.normalize_map_key = function(key)
   if key == nil then
     return nil
@@ -33,30 +34,43 @@ M.normalize_map_key = function(key)
   return key
 end
 
-M.normalize_map = function(map)
-  local new_map = {}
-  for key, value in pairs(map) do
-    local normalized_key = M.normalize_map_key(key)
-    if normalized_key ~= nil then
-      new_map[normalized_key] = value
+---@class neotree.SimpleMappings
+---@field [string] string|function?
+
+---@class neotree.SimpleMappingsByMode
+---@field [string] neotree.SimpleMappings?
+
+---@class neotree.Mappings : neotree.SimpleMappings
+---@field [integer] neotree.SimpleMappingsByMode?
+
+---@param map neotree.Mappings
+---@return neotree.Mappings new_map
+M.normalize_mappings = function(map)
+  local new_map = M.normalize_simple_mappings(map)
+  ---@cast new_map neotree.Mappings
+  for i, mappings_by_mode in ipairs(map) do
+    new_map[i] = {}
+    for mode, simple_mappings in pairs(mappings_by_mode) do
+      ---@cast simple_mappings neotree.SimpleMappings
+      new_map[i][mode] = M.normalize_simple_mappings(simple_mappings)
     end
   end
   return new_map
 end
 
-local tests = {
-  { "<BS>", "<bs>" },
-  { "<Backspace>", "<bs>" },
-  { "<Enter>", "<cr>" },
-  { "<C-W>", "<c-W>" },
-  { "<A-q>", "<m-q>" },
-  { "<C-Left>", "<c-left>" },
-  { "<C-Right>", "<c-right>" },
-  { "<C-Up>", "<c-up>" },
-}
-for _, test in ipairs(tests) do
-  local key = M.normalize_map_key(test[1])
-  assert(key == test[2], string.format("%s != %s", key, test[2]))
+---@param map neotree.SimpleMappings
+---@return neotree.SimpleMappings new_map
+M.normalize_simple_mappings = function(map)
+  local new_map = {}
+  for key, value in pairs(map) do
+    if type(key) == "string" then
+      local normalized_key = M.normalize_map_key(key)
+      if normalized_key ~= nil then
+        new_map[normalized_key] = value
+      end
+    end
+  end
+  return new_map
 end
 
 return M

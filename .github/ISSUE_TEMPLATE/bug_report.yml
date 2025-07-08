@@ -78,6 +78,9 @@ body:
                 "MunifTanjim/nui.nvim",
                 -- { "3rd/image.nvim", opts = {} }, -- Optional image support
               },
+              lazy = false,
+              ---@module "neo-tree"
+              ---@type neotree.Config?
               opts = {
                 -- fill any relevant options here
               },

@@ -1,15 +1,19 @@
 ---Utilities function to filter the LSP servers
 local utils = require("neo-tree.utils")
 
----@alias neotree.LspRespRaw table<integer,{err: lsp.ResponseError?, result: any}>
+---@class neotree.lsp.RespRaw
+---@field err lsp.ResponseError?
+---@field error lsp.ResponseError?
+---@field result any
+
 local M = {}
 
----@alias FilterFn fun(client_name: string): boolean
+---@alias neotree.lsp.Filter fun(client_name: string): boolean
 
 ---Filter clients
 ---@param filter_type "first" | "all"
----@param filter_fn FilterFn
----@param resp neotree.LspRespRaw
+---@param filter_fn neotree.lsp.Filter?
+---@param resp table<integer, neotree.lsp.RespRaw>
 ---@return table<string, any>
 local filter_clients = function(filter_type, filter_fn, resp)
   if resp == nil or type(resp) ~= "table" then
@@ -34,7 +38,7 @@ end
 
 ---Filter only allowed clients
 ---@param allow_only string[] the list of clients to keep
----@return FilterFn
+---@return neotree.lsp.Filter
 local allow_only = function(allow_only)
   return function(client_name)
     return vim.tbl_contains(allow_only, client_name)
@@ -43,7 +47,7 @@ end
 
 ---Ignore clients
 ---@param ignore string[] the list of clients to remove
----@return FilterFn
+---@return neotree.lsp.Filter
 local ignore = function(ignore)
   return function(client_name)
     return not vim.tbl_contains(ignore, client_name)
@@ -51,15 +55,20 @@ local ignore = function(ignore)
 end
 
 ---Main entry point for the filter
----@param resp neotree.LspRespRaw
+---@param resp table<integer, neotree.lsp.RespRaw>
 ---@return table<string, any>
 M.filter_resp = function(resp)
   return {}
 end
 
+---@alias neotree.lsp.Filter.Type
+---|"first" # Allow the first that matches
+---|"all" # Allow all that match
+
+---@alias neotree.lsp.ClientFilter neotree.lsp.Filter.Type | { type: neotree.lsp.Filter.Type, fn: neotree.lsp.Filter, allow_only: string[], ignore: string[] }
 ---Setup the filter accordingly to the config
 ---@see neo-tree-document-symbols-source for more details on options that the filter accepts
----@param cfg_flt "first" | "all" | { type: "first" | "all", fn: FilterFn, allow_only: string[], ignore: string[] }
+---@param cfg_flt neotree.lsp.ClientFilter
 M.setup = function(cfg_flt)
   local filter_type = "first"
   local filter_fn = nil

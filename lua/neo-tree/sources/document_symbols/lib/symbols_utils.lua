@@ -127,8 +127,8 @@ local function parse_resp(resp_node, id, state, parent_search_path)
 end
 
 ---Callback function for lsp request
----@param lsp_resp neotree.LspRespRaw the response of the lsp client
----@param state table the state of the source
+---@param lsp_resp table<integer, neotree.lsp.RespRaw> the response of the lsp clients
+---@param state neotree.State the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then
     return
@@ -137,7 +137,7 @@ local on_lsp_resp = function(lsp_resp, state)
   -- filter the response to get only the desired LSP
   local resp = filters.filter_resp(lsp_resp)
 
-  local bufname = state.path
+  local bufname = assert(state.path)
   local items = {}
 
   -- parse each client's response
@@ -162,7 +162,8 @@ local on_lsp_resp = function(lsp_resp, state)
   renderer.show_nodes(items, state)
 end
 
--- latter is deprecated in neovim v0.11
+---latter is deprecated in neovim v0.11
+---@diagnostic disable-next-line: deprecated
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 M.render_symbols = function(state)
   local bufnr = state.lsp_bufnr

@@ -1,4 +1,3 @@
-local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local utils = require("neo-tree.utils")
 local file_items = require("neo-tree.sources.common.file-items")
@@ -16,7 +15,7 @@ M.get_opened_buffers = function(state)
   local context = file_items.create_context()
   context.state = state
   -- Create root folder
-  local root = file_items.create_item(context, state.path, "directory")
+  local root = file_items.create_item(context, state.path, "directory") --[[@as neotree.FileItem.Directory]]
   root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern

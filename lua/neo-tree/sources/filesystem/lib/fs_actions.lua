@@ -4,9 +4,8 @@
 -- https://github.com/mhartington/dotfiles
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
-local vim = vim
 local api = vim.api
-local loop = vim.uv or vim.loop
+local uv = vim.uv or vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
@@ -15,6 +14,37 @@ local log = require("neo-tree.log")
 local Path = require("plenary").path
 
 local M = {}
+
+---@param a uv.fs_stat.result?
+---@param b uv.fs_stat.result?
+---@return boolean equal Whether a and b are stats of the same file
+local same_file = function(a, b)
+  return a and b and a.dev == b.dev and a.ino == b.ino or false
+end
+
+---Checks to see if a file can safely be renamed to its destination without data loss.
+---Also prevents renames from going through if the rename will not do anything.
+---Has an additional check for case-insensitive filesystems (e.g. for windows)
+---@param source string
+---@param destination string
+---@return boolean rename_is_safe
+local function rename_is_safe(source, destination)
+  local destination_file = uv.fs_stat(destination)
+  if not destination_file then
+    return true
+  end
+
+  local src = utils.normalize_path(source)
+  local dest = utils.normalize_path(destination)
+  local changing_casing = src ~= dest and src:lower() == dest:lower()
+  if changing_casing then
+    local src_file = uv.fs_stat(src)
+    -- We check that the two paths resolve to the same canonical filename and file.
+    return same_file(src_file, destination_file)
+      and uv.fs_realpath(src) == uv.fs_realpath(destination)
+  end
+  return false
+end
 
 local function find_replacement_buffer(for_buf)
   local bufs = vim.api.nvim_list_bufs()
@@ -30,7 +60,7 @@ local function find_replacement_buffer(for_buf)
     if buf ~= for_buf then
       local is_valid = vim.api.nvim_buf_is_valid(buf)
       if is_valid then
-        local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+        local buftype = vim.bo[buf].buftype
         if buftype == "" then
           return buf
         end
@@ -92,11 +122,11 @@ local function rename_buffer(old_path, new_path)
       if utils.truthy(new_buf_name) then
         local new_buf = vim.fn.bufadd(new_buf_name)
         vim.fn.bufload(new_buf)
-        vim.api.nvim_buf_set_option(new_buf, "buflisted", true)
+        vim.bo[new_buf].buflisted = true
         replace_buffer_in_windows(buf, new_buf)
 
-        if vim.api.nvim_buf_get_option(buf, "buftype") == "" then
-          local modified = vim.api.nvim_buf_get_option(buf, "modified")
+        if vim.bo[buf].buftype == "" then
+          local modified = vim.bo[buf].modified
           if modified then
             local old_buffer_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
             vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, old_buffer_lines)
@@ -124,12 +154,12 @@ end
 
 local function create_all_parents(path)
   local function create_all_as_folders(in_path)
-    if not loop.fs_stat(in_path) then
+    if not uv.fs_stat(in_path) then
       local parent, _ = utils.split_path(in_path)
       if parent then
         create_all_as_folders(parent)
       end
-      loop.fs_mkdir(in_path, 493)
+      uv.fs_mkdir(in_path, 493)
     end
   end
 
@@ -138,13 +168,19 @@ local function create_all_parents(path)
 end
 
 -- Gets a non-existing filename from the user and executes the callback with it.
+---@param source string
+---@param destination string
+---@param using_root_directory boolean
+---@param name_chosen_callback fun(string)
+---@param first_message string?
 local function get_unused_name(
+  source,
   destination,
   using_root_directory,
   name_chosen_callback,
   first_message
 )
-  if loop.fs_stat(destination) then
+  if not rename_is_safe(source, destination) then
     local parent_path, name
     if not using_root_directory then
       parent_path, name = utils.split_path(destination)
@@ -160,7 +196,7 @@ local function get_unused_name(
     inputs.input(message, name, function(new_name)
       if new_name and string.len(new_name) > 0 then
         local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
-        get_unused_name(new_path, using_root_directory, name_chosen_callback)
+        get_unused_name(source, new_path, using_root_directory, name_chosen_callback)
       end
     end)
   else
@@ -179,7 +215,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     using_root_directory
   )
   local _, name = utils.split_path(source)
-  get_unused_name(destination or source, using_root_directory, function(dest)
+  get_unused_name(source, destination or source, using_root_directory, function(dest)
     -- Resolve user-inputted relative paths out of the absolute paths
     dest = vim.fs.normalize(dest)
     if utils.is_windows then
@@ -187,7 +223,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     end
     local function move_file()
       create_all_parents(dest)
-      loop.fs_rename(source, dest, function(err)
+      uv.fs_rename(source, dest, function(err)
         if err then
           log.error("Could not move the files from", source, "to", dest, ":", err)
           return
@@ -251,7 +287,7 @@ end
 -- Copy Node
 M.copy_node = function(source, _destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
-  get_unused_name(_destination or source, using_root_directory, function(destination)
+  get_unused_name(source, _destination or source, using_root_directory, function(destination)
     local parent_path, _ = utils.split_path(destination)
     if source == parent_path then
       log.warn("Cannot copy a file/folder to itself")
@@ -336,13 +372,13 @@ M.create_directory = function(in_directory, callback, using_root_directory)
         return
       end
 
-      if loop.fs_stat(destination) then
+      if uv.fs_stat(destination) then
         log.warn("Directory already exists")
         return
       end
 
       create_all_parents(destination)
-      loop.fs_mkdir(destination, 493)
+      uv.fs_mkdir(destination, 493)
 
       vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)
@@ -394,7 +430,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
       end
 
       destination = utils.normalize_path(destination)
-      if loop.fs_stat(destination) then
+      if uv.fs_stat(destination) then
         log.warn("File already exists")
         return
       end
@@ -413,19 +449,19 @@ M.create_node = function(in_directory, callback, using_root_directory)
 
       create_all_parents(destination)
       if is_dir then
-        loop.fs_mkdir(destination, 493)
+        uv.fs_mkdir(destination, 493)
       else
-        local open_mode = loop.constants.O_CREAT + loop.constants.O_WRONLY + loop.constants.O_TRUNC
-        local fd = loop.fs_open(destination, open_mode, 420)
+        local open_mode = uv.constants.O_CREAT + uv.constants.O_WRONLY + uv.constants.O_TRUNC
+        local fd = uv.fs_open(destination, open_mode, 420)
         if not fd then
-          if not loop.fs_stat(destination) then
-            api.nvim_err_writeln("Could not create file " .. destination)
+          if not uv.fs_stat(destination) then
+            log.error("Could not create file " .. destination)
             return
           else
             log.warn("Failed to complete file creation of " .. destination)
           end
         else
-          loop.fs_close(fd)
+          uv.fs_close(fd)
         end
       end
       complete()
@@ -437,9 +473,9 @@ end
 ---@param dir_path string Directory to delete.
 ---@return boolean success Whether the directory was deleted.
 local function delete_dir(dir_path)
-  local handle = loop.fs_scandir(dir_path)
+  local handle = uv.fs_scandir(dir_path)
   if type(handle) == "string" then
-    api.nvim_err_writeln(handle)
+    log.error(handle)
     return false
   end
 
@@ -449,7 +485,7 @@ local function delete_dir(dir_path)
   end
 
   while true do
-    local child_name, t = loop.fs_scandir_next(handle)
+    local child_name, t = uv.fs_scandir_next(handle)
     if not child_name then
       break
     end
@@ -462,14 +498,14 @@ local function delete_dir(dir_path)
         return false
       end
     else
-      local success = loop.fs_unlink(child_path)
+      local success = uv.fs_unlink(child_path)
       if not success then
         return false
       end
       clear_buffer(child_path)
     end
   end
-  return loop.fs_rmdir(dir_path) or false
+  return uv.fs_rmdir(dir_path) or false
 end
 
 -- Delete Node
@@ -479,16 +515,20 @@ M.delete_node = function(path, callback, noconfirm)
 
   log.trace("Deleting node: ", path)
   local _type = "unknown"
-  local stat = loop.fs_stat(path)
+  local stat = uv.fs_stat(path)
   if stat then
     _type = stat.type
     if _type == "link" then
-      local link_to = loop.fs_readlink(path)
+      local link_to = uv.fs_readlink(path)
       if not link_to then
         log.error("Could not read link")
         return
       end
-      _type = loop.fs_stat(link_to)
+      local target_file = uv.fs_stat(link_to)
+      if target_file then
+        _type = target_file.type
+      end
+      _type = uv.fs_stat(link_to).type
     end
     if _type == "directory" then
       local children = scan.scan_dir(path, {
@@ -553,13 +593,13 @@ M.delete_node = function(path, callback, noconfirm)
       if not success then
         success = delete_dir(path)
         if not success then
-          return api.nvim_err_writeln("Could not remove directory: " .. path)
+          return log.error("Could not remove directory: " .. path)
         end
       end
     else
-      local success = loop.fs_unlink(path)
+      local success = uv.fs_unlink(path)
       if not success then
-        return api.nvim_err_writeln("Could not remove file: " .. path)
+        return log.error("Could not remove file: " .. path)
       end
       clear_buffer(path)
     end
@@ -605,9 +645,9 @@ local rename_node = function(msg, name, get_destination, path, callback)
     end
 
     local destination = get_destination(new_name)
-    -- If already exists
-    if loop.fs_stat(destination) then
-      log.warn(destination, " already exists")
+
+    if not rename_is_safe(path, destination) then
+      log.warn(destination, " already exists, canceling")
       return
     end
 
@@ -624,7 +664,7 @@ local rename_node = function(msg, name, get_destination, path, callback)
     end)
 
     local function fs_rename()
-      loop.fs_rename(path, destination, function(err)
+      uv.fs_rename(path, destination, function(err)
         if err then
           log.warn("Could not rename the files")
           return

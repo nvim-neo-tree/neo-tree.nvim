@@ -220,6 +220,10 @@ z         = close_all_nodes: Close all nodes in the tree.
 
            expand_all_nodes: Expand all directory nodes in the tree recursively.
 
+        expand_all_subnodes: Same as expand_all_nodes but defaults to
+                             recursively expanding just the node under the
+                             cursor.
+
 P          = toggle_preview: Toggles "preview mode", see |neo-tree-preview-mode|
 
 l           = focus_preview: Focus the active preview window
@@ -426,7 +430,14 @@ an existing split by configuring the command like this:
     require("neo-tree").setup({
       window = {
         mappings = {
-          ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true } },
+          ["P"] = {
+            "toggle_preview",
+            config = {
+              use_float = false,
+              use_snacks_image = true,
+              use_image_nvim = true
+            }
+          },
           ["l"] = "focus_preview",
           ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
           ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
@@ -446,10 +457,15 @@ variable `neo_tree_preview` set to `1` to indicate that it is being used as a
 preview window. You can refer to this in statusline and winbar configs to mark a
 window as being used as a preview.
 
-If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
-mode supports image rendering by default using kitty graphics protocol or ueberzug.
-However, if you do not want this feature, you can disable it by changing the option
-`use_image_nvim = false` in the mappings config mentioned above.
+If you have folke/snacks.nvim or 3rd/image.nvim installed, preview mode supports
+image rendering by default using kitty graphics protocol or ueberzug.
+
+- https://github.com/folke/snacks.nvim/blob/main/docs/image.md
+- https://github.com/3rd/image.nvim
+
+However, if you do not want this feature, you can disable it by setting
+`use_snacks_image = false` or `use_image_nvim = false` in the mappings config
+mentioned above.
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 
@@ -784,6 +800,28 @@ commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
 lua file just to read it as documentation.
 
+NOTE: Neo-tree has type annotations for its configuration. If you have a Lua
+language server that supports EmmyLua/LuaCATS annotations, you can use
+`neotree.Config`, for example:
+
+>lua
+    -- if using lazy.nvim:
+    {
+      "nvim-neo-tree/neo-tree.nvim",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-tree/nvim-web-devicons",
+        "MunifTanjim/nui.nvim",
+        -- { "3rd/image.nvim", opts = {} }, -- Optional image support
+      },
+      lazy = false, -- neo-tree lazy-loads itself
+      ---@module "neo-tree"
+      ---@type neotree.Config?
+      -- opts = {
+      --   -- fill any relevant options here
+      -- },
+    }
+<
 
 SOURCE SELECTOR                                       *neo-tree-source-selector*
 
@@ -1163,6 +1201,29 @@ If you want to use symbols instead of "E", "W", "I", and H", you'll need to
 define those somewhere in your nvim configuration. Here is an example:
 
 >lua
+    vim.diagnostic.config({
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = '',
+          [vim.diagnostic.severity.WARN] = '',
+          [vim.diagnostic.severity.INFO] = '',
+          [vim.diagnostic.severity.HINT] = '󰌵',
+        },
+      }
+    })
+<
+
+If you don't change the `signs` option from its default, e.g.:
+
+>lua
+    vim.diagnostic.config({
+      signs = true
+    })
+<
+
+or are on Neovim v0.9 and below, then this will work instead:
+
+>lua
     vim.fn.sign_define("DiagnosticSignError",
         {text = " ", texthl = "DiagnosticSignError"})
     vim.fn.sign_define("DiagnosticSignWarn",
@@ -1195,7 +1256,8 @@ neo-tree setup call like this:
         },
       }
     })
->
+<
+
 Anything not specified in the `default_component_configs` will fallback to the
 `sign_define` method.
 
@@ -1895,6 +1957,7 @@ specific commands:
       ["A"]  = "git_add_all",
       ["ga"] = "git_add_file",
       ["gu"] = "git_unstage_file",
+      ["gU"] = "git_undo_last_commit",
       ["gr"] = "git_revert_file",
       ["gc"] = "git_commit"
       ["gp"] = "git_push",

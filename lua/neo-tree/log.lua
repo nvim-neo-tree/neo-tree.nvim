@@ -6,7 +6,6 @@
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
 
-local vim = vim
 -- User configuration section
 local default_config = {
   -- Name of the plugin. Prepended to log messages
@@ -41,7 +40,7 @@ local default_config = {
 -- {{{ NO NEED TO CHANGE
 local log = {}
 
-local unpack = unpack or table.unpack
+local unpack = unpack
 
 local notify = function(message, level_config)
   if type(vim.notify) == "table" then

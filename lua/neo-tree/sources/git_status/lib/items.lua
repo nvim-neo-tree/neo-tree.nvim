@@ -1,4 +1,3 @@
-local vim = vim
 local renderer = require("neo-tree.ui.renderer")
 local file_items = require("neo-tree.sources.common.file-items")
 local log = require("neo-tree.log")
@@ -8,6 +7,7 @@ local M = {}
 
 ---Get a table of all open buffers, along with all parent paths of those buffers.
 ---The paths are the keys of the table, and all the values are 'true'.
+---@param state neotree.State
 M.get_git_status = function(state)
   if state.loading then
     return
@@ -18,14 +18,14 @@ M.get_git_status = function(state)
   local context = file_items.create_context()
   context.state = state
   -- Create root folder
-  local root = file_items.create_item(context, state.path, "directory")
+  local root = file_items.create_item(context, state.path, "directory") --[[@as neotree.FileItem.Directory]]
   root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
 
   for path, status in pairs(status_lookup) do
-    local success, item = pcall(file_items.create_item, context, path, "file")
+    local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
     item.status = status
     if success then
       item.extra = {

@@ -1,3 +1,4 @@
+---@type neotree.Config.Base
 local config = {
   -- If a user has a sources list it will replace this one.
   -- Only sources listed here will be loaded.
@@ -28,7 +29,7 @@ local config = {
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
   hide_root_node = false, -- Hide the root node.
-  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow. 
+  retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
   log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
   log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
@@ -38,7 +39,7 @@ local config = {
   -- popup_border_style is for input and confirmation dialogs.
   -- Configurtaion of floating window is done in the individual source sections.
   -- "NC" is a special style that works well with NormalNC set
-  popup_border_style = "NC", -- "double", "none", "rounded", "shadow", "single" or "solid"
+  popup_border_style = "NC", -- "double", "rounded", "single", "solid", (or "" to use 'winborder' on Neovim v0.11+)
   resize_timer_interval = 500, -- in ms, needed for containers to redraw right aligned and faded content
                                -- set to -1 to disable the resize timer entirely
   --                           -- NOTE: this will speed up to 50 ms for 1 second following a resize
@@ -375,7 +376,6 @@ local config = {
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
-    same_level = false, -- Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
     insert_as = "child", -- Affects how nodes get inserted into the tree during creation/pasting/moving of files if the node under the cursor is a directory:
                         -- "child":   Insert nodes as children of the directory under cursor.
                         -- "sibling": Insert nodes  as siblings of the directory under cursor.
@@ -394,11 +394,15 @@ local config = {
       ["<cr>"] = "open",
       -- ["<cr>"] = { "open", config = { expand_nested_files = true } }, -- expand nested file takes precedence
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-      ["P"] = { "toggle_preview", config = {
-        use_float = true,
-        use_image_nvim = false,
-        -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
-      } },
+      ["P"] = {
+        "toggle_preview",
+        config = {
+          use_float = true,
+          use_snacks_image = true,
+          use_image_nvim = true,
+          -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
+        }
+      },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
       ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
       ["l"] = "focus_preview",
@@ -413,8 +417,10 @@ local config = {
       -- ["t"] = "open_tab_drop",
       ["w"] = "open_with_window_picker",
       ["C"] = "close_node",
+      --["C"] = "close_all_subnodes",
       ["z"] = "close_all_nodes",
       --["Z"] = "expand_all_nodes",
+      --["Z"] = "expand_all_subnodes",
       ["R"] = "refresh",
       ["a"] = {
         "add",
@@ -443,10 +449,11 @@ local config = {
       mappings = {
         ["H"] = "toggle_hidden",
         ["/"] = "fuzzy_finder",
-        ["D"] = "fuzzy_finder_directory",
+        --["/"] = {"fuzzy_finder", config = { keep_filter_on_submit = true }},
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
-        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
+        ["D"] = "fuzzy_finder_directory",
         -- ["D"] = "fuzzy_sorter_directory",
+        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["<bs>"] = "navigate_up",
@@ -469,7 +476,22 @@ local config = {
         ["<C-n>"] = "move_cursor_down",
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
-        ["<esc>"] = "close"
+        ["<Esc>"] = "close",
+        ["<S-CR>"] = "close_keep_filter",
+        ["<C-CR>"] = "close_clear_filter",
+        ["<C-w>"] = { "<C-S-w>", raw = true },
+        {
+          -- normal mode mappings
+          n = {
+            ["j"] = "move_cursor_down",
+            ["k"] = "move_cursor_up",
+            ["<S-CR>"] = "close_keep_filter",
+            ["<C-CR>"] = "close_clear_filter",
+            ["<esc>"] = "close",
+          }
+        }
+        -- ["<esc>"] = "noop", -- if you want to use normal mode
+        -- ["key"] = function(state, scroll_padding) ... end,
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
@@ -603,6 +625,7 @@ local config = {
       mappings = {
         ["A"] = "git_add_all",
         ["gu"] = "git_unstage_file",
+        ["gU"] = "git_undo_last_commit",
         ["ga"] = "git_add_file",
         ["gr"] = "git_revert_file",
         ["gc"] = "git_commit",

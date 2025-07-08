@@ -14,8 +14,18 @@ local highlights = require("neo-tree.ui.highlights")
 local common = require("neo-tree.sources.common.components")
 local utils = require("neo-tree.utils")
 
+---@alias neotree.Component.Buffers._Key
+---|"name"
+
+---@class neotree.Component.Buffers
+---@field [1] neotree.Component.Buffers._Key|neotree.Component.Common._Key
+
+---@type table<neotree.Component.Buffers._Key, neotree.Renderer>
 local M = {}
 
+---@class (exact) neotree.Component.Buffers.Name : neotree.Component.Common.Name
+
+---@param config neotree.Component.Buffers.Name
 M.name = function(config, node, state)
   local highlight = config.highlight or highlights.FILE_NAME_OPENED
   local name = node.name

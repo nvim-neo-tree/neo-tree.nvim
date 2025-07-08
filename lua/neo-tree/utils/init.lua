@@ -1,4 +1,6 @@
+local uv = vim.uv or vim.loop
 local log = require("neo-tree.log")
+local compat = require("neo-tree.utils._compat")
 local bit = require("bit")
 local ffi_available, ffi = pcall(require, "ffi")
 
@@ -9,12 +11,6 @@ if ffi_available then
   int GetFileAttributesA(const char *path);
   ]])
 end
-
--- Backwards compatibility
-table.pack = table.pack or function(...)
-  return { n = select("#", ...), ... }
-end
-table.unpack = table.unpack or unpack
 
 local M = {}
 
@@ -32,14 +28,19 @@ local diag_severity_to_string = function(severity)
   end
 end
 
+-- Backwards compatibility
+M.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
+
 local tracked_functions = {}
----@enum NeotreeDebounceStrategy
+---@enum neotree.utils.DebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
----@enum NeotreeDebounceAction
+---@enum neotree.utils.DebounceAction?
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
@@ -49,8 +50,8 @@ M.debounce_action = {
 ---Part of debounce. Moved out of the function to eliminate memory leaks.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction?? The debounce_action to use, determines how the function is invoked
 local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
@@ -75,8 +76,8 @@ end
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -123,6 +124,8 @@ M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   if type(fn) == "function" then
     success, result = pcall(fn)
   end
+  ---not sure if this line is needed
+  ---@diagnostic disable-next-line: cast-local-type
   fn = nil
   fn_data.fn = fn
 
@@ -278,19 +281,21 @@ M.date = function(format, seconds)
   return formatted_date
 end
 
+---@class (exact) neotree.utils.DiagnosticCounts
+---@field severity_number integer
+---@field severity_string string
+---@field Error integer?
+---@field Warn integer?
+---@field Info integer?
+---@field Hint integer?
+
+---@alias neotree.utils.DiagnosticLookup table<string, neotree.utils.DiagnosticCounts?>
+
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
 ---severity_number and severity_string refer to the highest severity with
 ---non-zero diagnostics count.
 ---Entry is nil if all counts are 0
----@return table table
----{ [file_path] = {
----    severity_number = int,
----    severity_string = string,
----    Error = int or nil,
----    Warn = int or nil,
----    Info = int or nil
----    Hint = int or nil,
----  } or nil }
+---@return neotree.utils.DiagnosticLookup
 M.get_diagnostic_counts = function()
   local lookup = {}
 
@@ -302,7 +307,9 @@ M.get_diagnostic_counts = function()
         local enabled
         if vim.diagnostic.is_enabled then
           enabled = vim.diagnostic.is_enabled({ bufnr = bufnr, ns_id = ns })
+        ---@diagnostic disable-next-line: deprecated
         elseif vim.diagnostic.is_disabled then
+          ---@diagnostic disable-next-line: deprecated
           enabled = not vim.diagnostic.is_disabled(bufnr, ns)
         else
           enabled = true
@@ -367,19 +374,25 @@ M.get_diagnostic_counts = function()
   return lookup
 end
 
---- DEPRECATED: This will be removed in v3. Use `get_opened_buffers` instead.
+---@deprecated
+---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
+  local copy = {}
   for bufname, bufinfo in pairs(opened_buffers) do
-    opened_buffers[bufname] = bufinfo.modified
+    copy[bufname] = bufinfo.modified
   end
-  return opened_buffers
+  return copy
 end
 
+---@class neotree.utils.OpenedBuffers
+---@field modified boolean
+---@field loaded boolean
+
 ---Gets a lookup of all open buffers keyed by path with additional information
----@return table opened_buffers { [buffer_name] = { modified = bool } }
+---@return table<string, neotree.utils.OpenedBuffers> opened_buffers
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
@@ -389,8 +402,8 @@ M.get_opened_buffers = function()
         buffer_name = "[No Name]#" .. buffer
       end
       opened_buffers[buffer_name] = {
-        ["modified"] = vim.api.nvim_buf_get_option(buffer, "modified"),
-        ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
+        modified = vim.bo[buffer].modified,
+        loaded = vim.api.nvim_buf_is_loaded(buffer),
       }
     end
   end
@@ -399,9 +412,10 @@ end
 
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
----@param functionOrString any The object to resolve.
----@param node table The current node, which is passed to the function if it is a function.
----@param state any The current state, which is passed to the function if it is a function.
+---@param functionOrString fun(node: NuiTree.Node, state: neotree.State):string The object to resolve.
+---@param node NuiTree.Node The current node, which is passed to the function if it is a function.
+---@param state neotree.State The current state, which is passed to the function if it is a function.
+---@overload fun(functionOrString: string):string
 ---@return string string The resolved string.
 M.getStringValue = function(functionOrString, node, state)
   if type(functionOrString) == "function" then
@@ -412,9 +426,9 @@ M.getStringValue = function(functionOrString, node, state)
 end
 
 ---Return the keys of a given table.
----@param tbl table The table to get the keys of.
+---@param tbl string[] The table to get the keys of.
 ---@param sorted boolean Whether to sort the keys.
----@return table table The keys of the table.
+---@return string[] keys The keys of the table.
 M.get_keys = function(tbl, sorted)
   local keys = {}
   for k, _ in pairs(tbl) do
@@ -433,30 +447,29 @@ M.get_inner_win_width = function(winid)
   local info = vim.fn.getwininfo(winid)
   if info and info[1] then
     return info[1].width - info[1].textoff
-  else
-    log.error("Could not get window info for window", winid)
   end
+  log.error("Could not get window info for window", winid)
+  return vim.o.columns
 end
 
+---@type table<string, fun(node: NuiTree.Node):uv.fs_stat.result?>
 local stat_providers = {
   default = function(node)
-    return vim.loop.fs_stat(node.path)
+    return uv.fs_stat(node.path)
   end,
 }
 
+---@class neotree.utils.StatTime
+--- @field sec number
+---@class neotree.utils.StatTable
+--- @field birthtime neotree.utils.StatTime
+--- @field mtime neotree.utils.StatTime
+--- @field size number
+
 --- Gets the statics for a node in the file system. The `stat` object will be cached
 --- for the lifetime of the node.
----
 ---@param node table The Nui TreeNode node to get the stats for.
----@return StatTable | table
----
----@class StatTime
---- @field sec number
----
----@class StatTable
---- @field birthtime StatTime
---- @field mtime StatTime
---- @field size number
+---@return neotree.utils.StatTable | table
 M.get_stat = function(node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]
@@ -475,11 +488,11 @@ M.register_stat_provider = function(name, func)
 end
 
 ---Handles null coalescing into a table at any depth.
+---Use vim.tbl_get instead.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any|nil The default value to return if the value is nil.
----@param strict_type_check boolean? Whether to require the type of the value is
----the same as the default value.
+---@param defaultValue any? The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is the same as the default value.
 ---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
@@ -559,13 +572,14 @@ M.is_filtered_by_pattern = function(pattern_list, path, name)
   for _, p in ipairs(pattern_list) do
     local separator_pattern = M.is_windows and "\\" or "/"
     local filename = string.find(p, separator_pattern) and path or name
-    if string.find(filename, p) then
+    if string.find(filename or "", p) then
       return true
     end
   end
   return false
 end
 
+---@param win_id integer?
 M.is_floating = function(win_id)
   win_id = win_id or vim.api.nvim_get_current_win()
   local cfg = vim.api.nvim_win_get_config(win_id)
@@ -578,7 +592,7 @@ end
 M.is_winfixbuf = function(win_id)
   if vim.fn.exists("&winfixbuf") == 1 then
     win_id = win_id or vim.api.nvim_get_current_win()
-    return vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
+    return vim.wo[win_id].winfixbuf
   end
   return false
 end
@@ -600,7 +614,7 @@ M.is_real_file = function(afile, true_for_terminals)
 
   local success, bufnr = pcall(vim.fn.bufnr, afile)
   if success and bufnr > 0 then
-    local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
+    local buftype = vim.bo[bufnr].buftype
 
     if true_for_terminals and buftype == "terminal" then
       return true
@@ -640,6 +654,9 @@ M.map = function(tbl, fn)
   return t
 end
 
+---Finds an appropriate window to open a file from neo-tree
+---@param state neotree.State
+---@param ignore_winfixbuf boolean?
 M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- Avoid triggering autocommands when switching windows
   local eventignore = vim.o.eventignore
@@ -650,8 +667,8 @@ M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- use last window if possible
   local suitable_window_found = false
   local nt = require("neo-tree")
-  local ignore_ft = nt.config.open_files_do_not_replace_types
-  local ignore = M.list_to_dict(ignore_ft)
+  local ignore_list = nt.config.open_files_do_not_replace_types or {}
+  local ignore = M.list_to_dict(ignore_list)
   ignore["neo-tree"] = true
   if nt.config.open_files_in_last_window then
     local prior_window = nt.get_prior_window(ignore, ignore_winfixbuf)
@@ -707,7 +724,7 @@ M.resolve_width = function(width)
       width = tonumber(string.sub(width, 1, #width - 1)) / 100
       width = width * available_width
     else
-      width = tonumber(width)
+      width = tonumber(width) or default_width
     end
   elseif type(width) == "function" then
     width = width()
@@ -732,18 +749,20 @@ M.force_new_split = function(current_position, escaped_path)
   if escaped_path == M.escape_path_for_cmd("[No Name]") then
     -- vim's default behavior is to overwrite [No Name] buffers.
     -- We need to split first and then open the path to workaround this behavior.
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command)
     if result then
       vim.cmd.edit(escaped_path)
     end
   else
+    ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, split_command .. " " .. escaped_path)
   end
   return result, err
 end
 
 ---Open file in the appropriate window.
----@param state table The state of the source
+---@param state neotree.State
 ---@param path string The file to open
 ---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
@@ -782,6 +801,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       return
     end
     if state.current_position == "current" then
+      ---@diagnostic disable-next-line: param-type-mismatch
       result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
     else
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
@@ -797,6 +817,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
         result, err = M.force_new_split(state.current_position, escaped_path)
         vim.api.nvim_win_set_width(winid, width)
       else
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       end
     end
@@ -807,6 +828,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
       if not is_neo_tree_window and not M.is_winfixbuf(winid) then
         vim.api.nvim_set_current_win(winid)
+        ---@diagnostic disable-next-line: param-type-mismatch
         result, err = pcall(vim.cmd, open_cmd .. " " .. bufnr_or_path)
       else
         result, err = M.force_new_split(state.current_position, escaped_path)
@@ -814,7 +836,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321
-      vim.api.nvim_buf_set_option(0, "buflisted", true)
+      vim.bo[0].buflisted = true
       events.fire_event(events.FILE_OPENED, path)
     else
       log.error("Error opening file:", err)
@@ -837,6 +859,9 @@ M.reverse_list = function(list)
   return result
 end
 
+---@param state neotree.State|neotree.Config.Base
+---@param config_option string
+---@param default_value any
 M.resolve_config_option = function(state, config_option, default_value)
   local opt = M.get_value(state, config_option, default_value, false)
   if type(opt) == "function" then
@@ -900,6 +925,8 @@ M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 if M.is_windows == true then
   M.path_separator = "\\"
 end
+
+M.is_macos = vim.fn.has("mac") == 1
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -998,9 +1025,9 @@ M.split = function(inputString, sep)
 end
 
 ---Split a path into a parentPath and a name.
----@param path string The path to split.
----@return string|nil parentPath
----@return string|nil name
+---@param path string? The path to split.
+---@return string? parentPath
+---@return string? name
 M.split_path = function(path)
   if not path then
     return nil, nil
@@ -1068,12 +1095,22 @@ table_merge_internal = function(base_table, override_table)
   return base_table
 end
 
----DEPRECATED: Use vim.deepcopy(source_table, { noref = 1 }) instead.
+---@deprecated
+---Use
+---```lua
+---vim.deepcopy(source_table, true)
+---```
+---instead.
 M.table_copy = function(source_table)
-  return vim.deepcopy(source_table, { noref = 1 })
+  return vim.deepcopy(source_table, compat.noref())
 end
 
----DEPRECATED: Use vim.tbl_deep_extend("force", base_table, source_table) instead.
+---@deprecated
+---Use:
+---```lua
+---vim.tbl_deep_extend("force", base_table, source_table) instead.
+---```
+---instead.
 M.table_merge = function(base_table, override_table)
   local merged_table = table_merge_internal({}, base_table)
   return table_merge_internal(merged_table, override_table)
@@ -1081,7 +1118,7 @@ end
 
 ---Evaluate the truthiness of a value, according to js/python rules.
 ---@param value any
----@return boolean
+---@return boolean truthy
 M.truthy = function(value)
   if value == nil then
     return false
@@ -1096,13 +1133,13 @@ M.truthy = function(value)
     return value > 0
   end
   if type(value) == "table" then
-    return #vim.tbl_values(value) > 0
+    return next(value) ~= nil
   end
   return true
 end
 
 M.is_expandable = function(node)
-  return node.type == "directory" or node:has_children()
+  return node:has_children() or node.type == "directory"
 end
 
 M.windowize_path = function(path)
@@ -1146,8 +1183,8 @@ M.wrap = function(func, ...)
   end
   local wrapped_args = { ... }
   return function(...)
-    local all_args = table.pack(table.unpack(wrapped_args), ...)
-    func(table.unpack(all_args))
+    local all_args = M.pack(unpack(wrapped_args), ...)
+    func(unpack(all_args))
   end
 end
 
@@ -1202,6 +1239,15 @@ local brace_expand_split = function(s, separator)
   return s, nil
 end
 
+---@param tbl table
+local function flatten(tbl)
+  if vim.iter then
+    return vim.iter(tbl):flatten():totable()
+  end
+
+  ---@diagnostic disable-next-line: deprecated
+  return vim.tbl_flatten(tbl)
+end
 ---Perform brace expansion on a string and return the sequence of the results
 ---@param s string?: input string which is inside braces, if nil return { "" }
 ---@return string[] | nil: list of strings each representing the individual expanded strings
@@ -1233,10 +1279,12 @@ local brace_expand_contents = function(s)
     return items
   end
 
+  ---@alias neotree.utils.Resolver fun(from: string, to: string, step: string): string[]
+
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func fun(from: string, to: string, step: string): string[]
-  ---@return string[] | nil: expanded sequence or nil if failed
+  ---@param resolve_func neotree.utils.Resolver
+  ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
     if from then
@@ -1265,6 +1313,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
+  ---@type table<string, neotree.utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
@@ -1272,7 +1321,7 @@ local brace_expand_contents = function(s)
     { [=[^(%a)%.%.(%a)$]=], resolve_sequence_char },
   }
   for _, list in ipairs(check_list) do
-    local regex, func = table.unpack(list)
+    local regex, func = list[1], list[2]
     local sequence = try_sequence_on_pattern(regex, func)
     if sequence then
       return sequence
@@ -1288,7 +1337,7 @@ local brace_expand_contents = function(s)
   if #items == 1 then -- Only one expansion found. Abort.
     return nil
   end
-  return vim.tbl_flatten(items)
+  return flatten(items)
 end
 
 ---brace_expand:
@@ -1441,5 +1490,8 @@ M.truncate_by_cell = function(str, col_limit, align)
   end
   return short, strwidth(short)
 end
+
+---@type table<integer, integer[]>
+M.prior_windows = {}
 
 return M

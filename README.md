@@ -56,7 +56,11 @@ so we can fix it.
 
 ## Minimal Quickstart
 
-#### Minimal Example for Lazy:
+> [!NOTE]
+> You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
+> configuration.
+
+#### Minimal Example for lazy.nvim:
 ```lua
 {
   "nvim-neo-tree/neo-tree.nvim",
@@ -65,8 +69,17 @@ so we can fix it.
     "nvim-lua/plenary.nvim",
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
-    -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
-  }
+    -- Optional image support for file preview: See `# Preview Mode` for more information.
+    -- {"3rd/image.nvim", opts = {}},
+    -- OR use snacks.nvim's image module:
+    -- "folke/snacks.nvim",
+  },
+  lazy = false, -- neo-tree will lazily load itself
+  ---@module "neo-tree"
+  ---@type neotree.Config?
+  opts = {
+    -- add options here
+  },
 }
 ```
 
@@ -79,7 +92,10 @@ use({
     "nvim-lua/plenary.nvim",
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
-    -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- { "3rd/image.nvim", config = function() require('image').setup({}) end },
+    -- OR use snacks.nvim's image module:
+    -- "folke/snacks.nvim",
   }
 })
 ```
@@ -142,16 +158,33 @@ return {
         end,
       },
     },
+    lazy = false,
     config = function()
-      -- If you want icons for diagnostic errors, you'll need to define them somewhere:
-      vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
-      vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
-      vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
-      vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+      -- If you want icons for diagnostic errors, you'll need to define them somewhere.
+      -- In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
+      --
+      -- vim.diagnostic.config({
+      --   signs = {
+      --     text = {
+      --       [vim.diagnostic.severity.ERROR] = '',
+      --       [vim.diagnostic.severity.WARN] = '',
+      --       [vim.diagnostic.severity.INFO] = '',
+      --       [vim.diagnostic.severity.HINT] = '󰌵',
+      --     },
+      --   }
+      -- })
+      --
+      -- In older versions, you can define the signs manually:
+      -- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
+      -- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
+      -- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
+      -- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+
+      vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
 
       require("neo-tree").setup({
         close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
-        popup_border_style = "rounded",
+        popup_border_style = "NC", -- or "" to use 'winborder' on Neovim v0.11+
         enable_git_status = true,
         enable_diagnostics = true,
         open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
@@ -272,7 +305,14 @@ return {
             ["<2-LeftMouse>"] = "open",
             ["<cr>"] = "open",
             ["<esc>"] = "cancel", -- close preview or floating neo-tree window
-            ["P"] = { "toggle_preview", config = { use_float = true, use_image_nvim = true } },
+            ["P"] = {
+              "toggle_preview",
+              config = {
+                use_float = true,
+                use_snacks_image = true,
+                use_image_nvim = true,
+              },
+            },
             -- Read `# Preview Mode` for more information
             ["l"] = "focus_preview",
             ["S"] = "open_split",
@@ -288,6 +328,7 @@ return {
             -- ['C'] = 'close_all_subnodes',
             ["z"] = "close_all_nodes",
             --["Z"] = "expand_all_nodes",
+            --["Z"] = "expand_all_subnodes",
             ["a"] = {
               "add",
               -- this command supports BASH style brace expansion ("x{a,b,c}" -> xa,xb,xc). see `:h neo-tree-file-actions` for details
@@ -403,7 +444,21 @@ return {
               ["<up>"] = "move_cursor_up",
               ["<C-p>"] = "move_cursor_up",
               ["<esc>"] = "close",
-              -- ['<key>'] = function(state, scroll_padding) ... end,
+              ["<S-CR>"] = "close_keep_filter",
+              ["<C-CR>"] = "close_clear_filter",
+              ["<C-w>"] = { "<C-S-w>", raw = true },
+              {
+                -- normal mode mappings
+                n = {
+                  ["j"] = "move_cursor_down",
+                  ["k"] = "move_cursor_up",
+                  ["<S-CR>"] = "close_keep_filter",
+                  ["<C-CR>"] = "close_clear_filter",
+                  ["<esc>"] = "close",
+                }
+              }
+              -- ["<esc>"] = "noop", -- if you want to use normal mode
+              -- ["key"] = function(state, scroll_padding) ... end,
             },
           },
 
@@ -443,6 +498,7 @@ return {
             mappings = {
               ["A"] = "git_add_all",
               ["gu"] = "git_unstage_file",
+              ["gU"] = "git_undo_last_commit",
               ["ga"] = "git_add_file",
               ["gr"] = "git_revert_file",
               ["gc"] = "git_commit",
@@ -463,8 +519,6 @@ return {
           },
         },
       })
-
-      vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
     end,
   },
 }
@@ -763,6 +817,7 @@ require("neo-tree").setup({
         config = {
           use_float = false,
           -- use_image_nvim = true,
+          -- use_snacks_image = true,
           -- title = 'Neo-tree Preview',
         },
       },
@@ -787,11 +842,13 @@ window as being used as a preview.
 
 #### Image Support in Preview Mode
 
-If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
+If you have [folke/snacks.nvim](https://github.com/folke/snacks.nvim/blob/main/docs/image.md)
+or [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
 mode supports image rendering by default using kitty graphics protocol or ueberzug
 ([Video](https://user-images.githubusercontent.com/41065736/277180763-b7152637-f310-43a5-b8c3-4bcba135629d.mp4)).
-However, if you do not want this feature, you can disable it by changing the option
-`use_image_nvim = false` in the mappings config mentioned above.
+
+However, if you do not want this feature, you can disable it by setting
+`use_snacks_image = false` or `use_image_nvim = false` in the mappings config mentioned above.
 
 ## Configuration and Customization
 

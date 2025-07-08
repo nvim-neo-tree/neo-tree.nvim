@@ -2,20 +2,28 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local Queue = require("neo-tree.collections").Queue
 
+---@type table<string, neotree.collections.Queue?>
 local event_queues = {}
+---@type table <string, neotree.event.Definition?>
 local event_definitions = {}
 local M = {}
 
+---@class neotree.event.Handler.Result
+---@field handled boolean?
+
+---@class neotree.event.Handler
+---@field event neotree.EventName|string
+---@field handler fun(table?):(neotree.event.Handler.Result?)
+---@field id string?
+
+local typecheck = require("neo-tree.health.typecheck")
+local validate = typecheck.validate
+---@param event_handler neotree.event.Handler
 local validate_event_handler = function(event_handler)
-  if type(event_handler) ~= "table" then
-    error("Event handler must be a table")
-  end
-  if type(event_handler.event) ~= "string" then
-    error("Event handler must have an event")
-  end
-  if type(event_handler.handler) ~= "function" then
-    error("Event handler must have a handler")
-  end
+  return validate("event_handler", event_handler, function(eh)
+    validate("event", eh.event, "string")
+    validate("handler", eh.handler, "function")
+  end)
 end
 
 M.clear_all_events = function()
@@ -25,6 +33,13 @@ M.clear_all_events = function()
   event_queues = {}
 end
 
+---@class neotree.event.Definition
+---@field teardown function?
+---@field setup function?
+---@field setup_was_run boolean?
+
+---@param event_name neotree.EventName|string
+---@param opts neotree.event.Definition
 M.define_event = function(event_name, opts)
   local existing = event_definitions[event_name]
   if existing ~= nil then
@@ -33,6 +48,8 @@ M.define_event = function(event_name, opts)
   event_definitions[event_name] = opts
 end
 
+---@param event_name neotree.EventName|string
+---@return boolean existed_and_destroyed
 M.destroy_event = function(event_name)
   local existing = event_definitions[event_name]
   if existing == nil then
@@ -49,6 +66,8 @@ M.destroy_event = function(event_name)
   return true
 end
 
+---@param event neotree.EventName|string
+---@param args table
 local fire_event_internal = function(event, args)
   local queue = event_queues[event]
   if queue == nil then
@@ -91,6 +110,8 @@ local fire_event_internal = function(event, args)
   end)
 end
 
+---@param event neotree.EventName|string
+---@param args any?
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
@@ -104,6 +125,7 @@ M.fire_event = function(event, args)
   end
 end
 
+---@param event_handler neotree.event.Handler
 M.subscribe = function(event_handler)
   validate_event_handler(event_handler)
 
@@ -127,6 +149,7 @@ M.subscribe = function(event_handler)
   queue:add(event_handler)
 end
 
+---@param event_handler neotree.event.Handler
 M.unsubscribe = function(event_handler)
   local queue = event_queues[event_handler.event]
   if queue == nil then

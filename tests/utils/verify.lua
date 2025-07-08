@@ -9,6 +9,24 @@ verify.eventually = function(timeout, assertfunc, failmsg, ...)
   assert(success, failmsg)
 end
 
+local id = 0
+---Waits until the next vim.schedule before running assertfunc
+verify.schedule = function(assertfunc, timeout, failmsg)
+  id = id + 1
+  local scheduled_func_ran = false
+  local success = false
+  local args
+  vim.schedule(function()
+    args = { assertfunc() }
+    success = args[1]
+    scheduled_func_ran = true
+  end)
+  local notimeout, errcode = vim.wait(timeout or 1000, function()
+    return scheduled_func_ran
+  end)
+  assert(success, failmsg)
+end
+
 verify.after = function(timeout, assertfunc, failmsg)
   vim.wait(timeout, function()
     return false
@@ -57,7 +75,7 @@ verify.tree_focused = function(timeout)
     if not verify.get_state() then
       return false
     end
-    return vim.api.nvim_buf_get_option(0, "filetype") == "neo-tree"
+    return vim.bo[0].filetype == "neo-tree"
   end, "Current buffer is not a 'neo-tree' filetype")
 end
 
