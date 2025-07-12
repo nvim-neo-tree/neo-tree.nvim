@@ -511,9 +511,9 @@ M.indent = function(config, node, state)
 
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
-  ---@cast skip_marker -nil
-  local indent_size = config.indent_size or 2
-  local padding = config.padding or 0
+  local indent_size = config.indent_size
+  local padding = config.padding
+  local marker_start_level = config.marker_start_level
   local level = node.level
   local with_markers = config.with_markers
   local with_expanders = config.with_expanders == nil and file_nesting.is_enabled()
@@ -528,52 +528,72 @@ M.indent = function(config, node, state)
     end
   end
 
-  if indent_size == 0 or level < 2 or not with_markers then
-    local len = indent_size * level + padding
+  if indent_size == 0 then
     local expander = get_expander()
-    if level == 0 or not expander then
+    local len = 0
+    if expander then
+      len = indent_size * level - strlen(expander) - 1
+      return {
+        text = string.rep(" ", len) .. expander .. " ",
+        highlight = expander_highlight,
+      }
+    else
       return {
         text = string.rep(" ", len),
       }
     end
-    return {
-      text = string.rep(" ", len - strlen(expander) - 1) .. expander .. " ",
-      highlight = expander_highlight,
-    }
   end
 
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
-
   skip_marker[level] = node.is_last_child
+
   local indent = {}
   if padding > 0 then
     table.insert(indent, { text = string.rep(" ", padding) })
   end
 
-  for i = 1, level do
-    local char = ""
-    local spaces_count = indent_size
-    local highlight = nil
+  local root_indent_applied = false
 
-    if i > 1 and not skip_marker[i] or i == level then
-      spaces_count = spaces_count - 1
-      char = indent_marker
-      highlight = marker_highlight
-      if i == level then
-        local expander = get_expander()
-        if expander then
-          char = expander
-          highlight = expander_highlight
-        elseif node.is_last_child then
-          char = last_indent_marker
-          spaces_count = spaces_count - (vim.api.nvim_strwidth(last_indent_marker) - 1)
-        end
+  for i = 0, level do
+    local char = ""
+    local highlight = nil
+    local current_indent_size = indent_size
+    local expander = get_expander()
+
+    if i < marker_start_level then
+      if i == 0 and not root_indent_applied then
+        current_indent_size = 0
+        root_indent_applied = true
+      else
+        current_indent_size = 0
       end
     end
 
+    if i == level and expander and level ~= 0 then
+      char = expander
+      highlight = expander_highlight
+    elseif with_markers then
+      if i >= marker_start_level then
+        char = indent_marker
+        if skip_marker[i] then
+          char = " "
+        end
+        if i == level and node.is_last_child then
+          char = last_indent_marker
+        end
+        highlight = marker_highlight
+      elseif i < marker_start_level and i == 0 and level > 0 and not root_indent_applied then
+        char = " "
+        root_indent_applied = true
+      end
+    elseif not with_markers and not expander then
+      char = ""
+    end
+
+    local prefix = string.rep(" ", current_indent_size - strlen(char))
     table.insert(indent, {
-      text = char .. string.rep(" ", spaces_count),
+      text = char .. prefix,
       highlight = highlight,
       no_next_padding = true,
     })
@@ -582,13 +602,13 @@ M.indent = function(config, node, state)
   return indent
 end
 
+
 local truncate_string = function(str, max_length)
   if #str <= max_length then
     return str
   end
   return str:sub(1, max_length - 1) .. "…"
 end
-
 local get_header = function(state, label, size)
   if state.sort and state.sort.label == label then
     local icon = state.sort.direction == 1 and "▲" or "▼"

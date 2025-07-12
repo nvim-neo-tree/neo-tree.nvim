@@ -1096,6 +1096,7 @@ for each source, or just do it once in the default_component_configs section:
           indent_marker = "│",
           last_indent_marker = "└",
           indent_size = 2,
+          level = 2
         },
       },
     })

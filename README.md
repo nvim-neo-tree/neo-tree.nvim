@@ -204,6 +204,7 @@ return {
           },
           indent = {
             indent_size = 2,
+            level = 2,
             padding = 1, -- extra padding on left hand side
             -- indent guides
             with_markers = true,
