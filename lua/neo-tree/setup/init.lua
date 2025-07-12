@@ -272,9 +272,13 @@ M.buffer_enter_event = function()
   end
 end
 
+---@type boolean?
+local curwin_floating = nil
 M.win_enter_event = function()
   local win_id = vim.api.nvim_get_current_win()
-  if utils.is_floating(win_id) then
+  local previous_window_floating = curwin_floating
+  curwin_floating = utils.is_floating(win_id)
+  if curwin_floating then
     return
   end
 
@@ -292,11 +296,18 @@ M.win_enter_event = function()
     log.trace("checking if last window")
     log.trace("prior window exists = ", prior_exists)
     log.trace("win_count: ", win_count)
-    if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
-      local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
-      local source = vim.api.nvim_buf_get_var(0, "neo_tree_source")
+    if
+      prior_exists
+      and win_count == 1
+      and vim.o.filetype == "neo-tree"
+      -- if neo-tree managed to stay open long enough for users to open popups, (e.g. other windows automatically closed
+      -- w/o triggering new WinEnter events), we shouldn't close even if it is technically the last window
+      and not previous_window_floating
+    then
+      local position = vim.b[0].neo_tree_position
+      local source = vim.b[0].neo_tree_source
+      -- close_if_last_window just doesn't make sense for a split style
       if position ~= "current" then
-        -- close_if_last_window just doesn't make sense for a split style
         log.trace("last window, closing")
         local state = require("neo-tree.sources.manager").get_state(source)
         if state == nil then
