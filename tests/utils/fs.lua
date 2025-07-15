@@ -36,6 +36,13 @@ function fs.write_file(path, content)
   vim.fn.writefile(content or {}, abspath)
 end
 
+function fs.link(target, path)
+  local abspath = Path:new(path):absolute()
+  local abstarget = Path:new(target):absolute()
+  fs.create_dir(vim.fn.fnamemodify(abspath, ":h"))
+  vim.uv.fs_symlink(abstarget, abspath)
+end
+
 function fs.create_fs_tree(fs_tree)
   local function create_items(items, basedir, relative_root_path)
     relative_root_path = relative_root_path or "."
@@ -59,6 +66,9 @@ function fs.create_fs_tree(fs_tree)
       elseif item.type == "file" then
         item.abspath = Path:new(basedir, item.name):absolute()
         fs.write_file(item.abspath)
+      elseif item.type == "link" then
+        item.abspath = Path:new(basedir, item.name):absolute()
+        fs.link(item.abstarget, item.abspath)
       end
     end
   end
