@@ -1054,25 +1054,7 @@ end
 ---@param ... string The paths to join.
 ---@return string
 M.path_join = function(...)
-  local args = { ... }
-  if #args == 0 then
-    return ""
-  end
-
-  local all_parts = {}
-  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-    all_parts[1] = ""
-  end
-
-  for _, arg in ipairs(args) do
-    if arg == "" and #all_parts == 0 and not M.is_windows then
-      all_parts = { "" }
-    else
-      local arg_parts = M.split(arg, M.path_separator)
-      vim.list_extend(all_parts, arg_parts)
-    end
-  end
-  return table.concat(all_parts, M.path_separator)
+  return tostring(require("neo-tree.lib.path"):new(...))
 end
 
 local table_merge_internal

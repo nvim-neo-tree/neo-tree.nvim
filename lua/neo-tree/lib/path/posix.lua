@@ -1,13 +1,6 @@
 --- A pathlib-like class suited for neo-tree's purposes.
 local utils = require("neo-tree.utils")
 
----@enum neotree.Path.Type
-local pathtype = {
-  WINDOWS_FILE = 0,
-  WINDOWS_UNC = 1,
-  LINUX_FILE = 2,
-}
-
 ---@alias neotree.Pathish neotree.Path|string|string[]
 
 ---@class neotree.Path.Cache
@@ -17,9 +10,8 @@ local pathtype = {
 ---@field [integer] string?
 ---@field root string
 ---@field sep string
----@field type neotree.Path.Type
 ---@field private dirty boolean
----@field private unnormalized (neotree.Pathish)[]
+---@field private unnormalized neotree.Pathish[]
 ---
 ---@field private _cache neotree.Path.Cache
 local Path = {}
@@ -37,9 +29,8 @@ function Path:new(...)
   return o
 end
 
----@return neotree.Path normalized_copy
-function Path:copy()
-  return Path:new()
+function Path.copy(orig)
+  return Path:new(orig)
 end
 
 ---@param b neotree.Pathish
@@ -53,6 +44,12 @@ function Path.__tostring(self)
     self._cache.string = (self.root or "") .. table.concat(self, utils.path_separator)
   end
   return self._cache.string
+end
+
+---@param str string
+---@return string? prefix The prefix of the absolute path, if the path is absolute.
+local extract_root = function(str)
+  return str:match("^/")
 end
 
 ---Normalizes the path
@@ -88,50 +85,25 @@ function Path:normalize()
 end
 
 ---@param str string
----@return string? prefix The prefix of the absolute path, if the path is absolute.
----@return neotree.Path.Type? alt If the prefix exists, the type of the path given
-local extract_prefix = function(str)
-  if utils.is_windows then
-    local disk_prefix = str:match([=[^%a:[\\/]]=])
-    if disk_prefix then
-      return disk_prefix, pathtype.WINDOWS_FILE
-    end
-    local unc_prefix = str:match([[\\]])
-    if unc_prefix then
-      return unc_prefix, pathtype.WINDOWS_UNC
-    end
-  else
-    return str:match("^/"), pathtype.LINUX_FILE
-  end
-  return nil, nil
-end
-
----@param str string
 ---@param relative boolean? Whether the str is known to be relative to this path or not
 ---@param fast boolean? Whether we should do some slow operations like normalizing path separators or not
 function Path:_append_string(str, relative, fast)
-  local prefix
   if relative == nil or not relative then
-    prefix = extract_prefix(str)
-    if prefix then
+    local root = extract_root(str)
+    if root then
       relative = false
-      str = str:sub(#prefix + 1)
+      str = str:sub(#root + 1)
       -- reset to the prefix
-      self.root = prefix
+      self.root = root
       for i = 1, #self do
         self[i] = nil
       end
     end
   end
 
-  if utils.is_windows and not fast then
-    str = str:gsub("/", "\\")
-  end
-
   local segment_iter = vim.gsplit(str, utils.is_windows and "\\" or "/", { plain = true })
   for segment in segment_iter do
-    if segment == "" then
-    elseif segment == ".." then
+    if segment == ".." then
       if self.root then
         -- remove a segment
         self[#self] = nil
@@ -149,14 +121,14 @@ function Path:_append_string(str, relative, fast)
       end
     elseif segment == "." and #self > 0 then
       -- do nothing
-    else
+    elseif segment ~= "" then
       self[#self + 1] = segment
     end
   end
 end
 
 function Path:clear()
-  self.prefix = nil
+  self.root = nil
   local count = #self
   for i = 1, count do
     self[i] = nil
@@ -187,6 +159,7 @@ end
 
 ---@return string
 function Path:parent()
+  self:normalize()
   return tostring(self):match(self.sep)
 end
 

@@ -254,7 +254,8 @@ M.get_path_to_reveal = function(include_terminals)
   end
 
   local relative_bufname = vim.fn.fnamemodify(vim.fn.expand("%"), ":.")
-  local bufname_path = vim.fs.normalize(utils.path_join(vim.fn.getcwd(win_id), relative_bufname))
+  local bufname_path =
+    utils.normalize_path(utils.path_join(vim.fn.getcwd(win_id), relative_bufname))
   if utils.is_windows then
     bufname_path = utils.windowize_path(bufname_path)
   end
