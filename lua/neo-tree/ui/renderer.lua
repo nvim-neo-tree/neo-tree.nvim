@@ -209,27 +209,27 @@ M.get_nui_popup = function(winid)
   end
 end
 
----@param source_items neotree.FileItem
+---@param source_items neotree.FileItem[]
 ---@param filtered_items neotree.Config.Filesystem.FilteredItems
 local remove_filtered = function(source_items, filtered_items)
   local visible = {}
   local hidden = {}
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
-    if type(fby) == "table" and not item.is_reveal_target and not item.contains_reveal_target then
+    if fby and not fby.parent and item.is_reveal_target and not item.contains_reveal_target then
       if not fby.never_show then
         if filtered_items.visible or item.is_nested or fby.always_show then
-          table.insert(visible, item)
+          visible[#visible + 1] = item
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
-          table.insert(hidden, item)
+          hidden[#hidden + 1] = item
         elseif fby.show_gitignored and fby.gitignored then
-          table.insert(visible, item)
+          visible[#visible + 1] = item
         else
-          table.insert(hidden, item)
+          hidden[#hidden + 1] = item
         end
       end
     else
-      table.insert(visible, item)
+      visible[#visible + 1] = item
     end
   end
   return visible, hidden
@@ -563,11 +563,8 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
       log.debug("Failed to set cursor: " .. err)
     end
     return success
-  else
-    log.debug("focus_node: window does not exist")
-    return false
   end
-
+  log.debug("focus_node: window does not exist")
   return false
 end
 

@@ -132,6 +132,7 @@ local create_item, set_parents
 ---@field filtered_by neotree.FileItemFilters?
 ---@field extra neotree.FileItemExtra?
 ---@field status string? Git status
+---@field is_nested boolean?
 
 ---@class (exact) neotree.FileItem.File : neotree.FileItem
 ---@field children table<string, neotree.FileItem?>?

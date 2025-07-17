@@ -337,9 +337,9 @@ end
 
 ---@class neotree.Component.Common.FilteredBy
 ---@field [1] "filtered_by"?
-M.filtered_by = function(_, node, _)
+M.filtered_by = function(_, node, state)
   local fby = node.filtered_by
-  if type(fby) ~= "table" then
+  if not state.filtered_items or type(fby) ~= "table" then
     return {}
   end
   repeat
@@ -370,7 +370,7 @@ M.filtered_by = function(_, node, _)
       }
     end
     fby = fby.parent
-  until not nt.config.filesystem.filtered_items.children_inherit_highlights or not fby
+  until not state.filtered_items.children_inherit_highlights or not fby
   return {}
 end
 
