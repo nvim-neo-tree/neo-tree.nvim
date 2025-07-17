@@ -216,20 +216,30 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
-    if fby and not fby.parent and item.is_reveal_target and not item.contains_reveal_target then
-      if not fby.never_show then
-        if filtered_items.visible or item.is_nested or fby.always_show then
+    if not fby or item.is_reveal_target or item.contains_reveal_target then
+      visible[#visible + 1] = item
+    else
+      while fby do
+        if fby.never_show then
+          -- pretend it doesn't exist
+          break
+        elseif filtered_items.visible or item.is_nested or fby.always_show then
           visible[#visible + 1] = item
+          break
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
           hidden[#hidden + 1] = item
+          break
         elseif fby.show_gitignored and fby.gitignored then
           visible[#visible + 1] = item
+          break
+        elseif fby.parent then
+          fby = fby.parent
         else
+          -- filtered by some other reason
           hidden[#hidden + 1] = item
+          break
         end
       end
-    else
-      visible[#visible + 1] = item
     end
   end
   return visible, hidden

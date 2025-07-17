@@ -303,7 +303,7 @@ function set_parents(context, item)
   table.insert(parent.children, item)
   context.item_exists[item.id] = true
 
-  if item.filtered_by == nil then
+  if not item.filtered_by and parent.filtered_by then
     item.filtered_by = {
       parent = parent.filtered_by,
     }
