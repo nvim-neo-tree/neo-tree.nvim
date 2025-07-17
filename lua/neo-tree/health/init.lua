@@ -230,6 +230,7 @@ function M.check_config(config)
         validate("filtered_items", fs.filtered_items, function(f)
           validate("visible", f.visible, "boolean")
           validate("force_visible_in_empty_folder", f.force_visible_in_empty_folder, "boolean")
+          validate("children_inherit_highlights", f.children_inherit_highlights, "boolean")
           validate("show_hidden_count", f.show_hidden_count, "boolean")
           validate("hide_dotfiles", f.hide_dotfiles, "boolean")
           validate("hide_gitignored", f.hide_gitignored, "boolean")
@@ -294,7 +295,6 @@ function M.check_config(config)
     true
   )
   local _end = vim.uv.hrtime()
-  vim.print((_end - start) / 10e6 .. "ms")
 
   if #errors == 0 then
     health.ok("Configuration conforms to the neotree.Config.Base schema")

@@ -115,6 +115,7 @@ local create_item, set_parents
 ---@field dotfiles boolean?
 ---@field hidden boolean?
 ---@field gitignored boolean?
+---@field parent neotree.FileItemFilters?
 ---@field show_gitignored boolean?
 
 ---@class (exact) neotree.FileItemExtra
@@ -301,8 +302,10 @@ function set_parents(context, item)
   table.insert(parent.children, item)
   context.item_exists[item.id] = true
 
-  if item.filtered_by == nil and type(parent.filtered_by) == "table" then
-    item.filtered_by = vim.deepcopy(parent.filtered_by)
+  if item.filtered_by == nil then
+    item.filtered_by = {
+      parent = parent.filtered_by,
+    }
   end
 end
 

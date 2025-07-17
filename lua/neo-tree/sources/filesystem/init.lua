@@ -288,6 +288,7 @@ end
 ---@class neotree.Config.Filesystem.FilteredItems
 ---@field visible boolean?
 ---@field force_visible_in_empty_folder boolean?
+---@field children_inherit_highlights boolean?
 ---@field show_hidden_count boolean?
 ---@field hide_dotfiles boolean?
 ---@field hide_gitignored boolean?

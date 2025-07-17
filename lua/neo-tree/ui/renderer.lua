@@ -209,38 +209,44 @@ M.get_nui_popup = function(winid)
   end
 end
 
+---@param source_items neotree.FileItem
+---@param filtered_items neotree.Config.Filesystem.FilteredItems
 local remove_filtered = function(source_items, filtered_items)
   local visible = {}
   local hidden = {}
-  for _, child in ipairs(source_items) do
-    local fby = child.filtered_by
-    if type(fby) == "table" and not child.is_reveal_target and not child.contains_reveal_target then
+  for _, item in ipairs(source_items) do
+    local fby = item.filtered_by
+    if type(fby) == "table" and not item.is_reveal_target and not item.contains_reveal_target then
       if not fby.never_show then
-        if filtered_items.visible or child.is_nested or fby.always_show then
-          table.insert(visible, child)
+        if filtered_items.visible or item.is_nested or fby.always_show then
+          table.insert(visible, item)
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
-          table.insert(hidden, child)
+          table.insert(hidden, item)
         elseif fby.show_gitignored and fby.gitignored then
-          table.insert(visible, child)
+          table.insert(visible, item)
         else
-          table.insert(hidden, child)
+          table.insert(hidden, item)
         end
       end
     else
-      table.insert(visible, child)
+      table.insert(visible, item)
     end
   end
   return visible, hidden
 end
 
+---@class neotree.FileNodeData : neotree.FileItem
+
+---@class neotree.FileNode : neotree.FileNodeData, NuiTree.Node
+
 local create_nodes
 ---Transforms a list of items into a collection of TreeNodes.
----@param source_items table The list of items to transform. The expected
+---@param source_items neotree.FileItem[] The list of items to transform. The expected
 --interface for these items depends on the component renderers configured for
 --the given source, but they must contain at least an id field.
 ---@param state neotree.State The current state of the plugin.
 ---@param level integer Optional. The current level of the tree, defaults to 0.
----@return table A collection of TreeNodes.
+---@return table nodes A collection of TreeNodes.
 create_nodes = function(source_items, state, level)
   level = level or 0
   local nodes = {}
