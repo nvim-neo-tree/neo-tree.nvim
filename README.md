@@ -217,7 +217,7 @@ nvim -u NONE -c "helptags $($NEOTREE_DIR -replace '\\', '/')/neo-tree.nvim/doc" 
 
 <details>
   <summary>
-    #### Longer lazy.nvim example:
+    Longer lazy.nvim example:
   </summary>
 
 ```lua
