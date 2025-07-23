@@ -59,92 +59,12 @@ so we can fix it.
 > [!NOTE]
 > You do not need to use lazy.nvim's `opts`, nor call `require('neo-tree').setup({ ... })` for Neo-tree to work.
 > `setup()` is only used for configuration.
-
-#### Using built-in `:h packages`:
-
-<details>
-  <summary>
-    POSIX shell instructions:
-  </summary>
-
-```bash
-# Package directories
-export NEOTREE_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
-
-# Change the two dirs here to your preference:
-export NEO_TREE_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree/start"
-export NEO_TREE_DEPS_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree-deps/start"
-mkdir -p "${NEO_TREE_DIR}"
-mkdir -p "${NEO_TREE_DEPS_DIR}"
-
-# Install neo-tree
-cd "${NEO_TREE_DIR}"
-git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
-
-# Install dependencies
-cd "${NEO_TREE_DEPS_DIR}"
-git clone https://github.com/nvim-lua/plenary.nvim.git
-git clone https://github.com/nvim-tree/nvim-web-devicons.git
-git clone https://github.com/MunifTanjim/nui.nvim.git
-# For image previewing, choose one:
-git clone https://github.com/folke/snacks.nvim.git
-git clone https://github.com/3rd/image.nvim.git
-
-# Generate help tags
-nvim -u NONE -c "helptags ${NEO_TREE_DIR}/neo-tree.nvim/doc" \
-             -c "helptags ${NEO_TREE_DEPS_DIR}/plenary.nvim/doc" \
-             -c "helptags ${NEO_TREE_DEPS_DIR}/nvim-web-devicons/doc" \
-             -c "helptags ${NEO_TREE_DEPS_DIR}/nui.nvim/doc" -c q
-```
-</details>
-
-<details>
-  <summary>
-    PowerShell instructions:
-  </summary>
-
-```powershell
-# Package directories
-$NEOTREE_DATA_HOME = if ($env:XDG_DATA_HOME) {
-    Join-Path $env:XDG_DATA_HOME "nvim-data"
-} else {
-    Join-Path $HOME "AppData" "Local" "nvim-data"
-}
-
-# Change the two dirs here to your preference:
-$NEO_TREE_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree\start"
-$NEO_TREE_DEPS_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree-deps\start"
-New-Item -ItemType Directory -Path $NEO_TREE_DIR -Force
-New-Item -ItemType Directory -Path $NEO_TREE_DEPS_DIR -Force
-
-# Install neo-tree
-Push-Location $NEO_TREE_DIR
-git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
-Pop-Location
-
-# Install dependencies
-Push-Location $NEO_TREE_DEPS_DIR
-git clone https://github.com/nvim-lua/plenary.nvim.git
-git clone https://github.com/nvim-tree/nvim-web-devicons.git
-git clone https://github.com/MunifTanjim/nui.nvim.git
-# For image previewing, choose one:
-git clone https://github.com/folke/snacks.nvim.git
-git clone https://github.com/3rd/image.nvim.git
-Pop-Location
-
-# Generate help tags
-nvim -u NONE -c "helptags $($NEO_TREE_DIR -replace '\\', '/')/neo-tree.nvim/doc" `
-             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/plenary.nvim/doc" `
-             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/nvim-web-devicons/doc" `
-             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/nui.nvim/doc" -c q
-
-
-```
-</details>
-
 #### lazy.nvim example:
 
 Assuming you're importing specs from `lua/plugins` (i.e. you have `require('lazy').setup('plugins')`)
+
+- Make a new file under `lua/plugins/neo-tree.lua`
+- Paste this into it:
 
 ```lua
 return {
@@ -152,7 +72,7 @@ return {
   branch = "v3.x",
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+    "nvim-tree/nvim-web-devicons", -- optional, but recommended
     "MunifTanjim/nui.nvim",
     -- Optional image support for file preview: See `# Preview Mode` for more information.
     -- { "3rd/image.nvim", opts = {} },
@@ -175,7 +95,7 @@ use({
   branch = "v3.x",
   requires = {
     "nvim-lua/plenary.nvim",
-    "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+    "nvim-tree/nvim-web-devicons", -- optional, but recommended
     "MunifTanjim/nui.nvim",
     -- Optional image support in preview window: See `# Preview Mode` for more information
     -- { "3rd/image.nvim", config = function() require('image').setup({}) end },
@@ -185,20 +105,119 @@ use({
 })
 ```
 
-After installing, run:
-```
-:Neotree
-```
+After installing, run `:Neotree` to have Neo-tree popup on the left side.
 
 Press `?` in the Neo-tree window to view the list of mappings.
 
 
-## Quickstart
+### Installation Details:
 
-#### Longer Example for lazy.nvim:
+Neo-tree.nvim requires two libraries (which can be installed as plugins):
+
+- [nui.nvim](https://github.com/MunifTanjim/nui.nvim)
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+
+Additionally, neo-tree.nvim also can integrate with:
+
+- [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
+- [nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
+- [snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
+  - snacks.rename can also work with neo-tree, see
+  [snacks.rename's README](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim)
+- [image.nvim](https://github.com/3rd/image.nvim) for image previews.
+  - If both are installed. Neo-tree currently will try to preview with snacks.nvim first, then try image.nvim.
+- [nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps
+
+#### Manual installation via `:h packages`:
+
 <details>
   <summary>
-    Click to view longer example for lazy.nvim
+    POSIX shell instructions:
+  </summary>
+
+```bash
+# Package directories
+export NEOTREE_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+
+# Change the two dirs here to your preference:
+export NEOTREE_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree/start"
+export NEOTREE_DEPS_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree-deps/start"
+mkdir -p "${NEOTREE_DIR}"
+mkdir -p "${NEOTREE_DEPS_DIR}"
+
+# Install neo-tree
+cd "${NEOTREE_DIR}"
+git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
+
+# Install dependencies
+cd "${NEOTREE_DEPS_DIR}"
+git clone https://github.com/nvim-lua/plenary.nvim.git
+git clone https://github.com/nvim-tree/nvim-web-devicons.git
+git clone https://github.com/MunifTanjim/nui.nvim.git
+# For image previewing, choose one:
+git clone https://github.com/folke/snacks.nvim.git
+git clone https://github.com/3rd/image.nvim.git
+
+# Generate help tags
+nvim -u NONE -c "helptags ${NEOTREE_DIR}/neo-tree.nvim/doc" \
+             -c "helptags ${NEOTREE_DEPS_DIR}/plenary.nvim/doc" \
+             -c "helptags ${NEOTREE_DEPS_DIR}/nvim-web-devicons/doc" \
+             -c "helptags ${NEOTREE_DEPS_DIR}/nui.nvim/doc" -c q
+```
+</details>
+
+<details>
+  <summary>
+    PowerShell instructions:
+  </summary>
+
+```powershell
+# Package directories
+$NEOTREE_DATA_HOME = if ($env:XDG_DATA_HOME) {
+    Join-Path $env:XDG_DATA_HOME "nvim-data"
+} else {
+    Join-Path $HOME "AppData" "Local" "nvim-data"
+}
+
+# Change the two dirs here to your preference:
+$NEOTREE_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree\start"
+$NEOTREE_DEPS_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree\start"
+New-Item -ItemType Directory -Path $NEOTREE_DIR -Force
+New-Item -ItemType Directory -Path $NEOTREE_DEPS_DIR -Force
+
+# Install neo-tree
+Push-Location $NEOTREE_DIR
+git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
+Pop-Location
+
+# Install dependencies
+Push-Location $NEOTREE_DEPS_DIR
+git clone https://github.com/nvim-lua/plenary.nvim.git
+git clone https://github.com/nvim-tree/nvim-web-devicons.git
+git clone https://github.com/MunifTanjim/nui.nvim.git
+# For optional image previewing, choose one:
+git clone https://github.com/folke/snacks.nvim.git
+git clone https://github.com/3rd/image.nvim.git
+# For window_picker keymaps:
+git clone https://github.com/s1n7ax/nvim-window-picker
+Pop-Location
+
+# Generate help tags
+nvim -u NONE -c "helptags $($NEOTREE_DIR -replace '\\', '/')/neo-tree.nvim/doc" `
+             -c "helptags $($NEOTREE_DEPS_DIR -replace '\\', '/')/plenary.nvim/doc" `
+             -c "helptags $($NEOTREE_DEPS_DIR -replace '\\', '/')/nvim-web-devicons/doc" `
+             -c "helptags $($NEOTREE_DEPS_DIR -replace '\\', '/')/nui.nvim/doc" -c q
+
+
+```
+</details>
+
+
+## Configuration options
+
+<details>
+  <summary>
+    #### Longer lazy.nvim example:
   </summary>
 
 ```lua
@@ -220,28 +239,29 @@ return {
     branch = "v3.x",
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+      "nvim-tree/nvim-web-devicons", -- optional, but recommended
       "MunifTanjim/nui.nvim",
-      -- {"3rd/image.nvim", opts = {}}, -- Optional image support in preview window: See `# Preview Mode` for more information
-      {
-        "s1n7ax/nvim-window-picker", -- for open_with_window_picker keymaps
-        version = "2.*",
-        config = function()
-          require("window-picker").setup({
-            filter_rules = {
-              include_current_win = false,
-              autoselect_one = true,
-              -- filter using buffer options
-              bo = {
-                -- if the file type is one of following, the window will be ignored
-                filetype = { "neo-tree", "neo-tree-popup", "notify" },
-                -- if the buffer type is one of following, the window will be ignored
-                buftype = { "terminal", "quickfix" },
-              },
-            },
-          })
-        end,
-      },
+      -- "folke/snacks.nvim", -- optional, for image support
+      -- { "3rd/image.nvim", opts = {} }, -- optional, for image support (snacks.nvim should cover this)
+      -- {
+      --   "s1n7ax/nvim-window-picker", -- optional, for open_with_window_picker keymaps
+      --   version = "2.*",
+      --   config = function()
+      --     require("window-picker").setup({
+      --       filter_rules = {
+      --         include_current_win = false,
+      --         autoselect_one = true,
+      --         -- filter using buffer options
+      --         bo = {
+      --           -- if the file type is one of following, the window will be ignored
+      --           filetype = { "neo-tree", "neo-tree-popup", "notify" },
+      --           -- if the buffer type is one of following, the window will be ignored
+      --           buftype = { "terminal", "quickfix" },
+      --         },
+      --       },
+      --     })
+      --   end,
+      -- },
     },
     lazy = false,
     config = function()
