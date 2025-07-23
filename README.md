@@ -57,12 +57,97 @@ so we can fix it.
 ## Minimal Quickstart
 
 > [!NOTE]
-> You do not need to call `require('neo-tree').setup({ ... })` for Neo-tree to work. `setup()` is only used for
-> configuration.
+> You do not need to use lazy.nvim's `opts`, nor call `require('neo-tree').setup({ ... })` for Neo-tree to work.
+> `setup()` is only used for configuration.
 
-#### Minimal Example for lazy.nvim:
+#### Using built-in `:h packages`:
+
+<details>
+  <summary>
+    POSIX shell instructions:
+  </summary>
+
+```bash
+# Package directories
+export NEOTREE_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/nvim"
+
+# Change the two dirs here to your preference:
+export NEO_TREE_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree/start"
+export NEO_TREE_DEPS_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree-deps/start"
+mkdir -p "${NEO_TREE_DIR}"
+mkdir -p "${NEO_TREE_DEPS_DIR}"
+
+# Install neo-tree
+cd "${NEO_TREE_DIR}"
+git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
+
+# Install dependencies
+cd "${NEO_TREE_DEPS_DIR}"
+git clone https://github.com/nvim-lua/plenary.nvim.git
+git clone https://github.com/nvim-tree/nvim-web-devicons.git
+git clone https://github.com/MunifTanjim/nui.nvim.git
+# For image previewing, choose one:
+git clone https://github.com/folke/snacks.nvim.git
+git clone https://github.com/3rd/image.nvim.git
+
+# Generate help tags
+nvim -u NONE -c "helptags ${NEO_TREE_DIR}/neo-tree.nvim/doc" \
+             -c "helptags ${NEO_TREE_DEPS_DIR}/plenary.nvim/doc" \
+             -c "helptags ${NEO_TREE_DEPS_DIR}/nvim-web-devicons/doc" \
+             -c "helptags ${NEO_TREE_DEPS_DIR}/nui.nvim/doc" -c q
+```
+</details>
+
+<details>
+  <summary>
+    PowerShell instructions:
+  </summary>
+
+```powershell
+# Package directories
+$NEOTREE_DATA_HOME = if ($env:XDG_DATA_HOME) {
+    Join-Path $env:XDG_DATA_HOME "nvim-data"
+} else {
+    Join-Path $HOME "AppData" "Local" "nvim-data"
+}
+
+# Change the two dirs here to your preference:
+$NEO_TREE_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree\start"
+$NEO_TREE_DEPS_DIR = Join-Path $NEOTREE_DATA_HOME "site\pack\neo-tree-deps\start"
+New-Item -ItemType Directory -Path $NEO_TREE_DIR -Force
+New-Item -ItemType Directory -Path $NEO_TREE_DEPS_DIR -Force
+
+# Install neo-tree
+Push-Location $NEO_TREE_DIR
+git clone -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
+Pop-Location
+
+# Install dependencies
+Push-Location $NEO_TREE_DEPS_DIR
+git clone https://github.com/nvim-lua/plenary.nvim.git
+git clone https://github.com/nvim-tree/nvim-web-devicons.git
+git clone https://github.com/MunifTanjim/nui.nvim.git
+# For image previewing, choose one:
+git clone https://github.com/folke/snacks.nvim.git
+git clone https://github.com/3rd/image.nvim.git
+Pop-Location
+
+# Generate help tags
+nvim -u NONE -c "helptags $($NEO_TREE_DIR -replace '\\', '/')/neo-tree.nvim/doc" `
+             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/plenary.nvim/doc" `
+             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/nvim-web-devicons/doc" `
+             -c "helptags $($NEO_TREE_DEPS_DIR -replace '\\', '/')/nui.nvim/doc" -c q
+
+
+```
+</details>
+
+#### lazy.nvim example:
+
+Assuming you're importing specs from `lua/plugins` (i.e. you have `require('lazy').setup('plugins')`)
+
 ```lua
-{
+return {
   "nvim-neo-tree/neo-tree.nvim",
   branch = "v3.x",
   dependencies = {
@@ -70,7 +155,7 @@ so we can fix it.
     "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
     "MunifTanjim/nui.nvim",
     -- Optional image support for file preview: See `# Preview Mode` for more information.
-    -- {"3rd/image.nvim", opts = {}},
+    -- { "3rd/image.nvim", opts = {} },
     -- OR use snacks.nvim's image module:
     -- "folke/snacks.nvim",
   },
@@ -83,7 +168,7 @@ so we can fix it.
 }
 ```
 
-#### Minimal Example for Packer:
+#### packer.nvim example:
 ```lua
 use({
   "nvim-neo-tree/neo-tree.nvim",
