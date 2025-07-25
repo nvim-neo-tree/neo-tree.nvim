@@ -63,14 +63,14 @@ of room to display the whole tree.
 
 ## Installation
 
-This plugin relies upon these two excellent libraries:
+This plugin relies upon these two excellent library plugins:
 
 - [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI
 components, including the tree!
 - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
 utilities, such as scanning the filesystem.
 
-### Optional plugins:
+There are also some optional plugins that work with Neo-tree:
 
 - [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
 - [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
@@ -118,7 +118,7 @@ return {
 
 <details>
   <summary>
-    Example with all optional plugins:
+    lazy.nvim example with all optional plugins:
   </summary>
 
 ```lua
@@ -131,7 +131,7 @@ return {
       "MunifTanjim/nui.nvim",
       "nvim-tree/nvim-web-devicons",
     },
-  }
+  },
   {
     "antosha417/nvim-lsp-file-operations",
     dependencies = {
@@ -187,7 +187,7 @@ use({
 
 <details>
   <summary>
-    vim.pack example (Neovim v0.12, still in development at time of writing)
+    vim.pack example (Neovim v0.12, still in development at time of writing):
   </summary>
 
 ```lua
@@ -206,14 +206,15 @@ vim.pack.add({
 
 </details>
 
-### Manual installation via `:h packages`:
+### Manual installation via `:h packages`
 
 See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) for
 POSIX/Windows respectively.
 
 ## Post-install: Try it out!
 
-Try :Neotree to open Neo-tree as a sidebar, and press ? while in Neo-tree to open the keyboard help.
+Try `:Neotree` to open Neo-tree as a sidebar, and press `?` while in Neo-tree to
+open the keyboard help.
 
 > [!TIP]
 > You can `:checkhealth neo-tree` to ensure you have all the required
@@ -620,7 +621,7 @@ into a buffer after installing Neo-tree by running:
 ```
 
 <details>
-  <summary>Diagnostics</summary>
+  <summary>Diagnostics icons:</summary>
 
 If you want icons for diagnostic errors, you'll need to define them somewhere.
 In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
