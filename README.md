@@ -1065,11 +1065,11 @@ community. There have been many valued contributors, but a few have stepped up
 to become maintainers that generously donate their time to guide the project,
 help out others, and manage the issues. The current list of maintainers are:
 
-(in alphabetical order)
-
 - @pynappo
 
 ### Past maintainers:
+
+(in alphabetical order)
 
 - @cseickel
 - @miversen33
