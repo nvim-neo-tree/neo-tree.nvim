@@ -153,7 +153,8 @@ vim.pack.add({
 
 ### Manual installation via `:h packages`:
 
-See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) respectively.
+See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) for
+POSIX/Windows respectively.
 
 ## Integrations:
 
@@ -165,8 +166,8 @@ Neo-tree can integrate with:
   - [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim) can also work with
   Neo-tree
 - [3rd/image.nvim](https://github.com/3rd/image.nvim) for image previews.
-  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will try to preview with snacks.nvim first,
-  then try image.nvim.
+  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will
+  try to preview with snacks.nvim first, then try image.nvim.
 - [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
 
 <details>
