@@ -156,15 +156,15 @@ See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) resp
 
 Neo-tree can integrate with:
 
-- [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
-- [nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
-- [snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
+- [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
+- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
+- [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
   - [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim) can also work with
   Neo-tree
-- [image.nvim](https://github.com/3rd/image.nvim) for image previews.
+- [3rd/image.nvim](https://github.com/3rd/image.nvim) for image previews.
   - If both snacks.nvim and image.nvim are installed. Neo-tree currently will try to preview with snacks.nvim first,
   then try image.nvim.
-- [nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
+- [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
 
 <details>
   <summary>
@@ -250,7 +250,7 @@ To configure neo-tree, use `require('neo-tree').setup({})`.
 -- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
 -- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
 
-vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal<CR>")
+vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
 require("neo-tree").setup({
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   popup_border_style = "NC", -- or "" to use 'winborder' on Neovim v0.11+
@@ -735,6 +735,7 @@ Any git ref, commit, tag, or sha will work.
 ```
 
 #### `reveal`
+
 This is a boolean flag. Adding this will make Neotree automatically find and
 focus the current file when it opens.
 
