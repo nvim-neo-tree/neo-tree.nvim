@@ -216,7 +216,6 @@ return {
 
 </details>
 
-
 ## Configuration
 
 To configure neo-tree, use `require('neo-tree').setup({})`.
@@ -226,30 +225,10 @@ To configure neo-tree, use `require('neo-tree').setup({})`.
 
 <details>
   <summary>
-    Example configuration with many default settings
+    Example configuration featuring many interesting settings:
   </summary>
 
 ```lua
--- If you want icons for diagnostic errors, you'll need to define them somewhere.
--- In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
---
--- vim.diagnostic.config({
---   signs = {
---     text = {
---       [vim.diagnostic.severity.ERROR] = '',
---       [vim.diagnostic.severity.WARN] = '',
---       [vim.diagnostic.severity.INFO] = '',
---       [vim.diagnostic.severity.HINT] = '󰌵',
---     },
---   }
--- })
---
--- For older versions of Neovim:
--- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
--- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
--- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
--- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
-
 vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
 require("neo-tree").setup({
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
@@ -317,8 +296,8 @@ require("neo-tree").setup({
     git_status = {
       symbols = {
         -- Change type
-        added = "", -- or "✚", but this is redundant info if you use git_status_colors on the name
-        modified = "", -- or "", but this is redundant info if you use git_status_colors on the name
+        added = "", -- or "✚"
+        modified = "", -- or ""
         deleted = "✖", -- this can only be used in the git_status source
         renamed = "󰁕", -- this can only be used in the git_status source
         -- Status type
@@ -588,13 +567,39 @@ require("neo-tree").setup({
   },
 })
 ```
+
 </details>
 
-_The above configuration is not everything that can be changed, it's just the
-parts you might want to change first._
+<details>
+    <summary>Diagnostics</summary>
 
-Alternatively, the table passed into `setup` has a type of `neotree.Config`. If you're on a distro using lazy.nvim, you
-might want to consider using lazy.nvim's `opts` instead:
+If you want icons for diagnostic errors, you'll need to define them somewhere.
+In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
+
+```lua
+vim.diagnostic.config({
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = '',
+      [vim.diagnostic.severity.WARN] = '',
+      [vim.diagnostic.severity.INFO] = '',
+      [vim.diagnostic.severity.HINT] = '󰌵',
+    },
+  }
+})
+
+-- For older versions of Neovim:
+-- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
+-- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
+-- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
+-- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+```
+
+</details>
+
+Alternatively, the table passed into `setup()` has a type of `neotree.Config`.
+If you're on a distro using lazy.nvim, you might want to consider using
+lazy.nvim's `opts` instead:
 
 ```lua
 return {
