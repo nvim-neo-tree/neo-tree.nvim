@@ -1067,6 +1067,10 @@ help out others, and manage the issues. The current list of maintainers are:
 
 (in alphabetical order)
 
+- @pynappo
+
+### Past maintainers:
+
 - @cseickel
 - @miversen33
 - @nhat-vo
