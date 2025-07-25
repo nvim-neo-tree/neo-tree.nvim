@@ -225,7 +225,40 @@ return {
 
 ## Configuration
 
-To configure neo-tree, use `require('neo-tree').setup({})`.
+```lua
+require('neo-tree').setup({
+  -- options go here
+})
+```
+
+<details>
+  <summary>
+    💤 lazy.nvim/Neovim distro users:
+  </summary>
+
+The table passed into `setup()` has a type of `neotree.Config`. If you're on a
+distro using lazy.nvim or you just like the syntax, you might want to consider
+using lazy.nvim's `opts` instead:
+
+```lua
+return {
+  "nvim-neo-tree/neo-tree.nvim",
+  branch = "v3.x",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    "nvim-tree/nvim-web-devicons", -- optional, but recommended
+  },
+  lazy = false, -- neo-tree will lazily load itself
+  ---@module 'neo-tree'
+  ---@type neotree.Config
+  opts = {
+    -- options go here
+  }
+}
+```
+
+</details>
 
 > [!NOTE]
 > You do not need to call `setup()` for Neo-tree and its commands to work. `setup()` is only for configuration.
@@ -577,6 +610,17 @@ require("neo-tree").setup({
 
 </details>
 
+See `:h neo-tree` for full documentation. You can also preview that online at
+[doc/neo-tree.txt](doc/neo-tree.txt), although it's best viewed within Neovim.
+
+To see all of the default config options with commentary, you can view it online
+at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
+into a buffer after installing Neo-tree by running:
+
+```
+:lua require("neo-tree").paste_default_config()
+```
+
 <details>
   <summary>Diagnostics</summary>
 
@@ -594,46 +638,18 @@ vim.diagnostic.config({
     },
   }
 })
+```
 
--- For older versions of Neovim:
--- vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
--- vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
--- vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
--- vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
+For older versions of Neovim:
+
+```lua
+vim.fn.sign_define("DiagnosticSignError", { text = " ", texthl = "DiagnosticSignError" })
+vim.fn.sign_define("DiagnosticSignWarn", { text = " ", texthl = "DiagnosticSignWarn" })
+vim.fn.sign_define("DiagnosticSignInfo", { text = " ", texthl = "DiagnosticSignInfo" })
+vim.fn.sign_define("DiagnosticSignHint", { text = "󰌵", texthl = "DiagnosticSignHint" })
 ```
 
 </details>
-
-Alternatively, the table passed into `setup()` has a type of `neotree.Config`.
-If you're on a distro using lazy.nvim, you might want to consider using
-lazy.nvim's `opts` instead:
-
-```lua
-return {
-  "nvim-neo-tree/neo-tree.nvim",
-  branch = "v3.x",
-  dependencies = {
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    "nvim-tree/nvim-web-devicons", -- optional, but recommended
-  },
-  lazy = false, -- neo-tree will lazily load itself
-  ---@module 'neo-tree'
-  ---@type neotree.Config
-  opts = {}
-}
-```
-
-See `:h neo-tree` for full documentation. You can also preview that online at
-[doc/neo-tree.txt](doc/neo-tree.txt), although it's best viewed within Neovim.
-
-To see all of the default config options with commentary, you can view it online
-at [lua/neo-tree/defaults.lua](lua/neo-tree/defaults.lua). You can also paste it
-into a buffer after installing Neo-tree by running:
-
-```
-:lua require("neo-tree").paste_default_config()
-```
 
 ## The `:Neotree` Command
 
