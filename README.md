@@ -13,13 +13,19 @@ sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-wi
 
 ### Neo-tree filesystem Netrw Style
 
-The below screenshot shows Neo-tree opened "netrw style" (`:Neotree
-position=current`). When opened in this way, there is more room so the extra
-detail columns can be shown. This screenshot also shows how the contents can be
-sorted on any column. In this example, we are sorted on "Size" descending:
+<details>
+  <summary>
+    The below screenshot shows Neo-tree opened "netrw style" (`:Neotree
+    position=current`). When opened in this way, there is more room so the
+    extra detail columns can be shown. This screenshot also shows how the
+    contents can be sorted on any column. In this example, we are sorted on
+    "Size" descending:
+  </summary>
 
 ![Neo-tree file system
 details](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-file-details-and-sort.png)
+
+</details>
 
 ### Breaking Changes BAD :bomb: :imp:
 
@@ -109,9 +115,9 @@ Adapt to your own config as needed.
 ### Other plugin managers:
 
 <details>
-    <summary>
-        Packer.nvim:
-    </summary>
+  <summary>
+    Packer.nvim:
+  </summary>
 
 ```lua
 use({
@@ -128,9 +134,9 @@ use({
 </details>
 
 <details>
-    <summary>
-        vim.pack (Neovim v0.12-nightly only, at time of writing)
-    </summary>
+  <summary>
+    vim.pack (Neovim v0.12-nightly only, at time of writing)
+  </summary>
 
 ```lua
 vim.pack.add({
@@ -571,7 +577,7 @@ require("neo-tree").setup({
 </details>
 
 <details>
-    <summary>Diagnostics</summary>
+  <summary>Diagnostics</summary>
 
 If you want icons for diagnostic errors, you'll need to define them somewhere.
 In Neovim v0.10+, you can configure them in vim.diagnostic.config(), like:
@@ -1091,5 +1097,5 @@ The design is heavily inspired by these excellent plugins:
 Everything I know about writing a tree control in lua, I learned from:
 - [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua)
 
-<!-- vim: set textwidth=80: -->
+<!-- vim: set textwidth=80 shiftwidth=2: -->
 
