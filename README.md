@@ -4,8 +4,6 @@ Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in whatever style suits you, including sidebars, floating windows,
 netrw split style, or all of them at once!
 
-### Neo-tree filesystem, as Sidebar:
-
 This screenshot shows Neo-tree opened in the traditional sidebar layout:
 
 ![Neo-tree file system
@@ -13,7 +11,7 @@ sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-wi
 
 <details>
   <summary>
-    Neo-tree filesystem, Netrw Style
+    Neo-tree filesystem screenshot, Netrw Style
   </summary>
 
 The below screenshot shows Neo-tree opened "netrw style" (`:Neotree
@@ -65,7 +63,7 @@ of room to display the whole tree.
 
 ## Installation
 
-This project relies upon these two excellent libraries:
+This plugin relies upon these two excellent libraries:
 
 - [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI
 components, including the tree!
@@ -76,7 +74,7 @@ utilities, such as scanning the filesystem.
 > You can `:checkhealth neo-tree` to ensure you have all the required
 > dependencies. It can also check that your config table looks correct. This is
 > still in its early stages, so please file issues if you'd like to see more
-> checks added.
+> checks added or a check isn't working properly.
 
 ### mini.deps example:
 
@@ -155,6 +153,11 @@ vim.pack.add({
 
 See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) for
 POSIX/Windows respectively.
+
+### Post-install: try it out!
+
+Try `:Neotree` to open Neo-tree as a sidebar, and press `?` while in Neo-tree to
+open the keyboard help.
 
 ## Integrations:
 
