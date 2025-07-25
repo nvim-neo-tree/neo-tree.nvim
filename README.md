@@ -70,11 +70,71 @@ components, including the tree!
 - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
 utilities, such as scanning the filesystem.
 
-> [!TIP]
-> You can `:checkhealth neo-tree` to ensure you have all the required
-> dependencies. It can also check that your config table looks correct. This is
-> still in its early stages, so please file issues if you'd like to see more
-> checks added or a check isn't working properly.
+<details>
+  <summary>
+    Optional plugins:
+  </summary>
+
+- [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
+- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
+- [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
+  - [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim) can also work with
+  Neo-tree
+- [3rd/image.nvim](https://github.com/3rd/image.nvim) for image previews.
+  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will
+  try to preview with snacks.nvim first, then try image.nvim.
+- [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
+
+  <details>
+    <summary>
+      Example lazy.nvim setup with all optional plugins:
+    </summary>
+
+```lua
+return {
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+  }
+  {
+    "antosha417/nvim-lsp-file-operations",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-neo-tree/neo-tree.nvim", -- makes sure that this loads after Neo-tree.
+    },
+    config = function()
+      require("lsp-file-operations").setup()
+    end,
+  },
+  {
+    "s1n7ax/nvim-window-picker",
+    version = "2.*",
+    config = function()
+      require("window-picker").setup({
+        filter_rules = {
+          include_current_win = false,
+          autoselect_one = true,
+          -- filter using buffer options
+          bo = {
+            -- if the file type is one of following, the window will be ignored
+            filetype = { "neo-tree", "neo-tree-popup", "notify" },
+            -- if the buffer type is one of following, the window will be ignored
+            buftype = { "terminal", "quickfix" },
+          },
+        },
+      })
+    end,
+  },
+}
+```
+
+  </details>
+</details>
 
 ### mini.deps example:
 
@@ -154,74 +214,15 @@ vim.pack.add({
 See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) for
 POSIX/Windows respectively.
 
-### Post-install: try it out!
+## Post-install: Try it out!
 
-Try `:Neotree` to open Neo-tree as a sidebar, and press `?` while in Neo-tree to
-open the keyboard help.
+Try :Neotree to open Neo-tree as a sidebar, and press ? while in Neo-tree to open the keyboard help.
 
-## Integrations:
-
-Neo-tree can integrate with:
-
-- [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
-- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
-- [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
-  - [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim) can also work with
-  Neo-tree
-- [3rd/image.nvim](https://github.com/3rd/image.nvim) for image previews.
-  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will
-  try to preview with snacks.nvim first, then try image.nvim.
-- [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
-
-<details>
-  <summary>
-    Example lazy.nvim setup with all possible integrations:
-  </summary>
-
-```lua
-return {
-  {
-    "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "MunifTanjim/nui.nvim",
-      "nvim-tree/nvim-web-devicons",
-    },
-  }
-  {
-    "antosha417/nvim-lsp-file-operations",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "nvim-neo-tree/neo-tree.nvim", -- makes sure that this loads after Neo-tree.
-    },
-    config = function()
-      require("lsp-file-operations").setup()
-    end,
-  },
-  {
-    "s1n7ax/nvim-window-picker",
-    version = "2.*",
-    config = function()
-      require("window-picker").setup({
-        filter_rules = {
-          include_current_win = false,
-          autoselect_one = true,
-          -- filter using buffer options
-          bo = {
-            -- if the file type is one of following, the window will be ignored
-            filetype = { "neo-tree", "neo-tree-popup", "notify" },
-            -- if the buffer type is one of following, the window will be ignored
-            buftype = { "terminal", "quickfix" },
-          },
-        },
-      })
-    end,
-  },
-}
-```
-
-</details>
+> [!TIP]
+> You can `:checkhealth neo-tree` to ensure you have all the required
+> dependencies. It can also check that your config table looks correct. This is
+> still in its early stages, so please file issues if you'd like to see more
+> checks added or a check isn't working properly.
 
 ## Configuration
 
@@ -237,8 +238,8 @@ require('neo-tree').setup({
   </summary>
 
 The table passed into `setup()` has a type of `neotree.Config`. If you're on a
-distro using lazy.nvim or you just like the syntax, you might want to consider
-using lazy.nvim's `opts` instead:
+distro using lazy.nvim (e.g. LazyVim) or you just like the syntax, you might
+want to consider using lazy.nvim's `opts` instead:
 
 ```lua
 return {
