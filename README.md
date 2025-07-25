@@ -67,8 +67,14 @@ so we can fix it.
 
 Neo-tree requires two libraries (which are also plugins):
 
-- [nui.nvim](https://github.com/MunifTanjim/nui.nvim)
-- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+- [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim)
+- [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+
+> [!TIP]
+> You can `:checkhealth neo-tree` to ensure you have all the required
+> dependencies. It can also check that your config table looks correct. This is
+> still in its early stages, so please file issues if you'd like to see more
+> checks added.
 
 After installing, run `:Neotree` to have Neo-tree popup on the left side.
 
