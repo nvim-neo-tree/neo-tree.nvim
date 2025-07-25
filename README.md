@@ -74,7 +74,7 @@ After installing, run `:Neotree` to have Neo-tree popup on the left side.
 
 Press `?` in the Neo-tree window to view the list of mappings.
 
-### mini.deps:
+### mini.deps example:
 
 ```lua
 local add = MiniDeps.add
@@ -90,12 +90,7 @@ add({
 })
 ```
 
-### lazy.nvim:
-
-Assuming you're importing specs from `lua/plugins` (i.e. you have `require('lazy').setup('plugins')`)
-
-- Make a new file in your config, like `lua/plugins/neo-tree.lua`
-- Paste this into it:
+### lazy.nvim example:
 
 ```lua
 return {
@@ -109,8 +104,6 @@ return {
   lazy = false, -- neo-tree will lazily load itself
 }
 ```
-
-Adapt to your own config as needed.
 
 ### Other plugin managers:
 
@@ -135,7 +128,7 @@ use({
 
 <details>
   <summary>
-    vim.pack (Neovim v0.12-nightly only, at time of writing)
+    vim.pack (Neovim v0.12, still in development at time of writing)
   </summary>
 
 ```lua
