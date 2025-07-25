@@ -70,10 +70,7 @@ components, including the tree!
 - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
 utilities, such as scanning the filesystem.
 
-<details>
-  <summary>
-    Optional plugins:
-  </summary>
+### Optional plugins:
 
 - [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
 - [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
@@ -85,10 +82,44 @@ utilities, such as scanning the filesystem.
   try to preview with snacks.nvim first, then try image.nvim.
 - [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
 
-  <details>
-    <summary>
-      Example lazy.nvim setup with all optional plugins:
-    </summary>
+
+### mini.deps example:
+
+```lua
+local add = MiniDeps.add
+
+add({
+  source = 'nvim-neo-tree/neo-tree.nvim',
+  checkout = '3.x',
+  depends = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    "nvim-tree/nvim-web-devicons", -- optional, but recommended
+  }
+})
+```
+
+### lazy.nvim example:
+
+```lua
+return {
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-tree/nvim-web-devicons", -- optional, but recommended
+    },
+    lazy = false, -- neo-tree will lazily load itself
+  }
+}
+```
+
+<details>
+  <summary>
+    Example with all optional plugins:
+  </summary>
 
 ```lua
 return {
@@ -133,41 +164,7 @@ return {
 }
 ```
 
-  </details>
 </details>
-
-### mini.deps example:
-
-```lua
-local add = MiniDeps.add
-
-add({
-  source = 'nvim-neo-tree/neo-tree.nvim',
-  checkout = '3.x',
-  depends = {
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    "nvim-tree/nvim-web-devicons", -- optional, but recommended
-  }
-})
-```
-
-### lazy.nvim example:
-
-```lua
-return {
-  {
-    "nvim-neo-tree/neo-tree.nvim",
-    branch = "v3.x",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "MunifTanjim/nui.nvim",
-      "nvim-tree/nvim-web-devicons", -- optional, but recommended
-    },
-    lazy = false, -- neo-tree will lazily load itself
-  }
-}
-```
 
 <details>
   <summary>
