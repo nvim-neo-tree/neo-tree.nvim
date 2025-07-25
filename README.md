@@ -4,23 +4,22 @@ Neo-tree is a Neovim plugin to browse the file system and other tree like
 structures in whatever style suits you, including sidebars, floating windows,
 netrw split style, or all of them at once!
 
-### Neo-tree filesystem as Sidebar:
+### Neo-tree filesystem, as Sidebar:
 
 This screenshot shows Neo-tree opened in the traditional sidebar layout:
 
 ![Neo-tree file system
 sidebar](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-right-aligned-symbols.png)
 
-### Neo-tree filesystem Netrw Style
-
 <details>
   <summary>
-    The below screenshot shows Neo-tree opened "netrw style" (`:Neotree
-    position=current`). When opened in this way, there is more room so the
-    extra detail columns can be shown. This screenshot also shows how the
-    contents can be sorted on any column. In this example, we are sorted on
-    "Size" descending:
+    Neo-tree filesystem, Netrw Style
   </summary>
+
+The below screenshot shows Neo-tree opened "netrw style" (`:Neotree
+position=current`). When opened in this way, there is more room so the extra
+detail columns can be shown. This screenshot also shows how the contents can be
+sorted on any column. In this example, we are sorted on "Size" descending:
 
 ![Neo-tree file system
 details](https://github.com/nvim-neo-tree/resources/blob/main/images/Neo-tree-with-file-details-and-sort.png)
@@ -59,26 +58,25 @@ of room to display the whole tree.
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!
 
-Neo-tree is smooth, efficient, stable, and pays attention to the little details.
-If you find anything janky, wanky, broken, or unintuitive, please open an issue
-so we can fix it.
+> [!NOTE]
+> Neo-tree is meant to be smooth, efficient, stable, and intuitive. If you find
+> anything janky, slow, broken, or unintuitive, please open an issue so we can
+> fix it.
 
 ## Installation
 
-Neo-tree requires two libraries (which are also plugins):
+This project relies upon these two excellent libraries:
 
-- [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim)
-- [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+- [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI
+components, including the tree!
+- [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
+utilities, such as scanning the filesystem.
 
 > [!TIP]
 > You can `:checkhealth neo-tree` to ensure you have all the required
 > dependencies. It can also check that your config table looks correct. This is
 > still in its early stages, so please file issues if you'd like to see more
 > checks added.
-
-After installing, run `:Neotree` to have Neo-tree popup on the left side.
-
-Press `?` in the Neo-tree window to view the list of mappings.
 
 ### mini.deps example:
 
@@ -100,22 +98,22 @@ add({
 
 ```lua
 return {
-  "nvim-neo-tree/neo-tree.nvim",
-  branch = "v3.x",
-  dependencies = {
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    "nvim-tree/nvim-web-devicons", -- optional, but recommended
-  },
-  lazy = false, -- neo-tree will lazily load itself
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-tree/nvim-web-devicons", -- optional, but recommended
+    },
+    lazy = false, -- neo-tree will lazily load itself
+  }
 }
 ```
 
-### Other plugin managers:
-
 <details>
   <summary>
-    Packer.nvim:
+    Packer.nvim example:
   </summary>
 
 ```lua
@@ -134,14 +132,14 @@ use({
 
 <details>
   <summary>
-    vim.pack (Neovim v0.12, still in development at time of writing)
+    vim.pack example (Neovim v0.12, still in development at time of writing)
   </summary>
 
 ```lua
 vim.pack.add({
   {
     src = 'https://github.com/nvim-neo-tree/neo-tree.nvim',
-    version = vim.version.range('3.0')
+    version = vim.version.range('3')
   },
   -- dependencies
   "nvim-lua/plenary.nvim",
@@ -157,7 +155,7 @@ vim.pack.add({
 
 See [doc/install.sh](doc/install.sh) and [doc/install.ps1](doc/install.ps1) respectively.
 
-### Integrations:
+## Integrations:
 
 Neo-tree can integrate with:
 
@@ -1082,12 +1080,6 @@ help out others, and manage the issues. The current list of maintainers are:
 - @pysan3
 
 ### Other Projects
-
-This project relies upon these two excellent libraries:
-- [nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI components,
-including the tree!
-- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
-utilities, such as scanning the filesystem.
 
 The design is heavily inspired by these excellent plugins:
 - [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
