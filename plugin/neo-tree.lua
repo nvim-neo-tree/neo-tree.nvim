@@ -82,12 +82,6 @@ vim.api.nvim_create_autocmd("SessionLoadPost", {
   end,
 })
 
-local curwin_floating = nil
----@param winid integer
-local neotree_win_filter = function(winid)
-  local bufnr = vim.api.nvim_win_get_buf(winid)
-  return vim.bo[bufnr].filetype == winid
-end
 vim.api.nvim_create_autocmd("WinClosed", {
   group = netrw_augroup,
   callback = function(args)
@@ -152,9 +146,6 @@ vim.api.nvim_create_autocmd("WinClosed", {
         return
       end
     end
-    vim.schedule(function()
-      vim.cmd("q!")
-    end)
   end,
 })
 

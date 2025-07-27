@@ -273,6 +273,10 @@ M.buffer_enter_event = function()
 end
 
 M.win_enter_event = function()
+  local win_id = vim.api.nvim_get_current_win()
+  if utils.is_floating(win_id) then
+    return
+  end
   -- if the new win is not a floating window, make sure all neo-tree floats are closed
   manager.close_all("float")
 
