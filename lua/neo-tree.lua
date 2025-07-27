@@ -22,6 +22,12 @@ M.ensure_config = function()
   return M.config
 end
 
+---A performance-focused version for checking a specific key of a config while trying not to do expensive setup work
+---@return neotree.Config.Base
+M.peek_config = function()
+  return new_user_config or M.ensure_config()
+end
+
 ---@param ignore_filetypes string[]?
 ---@param ignore_winfixbuf boolean?
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
