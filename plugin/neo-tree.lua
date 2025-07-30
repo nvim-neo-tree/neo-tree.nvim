@@ -25,11 +25,12 @@ local function try_netrw_hijack(path)
   return require("neo-tree.setup.netrw").hijack()
 end
 
-local netrw_augroup = vim.api.nvim_create_augroup("NeoTree", { clear = true })
+local augroup = vim.api.nvim_create_augroup("NeoTree", { clear = true })
 
 -- lazy load until bufenter/netrw hijack
 vim.api.nvim_create_autocmd({ "BufEnter" }, {
-  group = netrw_augroup,
+  group = augroup,
+  desc = "Lazy-load until bufenter/opened dir",
   callback = function(args)
     return vim.g.neotree_watching_bufenter == 1 or try_netrw_hijack(args.file)
   end,
@@ -37,7 +38,8 @@ vim.api.nvim_create_autocmd({ "BufEnter" }, {
 
 -- track window order
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
-  group = netrw_augroup,
+  group = augroup,
+  desc = "Track prior windows for opening intuitiveness",
   callback = function(ev)
     local win = vim.api.nvim_get_current_win()
     local utils = require("neo-tree.utils")
@@ -74,7 +76,8 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
 
 -- setup session loading
 vim.api.nvim_create_autocmd("SessionLoadPost", {
-  group = netrw_augroup,
+  group = augroup,
+  desc = "Session loading",
   callback = function()
     if require("neo-tree").ensure_config().auto_clean_after_session_restore then
       require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
@@ -83,31 +86,32 @@ vim.api.nvim_create_autocmd("SessionLoadPost", {
 })
 
 vim.api.nvim_create_autocmd("WinClosed", {
-  group = netrw_augroup,
+  group = augroup,
+  desc = "close_if_last_window autocmd",
   callback = function(args)
     local closing_win = tonumber(args.match)
     local visible_winids = vim.api.nvim_tabpage_list_wins(0)
-    local non_floats = {}
+    local other_panes = {}
     local utils = require("neo-tree.utils")
     for _, winid in ipairs(visible_winids) do
       if not utils.is_floating(winid) and winid ~= closing_win then
-        non_floats[#non_floats + 1] = winid
+        other_panes[#other_panes + 1] = winid
       end
     end
 
-    if #non_floats ~= 1 then
+    if #other_panes ~= 1 then
       return
     end
 
-    local last_window = non_floats[1]
-    local last_bufnr = vim.api.nvim_win_get_buf(last_window)
+    local remaining_pane = other_panes[1]
+    local remaining_buf = vim.api.nvim_win_get_buf(remaining_pane)
 
-    if vim.bo[last_bufnr].filetype ~= "neo-tree" then
+    if vim.bo[remaining_buf].filetype ~= "neo-tree" then
       return
     end
 
-    local position = vim.b[last_bufnr].neo_tree_position
-    local source = vim.b[last_bufnr].neo_tree_source
+    local position = vim.b[remaining_buf].neo_tree_position
+    local source = vim.b[remaining_buf].neo_tree_source
     -- close_if_last_window just doesn't make sense for a split style
     if position == "current" then
       return
@@ -119,7 +123,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
     if not state then
       return
     end
-    if not require("neo-tree").config.close_if_last_window then
+    if not require("neo-tree").ensure_config().close_if_last_window then
       return
     end
     local mod = utils.get_opened_buffers()
