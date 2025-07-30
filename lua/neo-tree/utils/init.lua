@@ -1161,6 +1161,40 @@ M.path_join = function(...)
   return table.concat(all_parts, M.path_separator)
 end
 
+---@param path string
+M.is_absolute_path = function(path)
+  if M.is_windows then
+    -- Check for Windows absolute paths
+    -- Drive letter followed by colon and a slash (e.g., C:\ or C:/)
+    if path:match("^[A-Za-z]:[/\\]") then
+      return true
+    end
+    -- UNC paths (network paths)
+    if path:sub(1, 2) == "\\\\" or path:sub(1, 2) == "//" then
+      return true
+    end
+    -- Windows absolute path starting with a single backslash (relative to current drive root)
+    if path:sub(1, 1) == "\\" then
+      return true
+    end
+  else
+    return path:sub(1, 1) == "/"
+  end
+
+  return false
+end
+
+---Resolve a path relative to the cwd
+---@param path string
+---@return string path
+M.resolve_path = function(path)
+  local expanded = vim.fn.expand(path)
+  if not M.is_absolute_path(expanded) then
+    expanded = vim.fn.getcwd() .. "/" .. expanded
+  end
+  return M.normalize_path(expanded)
+end
+
 local table_merge_internal
 ---Merges overrideTable into baseTable. This mutates baseTable.
 ---@param base_table table The base table that provides default values.
