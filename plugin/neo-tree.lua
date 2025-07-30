@@ -150,6 +150,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
         return
       end
     end
+    vim.cmd("qa!")
   end,
 })
 

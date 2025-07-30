@@ -6,6 +6,10 @@ return {
     dir = deps_dir .. "/snacks.nvim",
   },
   {
+    "nvim-neo-tree/neo-tree.nvim",
+    dir = root,
+  },
+  {
     "MunifTanjim/nui.nvim",
     dir = deps_dir .. "/nui.nvim",
   },
