@@ -62,11 +62,8 @@ end
 
 M.paste_default_config = function()
   local utils = require("neo-tree.utils")
-  ---@type string
   local base_path = assert(debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$"))
-  ---@type string
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
-  ---@type string[]?
   local lines = vim.fn.readfile(config_path)
   if lines == nil then
     error("Could not read neo-tree.defaults")
