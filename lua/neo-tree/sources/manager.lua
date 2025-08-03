@@ -250,7 +250,7 @@ M.get_path_to_reveal = function(include_terminals)
     return nil
   end
 
-  local path = utils.resolve_path(vim.api.nvim_buf_get_name(0))
+  local path = utils.resolve_path(vim.fn.expand("%f"))
   if not utils.truthy(path) then
     return nil
   end

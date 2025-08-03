@@ -1184,9 +1184,9 @@ M.is_absolute_path = function(path)
   return false
 end
 
----Resolve a path relative to the cwd
----@param path string
----@return string path
+---Given multiple paths, returns an absolute path by resolving each path in order until the last is
+---@vararg string paths
+---@return string abspath
 M.resolve_path = function(path)
   local expanded = vim.fn.expand(path)
   if not M.is_absolute_path(expanded) then
