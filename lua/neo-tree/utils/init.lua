@@ -890,7 +890,7 @@ M.normalize_path = function(path)
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
-  return path
+  return vim.fs.normalize(path)
 end
 
 ---Check if a path is a subpath of another.
@@ -900,7 +900,9 @@ end
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
-  elseif base == path then
+  end
+
+  if base == path then
     return true
   end
 
@@ -920,13 +922,9 @@ M.is_subpath = function(base, path)
 end
 
 ---The file system path separator for the current platform.
-M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
-  M.path_separator = "\\"
-end
-
 M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1098,8 +1096,8 @@ M.is_absolute_path = function(path)
   return false
 end
 
----Given multiple paths, returns an absolute path by resolving each path in order until the last is
----@vararg string paths
+---Given a path, resolves it relative to the cwd
+---@param path string
 ---@return string abspath
 M.resolve_path = function(path)
   local expanded = vim.fn.expand(path)
@@ -1154,20 +1152,21 @@ end
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)
-  if value == nil then
+  if not value then
     return false
   end
-  if type(value) == "boolean" then
-    return value
-  end
+
   if type(value) == "string" then
-    return value > ""
+    return #value > 0
   end
   if type(value) == "number" then
     return value > 0
   end
   if type(value) == "table" then
     return next(value) ~= nil
+  end
+  if type(value) == "boolean" then
+    return true
   end
   return true
 end
