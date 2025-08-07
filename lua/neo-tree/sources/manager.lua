@@ -250,14 +250,16 @@ M.get_path_to_reveal = function(include_terminals)
     return nil
   end
 
-  local path = utils.resolve_path(vim.fn.expand("%f"))
-  if not utils.truthy(path) then
+  local buf_relpath = vim.fn.expand("%f")
+  if not utils.truthy(buf_relpath) then
     return nil
   end
-  if not include_terminals and path:match("term://") then
+
+  if not include_terminals and buf_relpath:match("term://") then
     return nil
   end
-  return path
+
+  return utils.resolve_path(buf_relpath)
 end
 
 ---@param source_name string
