@@ -90,7 +90,7 @@ local add = MiniDeps.add
 
 add({
   source = 'nvim-neo-tree/neo-tree.nvim',
-  checkout = '3.x',
+  checkout = 'v3.x',
   depends = {
     "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
