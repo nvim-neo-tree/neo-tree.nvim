@@ -791,7 +791,7 @@ with your overrides. For example, to add your own mappings in 'lua':
 
 NOTE: The mappings you define will be merged with the default mappings. If you
 wish to remove a default mapping without overriding it with your own function,
-assign it the the string "none". This will cause it to be skipped and allow any
+assign it the string "none". This will cause it to be skipped and allow any
 existing global mappings to work.
 
 NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!~
