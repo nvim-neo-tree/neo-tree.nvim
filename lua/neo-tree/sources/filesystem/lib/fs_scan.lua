@@ -555,7 +555,7 @@ local handle_refresh_or_up = function(context, async_dir_scan)
       local path_to_reveal_parts = utils.split(path_to_reveal, utils.path_separator)
       table.remove(path_to_reveal_parts) -- remove the file name
       -- add all parent folders to the list of paths to load
-      utils.reduce(path_to_reveal_parts, "", function(acc, part)
+      utils.reduce(path_to_reveal_parts, utils.abspath_prefix(path_to_reveal), function(acc, part)
         local current_path = utils.path_join(acc, part)
         if #current_path > #path then -- within current root
           table.insert(context.paths_to_load, current_path)

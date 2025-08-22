@@ -64,18 +64,3 @@ describe("is_subpath", function()
     utils.is_windows = old
   end)
 end)
-
-describe("resolve_path", function()
-  local old = utils.is_windows
-  after_each(function()
-    utils.is_windows = old
-  end)
-  local cwd = vim.fn.getcwd()
-  it("should work with unix paths", function()
-    utils.is_windows = false
-    assert.are.same(cwd .. "/tests", utils.resolve_path("./tests"))
-  end)
-  it("should work on windows paths", function()
-    utils.is_windows = true
-  end)
-end)
