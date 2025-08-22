@@ -250,7 +250,7 @@ M.get_path_to_reveal = function(include_terminals)
     return nil
   end
 
-  local buf_relpath = vim.fn.expand("%f")
+  local buf_relpath = vim.fn.expand("%")
   if not utils.truthy(buf_relpath) then
     return nil
   end
