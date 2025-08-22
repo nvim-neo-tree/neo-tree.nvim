@@ -1142,53 +1142,37 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-    all_parts[1] = ""
-  end
+  local root = nil
 
   for _, arg in ipairs(args) do
-    if arg == "" and #all_parts == 0 and not M.is_windows then
-      all_parts = { "" }
+    local prefix = M.abspath_prefix(arg)
+    if prefix then
+      root = prefix
+      all_parts = {}
+      vim.list_extend(all_parts, M.split(arg:sub(#root + 1), M.path_separator))
     else
-      local arg_parts = M.split(arg, M.path_separator)
-      vim.list_extend(all_parts, arg_parts)
+      vim.list_extend(all_parts, M.split(arg, M.path_separator))
     end
   end
-  return table.concat(all_parts, M.path_separator)
+  local relpath = table.concat(all_parts, M.path_separator)
+  if root then
+    return root .. relpath
+  end
+  return relpath
 end
 
 ---@param path string
-M.is_absolute_path = function(path)
+---@return string? prefix
+M.abspath_prefix = function(path)
   if M.is_windows then
-    -- Check for Windows absolute paths
-    -- Drive letter followed by colon and a slash (e.g., C:\ or C:/)
-    if path:match("^[A-Za-z]:[/\\]") then
-      return true
-    end
-    -- UNC paths (network paths)
-    if path:sub(1, 2) == "\\\\" or path:sub(1, 2) == "//" then
-      return true
-    end
-    -- Windows absolute path starting with a single backslash (relative to current drive root)
-    if path:sub(1, 1) == "\\" then
-      return true
-    end
-  else
-    return path:sub(1, 1) == "/"
+    return path:match("^[A-Za-z]:[/\\]")
+      or path:match([[^\\]])
+      or path:match([[^//]])
+      or path:match([[^\]])
+      or path:match([[^/]])
   end
 
-  return false
-end
-
----Given a path, resolves it relative to the cwd
----@param path string
----@return string abspath
-M.resolve_path = function(path)
-  local expanded = vim.fn.expand(path)
-  if not M.is_absolute_path(expanded) then
-    expanded = vim.fn.getcwd() .. "/" .. expanded
-  end
-  return M.normalize_path(expanded)
+  return path:match("^/")
 end
 
 local table_merge_internal
