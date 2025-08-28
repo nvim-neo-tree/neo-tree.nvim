@@ -225,8 +225,11 @@ M.get_faded_highlight_group = function(hl_group_name, fade_percentage)
   faded_highlight_group_cache[key] = key
   return key
 end
-
+local nvim_0_10 = vim.fn.has("nvim-0.10")
 M.setup = function()
+  local added_hl_name = nvim_0_10 and "Added" or "diffAdded"
+  local changed_hl_name = nvim_0_10 and "Changed" or "diffChanged"
+  local removed_hl_name = nvim_0_10 and "Removed" or "diffRemoved"
   -- Reset this here in case of color scheme change
   faded_highlight_group_cache = {}
 
@@ -281,9 +284,24 @@ M.setup = function()
   M.create_highlight_group(M.WINDOWS_HIDDEN, { M.DOTFILE }, nil, nil)
   M.create_highlight_group(M.PREVIEW, { "Search" }, nil, nil)
 
-  M.create_highlight_group(M.GIT_ADDED, { "GitGutterAdd", "GitSignsAdd" }, nil, "5faf5f")
-  M.create_highlight_group(M.GIT_DELETED, { "GitGutterDelete", "GitSignsDelete" }, nil, "ff5900")
-  M.create_highlight_group(M.GIT_MODIFIED, { "GitGutterChange", "GitSignsChange" }, nil, "d7af5f")
+  M.create_highlight_group(
+    M.GIT_ADDED,
+    { "GitGutterAdd", "GitSignsAdd", added_hl_name },
+    nil,
+    "5faf5f"
+  )
+  M.create_highlight_group(
+    M.GIT_DELETED,
+    { "GitGutterDelete", "GitSignsDelete", removed_hl_name },
+    nil,
+    "ff5900"
+  )
+  M.create_highlight_group(
+    M.GIT_MODIFIED,
+    { "GitGutterChange", "GitSignsChange", changed_hl_name },
+    nil,
+    "d7af5f"
+  )
   local conflict = M.create_highlight_group(M.GIT_CONFLICT, {}, nil, "ff8700", "italic,bold")
   M.create_highlight_group(M.GIT_IGNORED, { M.DOTFILE }, nil, nil)
   M.create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
