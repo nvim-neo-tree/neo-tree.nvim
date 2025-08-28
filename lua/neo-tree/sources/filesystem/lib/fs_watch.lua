@@ -50,7 +50,7 @@ end
 
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
----@param custom_callback? function The callback to call when a change is detected.
+---@param custom_callback? uv.fs_event_start.callback The callback to call when a change is detected.
 ---@param allow_git_watch? boolean Allow watching of git folders.
 M.watch_folder = function(path, custom_callback, allow_git_watch)
   if not allow_git_watch then
@@ -64,7 +64,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
   if h == nil then
     log.trace("Starting new fs watch on: ", path)
     local callback = custom_callback
-      or vim.schedule_wrap(function(err, fname)
+      or vim.schedule_wrap(function(err, fname, ev)
         if fname and fname:match("^%.null[-]ls_.+") then
           -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
           return
@@ -73,7 +73,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
           log.error("file_event_callback: ", err)
           return
         end
-        events.fire_event(events.FS_EVENT, { afile = path })
+        events.fire_event(events.FS_EVENT, { afile = path, events = ev })
       end)
     h = {
       handle = uv.new_fs_event(),
@@ -93,7 +93,7 @@ end
 M.watch_git_index = function(path, async)
   local function watch_git_folder(git_folder, git_root)
     if git_folder then
-      local git_event_callback = vim.schedule_wrap(function(err, fname)
+      local git_event_callback = function(err, fname, ev)
         if fname and fname:match("^.+%.lock$") then
           return
         end
@@ -105,8 +105,10 @@ M.watch_git_index = function(path, async)
           log.error("git_event_callback: ", err)
           return
         end
-        events.fire_event(events.GIT_EVENT, { path = fname, repository = git_root })
-      end)
+        vim.schedule(function()
+          events.fire_event(events.GIT_EVENT, { path = fname, repository = git_root, events = ev })
+        end)
+      end
 
       M.watch_folder(git_folder, git_event_callback, true)
     end
