@@ -150,7 +150,10 @@ vim.api.nvim_create_autocmd("WinClosed", {
         return
       end
     end
-    vim.cmd("qa!")
+    -- this needs to be scheduled, otherwise VimLeavePre autocmds won't trigger
+    vim.schedule(function()
+      vim.cmd("q!")
+    end)
   end,
 })
 
