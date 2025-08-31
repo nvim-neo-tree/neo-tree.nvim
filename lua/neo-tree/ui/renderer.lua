@@ -128,7 +128,6 @@ M.close = function(state, focus_prior_window)
         window_existed = true
         if state.current_position == "current" then
           -- we are going to hide the buffer instead of closing the window
-          M.position.save(state)
           local new_buf = vim.fn.bufnr("#")
           if new_buf < 1 then
             new_buf = vim.api.nvim_create_buf(true, false)
@@ -148,7 +147,7 @@ M.close = function(state, focus_prior_window)
             -- focus the prior used window if we are closing the currently focused window
             local current_winid = vim.api.nvim_get_current_win()
             if current_winid == state.winid then
-              local pwin = require("neo-tree").get_prior_window()
+              local pwin = nt.get_prior_window()
               if type(pwin) == "number" and pwin > 0 then
                 pcall(vim.api.nvim_set_current_win, pwin)
               end
@@ -488,8 +487,7 @@ end
 ---Sets the cursor at the specified node.
 ---@param state neotree.State The current state of the source.
 ---@param id string? The id of the node to set the cursor at.
----@return boolean boolean True if the node was found and focused, false
----otherwise.
+---@return boolean boolean True if the node was found and focused, false otherwise.
 M.focus_node = function(state, id, do_not_focus_window, relative_movement, bottom_scroll_padding)
   if not id and not relative_movement then
     log.debug("focus_node called with no id and no relative movement")
@@ -546,14 +544,6 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
       -- forget about cursor position as it is overwritten
       M.position.clear(state)
       -- now ensure that the window is scrolled correctly
-      local execute_win_command = function(cmd)
-        if vim.api.nvim_get_current_win() == state.winid then
-          vim.cmd(cmd)
-        else
-          vim.cmd("call win_execute(" .. state.winid .. [[, "]] .. cmd .. [[")]])
-        end
-      end
-
       -- make sure we are not scrolled down if it can all fit on the screen
       local lines = vim.api.nvim_buf_line_count(state.bufnr)
       local win_height = vim.api.nvim_win_get_height(state.winid)
@@ -561,14 +551,21 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
         + win_height
         - bottom_scroll_padding
       if virtual_bottom_line <= linenr then
-        execute_win_command("normal! " .. (linenr + bottom_scroll_padding) .. "zb")
+        vim.api.nvim_win_call(state.winid, function()
+          vim.cmd("normal! " .. (linenr + bottom_scroll_padding) .. "zb")
+        end)
         pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
       elseif virtual_bottom_line > lines then
-        execute_win_command("normal! " .. (lines + bottom_scroll_padding) .. "zb")
+        vim.api.nvim_win_call(state.winid, function()
+          vim.cmd("normal! " .. (lines + bottom_scroll_padding) .. "zb")
+        end)
         pcall(vim.api.nvim_win_set_cursor, state.winid, { linenr, col })
       elseif linenr < (win_height / 2) then
-        execute_win_command("normal! zz")
+        vim.api.nvim_win_call(state.winid, function()
+          vim.cmd("normal! zz")
+        end)
       end
+      M.position.save(state)
     else
       log.debug("Failed to set cursor: " .. err)
     end
@@ -660,10 +657,14 @@ end
 
 ---Functions to save and restore the focused node.
 M.position = {}
+
+---Saves a window position to be restored later
 ---@param state neotree.State
-M.position.save = function(state)
-  if state.position.topline and state.position.lnum then
+---@param force boolean? whether to force the save
+M.position.save = function(state, force)
+  if not force and state.position.topline and state.position.lnum then
     log.debug("There's already a position saved to be restored. Cannot save another.")
+    log.debug("Trying to save for " .. debug.traceback())
     return
   end
   if state.tree and M.window_exists(state) then
@@ -674,7 +675,10 @@ M.position.save = function(state)
     log.debug("Saved window position with topline: " .. state.position.topline)
   end
 end
+
+---Queues a node to focus
 ---@param state neotree.State
+---@param node_id string?
 M.position.set = function(state, node_id)
   if type(node_id) ~= "string" or node_id == "" then
     return
@@ -687,6 +691,7 @@ M.position.set = function(state, node_id)
   end
   state.position.node_id = node_id
 end
+
 ---@param state neotree.State
 M.position.clear = function(state)
   log.debug("Forget about cursor position.")
@@ -697,23 +702,30 @@ M.position.clear = function(state)
   -- focus on it anymore
   state.position.node_id = nil
 end
+
 ---@param state neotree.State
+---@return boolean restored
 M.position.restore = function(state)
+  local restored = false
   if state.position.topline and state.position.lnum then
     log.debug("Restoring window position to topline: " .. state.position.topline)
     log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
     vim.api.nvim_win_call(state.winid, function()
       vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
     end)
+    restored = true
   end
   if state.position.node_id then
+    print(state.position.node_id)
     log.debug("Focusing on node_id: " .. state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
+    restored = true
   end
   M.position.clear(state)
+  return restored
 end
 
----Redraw the tree without relaoding from the source.
+---Redraw the tree without reloading from the source.
 ---@param state neotree.State State of the tree.
 M.redraw = function(state)
   if state.tree and M.tree_is_visible(state) then
@@ -730,7 +742,7 @@ M.redraw = function(state)
   end
 end
 ---Visit all nodes ina tree recursively and reduce to a single value.
----@param tree table NuiTree
+---@param tree NuiTree
 ---@param memo any Value that is passed to the accumulator function
 ---@param func function Accumulator function that is called for each node
 ---@return any any The final memo value.
@@ -1097,6 +1109,10 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
+    win:on({ "CursorMoved" }, function()
+      M.position.clear(state)
+      M.position.save(state)
+    end)
     win:on({ "BufDelete" }, function()
       M.position.save(state)
     end)
@@ -1185,14 +1201,11 @@ M.tree_is_visible = function(state)
 end
 
 ---Renders the given tree and expands window width if needed
---@param state neotree.State The state containing tree to render. Almost same as state.tree:render()
+---@param state neotree.State The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
-  local add_blank_line_at_top = require("neo-tree").config.add_blank_line_at_top
+  local add_blank_line_at_top = nt.config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
-
-  log.debug("render_tree: Saving position")
-  M.position.save(state)
 
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
@@ -1329,7 +1342,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     state.longest_node = 0
   end
 
-  local config = require("neo-tree").config
+  local config = nt.config
   if config.hide_root_node then
     if not parentId then
       sourceItems[1].skip_node = true
@@ -1344,7 +1357,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
 
   if state.group_empty_dirs then
     if parent then
-      local scan_mode = require("neo-tree").config.filesystem.scan_mode
+      local scan_mode = nt.config.filesystem.scan_mode
       if scan_mode == "deep" then
         for i, item in ipairs(sourceItems) do
           sourceItems[i] = group_empty_dirs(item)

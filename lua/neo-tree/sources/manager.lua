@@ -616,6 +616,8 @@ M.redraw = function(source_name)
 end
 
 ---Refreshes the tree by scanning the filesystem again.
+---@param source_name string
+---@param callback function?
 M.refresh = function(source_name, callback)
   if type(callback) ~= "function" then
     callback = nil
