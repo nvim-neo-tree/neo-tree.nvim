@@ -47,9 +47,14 @@ end
 ---@field win_width integer
 ---@field last_user_width integer
 
----@alias neotree.State.Position "top"|"bottom"|"left"|"right"|"current"|"float"
+---@alias neotree.State.CurrentPosition "top"|"bottom"|"left"|"right"|"current"|"float"
 
 ---@alias neotree.Internal.SortFieldProvider fun(node: NuiTree.Node):any
+
+---@class neotree.State.Position
+---@field topline integer?
+---@field lnum integer?
+---@field node_id string?
 
 ---@class neotree.State : neotree.Config.Source
 ---@field name string
@@ -57,11 +62,11 @@ end
 ---@field id integer
 ---@field bufnr integer?
 ---@field dirty boolean
----@field position table
+---@field position neotree.State.Position
 ---@field git_base string
 ---@field sort table
 ---@field clipboard table
----@field current_position neotree.State.Position?
+---@field current_position neotree.State.CurrentPosition?
 ---@field disposed boolean?
 ---@field winid integer?
 ---@field path string?
@@ -70,6 +75,7 @@ end
 ---private-ish
 ---@field orig_tree NuiTree?
 ---@field _ready boolean?
+---@field _in_pre_render boolean?
 ---@field loading boolean?
 ---window
 ---@field window neotree.State.Window?
@@ -610,6 +616,8 @@ M.redraw = function(source_name)
 end
 
 ---Refreshes the tree by scanning the filesystem again.
+---@param source_name string
+---@param callback function?
 M.refresh = function(source_name, callback)
   if type(callback) ~= "function" then
     callback = nil
