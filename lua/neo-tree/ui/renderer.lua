@@ -702,7 +702,6 @@ M.position.clear = function(state)
 end
 
 ---@param state neotree.State
----@return boolean restored
 M.position.restore = function(state)
   if state.position.topline and state.position.lnum then
     log.debug("Restoring window position to topline: " .. state.position.topline)
