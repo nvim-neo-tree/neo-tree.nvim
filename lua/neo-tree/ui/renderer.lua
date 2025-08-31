@@ -664,7 +664,6 @@ M.position = {}
 M.position.save = function(state, force)
   if not force and state.position.topline and state.position.lnum then
     log.debug("There's already a position saved to be restored. Cannot save another.")
-    log.debug("Trying to save for " .. debug.traceback())
     return
   end
   if state.tree and M.window_exists(state) then
