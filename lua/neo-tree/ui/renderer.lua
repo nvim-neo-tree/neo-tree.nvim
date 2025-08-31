@@ -660,9 +660,8 @@ M.position = {}
 
 ---Saves a window position to be restored later
 ---@param state neotree.State
----@param force boolean? whether to force the save
-M.position.save = function(state, force)
-  if not force and state.position.topline and state.position.lnum then
+M.position.save = function(state)
+  if state.position.topline and state.position.lnum then
     log.debug("There's already a position saved to be restored. Cannot save another.")
     return
   end
@@ -705,23 +704,19 @@ end
 ---@param state neotree.State
 ---@return boolean restored
 M.position.restore = function(state)
-  local restored = false
   if state.position.topline and state.position.lnum then
     log.debug("Restoring window position to topline: " .. state.position.topline)
     log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
     vim.api.nvim_win_call(state.winid, function()
       vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
     end)
-    restored = true
   end
   if state.position.node_id then
     print(state.position.node_id)
     log.debug("Focusing on node_id: " .. state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
-    restored = true
   end
   M.position.clear(state)
-  return restored
 end
 
 ---Redraw the tree without reloading from the source.
