@@ -711,10 +711,11 @@ M.position.restore = function(state)
     end)
   end
   if state.position.node_id then
-    print(state.position.node_id)
     log.debug("Focusing on node_id: " .. state.position.node_id)
+    vim.print("Focusing on node_id: " .. state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
   end
+
   M.position.clear(state)
 end
 
@@ -1103,8 +1104,10 @@ M.acquire_window = function(state)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
     win:on({ "CursorMoved" }, function()
-      M.position.clear(state)
-      M.position.save(state)
+      if win.winid == vim.api.nvim_get_current_win() then
+        M.position.clear(state)
+        M.position.save(state)
+      end
     end)
     win:on({ "BufDelete" }, function()
       M.position.save(state)
