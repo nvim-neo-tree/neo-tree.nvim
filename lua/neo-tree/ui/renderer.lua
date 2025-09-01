@@ -660,8 +660,9 @@ M.position = {}
 
 ---Saves a window position to be restored later
 ---@param state neotree.State
-M.position.save = function(state)
-  if state.position.topline and state.position.lnum then
+---@param force boolean?
+M.position.save = function(state, force)
+  if not force and state.position.topline and state.position.lnum then
     log.debug("There's already a position saved to be restored. Cannot save another.")
     return
   end
@@ -712,7 +713,6 @@ M.position.restore = function(state)
   end
   if state.position.node_id then
     log.debug("Focusing on node_id: " .. state.position.node_id)
-    vim.print("Focusing on node_id: " .. state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
   end
 
@@ -1105,8 +1105,7 @@ M.acquire_window = function(state)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
     win:on({ "CursorMoved" }, function()
       if win.winid == vim.api.nvim_get_current_win() then
-        M.position.clear(state)
-        M.position.save(state)
+        M.position.save(state, true)
       end
     end)
     win:on({ "BufDelete" }, function()
