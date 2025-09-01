@@ -176,6 +176,7 @@ function create_item(context, path, _type, bufnr)
     _type = stat and stat.type or "unknown"
   end
   local is_reveal_target = (path == context.path_to_reveal)
+  local revealing_path = utils.truthy(context.path_to_reveal)
   ---@type neotree.FileItem
   local item = {
     id = id,
@@ -184,7 +185,7 @@ function create_item(context, path, _type, bufnr)
     path = path,
     type = _type,
     is_reveal_target = is_reveal_target,
-    contains_reveal_target = is_reveal_target and utils.is_subpath(path, context.path_to_reveal),
+    contains_reveal_target = revealing_path and utils.is_subpath(path, context.path_to_reveal),
   }
   if utils.is_windows then
     if vim.fn.getftype(path) == "link" then

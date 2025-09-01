@@ -900,7 +900,9 @@ end
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
-  elseif base == path then
+  end
+
+  if base == path then
     return true
   end
 
@@ -1123,9 +1125,6 @@ M.truthy = function(value)
   if value == nil then
     return false
   end
-  if type(value) == "boolean" then
-    return value
-  end
   if type(value) == "string" then
     return value > ""
   end
@@ -1134,6 +1133,9 @@ M.truthy = function(value)
   end
   if type(value) == "table" then
     return next(value) ~= nil
+  end
+  if type(value) == "boolean" then
+    return value
   end
   return true
 end

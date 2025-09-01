@@ -215,7 +215,7 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
-    if not fby or item.is_reveal_target or item.contains_reveal_target then
+    if not fby or item.contains_reveal_target then
       visible[#visible + 1] = item
     else
       while fby do
