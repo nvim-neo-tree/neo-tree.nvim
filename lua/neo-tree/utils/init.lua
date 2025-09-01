@@ -890,7 +890,7 @@ M.normalize_path = function(path)
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
-  return path
+  return vim.fs.normalize(path)
 end
 
 ---Check if a path is a subpath of another.
@@ -900,7 +900,9 @@ end
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
-  elseif base == path then
+  end
+
+  if base == path then
     return true
   end
 
@@ -920,13 +922,9 @@ M.is_subpath = function(base, path)
 end
 
 ---The file system path separator for the current platform.
-M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
-  M.path_separator = "\\"
-end
-
 M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1060,19 +1058,37 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-    all_parts[1] = ""
-  end
+  local root = nil
 
   for _, arg in ipairs(args) do
-    if arg == "" and #all_parts == 0 and not M.is_windows then
-      all_parts = { "" }
+    local prefix = M.abspath_prefix(arg)
+    if prefix then
+      root = prefix
+      all_parts = {}
+      vim.list_extend(all_parts, M.split(arg:sub(#root + 1), M.path_separator))
     else
-      local arg_parts = M.split(arg, M.path_separator)
-      vim.list_extend(all_parts, arg_parts)
+      vim.list_extend(all_parts, M.split(arg, M.path_separator))
     end
   end
-  return table.concat(all_parts, M.path_separator)
+  local relpath = table.concat(all_parts, M.path_separator)
+  if root then
+    return root .. relpath
+  end
+  return relpath
+end
+
+---@param path string
+---@return string? prefix
+M.abspath_prefix = function(path)
+  if M.is_windows then
+    return path:match("^[A-Za-z]:[/\\]")
+      or path:match([[^\\]])
+      or path:match([[^//]])
+      or path:match([[^\]])
+      or path:match([[^/]])
+  end
+
+  return path:match("^/")
 end
 
 local table_merge_internal
@@ -1120,20 +1136,21 @@ end
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)
-  if value == nil then
+  if not value then
     return false
   end
-  if type(value) == "boolean" then
-    return value
-  end
+
   if type(value) == "string" then
-    return value > ""
+    return #value > 0
   end
   if type(value) == "number" then
     return value > 0
   end
   if type(value) == "table" then
     return next(value) ~= nil
+  end
+  if type(value) == "boolean" then
+    return true
   end
   return true
 end
