@@ -8,7 +8,6 @@ local run_focus_command = function(command, expected_tree_node)
 
   vim.cmd(command)
   u.wait_for_neo_tree({ interval = 10, timeout = 200 })
-  --u.wait_for_neo_tree()
   verify.window_handle_is_not(winid)
   verify.buf_name_endswith("neo-tree filesystem [1]")
   if expected_tree_node then
@@ -130,6 +129,20 @@ describe("Command", function()
       local testfile = fs_tree.lookup["topfile1"].abspath
       u.editfile(testfile)
       run_focus_command(cmd, testfile)
+    end)
+
+    it("`:Neotree reveal` should also reveal properly when cursormoved triggers", function()
+      local testfile = fs_tree.lookup["./foo/bar/baz2.txt"].abspath
+      u.editfile(testfile)
+      require("neo-tree.command").execute({
+        toggle = true,
+        reveal = true,
+        reveal_force_cwd = true,
+      })
+
+      -- It seems like in headless mode, CursorMoved is not emitted.
+      vim.api.nvim_exec_autocmds("CursorMoved", {})
+      verify.filesystem_tree_node_is(testfile)
     end)
   end)
 
