@@ -170,7 +170,7 @@ end
 -- Gets a non-existing filename from the user and executes the callback with it.
 ---@param source string
 ---@param destination string
----@param using_root_directory boolean?
+---@param using_root_directory string?
 ---@param name_chosen_callback fun(string)
 ---@param first_message string?
 local function get_unused_name(
@@ -204,11 +204,13 @@ local function get_unused_name(
   end
 end
 
--- Move Node
----@param source string
----@param destination string
----@param callback function
----@param using_root_directory boolean?
+---Copy Node
+---@generic S : string
+---@generic D : string?
+---@param source S
+---@param destination D
+---@param callback fun(source: S, destination: D|S)
+---@param using_root_directory string?
 M.move_node = function(source, destination, callback, using_root_directory)
   log.trace(
     "Moving node: ",
@@ -226,7 +228,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
       return
     end
 
-    if uv.fs_stat(source).type == "directory" and utils.dir_contains(source, destination) then
+    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
       log.warn("Cannot move " .. source .. " to its own descendant " .. parent_of_dest)
       return
     end
@@ -301,11 +303,11 @@ end
 
 ---Copy Node
 ---@generic S : string
----@generic D : string
+---@generic D : string?
 ---@param source S
 ---@param destination D
 ---@param callback fun(source: S, destination: D|S)
----@param using_root_directory boolean?
+---@param using_root_directory string?
 M.copy_node = function(source, destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
   get_unused_name(source, destination or source, using_root_directory, function(dest)
@@ -315,7 +317,7 @@ M.copy_node = function(source, destination, callback, using_root_directory)
       return
     end
 
-    if uv.fs_stat(source).type == "directory" and utils.dir_contains(source, destination) then
+    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
       log.warn("Cannot copy " .. source .. " to its own descendant " .. parent_of_dest)
       return
     end

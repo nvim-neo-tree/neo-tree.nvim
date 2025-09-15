@@ -896,7 +896,7 @@ end
 ---Check if a path is a subpath of another.
 ---@param base string The base path.
 ---@param path string The path to check is a subpath.
----@return boolean boolean True if it is a subpath, false otherwise.
+---@return boolean path_is_subpath True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
@@ -911,8 +911,8 @@ M.is_subpath = function(base, path)
   if path:sub(1, #base) == base then
     local base_parts = M.split(base, M.path_separator)
     local path_parts = M.split(path, M.path_separator)
-    for i, part in ipairs(base_parts) do
-      if path_parts[i] ~= part then
+    for i, base_part in ipairs(base_parts) do
+      if path_parts[i] ~= base_part then
         return false
       end
     end
@@ -921,11 +921,11 @@ M.is_subpath = function(base, path)
   return false
 end
 
----Compared to is_subpath, uses file IDs to check whether a file is a parent of something.
+---Checks whether the parent file has the child path as a true descendant.
 ---@param parent string
 ---@param child string
 ---@return boolean parent_contains_child
-M.dir_contains = function(parent, child)
+M.is_descendant = function(parent, child)
   local parent_ino = assert(uv.fs_stat(parent)).ino
 
   for _, stat in M.fs_parents(child, true) do
@@ -952,19 +952,17 @@ M.fs_parents = function(path, loose)
     path = parent
   end
 
-  assert(stat.type == "directory", "file isn't a directory")
-  -- iterate through parents
+  assert(stat.type == "directory", path .. "isn't a directory")
+  -- iterate through parents of the parent directory
   return function()
     if seen[stat.ino] then
       return
     end
     seen[stat.ino] = true
 
-    local parent_path = assert(uv.fs_realpath(M.path_join(path, "..")))
-    local parent_stat = assert(uv.fs_stat(parent_path))
-    stat = parent_stat
-    path = parent_path
-    return parent_path, parent_stat
+    path = assert(uv.fs_realpath(M.path_join(path, "..")))
+    stat = assert(uv.fs_stat(path))
+    return path, stat
   end
 end
 
