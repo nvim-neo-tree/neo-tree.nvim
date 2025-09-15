@@ -227,7 +227,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     end
 
     if uv.fs_stat(source).type == "directory" and utils.dir_contains(source, destination) then
-      log.warn("Cannot move " .. source .. " to its own child")
+      log.warn("Cannot move " .. source .. " to its own descendant " .. parent_of_dest)
       return
     end
 
@@ -316,7 +316,7 @@ M.copy_node = function(source, destination, callback, using_root_directory)
     end
 
     if uv.fs_stat(source).type == "directory" and utils.dir_contains(source, destination) then
-      log.warn("Cannot copy " .. source .. " to its own descendant " .. destination)
+      log.warn("Cannot copy " .. source .. " to its own descendant " .. parent_of_dest)
       return
     end
 
