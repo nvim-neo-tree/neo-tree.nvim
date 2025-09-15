@@ -921,6 +921,65 @@ M.is_subpath = function(base, path)
   return false
 end
 
+---Compared to is_subpath, uses file IDs to check whether a file is a parent of something.
+---@param parent string
+---@param child string
+---@return boolean parent_contains_child
+M.dir_contains = function(parent, child)
+  local parent_ino = assert(uv.fs_stat(parent)).ino
+
+  for _, stat in M.fs_parents(child, true) do
+    if stat.ino == parent_ino then
+      return true
+    end
+  end
+  return false
+end
+
+---Iterates over all true parents of the file referenced by the path.
+---@param path string Any filepath.
+---@param loose boolean? If this is enabled, when given a path to a file that doesn't exist, starts from the first valid parent of that path.
+---@return fun():(string?,uv.fs_stat.result?)
+M.fs_parents = function(path, loose)
+  local seen = {}
+  local stat, init_err = uv.fs_stat(path)
+  assert(stat or loose, init_err)
+  while not stat or stat.type ~= "directory" do
+    local parent = M.split_path(path)
+    assert(parent, "could not resolve parent of " .. path)
+    stat, init_err = uv.fs_stat(parent)
+    assert(stat or loose, init_err)
+    path = parent
+  end
+
+  assert(stat.type == "directory", "file isn't a directory")
+  -- iterate through parents
+  return function()
+    if seen[stat.ino] then
+      return
+    end
+    seen[stat.ino] = true
+
+    local parent_path = assert(uv.fs_realpath(M.path_join(path, "..")))
+    local parent_stat = assert(uv.fs_stat(parent_path))
+    stat = parent_stat
+    path = parent_path
+    return parent_path, parent_stat
+  end
+end
+
+---Finds all paths that are parents of the current path, naively by removing the tail segments
+---@param path string
+---@return fun():string?
+M.path_parents = function(path)
+  ---@type string?
+  local parent = path
+  return function()
+    parent = M.split_path(parent)
+    return parent
+  end
+end
+
 ---The file system path separator for the current platform.
 M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
