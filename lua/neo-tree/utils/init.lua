@@ -921,7 +921,7 @@ M.is_subpath = function(base, path)
   return false
 end
 
----Checks whether the parent file has the child path as a true descendant.
+---Checks whether the parent file has the child path as a true descendant (i.e. not through a link).
 ---@param parent string
 ---@param child string
 ---@return boolean parent_contains_child
@@ -968,13 +968,14 @@ end
 
 ---Finds all paths that are parents of the current path, naively by removing the tail segments
 ---@param path string
----@return fun():string?
+---@return fun():string?,string?
 M.path_parents = function(path)
   ---@type string?
   local parent = path
+  local tail
   return function()
-    parent = M.split_path(parent)
-    return parent
+    parent, tail = M.split_path(parent)
+    return parent, tail
   end
 end
 
@@ -1085,7 +1086,7 @@ end
 
 ---Split a path into a parentPath and a name.
 ---@param path string? The path to split.
----@return string? parentPath
+---@return string? parent_path
 ---@return string? name
 M.split_path = function(path)
   if not path then
