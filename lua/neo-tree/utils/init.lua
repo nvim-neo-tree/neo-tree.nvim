@@ -1084,7 +1084,7 @@ M.split = function(inputString, sep)
   return fields
 end
 
----Split a path into a parentPath and a name.
+---Split a path into a parent path and a name.
 ---@param path string? The path to split.
 ---@return string? parent_path
 ---@return string? name
