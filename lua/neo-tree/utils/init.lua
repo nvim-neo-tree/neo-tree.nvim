@@ -922,14 +922,15 @@ M.is_subpath = function(base, path)
 end
 
 ---Checks whether the parent file has the child path as a true descendant (i.e. not through a link).
+---Will also return true the child doesn't exist.
 ---@param parent string
 ---@param child string
 ---@return boolean parent_contains_child
 M.is_descendant = function(parent, child)
-  local parent_ino = assert(uv.fs_stat(parent)).ino
+  local parent_ino = assert(uv.fs_lstat(parent)).ino
 
-  for _, stat in M.fs_parents(child, true) do
-    if stat.ino == parent_ino then
+  for parent_path in M.fs_parents(child, true) do
+    if assert(uv.fs_stat(parent_path)).ino == parent_ino then
       return true
     end
   end
@@ -939,31 +940,56 @@ end
 ---Iterates over all true parents of the file referenced by the path.
 ---@param path string Any filepath.
 ---@param loose boolean? If this is enabled, when given a path to a file that doesn't exist, starts from the first valid parent of that path.
----@return fun():(string?,uv.fs_stat.result?)
+---@return fun():(string?)
 M.fs_parents = function(path, loose)
-  local seen = {}
-  local stat, init_err = uv.fs_stat(path)
-  assert(stat or loose, init_err)
-  while not stat or stat.type ~= "directory" do
-    local parent = M.split_path(path)
-    assert(parent, "could not resolve parent of " .. path)
-    stat, init_err = uv.fs_stat(parent)
-    assert(stat or loose, init_err)
-    path = parent
-  end
-
-  assert(stat.type == "directory", path .. "isn't a directory")
-  -- iterate through parents of the parent directory
+  ---@type string?
+  local parent = M.fs_parent(path, loose)
+  local next_parent = parent
   return function()
-    if seen[stat.ino] then
-      return
-    end
-    seen[stat.ino] = true
-
-    path = assert(uv.fs_realpath(M.path_join(path, "..")))
-    stat = assert(uv.fs_stat(path))
-    return path, stat
+    parent = next_parent
+    next_parent = parent and M.fs_parent(parent)
+    return parent
   end
+end
+
+---Returns the true parent of the file, if one exists. Handles the edge case of infinite symlink loops.
+---@param path string Any path to a file.
+---@param loose boolean? If given a path to a non-existent file, finds the first parent of that path.
+---@return string? parent_path The path of the parent directory. If the first parent of the path is not a directory, or if there is no parent directory, returns nil.
+---@return string? err Error string
+M.fs_parent = function(path, loose)
+  path = vim.fn.fnamemodify(path, ":p")
+
+  local stat = uv.fs_lstat(path)
+
+  if not stat then
+    for parent in M.path_parents(path) do
+      if uv.fs_lstat(parent) then
+        local realstat = uv.fs_stat(parent)
+        if realstat and realstat.type ~= "directory" then
+          return nil, "parent of path " .. path .. " is not a directory"
+        end
+        return parent
+      end
+
+      -- only iter once if loose
+      if not loose then
+        return nil, "immediate parent of path " .. path .. " does not exist"
+      end
+    end
+
+    return nil, "no parents found for " .. path
+  end
+
+  -- For invalid links
+  if stat.type == "link" and not uv.fs_stat(path) then
+    -- Return the parent of path
+    return (M.split_path(path))
+  end
+
+  -- Otherwise, Return the parent of realpath
+  local realpath = assert(uv.fs_realpath(path))
+  return (M.split_path(realpath))
 end
 
 ---Finds all paths that are parents of the current path, naively by removing the tail segments

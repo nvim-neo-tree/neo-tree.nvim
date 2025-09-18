@@ -11,7 +11,7 @@ local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local Path = require("plenary").path
+local Path = require("plenary.path")
 
 local M = {}
 
@@ -152,6 +152,7 @@ local function rename_buffer(old_path, new_path)
   end
 end
 
+local folder_perm = tonumber("755", 8)
 local function create_all_parents(path)
   local function create_all_as_folders(in_path)
     if not uv.fs_stat(in_path) then
@@ -159,7 +160,7 @@ local function create_all_parents(path)
       if parent then
         create_all_as_folders(parent)
       end
-      uv.fs_mkdir(in_path, 493)
+      uv.fs_mkdir(in_path, folder_perm)
     end
   end
 
@@ -327,31 +328,38 @@ M.copy_node = function(source, destination, callback, using_root_directory)
       return
     end
 
-    local source_path = Path:new(source)
-    if source_path:is_file() then
-      -- When the source is a file, then Path.copy() currently doesn't create
-      -- the potential non-existing parent directories of the destination.
-      create_all_parents(dest)
-    end
-    local success, result = pcall(source_path.copy, source_path, {
-      destination = dest,
-      recursive = true,
-      parents = true,
-    })
-    if not success then
-      log.error("Could not copy the file(s) from", source, "to", dest, ":", result)
-      return
-    end
+    local source_stat = log.assert(uv.fs_lstat(source))
+    if source_stat.type == "link" then
+      local target = log.assert(uv.fs_readlink(source))
+      local symlink_ok, err = uv.fs_symlink(target, destination)
+      log.assert(symlink_ok, "Could not copy symlink ", source, "to", destination, ":", err)
+    else
+      local source_path = Path:new(source)
+      if source_path:is_file() then
+        -- When the source is a file, then Path.copy() currently doesn't create
+        -- the potential non-existing parent directories of the destination.
+        create_all_parents(dest)
+      end
+      local success, result = pcall(source_path.copy, source_path, {
+        destination = dest,
+        recursive = true,
+        parents = true,
+      })
+      if not success then
+        log.error("Could not copy the file(s) from", source, "to", dest, ":", result)
+        return
+      end
 
-    -- It can happen that the Path.copy() function returns successfully but
-    -- the copy action still failed. In this case the copy() result contains
-    -- a nested table of Path instances for each file copied, and the success
-    -- result.
-    local flat_result = {}
-    flatten_path_copy_result(flat_result, result)
-    if not check_path_copy_result(flat_result) then
-      log.error("Could not copy the file(s) from", source, "to", dest, ":", flat_result)
-      return
+      -- It can happen that the Path.copy() function returns successfully but
+      -- the copy action still failed. In this case the copy() result contains
+      -- a nested table of Path instances for each file copied, and the success
+      -- result.
+      local flat_result = {}
+      flatten_path_copy_result(flat_result, result)
+      if not check_path_copy_result(flat_result) then
+        log.error("Could not copy the file(s) from", source, "to", dest, ":", flat_result)
+        return
+      end
     end
 
     vim.schedule(function()
@@ -406,7 +414,7 @@ M.create_directory = function(in_directory, callback, using_root_directory)
       end
 
       create_all_parents(destination)
-      uv.fs_mkdir(destination, 493)
+      uv.fs_mkdir(destination, folder_perm)
 
       vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)

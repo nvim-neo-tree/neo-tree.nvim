@@ -161,13 +161,13 @@ log.new = function(config, standalone)
     end
   end
 
-  for i, x in ipairs(config.modes) do
-    obj[x.name] = function(...)
-      return log_at_level(i, x, make_string, ...)
+  for i, mode in ipairs(config.modes) do
+    obj[mode.name] = function(...)
+      return log_at_level(i, mode, make_string, ...)
     end
 
-    obj[("fmt_%s"):format(x.name)] = function()
-      return log_at_level(i, x, function(...)
+    obj[("fmt_%s"):format(mode.name)] = function()
+      return log_at_level(i, mode, function(...)
         local passed = { ... }
         local fmt = table.remove(passed, 1)
         local inspected = {}
@@ -177,6 +177,13 @@ log.new = function(config, standalone)
         return string.format(fmt, unpack(inspected))
       end)
     end
+  end
+  obj.assert = function(v, ...)
+    vim.print(v)
+    if v then
+      return v, ...
+    end
+    obj.error(...)
   end
 end
 
