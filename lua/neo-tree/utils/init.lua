@@ -896,7 +896,7 @@ end
 ---Check if a path is a subpath of another.
 ---@param base string The base path.
 ---@param path string The path to check is a subpath.
----@return boolean boolean True if it is a subpath, false otherwise.
+---@return boolean path_is_subpath True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
@@ -911,14 +911,98 @@ M.is_subpath = function(base, path)
   if path:sub(1, #base) == base then
     local base_parts = M.split(base, M.path_separator)
     local path_parts = M.split(path, M.path_separator)
-    for i, part in ipairs(base_parts) do
-      if path_parts[i] ~= part then
+    for i, base_part in ipairs(base_parts) do
+      if path_parts[i] ~= base_part then
         return false
       end
     end
     return true
   end
   return false
+end
+
+---Checks whether the parent file has the child path as a true descendant (i.e. not through a link).
+---Will also return true the child doesn't exist.
+---@param parent string
+---@param child string
+---@return boolean parent_contains_child
+M.is_descendant = function(parent, child)
+  local parent_ino = assert(uv.fs_lstat(parent)).ino
+
+  for parent_path in M.fs_parents(child, true) do
+    if assert(uv.fs_stat(parent_path)).ino == parent_ino then
+      return true
+    end
+  end
+  return false
+end
+
+---Iterates over all true parents of the file referenced by the path.
+---@param path string Any filepath.
+---@param loose boolean? If this is enabled, when given a path to a file that doesn't exist, starts from the first valid parent of that path.
+---@return fun():(string?)
+M.fs_parents = function(path, loose)
+  ---@type string?
+  local parent = M.fs_parent(path, loose)
+  local next_parent = parent
+  return function()
+    parent = next_parent
+    next_parent = parent and M.fs_parent(parent)
+    return parent
+  end
+end
+
+---Returns the true parent of the file, if one exists. Handles the edge case of infinite symlink loops.
+---@param path string Any path to a file.
+---@param loose boolean? If given a path to a non-existent file, finds the first parent of that path.
+---@return string? parent_path The path of the parent directory. If the first parent of the path is not a directory, or if there is no parent directory, returns nil.
+---@return string? err Error string
+M.fs_parent = function(path, loose)
+  path = vim.fn.fnamemodify(path, ":p")
+
+  local stat = uv.fs_lstat(path)
+
+  if not stat then
+    for parent in M.path_parents(path) do
+      if uv.fs_lstat(parent) then
+        local realstat = uv.fs_stat(parent)
+        if realstat and realstat.type ~= "directory" then
+          return nil, "parent of path " .. path .. " is not a directory"
+        end
+        return parent
+      end
+
+      -- only iter once if loose
+      if not loose then
+        return nil, "immediate parent of path " .. path .. " does not exist"
+      end
+    end
+
+    return nil, "no parents found for " .. path
+  end
+
+  -- For invalid links
+  if stat.type == "link" and not uv.fs_stat(path) then
+    -- Return the parent of path
+    return (M.split_path(path))
+  end
+
+  -- Otherwise, Return the parent of realpath
+  local realpath = assert(uv.fs_realpath(path))
+  return (M.split_path(realpath))
+end
+
+---Finds all paths that are parents of the current path, naively by removing the tail segments
+---@param path string
+---@return fun():string?,string?
+M.path_parents = function(path)
+  ---@type string?
+  local parent = path
+  local tail
+  return function()
+    parent, tail = M.split_path(parent)
+    return parent, tail
+  end
 end
 
 ---The file system path separator for the current platform.
@@ -1026,9 +1110,9 @@ M.split = function(inputString, sep)
   return fields
 end
 
----Split a path into a parentPath and a name.
+---Split a path into a parent path and a name.
 ---@param path string? The path to split.
----@return string? parentPath
+---@return string? parent_path
 ---@return string? name
 M.split_path = function(path)
   if not path then

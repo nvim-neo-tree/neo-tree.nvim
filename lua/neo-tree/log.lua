@@ -40,8 +40,6 @@ local default_config = {
 -- {{{ NO NEED TO CHANGE
 local log = {}
 
-local unpack = unpack
-
 local notify = function(message, level_config)
   if type(vim.notify) == "table" then
     -- probably using nvim-notify
@@ -60,7 +58,7 @@ log.new = function(config, standalone)
     string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "data" }), config.plugin)
 
   local obj
-  if standalone then
+  if not standalone then
     obj = log
   else
     obj = {}
@@ -70,7 +68,7 @@ log.new = function(config, standalone)
   obj.use_file = function(file, quiet)
     if file == false then
       if not quiet then
-        obj.info("[neo-tree] Logging to file disabled")
+        obj.info("Logging to file disabled")
       end
       config.use_file = false
     else
@@ -81,7 +79,7 @@ log.new = function(config, standalone)
       end
       config.use_file = true
       if not quiet then
-        obj.info("[neo-tree] Logging to file: " .. obj.outfile)
+        obj.info("Logging to file: " .. obj.outfile)
       end
     end
   end
@@ -128,6 +126,21 @@ log.new = function(config, standalone)
     return table.concat(t, " ")
   end
 
+  ---@param name string
+  ---@param msg string
+  local log_to_file = function(name, msg)
+    local info = debug.getinfo(2, "Sl")
+    local lineinfo = info.short_src .. ":" .. info.currentline
+    local str = string.format("[%-6s%s] %s: %s\n", name, os.date(), lineinfo, msg)
+    local fp = io.open(obj.outfile, "a")
+    if fp then
+      fp:write(str)
+      fp:close()
+    else
+      print("[neo-tree] Could not open log file: " .. obj.outfile)
+    end
+  end
+
   local log_at_level = function(level, level_config, message_maker, ...)
     -- Return early if we're below the config.level
     if level < levels[config.level] then
@@ -137,22 +150,13 @@ log.new = function(config, standalone)
     if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
       return
     end
-    local nameupper = level_config.name:upper()
 
     local msg = message_maker(...)
-    local info = debug.getinfo(2, "Sl")
-    local lineinfo = info.short_src .. ":" .. info.currentline
 
     -- Output to log file
     if config.use_file then
-      local str = string.format("[%-6s%s] %s: %s\n", nameupper, os.date(), lineinfo, msg)
-      local fp = io.open(obj.outfile, "a")
-      if fp then
-        fp:write(str)
-        fp:close()
-      else
-        print("[neo-tree] Could not open log file: " .. obj.outfile)
-      end
+      local nameupper = level_config.name:upper()
+      log_to_file(nameupper, msg)
     end
 
     -- Output to console
@@ -163,13 +167,13 @@ log.new = function(config, standalone)
     end
   end
 
-  for i, x in ipairs(config.modes) do
-    obj[x.name] = function(...)
-      return log_at_level(i, x, make_string, ...)
+  for i, mode in ipairs(config.modes) do
+    obj[mode.name] = function(...)
+      return log_at_level(i, mode, make_string, ...)
     end
 
-    obj[("fmt_%s"):format(x.name)] = function()
-      return log_at_level(i, x, function(...)
+    obj[("fmt_%s"):format(mode.name)] = function()
+      return log_at_level(i, mode, function(...)
         local passed = { ... }
         local fmt = table.remove(passed, 1)
         local inspected = {}
@@ -180,9 +184,19 @@ log.new = function(config, standalone)
       end)
     end
   end
+
+  obj.assert = function(v, ...)
+    if v then
+      return v, ...
+    end
+    if config.use_file then
+      log_to_file("ERROR", table.concat({ ... }, " "))
+    end
+    error(...)
+  end
 end
 
-log.new(default_config, true)
+log.new(default_config, false)
 -- }}}
 
 return log
