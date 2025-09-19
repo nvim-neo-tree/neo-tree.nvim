@@ -201,8 +201,6 @@ local function get_children_async(path, callback)
       return
     end
     local readdir_batch
-    ---@param _ string?
-    ---@param stats uv.fs_readdir.entry[]
     readdir_batch = function(_, stats)
       if stats then
         local more = false

@@ -40,7 +40,9 @@ end
 
 local run_close_command = function(command)
   vim.cmd(command)
-  u.wait_for(function() end, { interval = 200, timeout = 200 })
+  u.wait_for(function()
+    return false
+  end, { interval = 200, timeout = 200 })
 end
 
 describe("Command", function()

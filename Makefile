@@ -30,7 +30,10 @@ $(DEPS)/plenary.nvim: $(DEPS)
 $(DEPS)/snacks.nvim: $(DEPS)
 	@test -d "$(DEPS)/snacks.nvim" || git clone https://github.com/folke/snacks.nvim "$(DEPS)/snacks.nvim"
 
-setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/snacks.nvim
+$(DEPS)/image.nvim: $(DEPS)
+	@test -d "$(DEPS)/image.nvim" || git clone https://github.com/3rd/image.nvim "$(DEPS)/image.nvim"
+
+setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/snacks.nvim $(DEPS)/image.nvim
 	@echo "[setup] environment ready"
 
 .PHONY: clean

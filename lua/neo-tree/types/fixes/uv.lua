@@ -9,17 +9,17 @@ local uv = {}
 --- `uv.fs_readdir()`. The `entries` parameter defines the maximum number of entries
 --- that should be returned by each call to `uv.fs_readdir()`.
 --- @param path string
---- @param entries integer?
---- @return uv.luv_dir_t? dir
---- @return string? err
---- @return string? err_name
---- @overload fun(path: string, callback: fun(err: string?, dir: uv.luv_dir_t?), entries: integer?): uv.uv_fs_t
-function uv.fs_opendir(path, entries) end
-
---- Equivalent to `lstat(2)`.
---- @param path string
---- @return uv.fs_stat.result? stat
---- @return string? err
---- @return string? err_name
---- @overload fun(path: string, callback: fun(err: string?, stat: uv.fs_stat.result?)): uv.uv_fs_t
-function uv.fs_lstat(path) end
+---
+--- **Returns (sync version):** `luv_dir_t userdata` or `fail`
+---
+--- **Returns (async version):** `uv_fs_t userdata`
+---
+---@param  path             string
+---@param  callback         nil
+---@param  entries          integer?
+---@return uv.luv_dir_t|nil dir
+---@return uv.error.message|nil err
+---@return uv.error.name|nil err_name
+---
+---@overload fun(path: string, callback: uv.fs_opendir.callback, entries?: integer):uv.uv_fs_t
+function uv.fs_opendir(path, callback, entries) end
