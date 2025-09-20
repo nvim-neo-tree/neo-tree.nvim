@@ -878,7 +878,7 @@ M.resolve_config_option = function(state, config_option, default_value)
 end
 
 local fs_normalize = vim.fs.normalize
-if not vim.fn.has("nvim-0.9") then
+if vim.fn.has("nvim-0.9") == 0 then
   fs_normalize = compat.fs_normalize
 end
 
