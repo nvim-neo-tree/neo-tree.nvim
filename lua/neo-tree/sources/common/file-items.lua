@@ -294,7 +294,7 @@ function set_parents(context, item)
     local success
     success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
-      log.error("error creating item for ", item.parent_path)
+      log.error("Error creating item for ", item.parent_path, ":", parent)
     end
     ---@cast parent neotree.FileItem.Directory
     context.folders[parent.id] = parent

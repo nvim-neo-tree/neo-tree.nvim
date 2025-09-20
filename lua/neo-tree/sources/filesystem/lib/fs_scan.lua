@@ -376,7 +376,7 @@ local function async_scan(context, path)
                 table.insert(ctx.paths_to_load, item.path)
               end
             else
-              log.error("error creating item for ", path)
+              log.error("Error creating item for ", path, ":", item)
             end
           end
 
@@ -439,13 +439,13 @@ local function sync_scan(context, path_to_scan)
         for i, stat in ipairs(stats) do
           more = i == ENTRIES_BATCH_SIZE
           local path = utils.path_join(path_to_scan, stat.name)
-          local success, _ = pcall(file_items.create_item, context, path, stat.type)
+          local success, item = pcall(file_items.create_item, context, path, stat.type)
           if success then
             if context.recursive and stat.type == "directory" then
               table.insert(context.paths_to_load, path)
             end
           else
-            log.error("error creating item for ", path)
+            log.error("Error creating item for ", path, ":", item)
           end
         end
       until not more

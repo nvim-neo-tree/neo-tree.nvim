@@ -877,6 +877,11 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
+local fs_normalize = vim.fs.normalize
+if not vim.fn.has("nvim-0.9") then
+  fs_normalize = compat.fs_normalize
+end
+
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
@@ -886,11 +891,11 @@ M.normalize_path = function(path)
     path = path:sub(1, 1):upper() .. path:sub(2)
     -- Turn mixed forward and back slashes into all forward slashes
     -- using NeoVim's logic
-    path = vim.fs.normalize(path, { win = true })
+    path = fs_normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
-  return vim.fs.normalize(path)
+  return fs_normalize(path)
 end
 
 ---Check if a path is a subpath of another.
@@ -1148,8 +1153,7 @@ M.path_join = function(...)
     local prefix = M.abspath_prefix(arg)
     if prefix then
       root = prefix
-      all_parts = {}
-      vim.list_extend(all_parts, M.split(arg:sub(#root + 1), M.path_separator))
+      all_parts = M.split(arg:sub(#root + 1), M.path_separator)
     else
       vim.list_extend(all_parts, M.split(arg, M.path_separator))
     end
@@ -1253,7 +1257,7 @@ end
 ---be escaped, but may appear at the beginning of a path segment. For example,
 ---the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
 ---will remain unchanged when escaped by `fnaemescape` on a Windows system.
----However, if that string is used to edit a file with `:e`, `:b`, etc., the open
+---However, if that strig is used to edit a file with `:e`, `:b`, etc., the open
 ---parenthesis will be treated as an escaped character and the path separator will
 ---be lost.
 ---
