@@ -194,7 +194,7 @@ function create_item(context, path, _type, bufnr)
   if item.type == "link" then
     ---@cast item neotree.FileItem.Link
     item.is_link = true
-    item.link_to = uv.fs_realpath(path)
+    item.link_to = uv.fs_readlink(path)
     if item.link_to ~= nil then
       item.type = uv.fs_stat(item.link_to).type
     end
@@ -294,7 +294,7 @@ function set_parents(context, item)
     local success
     success, parent = pcall(create_item, context, item.parent_path, "directory")
     if not success then
-      log.error("error creating item for ", item.parent_path)
+      log.error("Error creating item for ", item.parent_path, ":", parent)
     end
     ---@cast parent neotree.FileItem.Directory
     context.folders[parent.id] = parent
