@@ -960,6 +960,10 @@ end
 ---@return string? err Error string
 M.fs_parent = function(path, loose)
   path = M.path_join(vim.fn.getcwd(), path)
+  local prefix = M.abspath_prefix(path)
+  if prefix and #prefix >= #path then
+    return nil
+  end
 
   local stat = uv.fs_lstat(path)
 
