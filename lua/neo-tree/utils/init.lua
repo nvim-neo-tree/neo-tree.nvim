@@ -878,7 +878,7 @@ M.resolve_config_option = function(state, config_option, default_value)
 end
 
 local fs_normalize = vim.fs.normalize
-if vim.fn.has("nvim-0.9") == 0 then
+if vim.fn.has("nvim-0.11") == 0 then
   fs_normalize = compat.fs_normalize
 end
 
@@ -959,7 +959,7 @@ end
 ---@return string? parent_path The path of the parent directory. If the first parent of the path is not a directory, or if there is no parent directory, returns nil.
 ---@return string? err Error string
 M.fs_parent = function(path, loose)
-  path = vim.fn.fnamemodify(path, ":p")
+  path = M.path_join(vim.fn.getcwd(), path)
 
   local stat = uv.fs_lstat(path)
 
@@ -1134,7 +1134,7 @@ M.split_path = function(path)
 end
 
 ---Joins arbitrary number of paths together.
----@param ... string The paths to join.
+---@param ... string The paths to join. Does not do any normalization.
 ---@return string
 M.path_join = function(...)
   local args = { ... }
@@ -1148,6 +1148,9 @@ M.path_join = function(...)
   for _, arg in ipairs(args) do
     local prefix = M.abspath_prefix(arg)
     if prefix then
+      if M.is_windows then
+        prefix = M.windowize_path(prefix)
+      end
       root = prefix
       all_parts = M.split(arg:sub(#root + 1), M.path_separator)
     else
@@ -1158,10 +1161,14 @@ M.path_join = function(...)
   return root .. relpath
 end
 
----@param path string
----@return string? prefix
+---@param path string Any path.
+---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)
   if M.is_windows then
+    local only_drive_prefix = path:match("^[A-Za-z]:$")
+    if only_drive_prefix then
+      return only_drive_prefix .. "\\"
+    end
     return path:match("^[A-Za-z]:[/\\]")
       or path:match([[^\\]])
       or path:match([[^//]])
