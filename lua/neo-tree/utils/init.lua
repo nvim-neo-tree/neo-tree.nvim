@@ -886,16 +886,12 @@ end
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
 M.normalize_path = function(path)
+  path = fs_normalize(path, { win = M.is_windows })
   if M.is_windows then
-    -- normalize the drive letter to uppercase
-    path = path:sub(1, 1):upper() .. path:sub(2)
-    -- Turn mixed forward and back slashes into all forward slashes
-    -- using NeoVim's logic
-    path = fs_normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
-  return fs_normalize(path)
+  return path
 end
 
 ---Check if a path is a subpath of another.
@@ -1147,7 +1143,7 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  local root = nil
+  local root = ""
 
   for _, arg in ipairs(args) do
     local prefix = M.abspath_prefix(arg)
@@ -1159,10 +1155,7 @@ M.path_join = function(...)
     end
   end
   local relpath = table.concat(all_parts, M.path_separator)
-  if root then
-    return root .. relpath
-  end
-  return relpath
+  return root .. relpath
 end
 
 ---@param path string
