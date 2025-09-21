@@ -101,7 +101,9 @@ end
 ---@param path string
 ---@param validate_type string?
 M.resolve_path = function(path, validate_type)
-  local abs_path = utils.path_join(vim.fn.getcwd(), path)
+  path = vim.fs.normalize(path)
+  local expanded = vim.fn.expand(path)
+  local abs_path = vim.fn.fnamemodify(expanded, ":p")
   if validate_type then
     local stat = uv.fs_stat(abs_path)
     if not stat or stat.type ~= validate_type then
