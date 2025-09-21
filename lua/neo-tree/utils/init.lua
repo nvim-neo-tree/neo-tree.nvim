@@ -877,16 +877,17 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
+local fs_normalize = vim.fs.normalize
+if vim.fn.has("nvim-0.11") == 0 then
+  fs_normalize = compat.fs_normalize
+end
+
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
 M.normalize_path = function(path)
+  path = fs_normalize(path, { win = M.is_windows })
   if M.is_windows then
-    -- normalize the drive letter to uppercase
-    path = path:sub(1, 1):upper() .. path:sub(2)
-    -- Turn mixed forward and back slashes into all forward slashes
-    -- using NeoVim's logic
-    path = vim.fs.normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
@@ -958,7 +959,11 @@ end
 ---@return string? parent_path The path of the parent directory. If the first parent of the path is not a directory, or if there is no parent directory, returns nil.
 ---@return string? err Error string
 M.fs_parent = function(path, loose)
-  path = vim.fn.fnamemodify(path, ":p")
+  path = M.path_join(vim.fn.getcwd(), path)
+  local prefix = M.abspath_prefix(path)
+  if prefix and #prefix >= #path then
+    return nil
+  end
 
   local stat = uv.fs_lstat(path)
 
@@ -996,6 +1001,7 @@ end
 ---@param path string
 ---@return fun():string?,string?
 M.path_parents = function(path)
+  path = M.normalize_path(path)
   ---@type string?
   local parent = path
   local tail
@@ -1006,13 +1012,9 @@ M.path_parents = function(path)
 end
 
 ---The file system path separator for the current platform.
-M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
-  M.path_separator = "\\"
-end
-
 M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1121,17 +1123,13 @@ M.split_path = function(path)
   if path == M.path_separator then
     return nil, M.path_separator
   end
-  local parts = M.split(path, M.path_separator)
+  local parts = vim.split(path, M.path_separator, { plain = true })
   local name = table.remove(parts)
+  ---@type string?
   local parentPath = table.concat(parts, M.path_separator)
-  if M.is_windows then
-    if #parts == 1 then
-      parentPath = parentPath .. M.path_separator
-    elseif parentPath == "" then
-      return nil, name
-    end
-  else
-    parentPath = M.path_separator .. parentPath
+  local prefix = M.abspath_prefix(path)
+  if #parentPath == 0 and prefix then
+    parentPath = prefix
   end
   return parentPath, name
 end
@@ -1146,19 +1144,40 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-    all_parts[1] = ""
-  end
+  local root = ""
 
   for _, arg in ipairs(args) do
-    if arg == "" and #all_parts == 0 and not M.is_windows then
-      all_parts = { "" }
+    if M.is_windows then
+      arg = M.windowize_path(arg)
+    end
+    local prefix = M.abspath_prefix(arg)
+    if prefix then
+      root = prefix
+      all_parts = M.split(arg:sub(#root + 1), M.path_separator)
     else
-      local arg_parts = M.split(arg, M.path_separator)
-      vim.list_extend(all_parts, arg_parts)
+      vim.list_extend(all_parts, M.split(arg, M.path_separator))
     end
   end
-  return table.concat(all_parts, M.path_separator)
+  local relpath = table.concat(all_parts, M.path_separator)
+  return root .. relpath
+end
+
+---@param path string Any path.
+---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
+M.abspath_prefix = function(path)
+  if M.is_windows then
+    local only_drive_prefix = path:match("^[A-Za-z]:$")
+    if only_drive_prefix then
+      return only_drive_prefix .. "\\"
+    end
+    return path:match("^[A-Za-z]:[/\\]")
+      or path:match([[^\\]])
+      or path:match([[^\]])
+      or path:match([[^//]])
+      or path:match([[^/]])
+  end
+
+  return path:match("^/")
 end
 
 local table_merge_internal
@@ -1206,11 +1225,11 @@ end
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)
-  if value == nil then
+  if not value then
     return false
   end
   if type(value) == "string" then
-    return value > ""
+    return #value > 0
   end
   if type(value) == "number" then
     return value > 0
@@ -1237,9 +1256,9 @@ end
 ---
 ---For Windows systems, this function handles punctuation characters that will
 ---be escaped, but may appear at the beginning of a path segment. For example,
----the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
+---the path `C:\foo\(bar\baz.txt` (where foo, (bar), and baz.txt are segments)
 ---will remain unchanged when escaped by `fnaemescape` on a Windows system.
----However, if that string is used to edit a file with `:e`, `:b`, etc., the open
+---However, if that strig is used to edit a file with `:e`, `:b`, etc., the open
 ---parenthesis will be treated as an escaped character and the path separator will
 ---be lost.
 ---

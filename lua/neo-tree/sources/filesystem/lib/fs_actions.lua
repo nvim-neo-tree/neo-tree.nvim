@@ -235,10 +235,7 @@ M.move_node = function(source, destination, callback, using_root_directory)
     end
 
     -- Resolve user-inputted relative paths out of the absolute paths
-    dest = vim.fs.normalize(dest)
-    if utils.is_windows then
-      dest = utils.windowize_path(dest)
-    end
+    dest = utils.normalize_path(dest)
     local function move_file()
       create_all_parents(dest)
       uv.fs_rename(source, dest, function(err)

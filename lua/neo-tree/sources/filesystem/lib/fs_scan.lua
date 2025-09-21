@@ -376,7 +376,7 @@ local function async_scan(context, path)
                 table.insert(ctx.paths_to_load, item.path)
               end
             else
-              log.error("error creating item for ", path)
+              log.error("Error creating item for ", path, ":", item)
             end
           end
 
@@ -439,13 +439,13 @@ local function sync_scan(context, path_to_scan)
         for i, stat in ipairs(stats) do
           more = i == ENTRIES_BATCH_SIZE
           local path = utils.path_join(path_to_scan, stat.name)
-          local success, _ = pcall(file_items.create_item, context, path, stat.type)
+          local success, item = pcall(file_items.create_item, context, path, stat.type)
           if success then
             if context.recursive and stat.type == "directory" then
               table.insert(context.paths_to_load, path)
             end
           else
-            log.error("error creating item for ", path)
+            log.error("Error creating item for ", path, ":", item)
           end
         end
       until not more
@@ -555,7 +555,7 @@ local handle_refresh_or_up = function(context, async_dir_scan)
       local path_to_reveal_parts = utils.split(path_to_reveal, utils.path_separator)
       table.remove(path_to_reveal_parts) -- remove the file name
       -- add all parent folders to the list of paths to load
-      utils.reduce(path_to_reveal_parts, "", function(acc, part)
+      utils.reduce(path_to_reveal_parts, utils.abspath_prefix(path_to_reveal), function(acc, part)
         local current_path = utils.path_join(acc, part)
         if #current_path > #path then -- within current root
           table.insert(context.paths_to_load, current_path)

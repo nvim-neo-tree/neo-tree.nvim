@@ -236,24 +236,30 @@ M.get_state_for_window = function(winid)
   end
 end
 
+---Get the path to reveal in the file tree.
+---@param include_terminals boolean?
+---@return string? path
 M.get_path_to_reveal = function(include_terminals)
   local win_id = vim.api.nvim_get_current_win()
-  local cfg = vim.api.nvim_win_get_config(win_id)
-  if cfg.relative > "" or cfg.external then
+  if utils.is_floating(win_id) then
     -- floating window, ignore
     return nil
   end
+
   if vim.bo.filetype == "neo-tree" then
     return nil
   end
-  local path = vim.fn.expand("%:p")
-  if not utils.truthy(path) then
+
+  local buf_relpath = utils.normalize_path(vim.fn.expand("%"))
+  if not utils.truthy(buf_relpath) then
     return nil
   end
-  if not include_terminals and path:match("term://") then
+
+  if not include_terminals and buf_relpath:match("term://") then
     return nil
   end
-  return path
+
+  return utils.path_join(vim.fn.getcwd(), buf_relpath)
 end
 
 ---@param source_name string
