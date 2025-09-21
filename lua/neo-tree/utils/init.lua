@@ -997,6 +997,7 @@ end
 ---@param path string
 ---@return fun():string?,string?
 M.path_parents = function(path)
+  path = M.normalize_path(path)
   ---@type string?
   local parent = path
   local tail
@@ -1125,7 +1126,7 @@ M.split_path = function(path)
     if #parts == 1 then
       parentPath = parentPath .. M.path_separator
     elseif parentPath == "" then
-      return nil, name
+      return M.abspath_prefix(path), name
     end
   else
     parentPath = M.path_separator .. parentPath
@@ -1134,7 +1135,7 @@ M.split_path = function(path)
 end
 
 ---Joins arbitrary number of paths together.
----@param ... string The paths to join. Does not do any normalization.
+---@param ... string The paths to join.
 ---@return string
 M.path_join = function(...)
   local args = { ... }
@@ -1146,11 +1147,11 @@ M.path_join = function(...)
   local root = ""
 
   for _, arg in ipairs(args) do
+    if M.is_windows then
+      arg = M.windowize_path(arg)
+    end
     local prefix = M.abspath_prefix(arg)
     if prefix then
-      if M.is_windows then
-        prefix = M.windowize_path(prefix)
-      end
       root = prefix
       all_parts = M.split(arg:sub(#root + 1), M.path_separator)
     else
@@ -1171,8 +1172,8 @@ M.abspath_prefix = function(path)
     end
     return path:match("^[A-Za-z]:[/\\]")
       or path:match([[^\\]])
-      or path:match([[^//]])
       or path:match([[^\]])
+      or path:match([[^//]])
       or path:match([[^/]])
   end
 
