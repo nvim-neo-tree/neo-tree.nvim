@@ -1123,17 +1123,13 @@ M.split_path = function(path)
   if path == M.path_separator then
     return nil, M.path_separator
   end
-  local parts = M.split(path, M.path_separator)
+  local parts = vim.split(path, M.path_separator, { plain = true })
   local name = table.remove(parts)
+  ---@type string?
   local parentPath = table.concat(parts, M.path_separator)
-  if M.is_windows then
-    if #parts == 1 then
-      parentPath = parentPath .. M.path_separator
-    elseif parentPath == "" then
-      return M.abspath_prefix(path), name
-    end
-  else
-    parentPath = M.path_separator .. parentPath
+  local prefix = M.abspath_prefix(path)
+  if #parentPath == 0 and prefix then
+    parentPath = prefix
   end
   return parentPath, name
 end
@@ -1260,7 +1256,7 @@ end
 ---
 ---For Windows systems, this function handles punctuation characters that will
 ---be escaped, but may appear at the beginning of a path segment. For example,
----the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
+---the path `C:\foo\(bar\baz.txt` (where foo, (bar), and baz.txt are segments)
 ---will remain unchanged when escaped by `fnaemescape` on a Windows system.
 ---However, if that strig is used to edit a file with `:e`, `:b`, etc., the open
 ---parenthesis will be treated as an escaped character and the path separator will
