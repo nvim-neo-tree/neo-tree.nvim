@@ -877,11 +877,6 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
-local fs_normalize = vim.fs.normalize
-if vim.fn.has("nvim-0.9") == 0 then
-  fs_normalize = compat.fs_normalize
-end
-
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
@@ -891,11 +886,11 @@ M.normalize_path = function(path)
     path = path:sub(1, 1):upper() .. path:sub(2)
     -- Turn mixed forward and back slashes into all forward slashes
     -- using NeoVim's logic
-    path = fs_normalize(path, { win = true })
+    path = vim.fs.normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
-  return fs_normalize(path)
+  return path
 end
 
 ---Check if a path is a subpath of another.
@@ -1011,9 +1006,13 @@ M.path_parents = function(path)
 end
 
 ---The file system path separator for the current platform.
+M.path_separator = "/"
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+if M.is_windows == true then
+  M.path_separator = "\\"
+end
+
 M.is_macos = vim.fn.has("mac") == 1
-M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1147,36 +1146,19 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  local root = nil
+  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
+    all_parts[1] = ""
+  end
 
   for _, arg in ipairs(args) do
-    local prefix = M.abspath_prefix(arg)
-    if prefix then
-      root = prefix
-      all_parts = M.split(arg:sub(#root + 1), M.path_separator)
+    if arg == "" and #all_parts == 0 and not M.is_windows then
+      all_parts = { "" }
     else
-      vim.list_extend(all_parts, M.split(arg, M.path_separator))
+      local arg_parts = M.split(arg, M.path_separator)
+      vim.list_extend(all_parts, arg_parts)
     end
   end
-  local relpath = table.concat(all_parts, M.path_separator)
-  if root then
-    return root .. relpath
-  end
-  return relpath
-end
-
----@param path string
----@return string? prefix
-M.abspath_prefix = function(path)
-  if M.is_windows then
-    return path:match("^[A-Za-z]:[/\\]")
-      or path:match([[^\\]])
-      or path:match([[^//]])
-      or path:match([[^\]])
-      or path:match([[^/]])
-  end
-
-  return path:match("^/")
+  return table.concat(all_parts, M.path_separator)
 end
 
 local table_merge_internal
@@ -1224,11 +1206,11 @@ end
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)
-  if not value then
+  if value == nil then
     return false
   end
   if type(value) == "string" then
-    return #value > 0
+    return value > ""
   end
   if type(value) == "number" then
     return value > 0
@@ -1257,7 +1239,7 @@ end
 ---be escaped, but may appear at the beginning of a path segment. For example,
 ---the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
 ---will remain unchanged when escaped by `fnaemescape` on a Windows system.
----However, if that strig is used to edit a file with `:e`, `:b`, etc., the open
+---However, if that string is used to edit a file with `:e`, `:b`, etc., the open
 ---parenthesis will be treated as an escaped character and the path separator will
 ---be lost.
 ---
