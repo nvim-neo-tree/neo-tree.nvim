@@ -172,7 +172,7 @@ function create_item(context, path, _type, bufnr)
   end
 
   if _type == nil then
-    local stat = uv.fs_stat(path)
+    local stat = uv.fs_lstat(path)
     _type = stat and stat.type or "unknown"
   end
   local revealing_path = utils.truthy(context.path_to_reveal)
@@ -195,8 +195,11 @@ function create_item(context, path, _type, bufnr)
     ---@cast item neotree.FileItem.Link
     item.is_link = true
     item.link_to = uv.fs_readlink(path)
-    if item.link_to ~= nil then
-      item.type = uv.fs_stat(item.link_to).type
+    if item.link_to then
+      local link_to_stat = uv.fs_stat(item.path)
+      if link_to_stat then
+        item.type = link_to_stat.type
+      end
     end
   end
   if item.type == "directory" then
