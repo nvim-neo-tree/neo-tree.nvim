@@ -1,6 +1,7 @@
 local mod = {
   fs = require("tests.utils.fs"),
 }
+local events = require("neo-tree.events")
 
 function mod.clear_environment()
   -- Create fresh window
@@ -186,6 +187,25 @@ function mod.wait_for_neo_tree(options)
   mod.wait_for(function()
     return verify.get_state() ~= nil
   end, options)
+end
+
+local next_render_happened = false
+events.subscribe({
+  event = events.AFTER_RENDER,
+  handler = function()
+    next_render_happened = true
+  end,
+})
+function mod.wait_for_next_render(timeout)
+  timeout = timeout or 1000
+  vim.wait(timeout, function()
+    local temp = false
+    if next_render_happened then
+      temp = true
+      next_render_happened = false
+    end
+    return temp
+  end, 100)
 end
 
 return mod
