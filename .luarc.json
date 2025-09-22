@@ -4,7 +4,11 @@
     "libraryFiles": "Disable"
   },
   "runtime": {
-    "version": "LuaJIT"
+    "version": "LuaJIT",
+    "path": [
+      "?.lua",
+      "?/init.lua"
+    ]
   },
   "workspace": {
     "checkThirdParty": "Disable",
