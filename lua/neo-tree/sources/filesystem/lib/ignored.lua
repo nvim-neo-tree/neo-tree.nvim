@@ -5,6 +5,7 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 
 ---@class neotree.Ignore
+---@field root string
 ---@field pattern string
 ---@field exclude string
 
@@ -31,17 +32,19 @@ M.mark_ignored = function(state, items, callback)
   end
 
   ---@type table<string, string[]>
-  local upward_ignore_files = {}
-  local ignore_file_contents = {}
-  for folder, folder_items in pairs(folders) do
-    upward_ignore_files[folder] =
+  local upward_ignore_paths = {}
+
+  ---@type table<string, string[]>
+  local ignore_file_rules = {}
+  for folder in pairs(folders) do
+    upward_ignore_paths[folder] =
       vim.fs.find(ignore_files, { upward = true, limit = math.huge, path = folder })
 
-    for _, file in ipairs(upward_ignore_files[folder]) do
-      local fd, err, code = uv.fs_open(file, "r")
-      if fd then
-      else
-        log.warn()
+    for _, path in ipairs(upward_ignore_paths[folder]) do
+      for line in io.lines(path) do
+        ---@cast line string
+        local no_ignore = vim.startswith(line, "!")
+        -- ignore_file_rules[path]
       end
     end
   end
