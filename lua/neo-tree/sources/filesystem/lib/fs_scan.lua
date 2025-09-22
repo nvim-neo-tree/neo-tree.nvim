@@ -11,6 +11,7 @@ local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 local events = require("neo-tree.events")
 local async = require("plenary.async")
+local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
 local M = {}
 
@@ -117,7 +118,7 @@ end
 local should_check_gitignore = function(context)
   local state = context.state
   if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
+    log.debug("No items, skipping git ignored/status lookups")
     return false
   end
   if state.search_pattern and state.check_gitignore_in_search == false then

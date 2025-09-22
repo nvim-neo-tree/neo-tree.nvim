@@ -279,6 +279,12 @@ local config = {
       text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
+  -- The renderer section provides the renderers that will be used to render the tree.
+  --   The first level is the node type.
+  --   For each node type, you can specify a list of components to render.
+  --       Components are rendered in the order they are specified.
+  --         The first field in each component is the name of the function to call.
+  --         The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
       { "indent" },
@@ -503,15 +509,10 @@ local config = {
       sidebar = "tab",   -- sidebar is when position = left or right
       current = "window" -- current is when position = current
     },
-    check_gitignore_in_search = true, -- check gitignore status for files/directories when searching
-                                      -- setting this to false will speed up searches, but gitignored
-                                      -- items won't be marked if they are visible.
-    -- The renderer section provides the renderers that will be used to render the tree.
-    --   The first level is the node type.
-    --   For each node type, you can specify a list of components to render.
-    --       Components are rendered in the order they are specified.
-    --         The first field in each component is the name of the function to call.
-    --         The rest of the fields are passed to the function as the "config" argument.
+    -- check gitignore status for files/directories when searching.
+    -- setting this to false will speed up searches, but gitignored
+    -- items won't be marked if they are visible.
+    check_gitignore_in_search = true,
     filtered_items = {
       visible = false, -- when true, they will just be displayed differently than normal items
       force_visible_in_empty_folder = false, -- when true, hidden files will be shown if the root folder is otherwise empty
@@ -519,6 +520,13 @@ local config = {
       show_hidden_count = true, -- when true, the number of hidden items in each folder will be shown as the last entry
       hide_dotfiles = true,
       hide_gitignored = true,
+      hide_ignored = true, -- hide files that are ignored by other gitignore-like files
+      -- other gitignore-like files, in descending order of precedence.
+      ignore_files = {
+        ".neotreeignore",
+        -- ".ignore"
+        -- ".rgignore"
+      },
       hide_hidden = true, -- only works on Windows for hidden files/directories
       hide_by_name = {
         ".DS_Store",

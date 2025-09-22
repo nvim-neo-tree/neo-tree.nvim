@@ -292,6 +292,8 @@ end
 ---@field show_hidden_count boolean?
 ---@field hide_dotfiles boolean?
 ---@field hide_gitignored boolean?
+---@field hide_ignored boolean?
+---@field ignore_files string[]?
 ---@field hide_hidden boolean?
 ---@field hide_by_name string[]?
 ---@field hide_by_pattern string[]?
@@ -351,19 +353,22 @@ M.setup = function(config, global_config)
   config.filtered_items = config.filtered_items or {}
   config.enable_git_status = config.enable_git_status or global_config.enable_git_status
 
-  for _, key in ipairs({ "hide_by_pattern", "always_show_by_pattern", "never_show_by_pattern" }) do
-    local list = config.filtered_items[key]
-    if type(list) == "table" then
+  local filtered = config.filtered_items
+  if filtered then
+    for _, list in ipairs({
+      filtered.hide_by_pattern or {},
+      filtered.always_show_by_pattern or {},
+      filtered.never_show_by_pattern or {},
+    }) do
       for i, pattern in ipairs(list) do
         list[i] = glob.globtopattern(pattern)
       end
     end
-  end
-
-  for _, key in ipairs({ "hide_by_name", "always_show", "never_show" }) do
-    local list = config.filtered_items[key]
-    if type(list) == "table" then
-      config.filtered_items[key] = utils.list_to_dict(list)
+    for _, key in ipairs({ "hide_by_name", "always_show", "never_show" }) do
+      local list = filtered[key]
+      if type(list) == "table" then
+        filtered[key] = utils.list_to_dict(list)
+      end
     end
   end
 
