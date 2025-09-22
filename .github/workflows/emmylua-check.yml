@@ -9,7 +9,6 @@ jobs:
   luals-check:
     strategy:
       matrix:
-        neovim: ["0.11"]
         lua: ["5.1", "luajit-master"]
     runs-on: ubuntu-latest
 
@@ -29,4 +28,4 @@ jobs:
     - name: Run lua-language-server check
       run: |
         mise use neovim
-        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check
+        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run emmylua-check

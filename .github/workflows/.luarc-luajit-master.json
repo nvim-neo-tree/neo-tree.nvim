@@ -15,9 +15,9 @@
       "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons/lua",
       "$PWD/.dependencies/pack/vendor/start/image.nvim/lua",
       "$PWD/.dependencies/pack/vendor/start/snacks.nvim/lua",
+      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker/lua",
       "${3rd}/luassert/library",
-      "${3rd}/busted/library",
-      "${3rd}/luv/library"
+      "${3rd}/busted/library"
     ],
     "ignoreDir": [
       ".dependencies",
