@@ -1,6 +1,7 @@
 local mod = {
   fs = require("tests.utils.fs"),
 }
+local events = require("neo-tree.events")
 
 function mod.clear_environment()
   -- Create fresh window
@@ -186,6 +187,29 @@ function mod.wait_for_neo_tree(options)
   mod.wait_for(function()
     return verify.get_state() ~= nil
   end, options)
+end
+
+function mod.changedtick_waiter(bufnr, offset_goal, timeout)
+  local changedtick = vim.b[bufnr].changedtick
+  timeout = timeout or 4000
+  return function()
+    assert(
+      vim.wait(timeout, function()
+        local offset = vim.b[bufnr].changedtick - changedtick
+        return offset >= offset_goal
+      end),
+      ("expected changedtick offset of %s or more, got %s - %s. lines: %s"):format(
+        offset_goal,
+        vim.b[bufnr].changedtick,
+        changedtick,
+        table.concat(mod.buflines(bufnr), "\n")
+      )
+    )
+  end
+end
+
+function mod.buflines(bufnr)
+  return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 end
 
 return mod
