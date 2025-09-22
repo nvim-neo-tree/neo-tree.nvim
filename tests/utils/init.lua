@@ -189,23 +189,22 @@ function mod.wait_for_neo_tree(options)
   end, options)
 end
 
-local next_render_happened = false
-events.subscribe({
-  event = events.AFTER_RENDER,
-  handler = function()
-    next_render_happened = true
-  end,
-})
-function mod.wait_for_next_render(timeout)
-  timeout = timeout or 1000
-  vim.wait(timeout, function()
-    local temp = false
-    if next_render_happened then
-      temp = true
-      next_render_happened = false
-    end
-    return temp
-  end, 100)
+function mod.changedtick_waiter(bufnr, changedtick_offset, timeout)
+  local changedtick = vim.b[bufnr].changedtick
+  timeout = timeout or 4000
+  return function()
+    assert(
+      vim.wait(timeout, function()
+        return vim.b[bufnr].changedtick - changedtick_offset >= changedtick
+      end),
+      "expected changedtick offset of "
+        .. changedtick_offset
+        .. "or more, got "
+        .. vim.b[bufnr].changedtick
+        .. "-"
+        .. changedtick
+    )
+  end
 end
 
 return mod

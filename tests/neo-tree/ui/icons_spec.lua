@@ -2,6 +2,7 @@ pcall(require, "luacov")
 
 local ns_id = require("neo-tree.ui.highlights").ns_id
 local u = require("tests.utils")
+local events = require("neo-tree.events")
 
 describe("ui/icons", function()
   local req_switch = u.get_require_switch()
@@ -64,10 +65,10 @@ describe("ui/icons", function()
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-
-      u.wait_for_next_render()
+      wait()
 
       u.assert_buf_lines(bufnr, {
         string.format("  %s", fs_tree.abspath):sub(1, 42),
@@ -101,10 +102,10 @@ describe("ui/icons", function()
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-
-      u.wait_for_next_render()
+      wait()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
@@ -162,10 +163,10 @@ describe("ui/icons", function()
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-
-      u.wait_for_next_render()
+      wait()
 
       u.assert_buf_lines(bufnr, {
         string.format(" o %s", fs_tree.abspath):sub(1, 40),
@@ -199,10 +200,10 @@ describe("ui/icons", function()
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 3, 0 })
       u.feedkeys("<CR>")
-
-      u.wait_for_next_render()
+      wait()
 
       u.assert_buf_lines(bufnr, {
         vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
