@@ -968,7 +968,7 @@ local use_window_picker = function(state, path, cmd)
     events.fire_event(events.FILE_OPENED, path)
     return
   end
-  local picked_window_id = picker.pick_window()
+  local picked_window_id = picker.pick_window({})
   if picked_window_id then
     vim.api.nvim_set_current_win(picked_window_id)
     ---@diagnostic disable-next-line: param-type-mismatch
