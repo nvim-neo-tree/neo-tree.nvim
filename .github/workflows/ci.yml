@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  MISE_AUTO_INSTALL: "false"
+
 jobs:
   stylua-check:
     runs-on: ubuntu-latest

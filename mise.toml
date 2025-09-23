@@ -6,6 +6,7 @@ lua-language-server = "latest"
 cargo-binstall = "latest"
 "cargo:emmylua_ls" = "latest"
 "cargo:emmylua_check" = "latest"
+"github:EmmyLuaLs/emmylua-analyzer-rust" = "latest"
 
 [tasks.test]
 run = """
