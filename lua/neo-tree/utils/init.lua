@@ -352,7 +352,7 @@ M.get_diagnostic_counts = function()
     -- Now bubble this status up to the parent directories
     local parts = M.split(file_name, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
-    M.reduce(parts, "", function(acc, part)
+    M.reduce(parts, M.abspath_prefix(file_name) or "", function(acc, part)
       local path = (M.is_windows and acc == "") and part or M.path_join(acc, part)
 
       if file_entry.severity_number then
