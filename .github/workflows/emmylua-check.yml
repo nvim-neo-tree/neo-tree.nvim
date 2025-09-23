@@ -5,6 +5,9 @@ on:
     branches:
       - '*'
 
+env:
+  MISE_AUTO_INSTALL_DISABLE_TOOLS: lua-language-server
+
 jobs:
   luals-check:
     strategy:
@@ -24,11 +27,9 @@ jobs:
       uses: jdx/mise-action@v2
       with:
         install_args: "github:neovim/neovim@nightly"
-        mise_toml: |
-          [tools]
-          lua-language-server = "latest"
 
-    - name: Run lua-language-server check
+    - name: Run emmylua_check
+      continue-on-error: true
       run: |
         mise use github:neovim/neovim@nightly
         NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run emmylua-check

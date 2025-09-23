@@ -5,6 +5,9 @@ on:
     branches:
       - '*'
 
+env:
+  MISE_AUTO_INSTALL_DISABLE_TOOLS: cargo-binstall,cargo:emmylua_ls,cargo:emmylua_check
+
 jobs:
   luals-check:
     strategy:
@@ -25,11 +28,6 @@ jobs:
       uses: jdx/mise-action@v2
       with:
         install_args: "github:neovim/neovim@nightly"
-        mise_toml: |
-          [tools]
-          cargo-binstall = "latest"
-          "cargo:emmylua_ls" = "latest"
-          "cargo:emmylua_check" = "latest"
 
     - name: Run lua-language-server check
       run: |
