@@ -25,8 +25,13 @@ jobs:
       uses: jdx/mise-action@v2
       with:
         install_args: "github:neovim/neovim@nightly"
+        mise_toml: |
+          [tools]
+          cargo-binstall = "latest"
+          "cargo:emmylua_ls" = "latest"
+          "cargo:emmylua_check" = "latest"
 
     - name: Run lua-language-server check
       run: |
-        mise use neovim
+        mise use github:neovim/neovim@nightly
         NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check
