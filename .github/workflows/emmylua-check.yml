@@ -1,4 +1,4 @@
-name: Lua Language Server Diagnostics
+name: EmmyLua Analyzer Diagnostics
 on:
   pull_request: ~
   push:
