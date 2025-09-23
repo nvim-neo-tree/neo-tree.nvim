@@ -23,7 +23,7 @@ jobs:
     - name: Install tools
       uses: jdx/mise-action@v2
       with:
-        install_args: "neovim"
+        install_args: "github:neovim/neovim@nightly"
 
     - name: Run lua-language-server check
       run: |
