@@ -10,7 +10,7 @@ local uv = vim.uv or vim.loop
 ---@field filename string
 
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
-local pid = vim.uv.os_getpid()
+local pid = uv.os_getpid()
 
 ---@class (exact) neotree.clipboard.FileBackend.FileFormat
 ---@field pid integer
@@ -32,7 +32,7 @@ local FileBackend = BaseBackend:new()
 ---@return boolean created
 ---@return string? err
 local function file_touch(filename)
-  if vim.uv.fs_stat(filename) then
+  if uv.fs_stat(filename) then
     return true
   end
   local dir = vim.fn.fnamemodify(filename, ":h")
