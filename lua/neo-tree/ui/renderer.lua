@@ -658,6 +658,25 @@ end
 ---Functions to save and restore the focused node.
 M.position = {}
 
+local visual_modes = {
+  "v",
+  "V",
+  utils.keycode("<C-v>"),
+}
+
+---@generic T
+---@param positions T
+---@return T positions
+local sort_positions = function(positions)
+  table.sort(positions, function(a, b)
+    if a[2] == b[2] then
+      return a[3] < b[3]
+    else
+      return a[2] < b[2]
+    end
+  end)
+  return positions
+end
 ---Saves a window position to be restored later
 ---@param state neotree.State
 ---@param force boolean?
@@ -669,9 +688,16 @@ M.position.save = function(state, force)
   if state.tree and M.window_exists(state) then
     local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
     state.position.topline = win_state.topline
+    local win = vim.api.nvim_get_current_win()
+    if state.winid == win and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
+      local a = vim.fn.getpos(".")
+      local b = vim.fn.getpos("v")
+      state.position.visual_pos = sort_positions({ a, b })
+    end
+
     state.position.lnum = win_state.lnum
-    log.debug("Saved cursor position with lnum: " .. state.position.lnum)
-    log.debug("Saved window position with topline: " .. state.position.topline)
+    log.debug("Saved cursor position with lnum:", state.position.lnum)
+    log.debug("Saved window position with topline:", state.position.topline)
   end
 end
 
@@ -714,6 +740,9 @@ M.position.restore = function(state)
   if state.position.node_id then
     log.debug("Focusing on node_id: " .. state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
+  end
+
+  if state.position.visual_pos then
   end
 
   M.position.clear(state)
@@ -1195,12 +1224,39 @@ M.tree_is_visible = function(state)
   return M.window_exists(state) and vim.api.nvim_win_get_buf(state.winid) == state.bufnr
 end
 
+---@alias neotree.renderer.MarkedNodes table<vim.fn.getmarklist.ret.item, NuiTree.Node>
+
+---@param state neotree.StateWithTree
+---@return neotree.renderer.MarkedNodes
+local save_marks = function(state)
+  local marks = vim.fn.getmarklist(state.bufnr)
+  local marked_nodes = {}
+
+  for _, mark in ipairs(marks) do
+    local node = state.tree:get_node(mark[2])
+    if node then
+      marked_nodes[mark] = node
+    end
+  end
+  return marked_nodes
+end
+
+---@param state neotree.StateWithTree
+---@param marks neotree.renderer.MarkedNodes
+local restore_marks = function(state, marks)
+  for mark, node in pairs(marks) do
+    vim.fn.setpos(mark.mark, mark.pos)
+  end
+end
+
 ---Renders the given tree and expands window width if needed
----@param state neotree.State The state containing tree to render. Almost same as state.tree:render()
+---@param state neotree.StateWithTree The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
   local add_blank_line_at_top = nt.config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
+
+  local marks = save_marks(state)
 
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
@@ -1220,6 +1276,7 @@ render_tree = function(state)
       state.win_width = desired_width
     end
   end
+
   if M.tree_is_visible(state) then
     if add_blank_line_at_top then
       state.tree:render(2)
@@ -1230,6 +1287,7 @@ render_tree = function(state)
 
   log.debug("render_tree: Restoring position")
   M.position.restore(state)
+  restore_marks(state, marks)
 end
 
 ---Draws the given nodes on the screen.
