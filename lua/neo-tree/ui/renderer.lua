@@ -690,9 +690,10 @@ M.position.save = function(state, force)
     state.position.topline = win_state.topline
     local win = vim.api.nvim_get_current_win()
     if state.winid == win and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
-      local a = vim.fn.getpos(".")
-      local b = vim.fn.getpos("v")
-      state.position.visual_pos = sort_positions({ a, b })
+      state.position.visual_selection = {
+        vim.fn.getpos("."),
+        vim.fn.getpos("v"),
+      }
     end
 
     state.position.lnum = win_state.lnum
@@ -742,7 +743,10 @@ M.position.restore = function(state)
     M.focus_node(state, state.position.node_id, true)
   end
 
-  if state.position.visual_pos then
+  if state.position.visual_selection then
+    local selection = sort_positions(state.position.visual_selection)
+    vim.fn.setpos([['<]], selection[1])
+    vim.fn.setpos([['>]], selection[2])
   end
 
   M.position.clear(state)
