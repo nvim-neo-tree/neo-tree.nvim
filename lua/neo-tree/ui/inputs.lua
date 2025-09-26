@@ -33,6 +33,12 @@ M.show_input = function(input, callback)
     end
   end, { once = true })
 
+  input:on({ event.WinEnter }, function()
+    vim.cmd.startinsert()
+  end, { once = true })
+
+  input:mount()
+
   if input.prompt_type ~= "confirm" then
     vim.schedule(function()
       events.fire_event(events.NEO_TREE_POPUP_INPUT_READY, {
