@@ -677,6 +677,17 @@ local sort_positions = function(positions)
   end)
   return positions
 end
+
+---@class neotree.State.Position.VisualSelection
+---@field [1] [integer, integer, integer, integer]
+---@field [2] [integer, integer, integer, integer]
+
+---@class neotree.State.Position
+---@field topline integer?
+---@field lnum integer?
+---@field node_id string?
+---@field visual_selection neotree.State.Position.VisualSelection
+
 ---Saves a window position to be restored later
 ---@param state neotree.State
 ---@param force boolean?
@@ -688,17 +699,23 @@ M.position.save = function(state, force)
   if state.tree and M.window_exists(state) then
     local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
     state.position.topline = win_state.topline
-    local win = vim.api.nvim_get_current_win()
-    if state.winid == win and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
-      state.position.visual_selection = {
-        vim.fn.getpos("."),
-        vim.fn.getpos("v"),
-      }
-    end
-
     state.position.lnum = win_state.lnum
     log.debug("Saved cursor position with lnum:", state.position.lnum)
     log.debug("Saved window position with topline:", state.position.topline)
+
+    -- Save last visual selection in the neo-tree buffer
+    local curbuf = vim.api.nvim_get_current_buf()
+    if state.bufnr == curbuf and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
+      local a = vim.fn.getpos(".")
+      if a[1] ~= curbuf then
+        return
+      end
+      local b = vim.fn.getpos("v")
+      if b[1] ~= curbuf then
+        return
+      end
+      state.position.visual_selection = { a, b }
+    end
   end
 end
 
@@ -743,7 +760,7 @@ M.position.restore = function(state)
     M.focus_node(state, state.position.node_id, true)
   end
 
-  if state.position.visual_selection then
+  if vim.api.nvim_get_current_win() == state.winid and state.position.visual_selection then
     local selection = sort_positions(state.position.visual_selection)
     vim.fn.setpos([['<]], selection[1])
     vim.fn.setpos([['>]], selection[2])
