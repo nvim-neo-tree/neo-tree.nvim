@@ -71,6 +71,7 @@ local start_resize_monitor = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
       if state.win_width and M.tree_is_visible(state) then
+        ---@cast state neotree.StateWithTree
         windows_exist = true
         local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
