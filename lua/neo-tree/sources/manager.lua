@@ -51,13 +51,15 @@ end
 
 ---@alias neotree.Internal.SortFieldProvider fun(node: NuiTree.Node):any
 
+---@alias neotree.Config.SortFunction fun(a: NuiTree.Node, b: NuiTree.Node):boolean?
+
 ---@class neotree.State : neotree.Config.Source
 ---@field name string
 ---@field tabid integer
 ---@field id integer
 ---@field bufnr integer?
 ---@field dirty boolean
----@field position table
+---@field position neotree.State.Position
 ---@field git_base string
 ---@field sort table
 ---@field clipboard neotree.clipboard.Contents
@@ -103,7 +105,7 @@ end
 ---@field search_pattern string?
 ---@field use_fzy boolean?
 ---@field fzy_sort_result_scores table<string, integer?>?
----@field fuzzy_finder_mode string?
+---@field fuzzy_finder_mode "directory"|boolean?
 ---@field open_folders_before_search table?
 ---sort
 ---@field sort_function_override neotree.Config.SortFunction?

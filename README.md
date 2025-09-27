@@ -47,16 +47,14 @@ should you!
 
 - Neo-tree won't let other buffers take over its window.
 - Neo-tree won't leave its window scrolled to the last line when there is plenty
-of room to display the whole tree.
+  of room to display the whole tree.
 - Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher =
   true`)
 - Neo-tree can intelligently follow the current file (set
   `follow_current_file.enabled = true`)
-- Neo-tree won't leave its window scrolled to the last line when there is
-  plenty of room to display the whole tree.
 - Neo-tree can sync its clipboard across multiple instances, either globally
   (within the same Neovim instance) or universally (across multiple Neovim
-  instances)
+  instances). Set `clipboard.sync = "global" | "universal"`
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!
