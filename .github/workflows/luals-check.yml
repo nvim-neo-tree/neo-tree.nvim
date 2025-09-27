@@ -9,7 +9,7 @@ jobs:
   luals-check:
     strategy:
       matrix:
-        neovim: ["0.10"]
+        neovim: ["0.11"]
         lua: ["5.1", "luajit-master"]
     runs-on: ubuntu-latest
 

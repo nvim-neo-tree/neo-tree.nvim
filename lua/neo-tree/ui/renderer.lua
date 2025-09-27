@@ -32,10 +32,6 @@ local tabid_to_tabnr = function(tabid)
   return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
 end
 
-local buffer_is_usable = function(bufnr)
-  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
-end
-
 local cleaned_up = false
 ---Clean up invalid neotree buffers (e.g after a session restore)
 ---@param force boolean if true, force cleanup. Otherwise only cleanup once
@@ -75,6 +71,7 @@ local start_resize_monitor = function()
     local windows_exist = false
     local success, err = pcall(manager._for_each_state, nil, function(state)
       if state.win_width and M.tree_is_visible(state) then
+        ---@cast state neotree.StateWithTree
         windows_exist = true
         local current_size = utils.get_inner_win_width(state.winid)
         if current_size ~= state.win_width then
@@ -658,6 +655,39 @@ end
 ---Functions to save and restore the focused node.
 M.position = {}
 
+local visual_modes = {
+  "v",
+  "V",
+  utils.keycode("<C-v>"),
+}
+
+---@param a [integer, integer, integer, integer]
+---@param b [integer, integer, integer, integer]
+local position_sorter = function(a, b)
+  if a[2] == b[2] then
+    return a[3] < b[3]
+  else
+    return a[2] < b[2]
+  end
+end
+---@generic T
+---@param positions T
+---@return T positions
+local sort_positions = function(positions)
+  table.sort(positions, position_sorter)
+  return positions
+end
+
+---@class neotree.State.Position.VisualSelection
+---@field [1] [integer, integer, integer, integer]
+---@field [2] [integer, integer, integer, integer]
+
+---@class neotree.State.Position
+---@field topline integer?
+---@field lnum integer?
+---@field node_id string?
+---@field visual_selection neotree.State.Position.VisualSelection?
+
 ---Saves a window position to be restored later
 ---@param state neotree.State
 ---@param force boolean?
@@ -666,12 +696,25 @@ M.position.save = function(state, force)
     log.debug("There's already a position saved to be restored. Cannot save another.")
     return
   end
-  if state.tree and M.window_exists(state) then
-    local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
-    state.position.topline = win_state.topline
-    state.position.lnum = win_state.lnum
-    log.debug("Saved cursor position with lnum: " .. state.position.lnum)
-    log.debug("Saved window position with topline: " .. state.position.topline)
+  if not state.tree then
+    return
+  end
+  if not M.window_exists(state) then
+    return
+  end
+
+  local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
+  state.position.topline = win_state.topline
+  state.position.lnum = win_state.lnum
+  log.debug("Saved cursor position with lnum:", state.position.lnum)
+  log.debug("Saved window position with topline:", state.position.topline)
+
+  -- Save last visual selection in the neo-tree buffer
+  local curbuf = vim.api.nvim_get_current_buf()
+  if state.bufnr == curbuf and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
+    local a = vim.fn.getpos(".")
+    local b = vim.fn.getpos("v")
+    state.position.visual_selection = { a, b }
   end
 end
 
@@ -716,7 +759,23 @@ M.position.restore = function(state)
     M.focus_node(state, state.position.node_id, true)
   end
 
+  M.position.restore_selection(state)
+
   M.position.clear(state)
+end
+
+---@param state neotree.State
+M.position.restore_selection = function(state)
+  if state.winid ~= vim.api.nvim_get_current_win() then
+    return
+  end
+  if not state.position.visual_selection then
+    return
+  end
+  -- assertion unneeded but lua-ls isn't narrowing properly
+  local selection = assert(sort_positions(state.position.visual_selection))
+  vim.fn.setpos([['<]], selection[1])
+  vim.fn.setpos([['>]], selection[2])
 end
 
 ---Redraw the tree without reloading from the source.
@@ -804,9 +863,10 @@ M.set_expanded_nodes = function(tree, expanded_nodes)
   end
 end
 
+---@param state neotree.State
 create_tree = function(state)
   if state.tree and state.tree.bufnr == state.bufnr then
-    if buffer_is_usable(state.tree.bufnr) then
+    if vim.api.nvim_buf_is_loaded(state.tree.bufnr) then
       log.debug("Tree already exists and buffer is valid, skipping creation", state.name, state.id)
       state.tree.winid = state.winid
       return
@@ -825,17 +885,18 @@ create_tree = function(state)
   })
 end
 
+---@param state neotree.StateWithTree
 ---@return NuiTree.Node[]?
 local get_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
   end
-  local start_pos = vim.fn.getpos("'<")[2]
-  local end_pos = vim.fn.getpos("'>")[2]
-  if end_pos < start_pos then
-    -- I'm not sure if this could actually happen, but just in case
-    start_pos, end_pos = end_pos, start_pos
+  if not state.position.visual_selection then
+    return nil
   end
+  sort_positions(state.position.visual_selection)
+  local start_pos = state.position.visual_selection[1][2]
+  local end_pos = state.position.visual_selection[2][2]
   local selected_nodes = {}
   while start_pos <= end_pos do
     local node = state.tree:get_node(start_pos)
@@ -1103,13 +1164,16 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
-    win:on({ "CursorMoved" }, function()
+    win:on({ "CursorMoved", "ModeChanged" }, function()
       if win.winid == vim.api.nvim_get_current_win() then
         M.position.save(state, true)
       end
     end)
     win:on({ "BufDelete" }, function()
       M.position.save(state)
+    end)
+    win:on({ "WinEnter" }, function()
+      M.position.restore_selection(state)
     end)
     win:on({ "BufDelete" }, function()
       vim.schedule(function()
@@ -1195,12 +1259,39 @@ M.tree_is_visible = function(state)
   return M.window_exists(state) and vim.api.nvim_win_get_buf(state.winid) == state.bufnr
 end
 
+---@alias neotree.renderer.MarkedNodes table<vim.fn.getmarklist.ret.item, NuiTree.Node>
+
+---@param state neotree.StateWithTree
+---@return neotree.renderer.MarkedNodes
+local save_marks = function(state)
+  local marks = vim.fn.getmarklist(state.bufnr)
+  local marked_nodes = {}
+
+  for _, mark in ipairs(marks) do
+    local node = state.tree:get_node(mark[2])
+    if node then
+      marked_nodes[mark] = node
+    end
+  end
+  return marked_nodes
+end
+
+---@param state neotree.StateWithTree
+---@param marks neotree.renderer.MarkedNodes
+local restore_marks = function(state, marks)
+  for mark, node in pairs(marks) do
+    vim.fn.setpos(mark.mark, mark.pos)
+  end
+end
+
 ---Renders the given tree and expands window width if needed
----@param state neotree.State The state containing tree to render. Almost same as state.tree:render()
+---@param state neotree.StateWithTree The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
   local add_blank_line_at_top = nt.config.add_blank_line_at_top
   local should_auto_expand = state.window.auto_expand_width and state.current_position ~= "float"
   local should_pre_render = should_auto_expand or state.current_position == "current"
+
+  local marks = save_marks(state)
 
   if should_pre_render and M.tree_is_visible(state) then
     log.trace("pre-rendering tree")
@@ -1220,6 +1311,7 @@ render_tree = function(state)
       state.win_width = desired_width
     end
   end
+
   if M.tree_is_visible(state) then
     if add_blank_line_at_top then
       state.tree:render(2)
@@ -1230,6 +1322,7 @@ render_tree = function(state)
 
   log.debug("render_tree: Restoring position")
   M.position.restore(state)
+  restore_marks(state, marks)
 end
 
 ---Draws the given nodes on the screen.
@@ -1263,6 +1356,7 @@ draw = function(nodes, state, parent_id)
     M.acquire_window(state)
     create_tree(state)
   end
+  ---@cast state neotree.StateWithTree
 
   -- draw the given nodes
   local success, msg = pcall(state.tree.set_nodes, state.tree, nodes, parent_id)
@@ -1313,7 +1407,7 @@ end
 
 ---Shows the given items as a tree.
 ---@param sourceItems table? The list of items to transform.
----@param state neotree.State The current state of the plugin.
+---@param state neotree.StateWithTree The current state of the plugin.
 ---@param parentId string? The id of the parent node to display these nodes at
 ---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)

@@ -51,11 +51,6 @@ end
 
 ---@alias neotree.Internal.SortFieldProvider fun(node: NuiTree.Node):any
 
----@class neotree.State.Position
----@field topline integer?
----@field lnum integer?
----@field node_id string?
-
 ---@class neotree.State : neotree.Config.Source
 ---@field name string
 ---@field tabid integer
