@@ -32,10 +32,6 @@ local tabid_to_tabnr = function(tabid)
   return vim.api.nvim_tabpage_is_valid(tabid) and vim.api.nvim_tabpage_get_number(tabid)
 end
 
-local buffer_is_usable = function(bufnr)
-  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
-end
-
 local cleaned_up = false
 ---Clean up invalid neotree buffers (e.g after a session restore)
 ---@param force boolean if true, force cleanup. Otherwise only cleanup once
@@ -686,7 +682,7 @@ end
 ---@field topline integer?
 ---@field lnum integer?
 ---@field node_id string?
----@field visual_selection neotree.State.Position.VisualSelection
+---@field visual_selection neotree.State.Position.VisualSelection?
 
 ---Saves a window position to be restored later
 ---@param state neotree.State
@@ -696,26 +692,26 @@ M.position.save = function(state, force)
     log.debug("There's already a position saved to be restored. Cannot save another.")
     return
   end
-  if state.tree and M.window_exists(state) then
-    local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
-    state.position.topline = win_state.topline
-    state.position.lnum = win_state.lnum
-    log.debug("Saved cursor position with lnum:", state.position.lnum)
-    log.debug("Saved window position with topline:", state.position.topline)
+  if not state.tree then
+    return
+  end
+  if not M.window_exists(state) then
+    return
+  end
 
-    -- Save last visual selection in the neo-tree buffer
-    local curbuf = vim.api.nvim_get_current_buf()
-    if state.bufnr == curbuf and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
-      local a = vim.fn.getpos(".")
-      if a[1] ~= curbuf then
-        return
-      end
-      local b = vim.fn.getpos("v")
-      if b[1] ~= curbuf then
-        return
-      end
-      state.position.visual_selection = { a, b }
-    end
+  local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
+  state.position.topline = win_state.topline
+  state.position.lnum = win_state.lnum
+  log.debug("Saved cursor position with lnum:", state.position.lnum)
+  log.debug("Saved window position with topline:", state.position.topline)
+
+  -- Save last visual selection in the neo-tree buffer
+  local curbuf = vim.api.nvim_get_current_buf()
+  if state.bufnr == curbuf and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
+    local a = vim.fn.getpos(".")
+    local b = vim.fn.getpos("v")
+    state.position.visual_selection = { a, b }
+    vim.print("saving:", state.position.visual_selection)
   end
 end
 
@@ -760,13 +756,23 @@ M.position.restore = function(state)
     M.focus_node(state, state.position.node_id, true)
   end
 
-  if vim.api.nvim_get_current_win() == state.winid and state.position.visual_selection then
-    local selection = sort_positions(state.position.visual_selection)
-    vim.fn.setpos([['<]], selection[1])
-    vim.fn.setpos([['>]], selection[2])
-  end
+  M.position.restore_selection(state)
 
   M.position.clear(state)
+end
+
+---@param state neotree.State
+M.position.restore_selection = function(state)
+  if state.winid ~= vim.api.nvim_get_current_win() then
+    return
+  end
+  if not state.position.visual_selection then
+    return
+  end
+  -- assertion unneeded but lua-ls isn't narrowing properly
+  local selection = assert(sort_positions(state.position.visual_selection))
+  vim.fn.setpos([['<]], selection[1])
+  vim.fn.setpos([['>]], selection[2])
 end
 
 ---Redraw the tree without reloading from the source.
@@ -854,9 +860,10 @@ M.set_expanded_nodes = function(tree, expanded_nodes)
   end
 end
 
+---@param state neotree.State
 create_tree = function(state)
   if state.tree and state.tree.bufnr == state.bufnr then
-    if buffer_is_usable(state.tree.bufnr) then
+    if vim.api.nvim_buf_is_loaded(state.tree.bufnr) then
       log.debug("Tree already exists and buffer is valid, skipping creation", state.name, state.id)
       state.tree.winid = state.winid
       return
@@ -1161,6 +1168,9 @@ M.acquire_window = function(state)
     win:on({ "BufDelete" }, function()
       M.position.save(state)
     end)
+    win:on({ "WinEnter" }, function()
+      M.position.restore_selection(state)
+    end)
     win:on({ "BufDelete" }, function()
       vim.schedule(function()
         win:unmount()
@@ -1342,6 +1352,7 @@ draw = function(nodes, state, parent_id)
     M.acquire_window(state)
     create_tree(state)
   end
+  ---@cast state neotree.StateWithTree
 
   -- draw the given nodes
   local success, msg = pcall(state.tree.set_nodes, state.tree, nodes, parent_id)

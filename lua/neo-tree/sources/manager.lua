@@ -114,7 +114,6 @@ end
 
 ---@class (exact) neotree.StateWithTree : neotree.State
 ---@field tree NuiTree
----@field visual_selection
 
 local a = {}
 
