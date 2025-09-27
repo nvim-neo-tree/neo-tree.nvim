@@ -51,6 +51,8 @@ end
 
 ---@alias neotree.Internal.SortFieldProvider fun(node: NuiTree.Node):any
 
+---@alias neotree.Config.SortFunction fun(a: NuiTree.Node, b: NuiTree.Node):boolean?
+
 ---@class neotree.State : neotree.Config.Source
 ---@field name string
 ---@field tabid integer
@@ -60,7 +62,7 @@ end
 ---@field position neotree.State.Position
 ---@field git_base string
 ---@field sort table
----@field clipboard table
+---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.CurrentPosition?
 ---@field disposed boolean?
 ---@field winid integer?
@@ -70,7 +72,6 @@ end
 ---private-ish
 ---@field orig_tree NuiTree?
 ---@field _ready boolean?
----@field _in_pre_render boolean?
 ---@field loading boolean?
 ---window
 ---@field window neotree.State.Window?
@@ -132,6 +133,7 @@ local function create_state(tabid, sd, winid)
   state.position = {}
   state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
+  state.clipboard = {}
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state
