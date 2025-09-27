@@ -427,7 +427,7 @@ end
 
 ---Return the keys of a given table.
 ---@param tbl string[] The table to get the keys of.
----@param sorted boolean Whether to sort the keys.
+---@param sorted boolean? Whether to sort the keys.
 ---@return string[] keys The keys of the table.
 M.get_keys = function(tbl, sorted)
   local keys = {}
