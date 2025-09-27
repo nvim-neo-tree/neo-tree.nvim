@@ -7,6 +7,7 @@ local M = {}
 
 ---@param text string
 ---@param highlight string?
+---@return NuiLine
 local add_text = function(text, highlight)
   local line = NuiLine()
   line:append(text, highlight)
@@ -16,19 +17,19 @@ end
 ---@param state neotree.State
 ---@param prefix_key string?
 local get_sub_keys = function(state, prefix_key)
-  local keys = utils.get_keys(state.resolved_mappings, true)
-  if prefix_key then
-    local len = prefix_key:len()
-    local sub_keys = {}
-    for _, key in ipairs(keys) do
-      if #key > len and key:sub(1, len) == prefix_key then
-        table.insert(sub_keys, key)
-      end
-    end
-    return sub_keys
-  else
+  local keys = utils.get_keys(state.resolved_mappings)
+  if not prefix_key then
     return keys
   end
+
+  local len = prefix_key:len()
+  local sub_keys = {}
+  for _, key in ipairs(keys) do
+    if #key > len and key:sub(1, len) == prefix_key then
+      table.insert(sub_keys, key)
+    end
+  end
+  return sub_keys
 end
 
 ---@param key string
@@ -41,15 +42,28 @@ local function key_minus_prefix(key, prefix)
   end
 end
 
+---@class neotree.internal.Help.Mapping
+---@field key string
+---@field mapping neotree.State.ResolvedMapping
+
+---@alias neotree.Help.Sorter fun(a: neotree.internal.Help.Mapping, b: neotree.internal.Help.Mapping):boolean
+
+---@type neotree.Help.Sorter
+local default_help_sort = function(a, b)
+  return a.key < b.key
+end
+
 ---Shows a help screen for the mapped commands when will execute those commands
 ---when the corresponding key is pressed.
 ---@param state neotree.State state of the source.
 ---@param title string? if this is a sub-menu for a multi-key mapping, the title for the window.
 ---@param prefix_key string? if this is a sub-menu, the start of tehe multi-key mapping
-M.show = function(state, title, prefix_key)
+---@param sorter neotree.Help.Sorter?
+M.show = function(state, title, prefix_key, sorter)
   local tree_width = vim.api.nvim_win_get_width(state.winid)
   local keys = get_sub_keys(state, prefix_key)
 
+  ---@type NuiLine[]
   local lines = { add_text("") }
   lines[1] = add_text(" Press the corresponding key to execute the command.", "Comment")
   lines[2] = add_text("               Press <Esc> to cancel.", "Comment")
@@ -60,19 +74,30 @@ M.show = function(state, title, prefix_key)
   header:append("COMMAND", highlights.ROOT_NAME)
   lines[4] = header
   local max_width = #lines[1]:content()
+  ---@type neotree.internal.Help.Mapping[]
+  local maps = {}
   for _, key in ipairs(keys) do
-    ---@type neotree.State.ResolvedMapping
-    local value = state.resolved_mappings[key]
-      or { text = "<error mapping for key " .. key .. ">", handler = function() end }
-    local nline = NuiLine()
-    nline:append(string.format(" %14s", key_minus_prefix(key, prefix_key)), highlights.FILTER_TERM)
-    nline:append(" -> ", highlights.DIM_TEXT)
-    nline:append(value.text, highlights.NORMAL)
-    local line = nline:content()
+    maps[#maps + 1] = {
+      key = key,
+      mapping = state.resolved_mappings[key]
+        or { text = "<error mapping for key " .. key .. ">", handler = function() end },
+    }
+  end
+
+  table.sort(maps, sorter or default_help_sort)
+  for _, val in ipairs(maps) do
+    local nuiline = NuiLine()
+    nuiline:append(
+      string.format(" %14s", key_minus_prefix(val.key, prefix_key)),
+      highlights.FILTER_TERM
+    )
+    nuiline:append(" -> ", highlights.DIM_TEXT)
+    nuiline:append(val.mapping.text, highlights.NORMAL)
+    local line = nuiline:content()
     if #line > max_width then
       max_width = #line
     end
-    table.insert(lines, nline)
+    lines[#lines + 1] = nuiline
   end
 
   local width = math.min(60, max_width + 1)

@@ -439,6 +439,7 @@ local config = {
       ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
+      -- ["?"] = { "show_help", config = { sorter = function(a, b) return a[2].text < b[2].text end } },
       ["<"] = "prev_source",
       [">"] = "next_source",
     },

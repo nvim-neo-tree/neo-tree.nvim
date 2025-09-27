@@ -959,7 +959,8 @@ end
 M.show_help = function(state)
   local title = state.config and state.config.title or nil
   local prefix_key = state.config and state.config.prefix_key or nil
-  help.show(state, title, prefix_key)
+  local sorter = state.config and state.config.sorter or nil
+  help.show(state, title, prefix_key, sorter)
 end
 
 return M
