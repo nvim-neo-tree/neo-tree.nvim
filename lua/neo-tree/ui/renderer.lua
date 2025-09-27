@@ -712,7 +712,6 @@ M.position.save = function(state, force)
     local a = vim.fn.getpos(".")
     local b = vim.fn.getpos("v")
     state.position.visual_selection = { a, b }
-    vim.print("saving:", state.position.visual_selection)
   end
 end
 
@@ -1404,7 +1403,7 @@ end
 
 ---Shows the given items as a tree.
 ---@param sourceItems table? The list of items to transform.
----@param state neotree.State The current state of the plugin.
+---@param state neotree.StateWithTree The current state of the plugin.
 ---@param parentId string? The id of the parent node to display these nodes at
 ---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)

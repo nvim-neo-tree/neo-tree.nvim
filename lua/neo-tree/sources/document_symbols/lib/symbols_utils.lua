@@ -128,7 +128,7 @@ end
 
 ---Callback function for lsp request
 ---@param lsp_resp table<integer, neotree.lsp.RespRaw> the response of the lsp clients
----@param state neotree.State the state of the source
+---@param state neotree.StateWithTree the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then
     return
