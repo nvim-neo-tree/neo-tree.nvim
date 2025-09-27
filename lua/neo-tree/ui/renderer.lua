@@ -661,17 +661,20 @@ local visual_modes = {
   utils.keycode("<C-v>"),
 }
 
+---@param a [integer, integer, integer, integer]
+---@param b [integer, integer, integer, integer]
+local position_sorter = function(a, b)
+  if a[2] == b[2] then
+    return a[3] < b[3]
+  else
+    return a[2] < b[2]
+  end
+end
 ---@generic T
 ---@param positions T
 ---@return T positions
 local sort_positions = function(positions)
-  table.sort(positions, function(a, b)
-    if a[2] == b[2] then
-      return a[3] < b[3]
-    else
-      return a[2] < b[2]
-    end
-  end)
+  table.sort(positions, position_sorter)
   return positions
 end
 
@@ -882,17 +885,18 @@ create_tree = function(state)
   })
 end
 
+---@param state neotree.StateWithTree
 ---@return NuiTree.Node[]?
 local get_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
   end
-  local start_pos = vim.fn.getpos("'<")[2]
-  local end_pos = vim.fn.getpos("'>")[2]
-  if end_pos < start_pos then
-    -- I'm not sure if this could actually happen, but just in case
-    start_pos, end_pos = end_pos, start_pos
+  if not state.position.visual_selection then
+    return nil
   end
+  sort_positions(state.position.visual_selection)
+  local start_pos = state.position.visual_selection[1][2]
+  local end_pos = state.position.visual_selection[2][2]
   local selected_nodes = {}
   while start_pos <= end_pos do
     local node = state.tree:get_node(start_pos)
