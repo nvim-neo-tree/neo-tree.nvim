@@ -42,11 +42,11 @@ local function key_minus_prefix(key, prefix)
   end
 end
 
----@class neotree.internal.Help.Mapping
+---@class neotree.Help.Mapping
 ---@field key string
 ---@field mapping neotree.State.ResolvedMapping
 
----@alias neotree.Help.Sorter fun(a: neotree.internal.Help.Mapping, b: neotree.internal.Help.Mapping):boolean
+---@alias neotree.Help.Sorter fun(a: neotree.Help.Mapping, b: neotree.Help.Mapping):boolean
 
 ---@type neotree.Help.Sorter
 local default_help_sort = function(a, b)
@@ -74,7 +74,7 @@ M.show = function(state, title, prefix_key, sorter)
   header:append("COMMAND", highlights.ROOT_NAME)
   lines[4] = header
   local max_width = #lines[1]:content()
-  ---@type neotree.internal.Help.Mapping[]
+  ---@type neotree.Help.Mapping[]
   local maps = {}
   for _, key in ipairs(keys) do
     maps[#maps + 1] = {
