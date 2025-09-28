@@ -1486,6 +1486,8 @@ NeoTreeGitUnstaged        Used for git unstaged symbol.
 NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeGitStaged          Used for git staged symbol.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
+NeoTreeIgnored            File name when the file is ignored by a
+                          `.neotreeignore` or similar
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
 NeoTreeExpander           Used for collapsed/expanded icons.
