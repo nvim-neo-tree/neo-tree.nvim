@@ -524,7 +524,7 @@ local config = {
       -- other gitignore-like files, in descending order of precedence.
       ignore_files = {
         ".neotreeignore",
-        -- ".ignore"
+        ".ignore"
         -- ".rgignore"
       },
       hide_hidden = true, -- only works on Windows for hidden files/directories
