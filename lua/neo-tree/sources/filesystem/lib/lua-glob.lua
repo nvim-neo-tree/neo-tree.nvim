@@ -1,19 +1,21 @@
 ---From https://github.com/sumneko/lua-glob/blob/master/glob.lua
 
----@class Glob
+---@class neotree.lib.LuaGlob
 local M = {}
 M.__index = M
 
----@class Glob.Options
+---@class neotree.lib.LuaGlob.Options
 ---@field ignoreCase? boolean
 ---@field asGitIgnore? boolean
 ---@field root? string
 
----@class Glob.Interface
+---@class neotree.lib.LuaGlob.Interface
 ---@field type? fun(path: string):('file'|'directory'|nil)
 ---@field list? fun(path: string):string[]?
 ---@field patterns? fun(path: string):string[]?
 
+---@param pat string
+---@param start integer
 local function parsePatternRangePart(pat, start)
   local pack = {
     kind = "range",
@@ -43,6 +45,8 @@ local function parsePatternRangePart(pat, start)
   return pack, index
 end
 
+---@param pat string
+---@param start integer
 local function parsePatternBracePart(pat, start)
   local s, e, a1, a2 = pat:find("(%a)%.%.(%a)%}", start)
   if s then
@@ -240,9 +244,9 @@ function M:setOption(op, val)
   self.options[op] = val
 end
 
----@overload fun(self: Glob, key: 'type', func: fun(path: string):('file'|'directory'|nil))
----@overload fun(self: Glob, key: 'list', func: fun(path: string):string[]?)
----@overload fun(self: Glob, key: 'patterns', func: fun(path: string):string[]?)
+---@overload fun(self: neotree.lib.LuaGlob, key: 'type', func: fun(path: string):('file'|'directory'|nil))
+---@overload fun(self: neotree.lib.LuaGlob, key: 'list', func: fun(path: string):string[]?)
+---@overload fun(self: neotree.lib.LuaGlob, key: 'patterns', func: fun(path: string):string[]?)
 function M:setInterface(key, func)
   if type(func) ~= "function" then
     return
@@ -609,17 +613,17 @@ function M:__call(...)
 end
 
 ---@param pattern? string|string[]
----@param options? Glob.Options
----@param interface? Glob.Interface
----@return Glob
+---@param options? neotree.lib.LuaGlob.Options
+---@param interface? neotree.lib.LuaGlob.Interface
+---@return neotree.lib.LuaGlob
 local function createGlob(pattern, options, interface)
-  ---@class Glob
+  ---@class neotree.lib.LuaGlob
   local glob = setmetatable({
     ---@type table<string, table[]?>
     patternMap = {},
-    ---@type Glob.Options
+    ---@type neotree.lib.LuaGlob.Options
     options = {},
-    ---@type Glob.Interface
+    ---@type neotree.lib.LuaGlob.Interface
     interface = {},
   }, M)
 
@@ -647,9 +651,9 @@ local function createGlob(pattern, options, interface)
 end
 
 ---@param pattern? string|string[]
----@param options? Glob.Options
----@param interface? Glob.Interface
----@return Glob
+---@param options? neotree.lib.LuaGlob.Options
+---@param interface? neotree.lib.LuaGlob.Interface
+---@return neotree.lib.LuaGlob
 local function createGitIgnore(pattern, options, interface)
   local glob = createGlob(pattern, options, interface)
   glob:setOption("asGitIgnore", true)

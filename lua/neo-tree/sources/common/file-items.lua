@@ -115,8 +115,10 @@ local create_item, set_parents
 ---@field dotfiles boolean?
 ---@field hidden boolean?
 ---@field gitignored boolean?
+---@field ignored boolean?
 ---@field parent neotree.FileItemFilters?
 ---@field show_gitignored boolean?
+---@field show_ignored boolean?
 
 ---@class (exact) neotree.FileItemExtra
 ---@field status string? Git status
@@ -318,7 +320,7 @@ end
 ---@field folders table<string, neotree.FileItem.Directory|neotree.FileItem.Link?>
 ---@field nesting neotree.FileItem[]
 ---@field item_exists table<string, boolean?>
----@field all_items table<string, neotree.FileItem?>
+---@field all_items neotree.FileItem[]?
 ---@field path_to_reveal string?
 
 ---Create context to be used in other file-items functions.

@@ -228,6 +228,9 @@ local remove_filtered = function(source_items, filtered_items)
         elseif fby.show_gitignored and fby.gitignored then
           visible[#visible + 1] = item
           break
+        elseif fby.show_ignored and fby.gitignored then
+          visible[#visible + 1] = item
+          break
         elseif fby.parent then
           fby = fby.parent
         else
