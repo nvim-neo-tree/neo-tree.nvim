@@ -1,4 +1,5 @@
 ---From https://github.com/sumneko/lua-glob/blob/master/glob.lua
+local utils = require("neo-tree.utils")
 
 ---@class neotree.lib.LuaGlob
 local M = {}
@@ -224,7 +225,7 @@ end
 ---@param pat string
 ---@param base? string
 function M:addPattern(pat, base)
-  base = base or ""
+  base = base or self.options.root or ""
   if self.options.ignoreCase then
     base = base:lower()
   end
@@ -453,20 +454,27 @@ function M:checkPattern(paths, pattern, start)
   return false
 end
 
+---@enum neotree.lib.LuaGlob.Status
+local Statuses = {
+  UNKNOWN = "unknown",
+  REFUSED = "refused",
+  ACCEPTED = "accepted",
+}
+
 ---@param paths string[]
----@return 'accepted'|'refused'|'unknown'
+---@return neotree.lib.LuaGlob.Status
 function M:status(paths)
   local status = "unknown"
 
   local function statusWithPatterns(patterns, start)
     for _, pattern in ipairs(patterns) do
-      if status ~= "refused" and pattern.refused then
+      if status ~= Statuses.REFUSED and pattern.refused then
         if self:checkPattern(paths, pattern, start) then
-          status = "refused"
+          status = Statuses.REFUSED
         end
-      elseif status ~= "accepted" and not pattern.refused then
+      elseif status ~= Statuses.ACCEPTED and not pattern.refused then
         if self:checkPattern(paths, pattern, start) then
-          status = "accepted"
+          status = Statuses.ACCEPTED
         end
       end
     end
@@ -476,7 +484,7 @@ function M:status(paths)
     for i = 1, #paths do
       local base = table.concat(paths, "/", 1, i - 1)
       if self.options.root then
-        base = self.options.root / base
+        base = utils.path_join(self.options.root, base)
       end
       local patternKey = base
       if self.options.ignoreCase then
@@ -508,7 +516,7 @@ function M:status(paths)
 end
 
 ---@param path string
----@return boolean
+---@return boolean? accepted
 function M:check(path)
   local root = self.options.root
   if root then
@@ -524,21 +532,27 @@ function M:check(path)
     for p in path:gmatch("[^/\\]+") do
       paths[#paths + 1] = p
       local status = self:status(paths)
-      if status == "accepted" then
+      if status == Statuses.ACCEPTED then
         return true
-      elseif status == "refused" then
+      elseif status == Statuses.REFUSED then
         return false
       end
     end
-    return false
-  else
-    local paths = {}
-    for p in path:gmatch("[^/\\]+") do
-      paths[#paths + 1] = p
-    end
-
-    return self:status(paths) == "accepted"
+    return nil
   end
+
+  local paths = {}
+  for p in path:gmatch("[^/\\]+") do
+    paths[#paths + 1] = p
+  end
+
+  local status = self:status(paths)
+  if status == Statuses.ACCEPTED then
+    return true
+  elseif status == Statuses.REFUSED then
+    return false
+  end
+  return nil
 end
 
 ---@private
@@ -627,18 +641,18 @@ local function createGlob(pattern, options, interface)
     interface = {},
   }, M)
 
+  if type(options) == "table" then
+    for op, val in pairs(options) do
+      glob:setOption(op, val)
+    end
+  end
+
   if type(pattern) == "table" then
     for _, pat in ipairs(pattern) do
       glob:addPattern(pat)
     end
   elseif pattern then
     glob:addPattern(pattern)
-  end
-
-  if type(options) == "table" then
-    for op, val in pairs(options) do
-      glob:setOption(op, val)
-    end
   end
 
   if type(interface) == "table" then
@@ -663,4 +677,5 @@ end
 return {
   glob = createGlob,
   gitignore = createGitIgnore,
+  Statuses = Statuses,
 }

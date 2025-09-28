@@ -337,6 +337,7 @@ end
 
 ---@class neotree.Component.Common.FilteredBy
 ---@field [1] "filtered_by"?
+---@param node neotree.FileNode
 M.filtered_by = function(_, node, state)
   local fby = node.filtered_by
   if not state.filtered_items or type(fby) ~= "table" then
@@ -362,6 +363,11 @@ M.filtered_by = function(_, node, state)
       return {
         text = "(dotfile)",
         highlight = highlights.DOTFILE,
+      }
+    elseif fby.ignored then
+      return {
+        text = ("(ignored by )"):format(fby.ignore_file),
+        highlight = highlights.IGNORED,
       }
     elseif fby.hidden then
       return {

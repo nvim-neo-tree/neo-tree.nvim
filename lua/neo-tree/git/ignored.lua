@@ -92,16 +92,13 @@ M.mark_ignored = function(state, items, callback)
     return results
   end
 
-  local show_gitignored = state.filtered_items and state.filtered_items.hide_gitignored == false
   ---@param all_results string[]
   local function finalize(all_results)
-    log.trace("IGNORED: Comparing results to mark items as ignored:", show_gitignored)
     local ignored, not_ignored = 0, 0
     for _, item in ipairs(items) do
       if M.is_ignored(all_results, item.path, item.type) then
         item.filtered_by = item.filtered_by or {}
         item.filtered_by.gitignored = true
-        item.filtered_by.show_gitignored = show_gitignored
         ignored = ignored + 1
       else
         not_ignored = not_ignored + 1

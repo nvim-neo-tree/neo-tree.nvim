@@ -115,6 +115,7 @@ local create_item, set_parents
 ---@field dotfiles boolean?
 ---@field hidden boolean?
 ---@field gitignored boolean?
+---@field ignore_file string?
 ---@field ignored boolean?
 ---@field parent neotree.FileItemFilters?
 ---@field show_gitignored boolean?
