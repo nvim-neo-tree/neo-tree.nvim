@@ -36,6 +36,9 @@ M.mark_ignored = function(state, items)
   ---@type table<string, neotree.lib.LuaGlob[]>
   local applicable_globs = {}
 
+  ---@type string[]
+  local results = {}
+
   for folder, children in pairs(folders) do
     applicable_globs[folder] = applicable_globs[folder] or {}
     local applicable_ignore_files =
@@ -63,7 +66,7 @@ M.mark_ignored = function(state, items)
     for _, item in ipairs(children) do
       if not item.filtered_by or not item.filtered_by.ignored then
         for _, parser in ipairs(applicable_globs[folder]) do
-          if parser(item.path) then
+          if parser:check(item.path) then
             item.filtered_by = item.filtered_by or {}
             item.filtered_by.ignored = true
           end
@@ -71,6 +74,8 @@ M.mark_ignored = function(state, items)
       end
     end
   end
+
+  return results
 end
 
 return M
