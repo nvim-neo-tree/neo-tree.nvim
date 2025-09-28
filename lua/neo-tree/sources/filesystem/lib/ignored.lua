@@ -4,10 +4,10 @@ local uv = vim.uv or vim.loop
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 
----@class neotree.Ignore
+---@class neotree.sources.filesystem.Ignore.Rule
 ---@field root string
 ---@field pattern string
----@field exclude string
+---@field negate string
 
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
@@ -35,19 +35,26 @@ M.mark_ignored = function(state, items, callback)
   local upward_ignore_paths = {}
 
   ---@type table<string, string[]>
-  local ignore_file_rules = {}
+  local ignore_rules = {}
   for folder in pairs(folders) do
-    upward_ignore_paths[folder] =
-      vim.fs.find(ignore_files, { upward = true, limit = math.huge, path = folder })
+    local paths = vim.fs.find(ignore_files, { upward = true, limit = math.huge, path = folder })
+    upward_ignore_paths[folder] = paths
 
-    for _, path in ipairs(upward_ignore_paths[folder]) do
+    for _, path in ipairs(paths) do
       for line in io.lines(path) do
-        ---@cast line string
-        local no_ignore = vim.startswith(line, "!")
-        -- ignore_file_rules[path]
+        if line:sub(1, 1) ~= "#" then
+          ---@cast line string
+          local negated = line:sub(1, 1) == "!"
+          local pat = negated and line:sub(2) or line
+        end
       end
     end
   end
+end
+
+if vim.fn.has("nvim-0.10") then
+  -- make it a no-op
+  M.mark_ignored = function() end
 end
 
 return M
