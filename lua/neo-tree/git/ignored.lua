@@ -67,6 +67,7 @@ M.mark_ignored = function(state, items, callback)
       --on Windows, git seems to return quotes and double backslash "path\\directory"
       ---@param item string
       results = vim.tbl_map(function(item)
+        item = item:gsub("\\\\", "\\")
         return item
       end, results)
     else
