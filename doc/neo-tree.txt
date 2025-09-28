@@ -985,9 +985,19 @@ highlight group which will be applied when they are visible, see
     require("neo-tree").setup({
       filesystem = {
         filtered_items = {
-          visible = false, -- when true, they will just be displayed differently than normal items
+          -- when true, they will just be displayed differently than normal items
+          visible = false,
+          -- whether children of filtered parents should inherit their parent's highlight group
+          children_inherit_highlights = true,
           hide_dotfiles = true,
           hide_gitignored = true,
+          hide_ignored = true, -- hide files that are ignored by other gitignore-like files
+          -- other gitignore-like files, in descending order of precedence.
+          ignore_files = {
+            ".neotreeignore",
+            ".ignore",
+            -- ".rgignore"
+          },
           hide_hidden = true, -- only works on Windows for hidden files/directories
           hide_by_name = {
             ".DS_Store",
@@ -1019,16 +1029,29 @@ highlight group which will be applied when they are visible, see
 The `visible` option just defines the default value. This value is toggled by
 the "toggle_hidden" command, which is mapped to H by default.
 
+The `children_inherit_highlights` option specifies whether children of filtered
+items should inherit the parent's (filtered) highlight. This is useful if you
+are editing inside filtered directories and want more detailed highlights in the
+tree.
+
 The `hide_dotfiles` option just hides anything that starts with `. `(period).
 
 The `hide_gitignored` option will query git for the files and folders being
 shown, and hide those that are marked as ignored.
 
-The `hide_hidden` option only will work on Windows using the Windows logic
-that determines if a file or directory is hidden.
+The `hide_ignored` option will hide files that match the patterns found in
+`ignore_files`.
 
-The `hide_by_name` option is a list of file/folder names that should be
-hidden. This is an exact match.
+The `ignore_files` options specifies which gitignore-like files should be
+respected. If two ignore files are at the same level, the `ignore_files` option
+is in descending order of precedence, so the first file specified should win
+(e.g. `.neotreeignore` over `.ignore`).
+
+The `hide_hidden` option checks a Windows-specific API to determine if a file or
+directory is hidden in the Windows sense.
+
+The `hide_by_name` option is a list of file/folder names that should be hidden.
+This is an exact match.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
 patterns. No guarantees on how it handles advanced patterns.
