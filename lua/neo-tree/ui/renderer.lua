@@ -210,6 +210,8 @@ end
 local remove_filtered = function(source_items, filtered_items)
   local visible = {}
   local hidden = {}
+  local show_gitignored = filtered_items and filtered_items.hide_gitignored == false
+  local show_ignored = filtered_items and filtered_items.hide_ignored == false
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
     if not fby or item.contains_reveal_target then
@@ -225,11 +227,15 @@ local remove_filtered = function(source_items, filtered_items)
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
           hidden[#hidden + 1] = item
           break
-        elseif fby.show_gitignored and fby.gitignored then
+        elseif show_gitignored and fby.gitignored then
+          visible[#visible + 1] = item
+          break
+        elseif show_ignored and fby.ignored then
           visible[#visible + 1] = item
           break
         elseif fby.parent then
           fby = fby.parent
+          -- continue to next iteration
         else
           -- filtered by some other reason
           hidden[#hidden + 1] = item
@@ -241,9 +247,7 @@ local remove_filtered = function(source_items, filtered_items)
   return visible, hidden
 end
 
----@class neotree.FileNodeData : neotree.FileItem
-
----@class neotree.FileNode : neotree.FileNodeData, NuiTree.Node
+---@class neotree.FileNode : neotree.FileItem, NuiTree.Node
 
 local create_nodes
 ---Transforms a list of items into a collection of TreeNodes.

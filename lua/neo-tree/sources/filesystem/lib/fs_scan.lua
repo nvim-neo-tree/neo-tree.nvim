@@ -11,6 +11,7 @@ local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 local events = require("neo-tree.events")
 local async = require("plenary.async")
+local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
 local M = {}
 
@@ -117,7 +118,7 @@ end
 local should_check_gitignore = function(context)
   local state = context.state
   if #context.all_items == 0 then
-    log.info("No items, skipping git ignored/status lookups")
+    log.debug("No items, skipping git ignored/status lookups")
     return false
   end
   if state.search_pattern and state.check_gitignore_in_search == false then
@@ -132,6 +133,7 @@ local should_check_gitignore = function(context)
   return true
 end
 
+---@param context neotree.sources.filesystem.Context
 local job_complete_async = function(context)
   local state = context.state
   local parent_id = context.parent_id
@@ -144,6 +146,8 @@ local job_complete_async = function(context)
   -- end
   if should_check_gitignore(context) then
     local mark_ignored_async = async.wrap(function(_state, _all_items, _callback)
+      ---lua-ls can't narrow this properly
+      ---@diagnostic disable-next-line: redundant-parameter
       git.mark_ignored(_state, _all_items, _callback)
     end, 3)
     local all_items = mark_ignored_async(state, context.all_items)
@@ -154,17 +158,23 @@ local job_complete_async = function(context)
       state.git_ignored = all_items
     end
   end
+
+  ignored.mark_ignored(state, context.all_items)
   return context
 end
 
+---@param context neotree.sources.filesystem.Context
 local job_complete = function(context)
   local state = context.state
   local parent_id = context.parent_id
 
   file_nesting.nest_items(context)
 
+  ignored.mark_ignored(state, context.all_items)
   if should_check_gitignore(context) then
     if require("neo-tree").config.git_status_async then
+      ---lua-ls can't narrow this properly
+      ---@diagnostic disable-next-line: redundant-parameter
       git.mark_ignored(state, context.all_items, function(all_items)
         if parent_id then
           vim.list_extend(state.git_ignored, all_items)
@@ -352,14 +362,14 @@ local function async_scan(context, path)
 
   -- from https://github.com/nvim-lua/plenary.nvim/blob/master/lua/plenary/scandir.lua
   local function read_dir(current_dir, ctx)
-    uv.fs_opendir(current_dir, function(err, dir)
-      if err then
-        log.error(current_dir, ": ", err)
+    uv.fs_opendir(current_dir, function(openerr, dir)
+      if openerr then
+        log.error(current_dir, ": ", openerr)
         return
       end
-      local function on_fs_readdir(err, entries)
-        if err then
-          log.error(current_dir, ": ", err)
+      local function on_fs_readdir(readerr, entries)
+        if readerr then
+          log.error(current_dir, ": ", readerr)
           return
         end
         if entries then
@@ -605,6 +615,7 @@ end
 ---@field is_a_never_show_file fun(filename: string?):boolean
 
 ---@class neotree.sources.filesystem.State : neotree.StateWithTree, neotree.Config.Filesystem
+---@field git_ignored neotree.FileItem[]
 ---@field path string
 
 ---@param state neotree.sources.filesystem.State
