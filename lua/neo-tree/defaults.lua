@@ -445,6 +445,9 @@ local config = {
       ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
+      -- You can sort by command name with:
+      -- ["?"] = { "show_help", config = { sorter = function(a, b) return a.mapping.text < b.mapping.text end } },
+      -- The type of a and b are neotree.Help.Mapping
       ["<"] = "prev_source",
       [">"] = "next_source",
     },
