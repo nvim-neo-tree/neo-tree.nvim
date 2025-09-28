@@ -101,7 +101,7 @@ M.mark_ignored = function(state, items, callback)
       if M.is_ignored(all_results, item.path, item.type) then
         item.filtered_by = item.filtered_by or {}
         item.filtered_by.gitignored = true
-        item.filtered_by.show_ignored = show_gitignored
+        item.filtered_by.show_gitignored = show_gitignored
         ignored = ignored + 1
       else
         not_ignored = not_ignored + 1
@@ -150,14 +150,14 @@ M.mark_ignored = function(state, items, callback)
           log.trace("IGNORED: Running async git with args: ", args)
         end,
         on_exit = function(self, code, _)
-          local result
+          local results
           if code ~= 0 then
             log.debug("Failed to load ignored files for", folder, ":", self:stderr_result())
-            result = {}
+            results = {}
           else
-            result = self:result()
+            results = self:result()
           end
-          vim.list_extend(all_results, process_results(result))
+          vim.list_extend(all_results, process_results(results))
 
           running_jobs = running_jobs - 1
           completed_jobs = completed_jobs + 1
