@@ -246,11 +246,13 @@ M.get_path_to_reveal = function(include_terminals)
   end
 
   local buf_relpath = utils.normalize_path(vim.fn.expand("%"))
-  if not utils.truthy(buf_relpath) then
+  local abspath = vim.api.nvim_buf_get_name(0)
+  if not utils.truthy(buf_relpath) or not utils.truthy(abspath) then
     return nil
   end
 
-  if not include_terminals and buf_relpath:match("term://") then
+  if not include_terminals and abspath:match("term://") then
+    vim.print(abspath)
     return nil
   end
 
