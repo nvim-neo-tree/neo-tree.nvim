@@ -365,8 +365,9 @@ M.filtered_by = function(_, node, state)
         highlight = highlights.DOTFILE,
       }
     elseif fby.ignored then
+      local _, fname = utils.split_path(fby.ignore_file)
       return {
-        text = ("(ignored by )"):format(fby.ignore_file),
+        text = ("(ignored by %s)"):format(fname),
         highlight = highlights.IGNORED,
       }
     elseif fby.hidden then
