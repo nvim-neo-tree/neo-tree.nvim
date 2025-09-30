@@ -252,7 +252,6 @@ M.get_path_to_reveal = function(include_terminals)
   end
 
   if not include_terminals and abspath:match("term://") then
-    vim.print(abspath)
     return nil
   end
 
