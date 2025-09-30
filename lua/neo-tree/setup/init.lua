@@ -42,8 +42,8 @@ local define_events = function()
   end
 
   events.define_event(events.FS_EVENT, {
-    debounce_frequency = 100,
-    debounce_strategy = utils.debounce_strategy.CALL_LAST_ONLY,
+    debounce_frequency = 200,
+    debounce_strategy = utils.debounce_strategy.CALL_FIRST_AND_LAST,
   })
 
   local v = vim.version()
@@ -89,7 +89,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_WIN_CLOSED, { "WinClosed" })
   events.define_autocmd_event(events.VIM_WIN_ENTER, { "WinEnter" }, 0, nil, true)
 
-  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 100)
+  events.define_autocmd_event(events.GIT_EVENT, { "User FugitiveChanged" }, 200)
   events.define_event(events.GIT_STATUS_CHANGED, { debounce_frequency = 0 })
   events_setup = true
 
