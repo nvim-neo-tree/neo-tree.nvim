@@ -317,6 +317,7 @@ M.win_enter_event = function()
   end
 end
 
+---@param level neotree.Logger.Config.Level
 M.set_log_level = function(level)
   log.set_level(level)
 end

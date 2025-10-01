@@ -214,6 +214,9 @@ log_maker.new = function(config, parent)
     local to_loglevel = function(lvl)
       if type(lvl) == "string" then
         local levelupper = lvl:upper()
+        if levelupper == "FATAL" then
+          return vim.log.levels.OFF
+        end
         for name, level_num in pairs(Levels) do
           if levelupper == name then
             return level_num

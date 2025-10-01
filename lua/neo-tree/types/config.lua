@@ -123,7 +123,7 @@
 ---@field git_status_async_options neotree.Config.GitStatusAsync
 ---@field hide_root_node boolean
 ---@field retain_hidden_root_indent boolean
----@field log_level "trace"|"debug"|"info"|"warn"|"error"|"fatal"|nil
+---@field log_level neotree.Logger.Config.Level
 ---@field log_to_file boolean|string
 ---@field open_files_in_last_window boolean
 ---@field open_files_do_not_replace_types string[]

@@ -31,8 +31,17 @@ local config = {
   hide_root_node = false, -- Hide the root node.
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
-  log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
-  log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
+  log_level = {
+    -- minimum log level for messages to be logged to console/log file respectively
+    file = vim.log.levels.INFO,
+    console = vim.log.levels.INFO,
+    -- any vim.log.levels value is valid, or "trace", "debug", "info", "warn", "error", or "fatal"
+    -- setting log_level directly values lower than INFO will set the file level to the value, but the console level
+    -- will cap out at INFO (for compatibility/usability)
+  },
+  -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file.
+  -- Default location is `vim.fn.stdpath("data") .. "/" .. "neo-tree.nvim.log"`
+  log_to_file = false,
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   open_files_using_relative_paths = false,
