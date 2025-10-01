@@ -73,12 +73,12 @@ local fire_event_internal = function(event, args)
   if queue == nil then
     return nil
   end
-  log.trace("Firing event:", event, "with args:", args)
 
   if queue:is_empty() then
     --log.trace("Event queue is empty")
     return nil
   end
+  log.trace("Firing event:", event, "with args:", args)
   local seed = utils.get_value(event_definitions, event .. ".seed")
   if seed ~= nil then
     local success, result = pcall(seed, args)
@@ -115,7 +115,6 @@ end
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
-  log.trace("Firing event:", event, " with args:", args)
   if freq > 0 then
     utils.debounce("EVENT_FIRED: " .. event, function()
       fire_event_internal(event, args or {})

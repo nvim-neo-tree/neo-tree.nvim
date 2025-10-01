@@ -17,9 +17,9 @@ local uv = vim.uv or vim.loop
 ---|"error"
 ---|"fatal"
 
----@alias neotree.Logger.Config.Level neotree.Logger.Config.LogLevels|neotree.Log.Level
+---@alias neotree.Logger.Config.Level neotree.Logger.Config.ConsoleAndFileLevel|neotree.Log.Level
 
----@class neotree.Logger.Config.LogLevels
+---@class neotree.Logger.Config.ConsoleAndFileLevel
 ---@field console neotree.Log.Level
 ---@field file neotree.Log.Level
 
@@ -35,15 +35,14 @@ local default_config = {
   ---@type string[]
   context = {},
 
-  -- Should print the output to neovim while running
+  ---Should print the output to neovim while running
   ---@type boolean
   use_console = true,
 
-  -- Should highlighting be used in console (using echohl)
+  ---Should highlighting be used in console (using echohl)
   ---@type boolean
   highlights = true,
 
-  -- Should write to a file
   ---@type boolean
   use_file = false,
 
@@ -57,9 +56,12 @@ local default_config = {
     [Levels.OFF] = { name = "fatal", hl = "ErrorMsg" },
   },
 
-  -- Any messages above this level will be logged.
-  ---@type string|vim.log.levels Any string that can be uppercased to one of the fields of vim.log.levels is okay.
-  level = vim.log.levels.INFO,
+  ---Any messages above this level will be logged.
+  ---@type neotree.Logger.Config.ConsoleAndFileLevel
+  level = {
+    file = vim.log.levels.INFO,
+    console = vim.log.levels.INFO,
+  },
 
   -- Can limit the number of decimals displayed for floats
   ---@type number
@@ -133,6 +135,7 @@ log.new = function(config, parent)
     return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
   end
 
+  local inspect_opts = { depth = 2, newline = " " }
   local make_string = function(...)
     local tbl = {}
     for i = 1, select("#", ...) do
@@ -143,7 +146,7 @@ log.new = function(config, parent)
         if _type == "number" and config.float_precision then
           x = tostring(round(x, config.float_precision))
         elseif _type == "table" then
-          x = vim.inspect(x, { depth = 2 })
+          x = vim.inspect(x, inspect_opts)
           if #x > 300 then
             x = x:sub(1, 300) .. "..."
           end
@@ -160,7 +163,7 @@ log.new = function(config, parent)
   ---@param name string
   ---@param msg string
   local log_to_file = function(name, msg)
-    local info = debug.getinfo(2, "Sl")
+    local info = debug.getinfo(4, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
     local str = string.format("[%-6s%s] %s: %s\n", name, os.date("%F-%T"), lineinfo, msg)
     if not fp:write(str) then
