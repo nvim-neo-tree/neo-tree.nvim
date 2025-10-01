@@ -16,7 +16,6 @@ local uv = vim.uv or vim.loop
 ---|"warn"
 ---|"error"
 ---|"fatal"
-local logfile_check_interval = {}
 
 ---@alias neotree.Logger.Config.Level neotree.Logger.Config.ConsoleAndFileLevel|neotree.Log.Level
 
@@ -99,12 +98,12 @@ log_maker.new = function(config, parent)
     end
   end)
 
-  local outfile = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
+  local initial_filepath = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
 
   ---@type file*?
-  local fp
+  log.file = nil
   if config.use_file then
-    log.use_file(outfile)
+    log.use_file(initial_filepath)
   end
 
   local round = function(x, increment)
@@ -113,6 +112,9 @@ log_maker.new = function(config, parent)
     return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
   end
 
+  local last_logfile_check_time = 0
+  local current_logfile_inode = -1
+  local logfile_check_interval = 20 -- TODO: probably use filesystem events rather than this
   local inspect_opts = { depth = 2, newline = " " }
   local prefix = table.concat(config.context, ".")
   ---@param log_type string
@@ -122,12 +124,18 @@ log_maker.new = function(config, parent)
     local lineinfo = info.short_src .. ":" .. info.currentline
     local str =
       string.format("[%-6s%s] %s%s: %s\n", log_type, os.date("%F-%T"), prefix, lineinfo, msg)
-    if fp and assert(fp:write(str)) then
+    if log.file and assert(log.file:write(str)) then
+      local curtime = os.time()
+      -- make sure the file is valid every so often
+      if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
+        last_logfile_check_time = curtime
+        log.use_file(log.filepath, true)
+      end
       return
     end
 
     vim.schedule(function()
-      vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
+      vim.notify_once("[neo-tree] Could not open log file: " .. log.filepath)
     end)
   end
 
@@ -136,8 +144,8 @@ log_maker.new = function(config, parent)
 
   vim.api.nvim_create_autocmd("VimLeavePre", {
     callback = function()
-      if fp then
-        fp:close()
+      if log.file then
+        log.file:close()
       end
     end,
   })
@@ -268,6 +276,7 @@ log_maker.new = function(config, parent)
 
   ---@param file string|boolean
   ---@param quiet boolean?
+  ---@return boolean using_file
   log.use_file = function(file, quiet)
     if file == false then
       if not quiet then
@@ -276,22 +285,29 @@ log_maker.new = function(config, parent)
       config.use_file = false
     else
       if type(file) == "string" then
-        log.outfile = file
+        log.filepath = file
       else
-        log.outfile = outfile
+        log.filepath = initial_filepath
       end
-      fp = io.open(log.outfile, "a+")
+      local fp = io.open(log.filepath, "a+")
+      local new_logfile_ino = assert(uv.fs_stat(log.filepath)).ino
       if fp then
-        fp:setvbuf("line")
+        if new_logfile_ino ~= current_logfile_inode then
+          -- the fp is pointing to a new/different file than previously
+          log.file = fp
+          log.file:setvbuf("line")
+          current_logfile_inode = new_logfile_ino
+        end
         config.use_file = true
         if not quiet then
-          log.info("Logging to file: ", log.outfile)
+          log.info("Logging to file:", log.filepath)
         end
       else
         config.use_file = false
-        log.warn("Could not open log file: ", log.outfile)
+        log.warn("Could not open log file:", log.filepath)
       end
     end
+    return config.use_file
   end
 
   ---Quick wrapper around assert that also supports subsequent args being the same as string.format (to reduce work done on happy paths)
