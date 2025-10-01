@@ -1177,7 +1177,7 @@ M.abspath_prefix = function(path)
       or path:match([[^/]])
   end
 
-  return path:match("^/") or path:match("^[^:/]+://")
+  return path:match("^/")
 end
 
 local table_merge_internal
