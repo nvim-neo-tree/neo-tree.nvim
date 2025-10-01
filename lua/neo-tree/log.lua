@@ -290,8 +290,8 @@ log_maker.new = function(config, parent)
         log.filepath = initial_filepath
       end
       local fp = io.open(log.filepath, "a+")
-      local new_logfile_ino = assert(uv.fs_stat(log.filepath)).ino
       if fp then
+        local new_logfile_ino = assert(uv.fs_stat(log.filepath)).ino
         if new_logfile_ino ~= current_logfile_inode then
           -- the fp is pointing to a new/different file than previously
           log.file = fp
