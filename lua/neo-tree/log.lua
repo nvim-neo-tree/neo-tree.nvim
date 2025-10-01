@@ -1,4 +1,12 @@
-local Levels = vim.log.levels
+---@enum neotree.Log.Levels
+local Levels = {
+  TRACE = 0,
+  DEBUG = 1,
+  INFO = 2,
+  WARN = 3,
+  ERROR = 4,
+  FATAL = 5,
+}
 local uv = vim.uv or vim.loop
 -- log.lua
 --
@@ -9,7 +17,7 @@ local uv = vim.uv or vim.loop
 -- under the terms of the MIT license. See LICENSE for details.
 
 ---@alias neotree.Log.Level
----|vim.log.levels
+---|neotree.Log.Levels
 ---|"trace"
 ---|"debug"
 ---|"info"
@@ -53,7 +61,7 @@ local default_config = {
     [Levels.INFO] = { name = "info", hl = "None" },
     [Levels.WARN] = { name = "warn", hl = "WarningMsg" },
     [Levels.ERROR] = { name = "error", hl = "ErrorMsg" },
-    [Levels.OFF] = { name = "fatal", hl = "ErrorMsg" },
+    [Levels.FATAL] = { name = "fatal", hl = "ErrorMsg" },
   },
 
   ---Any messages above this level will be logged.
@@ -214,9 +222,6 @@ log_maker.new = function(config, parent)
     local to_loglevel = function(lvl)
       if type(lvl) == "string" then
         local levelupper = lvl:upper()
-        if levelupper == "FATAL" then
-          return vim.log.levels.OFF
-        end
         for name, level_num in pairs(Levels) do
           if levelupper == name then
             return level_num
@@ -251,7 +256,7 @@ log_maker.new = function(config, parent)
     log.info = logfunc(Levels.INFO, make_string)
     log.warn = logfunc(Levels.WARN, make_string)
     log.error = logfunc(Levels.ERROR, make_string)
-    log.fatal = logfunc(Levels.OFF, make_string)
+    log.fatal = logfunc(Levels.FATAL, make_string)
     -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
     log.at = {
       trace = {
@@ -270,7 +275,7 @@ log_maker.new = function(config, parent)
         format = logfunc(Levels.ERROR, string.format),
       },
       fatal = {
-        format = logfunc(Levels.OFF, string.format),
+        format = logfunc(Levels.FATAL, string.format),
       },
     }
   end

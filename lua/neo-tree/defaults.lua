@@ -31,14 +31,14 @@ local config = {
   hide_root_node = false, -- Hide the root node.
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
-  log_level = {
-    -- minimum log level for messages to be logged to console/log file respectively
-    file = vim.log.levels.INFO,
-    console = vim.log.levels.INFO,
-    -- any vim.log.levels value is valid, or "trace", "debug", "info", "warn", "error", or "fatal"
-    -- setting log_level directly values lower than INFO will set the file level to the value, but the console level
-    -- will cap out at INFO (for compatibility/usability)
-  },
+  -- The minimum level of log statements that should be logged to the log file.
+  log_level = vim.log.levels.INFO, -- or other vim.log.levels (up to .ERROR), or "trace", "debug", "info", "warn", "error", "fatal"
+  -- For usabiliity, the minimum console log level = max(log_level, INFO) unless set explicitly using a table:
+  -- log_level = {
+  --   file = vim.log.levels.INFO,
+  --   console = vim.log.levels.INFO,
+  -- },
+
   -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file.
   -- Default location is `vim.fn.stdpath("data") .. "/" .. "neo-tree.nvim.log"`
   log_to_file = false,
