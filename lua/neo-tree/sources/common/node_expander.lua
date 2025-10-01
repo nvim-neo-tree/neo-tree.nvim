@@ -11,7 +11,7 @@ local M = {}
 local function expand_loaded(node, state, prefetcher)
   local function rec(current_node, to_load)
     if prefetcher.should_prefetch(current_node) then
-      log.trace("Node " .. current_node:get_id() .. "not loaded, saving for later")
+      log.trace("Node", current_node:get_id(), "not loaded, saving for later")
       table.insert(to_load, current_node)
     else
       if not current_node:is_expanded() then
@@ -19,12 +19,12 @@ local function expand_loaded(node, state, prefetcher)
         state.explicitly_opened_nodes[current_node:get_id()] = true
       end
       local children = state.tree:get_nodes(current_node:get_id())
-      log.debug("Expanding childrens of " .. current_node:get_id())
+      log.debug("Expanding childrens of", current_node:get_id())
       for _, child in ipairs(children) do
         if utils.is_expandable(child) then
           rec(child, to_load)
         else
-          log.trace("Child: " .. (child.name or "") .. " is not expandable, skipping")
+          log.trace("Child:", (child.name or ""), "is not expandable, skipping")
         end
       end
     end
@@ -56,7 +56,7 @@ end
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_directory_recursively = function(state, node, prefetcher)
-  log.debug("Expanding directory " .. node:get_id())
+  log.debug("Expanding directory", node:get_id())
   prefetcher = prefetcher or M.default_prefetcher
   if not utils.is_expandable(node) then
     return

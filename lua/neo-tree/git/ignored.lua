@@ -145,7 +145,7 @@ M.mark_ignored = function(state, items, callback)
         enabled_recording = true,
         writer = folder_items,
         on_start = function()
-          log.trace("IGNORED: Running async git with args: ", args)
+          log.trace("IGNORED: Running async git with args:", args)
         end,
         on_exit = function(self, code, _)
           local results
@@ -170,7 +170,7 @@ M.mark_ignored = function(state, items, callback)
   else
     for folder, folder_items in pairs(folders) do
       local cmd = { "git", "-C", folder, "check-ignore", unpack(folder_items) }
-      log.trace("IGNORED: Running cmd: ", cmd)
+      log.trace("IGNORED: Running cmd:", cmd)
       local result = vim.fn.systemlist(cmd)
       if vim.v.shell_error == 128 then
         log.debug("Failed to load ignored files for", state.path, ":", result)

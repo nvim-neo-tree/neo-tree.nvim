@@ -76,8 +76,12 @@ M.show_filter = function(
     local a_score = result_scores[a.path]
     local b_score = result_scores[b.path]
     if a_score == nil or b_score == nil then
-      log.debug(
-        string.format([[Fzy: failed to compare %s: %s, %s: %s]], a.path, a_score, b.path, b_score)
+      log.at.debug.format(
+        [[Fzy: failed to compare %s: %s, %s: %s]],
+        a.path,
+        a_score,
+        b.path,
+        b_score
       )
       local config = require("neo-tree").config
       if config.sort_function ~= nil then
@@ -159,7 +163,7 @@ M.show_filter = function(
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders
       else
-        log.trace("Setting search in on_change to: " .. value)
+        log.trace("Setting search in on_change to:", value)
         state.search_pattern = value
         state.fuzzy_finder_mode = fuzzy_finder_mode
         if use_fzy then

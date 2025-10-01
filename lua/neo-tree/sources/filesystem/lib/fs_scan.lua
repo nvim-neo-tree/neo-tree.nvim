@@ -43,7 +43,7 @@ local on_directory_loaded = function(context, dir_path)
         end
       end)
 
-      log.trace("Adding fs watcher for ", target_path)
+      log.trace("Adding fs watcher for", target_path)
       fs_watch.watch_folder(target_path, fs_watch_callback)
     end
   end
@@ -300,7 +300,7 @@ end
 
 --- async method
 local function scan_dir_async(context, path)
-  log.debug("scan_dir_async - start " .. path)
+  log.debug("scan_dir_async - start", path)
 
   local get_children = async.wrap(function(_path, callback)
     return get_children_async(_path, callback)
@@ -323,7 +323,7 @@ local function scan_dir_async(context, path)
   end
 
   process_node(context, path)
-  log.debug("scan_dir_async - finish " .. path)
+  log.debug("scan_dir_async - finish", path)
   return path
 end
 
@@ -331,7 +331,7 @@ end
 -- and adds them as items to render in the UI.
 ---@param context neotree.sources.filesystem.Context
 local function async_scan(context, path)
-  log.trace("async_scan: ", path)
+  log.trace("async_scan:", path)
   local scan_mode = require("neo-tree").config.filesystem.scan_mode
 
   if scan_mode == "deep" then
@@ -428,7 +428,7 @@ end
 ---@param context neotree.sources.filesystem.Context
 ---@param path_to_scan string
 local function sync_scan(context, path_to_scan)
-  log.trace("sync_scan: ", path_to_scan)
+  log.trace("sync_scan:", path_to_scan)
   local scan_mode = require("neo-tree").config.filesystem.scan_mode
   if scan_mode == "deep" then
     for _, path in ipairs(context.paths_to_load) do
@@ -729,7 +729,7 @@ M.stop_watchers = function(state)
     end)
     fs_watch.unwatch_git_index(state.path, require("neo-tree").config.git_status_async)
     for _, folder in ipairs(loaded_folders) do
-      log.trace("Unwatching folder ", folder.path)
+      log.trace("Unwatching folder", folder.path)
       if folder.is_link then
         fs_watch.unwatch_folder(folder.link_to)
       else
@@ -738,9 +738,9 @@ M.stop_watchers = function(state)
     end
   else
     log.debug(
-      "Not unwatching folders... use_libuv_file_watcher is ",
+      "Not unwatching folders... use_libuv_file_watcher is",
       state.use_libuv_file_watcher,
-      " and state.tree is ",
+      " and state.tree is",
       utils.truthy(state.tree)
     )
   end

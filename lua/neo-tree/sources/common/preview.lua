@@ -284,6 +284,7 @@ function Preview:activate()
   vim.api.nvim_win_set_var(self.winid, "neo_tree_preview", 1)
 end
 
+local image_nvim_url = "https://github.com/3rd/image.nvim"
 ---@param winid number
 ---@param bufnr number
 ---@return boolean hijacked Whether the buffer was successfully hijacked.
@@ -293,9 +294,9 @@ local function try_load_image_nvim_buf(winid, bufnr)
   if #vim.api.nvim_get_autocmds({ group = image_augroup }) == 0 then
     local image_available, image = pcall(require, "image")
     if not image_available then
-      local image_nvim_url = "https://github.com/3rd/image.nvim"
       log.debug(
-        "use_image_nvim was set but image.nvim was not found. Install from: " .. image_nvim_url
+        "use_image_nvim was set but image.nvim was not found. Install from:",
+        image_nvim_url
       )
       return false
     end
@@ -341,7 +342,8 @@ events.subscribe({
     if not snacks_image_ok then
       local snacks_nvim_url = "https://github.com/folke/snacks.nvim"
       log.debug(
-        "use_snacks_image was set but snacks.nvim was not found. Install from: " .. snacks_nvim_url
+        "use_snacks_image was set but snacks.nvim was not found. Install from:",
+        snacks_nvim_url
       )
       return
     end

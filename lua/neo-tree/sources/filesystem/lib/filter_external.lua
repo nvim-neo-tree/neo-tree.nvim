@@ -100,9 +100,12 @@ M.filter_files_external = function(
   on_insert,
   on_exit
 )
-  if glob ~= nil and regex ~= nil then
-    local log_msg = string.format([[glob: %s, regex: %s]], glob, regex)
-    log.warn("both glob and regex are set. glob will take precedence. " .. log_msg)
+  if glob and regex then
+    log.at.warn.format(
+      "both glob and regex are set. glob will take precedence. glob: %s, regex: %s",
+      glob,
+      regex
+    )
   end
   ignore = ignore or {}
   kind = kind or {}

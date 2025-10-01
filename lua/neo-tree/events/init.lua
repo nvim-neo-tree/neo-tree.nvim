@@ -67,7 +67,7 @@ end
 ---@param seed_fn function?
 ---@param nested boolean?
 M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed_fn, nested)
-  log.debug("Defining autocmd event: %s", event_name)
+  log.debug("Defining autocmd event:", event_name)
   local augroup_name = "NeoTreeEvent_" .. event_name
   q.define_event(event_name, {
     setup = function()
@@ -91,7 +91,7 @@ M.define_autocmd_event = function(event_name, autocmds, debounce_frequency, seed
     end,
     seed = seed_fn,
     teardown = function()
-      log.trace("Teardown autocmds for ", event_name)
+      log.trace("Teardown autocmds for", event_name)
       vim.api.nvim_create_augroup(augroup_name, { clear = true })
     end,
     debounce_frequency = debounce_frequency,

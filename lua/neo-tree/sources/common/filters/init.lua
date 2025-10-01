@@ -173,7 +173,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       end
 
       -- finally do the search
-      log.trace("Setting search in on_change to: " .. value)
+      log.trace("Setting search in on_change to:", value)
       state.search_pattern = value
       local len_to_delay = { [0] = 500, 500, 400, 200 }
       local delay = len_to_delay[#value] or 100
@@ -322,9 +322,7 @@ local function apply_simple_mappings(input, cmds, state, scroll_padding, mode, m
           if command then
             input:map(mode, lhs, setup_command(command), opts)
           elseif not vim.tbl_contains(M._falsy_mapping_names, cmd) then
-            log.warn(
-              string.format("Invalid command in fuzzy_finder_mappings: ['%s'] = '%s'", lhs, cmd)
-            )
+            log.at.warn.format("Invalid command in fuzzy_finder_mappings: ['%s'] = '%s'", lhs, cmd)
           end
         end
       elseif cmdtype == "function" then
