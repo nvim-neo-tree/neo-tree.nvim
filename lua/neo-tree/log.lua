@@ -128,7 +128,7 @@ log_maker.new = function(config, parent)
   ---@param log_type string
   ---@param msg string
   local log_to_file = function(log_type, msg)
-    local info = debug.getinfo(4, "Sl")
+    local info = debug.getinfo(3, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
     local str =
       string.format("[%-6s%s] %s%s: %s\n", log_type, os.date("%F-%T"), prefix, lineinfo, msg)
