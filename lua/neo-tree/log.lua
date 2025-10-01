@@ -80,9 +80,8 @@ local log_maker = {}
 
 ---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
 ---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
----@param parent neotree.Logger?
 ---@return neotree.Logger
-log_maker.new = function(config, parent)
+log_maker.new = function(config)
   ---@class neotree.Logger
   local log = {}
   ---@diagnostic disable-next-line: cast-local-type
@@ -187,7 +186,7 @@ log_maker.new = function(config, parent)
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level > log.minimum_level.file and log_level > log.minimum_level.console then
+    if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
       return function() end
     end
     local level_config = config.level_configs[log_level]
@@ -220,6 +219,10 @@ log_maker.new = function(config, parent)
     ---@param lvl neotree.Log.Level
     ---@return vim.log.levels
     local to_loglevel = function(lvl)
+      if type(lvl) == "number" then
+        return lvl
+      end
+
       if type(lvl) == "string" then
         local levelupper = lvl:upper()
         for name, level_num in pairs(Levels) do
@@ -227,8 +230,6 @@ log_maker.new = function(config, parent)
             return level_num
           end
         end
-      elseif type(lvl) == "number" then
-        return lvl
       end
       notify("Couldn't resolve log level " .. lvl .. "defaulting to log level INFO", Levels.WARN)
       return Levels.INFO
@@ -287,33 +288,37 @@ log_maker.new = function(config, parent)
   ---@return boolean using_file
   log.use_file = function(file, quiet)
     if file == false then
+      config.use_file = false
       if not quiet then
         log.info("Logging to file disabled")
       end
+      return config.use_file
+    end
+    log.outfile = type(file) == "string" and file or initial_filepath
+    local fp, err = io.open(log.outfile, "a+")
+
+    if not fp then
       config.use_file = false
-    else
-      if type(file) == "string" then
-        log.outfile = file
-      else
-        log.outfile = initial_filepath
-      end
-      local fp = io.open(log.outfile, "a+")
-      if fp then
-        local new_logfile_ino = assert(uv.fs_stat(log.outfile)).ino
-        if new_logfile_ino ~= current_logfile_inode then
-          -- the fp is pointing to a new/different file than previously
-          log.file = fp
-          log.file:setvbuf("line")
-          current_logfile_inode = new_logfile_ino
-        end
-        config.use_file = true
-        if not quiet then
-          log.info("Logging to file:", log.outfile)
-        end
-      else
-        config.use_file = false
-        log.warn("Could not open log file:", log.outfile)
-      end
+      log.warn("Could not open log file:", log.outfile, err)
+      return config.use_file
+    end
+
+    local stat, stat_err = uv.fs_stat(log.outfile)
+    if not stat then
+      config.use_file = false
+      log.warn("Could not stat log file:", log.outfile, stat_err)
+      return config.use_file
+    end
+
+    if stat.ino ~= current_logfile_inode then
+      -- the fp is pointing to a different file
+      log.file = fp
+      log.file:setvbuf("line")
+      current_logfile_inode = stat.ino
+    end
+    config.use_file = true
+    if not quiet then
+      log.info("Logging to file:", log.outfile)
     end
     return config.use_file
   end
@@ -353,8 +358,7 @@ log_maker.new = function(config, parent)
         "force",
         config,
         { context = vim.list_extend({ new_context }, { context }) }
-      ),
-      log
+      )
     )
   end
 

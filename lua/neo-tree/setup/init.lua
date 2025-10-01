@@ -428,10 +428,6 @@ M.merge_config = function(user_config)
     end, 50)
   end
 
-  if user_config.log_level ~= nil then
-    M.set_log_level(user_config.log_level)
-  end
-  log.use_file(user_config.log_to_file, true)
   log.debug("setup")
 
   if events_setup then
