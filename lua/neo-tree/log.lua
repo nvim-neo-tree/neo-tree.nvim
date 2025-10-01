@@ -188,6 +188,7 @@ log_maker.new = function(config, parent)
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
     if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
+      vim.print("noop", log_level)
       return function() end
     end
     local level_config = config.level_configs[log_level]
@@ -291,31 +292,35 @@ log_maker.new = function(config, parent)
         log.info("Logging to file disabled")
       end
       config.use_file = false
-    else
-      if type(file) == "string" then
-        log.outfile = file
-      else
-        log.outfile = initial_filepath
-      end
-      local fp = io.open(log.outfile, "a+")
-      if fp then
-        local new_logfile_ino = assert(uv.fs_stat(log.outfile)).ino
-        if new_logfile_ino ~= current_logfile_inode then
-          -- the fp is pointing to a new/different file than previously
-          log.file = fp
-          log.file:setvbuf("line")
-          current_logfile_inode = new_logfile_ino
-        end
-        config.use_file = true
-        if not quiet then
-          log.info("Logging to file:", log.outfile)
-        end
-      else
-        config.use_file = false
-        log.warn("Could not open log file:", log.outfile)
-      end
+      return false
     end
-    return config.use_file
+    log.outfile = type(file) == "string" and file or initial_filepath
+    local fp = io.open(log.outfile, "a+")
+
+    if not fp then
+      log.warn("Could not open log file:", log.outfile)
+      config.use_file = false
+      return config.use_file
+    end
+
+    local new_logfile_stat, err = uv.fs_stat(log.outfile)
+    if not new_logfile_stat then
+      log.warn("Could not stat log file:", log.outfile, err)
+      config.use_file = false
+      return false
+    end
+
+    if new_logfile_stat.ino ~= current_logfile_inode then
+      -- the fp is pointing to a different file
+      log.file = fp
+      log.file:setvbuf("line")
+      current_logfile_inode = new_logfile_stat.ino
+    end
+    if not quiet then
+      log.info("Logging to file:", log.outfile)
+    end
+    config.use_file = true
+    return true
   end
 
   ---Quick wrapper around assert that also supports subsequent args being the same as string.format (to reduce work done on happy paths)
