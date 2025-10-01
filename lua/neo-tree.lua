@@ -109,6 +109,10 @@ end
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
+  if new_user_config.log_level ~= nil then
+    M.set_log_level(new_user_config.log_level)
+  end
+  require("neo-tree.log").use_file(new_user_config.log_to_file, true)
   if vim.v.vim_did_enter == 0 then
     try_netrw_hijack(vim.fn.argv(0) --[[@as string]])
   end

@@ -187,7 +187,7 @@ log_maker.new = function(config, parent)
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level > log.minimum_level.file and log_level > log.minimum_level.console then
+    if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
       return function() end
     end
     local level_config = config.level_configs[log_level]
