@@ -98,11 +98,9 @@ function Queue:for_each(func)
       elseif type(result) == "table" then
         if result.handled == true then
           log.trace(
-            "Handler ",
+            "Handler",
             node.value.id,
-            " for "
-              .. node.value.event
-              .. " returned handled = true, skipping the rest of the queue."
+            "for" .. node.value.event .. "returned handled = true, skipping the rest of the queue."
           )
           return result
         end

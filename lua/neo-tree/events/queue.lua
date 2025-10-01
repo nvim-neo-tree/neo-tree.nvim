@@ -58,7 +58,7 @@ M.destroy_event = function(event_name)
   if existing.setup_was_run and type(existing.teardown) == "function" then
     local success, result = pcall(existing.teardown)
     if not success then
-      error("Error in teardown for " .. event_name .. ": " .. result)
+      log.error("Error in teardown for", event_name, ":", result)
     end
     existing.setup_was_run = false
   end
@@ -73,7 +73,7 @@ local fire_event_internal = function(event, args)
   if queue == nil then
     return nil
   end
-  --log.trace("Firing event: ", event, " with args: ", args)
+  log.trace("Firing event:", event, "with args:", args)
 
   if queue:is_empty() then
     --log.trace("Event queue is empty")
@@ -83,11 +83,11 @@ local fire_event_internal = function(event, args)
   if seed ~= nil then
     local success, result = pcall(seed, args)
     if success and result then
-      log.trace("Seed for " .. event .. " returned: " .. tostring(result))
+      log.trace("Seed for", event, "returned: ", result)
     elseif success then
-      log.trace("Seed for " .. event .. " returned falsy, cancelling event")
+      log.trace("Seed for", event, "returned falsy, cancelling event")
     else
-      log.error("Error in seed function for " .. event .. ": " .. result)
+      log.error("Error in seed function for", event .. ": ", result)
     end
   end
 
@@ -97,7 +97,7 @@ local fire_event_internal = function(event, args)
       local success, result = pcall(event_handler.handler, args)
       local id = event_handler.id or event_handler
       if success then
-        log.trace("Handler ", id, " for " .. event .. " called successfully.")
+        log.trace("Handler", id, "for", event, "called successfully.")
       else
         log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
       end
@@ -115,7 +115,7 @@ end
 M.fire_event = function(event, args)
   local freq = utils.get_value(event_definitions, event .. ".debounce_frequency", 0, true)
   local strategy = utils.get_value(event_definitions, event .. ".debounce_strategy", 0, true)
-  log.trace("Firing event: ", event, " with args: ", args)
+  log.trace("Firing event:", event, " with args:", args)
   if freq > 0 then
     utils.debounce("EVENT_FIRED: " .. event, function()
       fire_event_internal(event, args or {})
@@ -131,21 +131,21 @@ M.subscribe = function(event_handler)
 
   local queue = event_queues[event_handler.event]
   if queue == nil then
-    log.debug("Creating queue for event: " .. event_handler.event)
+    log.debug("Creating queue for event:", event_handler.event)
     queue = Queue:new()
     local def = event_definitions[event_handler.event]
     if def and type(def.setup) == "function" then
       local success, result = pcall(def.setup)
       if success then
         def.setup_was_run = true
-        log.debug("Setup for event " .. event_handler.event .. " was run")
+        log.debug("Ran setup for event", event_handler.event)
       else
-        log.error("Error in setup for " .. event_handler.event .. ": " .. result)
+        log.error("Error in setup for", event_handler.event, ":", result)
       end
     end
     event_queues[event_handler.event] = queue
   end
-  log.debug("Adding event handler [", event_handler.id, "] for event: ", event_handler.event)
+  log.debug("Adding event handler [", event_handler.id, "] for event:", event_handler.event)
   queue:add(event_handler)
 end
 

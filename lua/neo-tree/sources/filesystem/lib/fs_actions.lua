@@ -214,11 +214,11 @@ end
 ---@param using_root_directory string?
 M.move_node = function(source, destination, callback, using_root_directory)
   log.trace(
-    "Moving node: ",
+    "Moving node:",
     source,
-    " to ",
+    "to",
     destination,
-    ", using root directory: ",
+    ", using root directory:",
     using_root_directory
   )
   local _, name = utils.split_path(source)
@@ -546,7 +546,7 @@ M.delete_node = function(path, callback, noconfirm)
   local _, name = utils.split_path(path)
   local msg = string.format("Are you sure you want to delete '%s'?", name)
 
-  log.trace("Deleting node: ", path)
+  log.trace("Deleting node:", path)
   local _type = "unknown"
   local stat = uv.fs_stat(path)
   if stat then

@@ -250,7 +250,7 @@ M.buffer_enter_event = function()
     end
 
     local bufname = vim.api.nvim_buf_get_name(0)
-    log.debug("redirecting buffer " .. bufname .. " to new split")
+    log.debug("redirecting buffer", bufname, " to new split")
     vim.cmd("b#")
     local win_width = vim.api.nvim_win_get_width(current_winid)
     -- Using schedule at this point  fixes problem with syntax
@@ -378,7 +378,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
   if source_default_config == nil then
     -- first override the default config global renderer with the user's global renderers
     for name, renderer in pairs(user_config.renderers or {}) do
-      log.debug("overriding global renderer for " .. name)
+      log.debug("overriding global renderer for", name)
       default_config.renderers[name] = renderer
     end
   else
@@ -386,7 +386,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
     source_default_config.renderers = source_default_config.renderers or {}
     for name, renderer in pairs(default_config.renderers or {}) do
       if source_default_config.renderers[name] == nil then
-        log.debug("overriding source renderer for " .. name)
+        log.debug("overriding source renderer for", name)
         local r = {}
         -- Only copy components that exist in the target source.
         -- This alllows us to specify global renderers that include components from all sources,
@@ -516,7 +516,7 @@ M.merge_config = function(user_config)
       table.insert(all_source_names, name)
     end
   end
-  log.debug("Sources to load: ", vim.inspect(all_sources))
+  log.debug("Sources to load:", vim.inspect(all_sources))
   require("neo-tree.command.parser").setup(all_source_names)
 
   normalize_fuzzy_mappings(default_config.filesystem)

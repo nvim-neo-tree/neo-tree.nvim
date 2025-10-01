@@ -215,7 +215,7 @@ M.status_async = function(path, base, opts)
     if utils.truthy(git_root) then
       log.trace("git.status.status_async called")
     else
-      log.trace("status_async: not a git folder: ", path)
+      log.trace("status_async: not a git folder:", path)
       return false
     end
 

@@ -127,7 +127,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
       return
     end
     local mod = utils.get_opened_buffers()
-    log.debug("close_if_last_window, modified files found: ", vim.inspect(mod))
+    log.debug("close_if_last_window, modified files found:", vim.inspect(mod))
     for filename, buf_info in pairs(mod) do
       if buf_info.modified then
         local buf_name, message
@@ -140,7 +140,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
           message =
             "Cannot close because one of the files is modified. Please save or discard changes."
         end
-        log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
+        log.trace("close_if_last_window, showing unnamed modified buffer:", filename)
         vim.schedule(function()
           log.warn(message)
           vim.cmd("rightbelow vertical split")

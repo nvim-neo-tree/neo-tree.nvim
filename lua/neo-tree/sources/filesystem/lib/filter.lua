@@ -159,7 +159,7 @@ M.show_filter = function(
         fs.reset_search(state)
         state.open_folders_before_search = original_open_folders
       else
-        log.trace("Setting search in on_change to: " .. value)
+        log.trace("Setting search in on_change to:" .. value)
         state.search_pattern = value
         state.fuzzy_finder_mode = fuzzy_finder_mode
         if use_fzy then

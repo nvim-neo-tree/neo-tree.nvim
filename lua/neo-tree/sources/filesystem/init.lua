@@ -64,7 +64,7 @@ local follow_internal = function(callback, force_show, async)
     return false
   end
 
-  log.debug("follow file: ", path_to_reveal)
+  log.debug("follow file:", path_to_reveal)
   local show_only_explicitly_opened = function()
     state.explicitly_opened_nodes = state.explicitly_opened_nodes or {}
     local expanded_nodes = renderer.get_expanded_nodes(state.tree)
@@ -133,7 +133,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   local orig_path = path
   local backed_out = false
   while not fs_stat(path) do
-    log.debug(("navigate_internal: path %s didn't exist, going up a directory"):format(path))
+    log.debug("navigate_internal: path", path, "didn't exist, going up a directory")
     backed_out = true
     local parent, _ = utils.split_path(path)
     if not parent then
@@ -147,7 +147,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   end
 
   if path ~= state.path then
-    log.debug("navigate_internal: path changed from ", state.path, " to ", path)
+    log.debug("navigate_internal: path changed from", state.path, "to", path)
     state.path = path
     path_changed = true
   end
@@ -171,7 +171,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
       if success then
         log.trace("navigate_internal: position saved")
       else
-        log.trace("navigate_internal: FAILED to save position: ", msg)
+        log.trace("navigate_internal: FAILED to save position:", msg)
       end
       fs_scan.get_items(state, nil, nil, callback, async)
     end
@@ -530,7 +530,7 @@ M.prefetcher = {
     if node.type ~= "directory" then
       return
     end
-    log.debug("Running fs prefetch for: " .. node:get_id())
+    log.debug("Running fs prefetch for:" .. node:get_id())
     fs_scan.get_dir_items_async(state, node:get_id(), true)
   end,
   should_prefetch = function(node)

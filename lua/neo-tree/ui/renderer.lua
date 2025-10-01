@@ -97,7 +97,7 @@ local start_resize_monitor = function()
         log.trace("No windows exist, stopping resize monitor")
       end
     else
-      log.debug("Error checking window size: ", err)
+      log.debug("Error checking window size:", err)
       vim.defer_fn(check_window_size, math.max(interval * 5, 1000))
     end
   end
@@ -524,7 +524,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
       M.expand_to_node(state, node)
       node, linenr = assert(tree:get_node(id))
       if not linenr then
-        log.debug("focus_node cannot get linenr for node with id ", id)
+        log.debug("focus_node cannot get linenr for node with id", id)
         return false
       end
     end
@@ -568,7 +568,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
       end
       M.position.save(state)
     else
-      log.debug("Failed to set cursor: " .. err)
+      log.debug("Failed to set cursor:" .. err)
     end
     return success
   end
@@ -752,14 +752,14 @@ end
 ---@param state neotree.State
 M.position.restore = function(state)
   if state.position.topline and state.position.lnum then
-    log.debug("Restoring window position to topline: " .. state.position.topline)
-    log.debug("Restoring cursor position to lnum: " .. state.position.lnum)
+    log.debug("Restoring window position to topline:", state.position.topline)
+    log.debug("Restoring cursor position to lnum:", state.position.lnum)
     vim.api.nvim_win_call(state.winid, function()
       vim.fn.winrestview({ topline = state.position.topline, lnum = state.position.lnum })
     end)
   end
   if state.position.node_id then
-    log.debug("Focusing on node_id: " .. state.position.node_id)
+    log.debug("Focusing on node_id:", state.position.node_id)
     M.focus_node(state, state.position.node_id, true)
   end
 
@@ -936,7 +936,7 @@ local set_buffer_mappings = function(state)
         break
       end
       if skip_this_mapping[func] then
-        log.trace("Skipping mapping for %s", cmd)
+        log.trace("Skipping mapping for", cmd)
         break
       end
       local oldfunc = func
@@ -1035,7 +1035,7 @@ local function create_floating_window(state, win_options, bufname)
   end, { once = true })
   state.winid = win.winid
   state.bufnr = win.bufnr
-  log.debug("Created floating window with winid: ", win.winid, " and bufnr: ", win.bufnr)
+  log.debug("Created floating window with winid:", win.winid, " and bufnr:", win.bufnr)
   vim.api.nvim_buf_set_name(state.bufnr, bufname)
 
   -- why is this necessary?

@@ -268,7 +268,7 @@ M.subscribe = function(source_name, event)
   if not utils.truthy(event.id) then
     event.id = sd.name .. "." .. event.event
   end
-  log.trace("subscribing to event: " .. event.id)
+  log.trace("subscribing to event:" .. event.id)
   sd.subscriptions[event] = true
   events.subscribe(event)
 end
@@ -324,11 +324,11 @@ M.close_all = function(at_position)
       if state.tabid == tabid then
         if at_position then
           if state.current_position == at_position then
-            log.trace("Closing " .. source_name .. " at position " .. at_position)
+            log.trace("Closing", source_name, "at position", at_position)
             pcall(renderer.close, state)
           end
         else
-          log.trace("Closing " .. source_name)
+          log.trace("Closing", source_name)
           pcall(renderer.close, state)
         end
       end
@@ -341,7 +341,7 @@ M.close_all_except = function(except_source_name)
   for source_name, _ in pairs(source_data) do
     M._for_each_state(source_name, function(state)
       if state.tabid == tabid and source_name ~= except_source_name then
-        log.trace("Closing " .. source_name)
+        log.trace("Closing ", source_name)
         pcall(renderer.close, state)
       end
     end)
@@ -487,7 +487,7 @@ M.dispose = function(source_name, tabid)
     local state = all_states[i]
     if source_name == nil or state.name == source_name then
       if not tabid or tabid == state.tabid then
-        log.trace(state.name, " disposing of tab: ", tabid)
+        log.trace(state.name, "disposing of tab:", tabid)
         dispose_state(state)
         table.remove(all_states, i)
       end
@@ -504,7 +504,7 @@ M.dispose_tab = function(tabid)
   for i = #all_states, 1, -1 do
     local state = all_states[i]
     if tabid == state.tabid then
-      log.trace(state.name, " disposing of tab: ", tabid, state.name)
+      log.trace(state.name, "disposing of tab:", tabid, state.name)
       dispose_state(state)
       table.remove(all_states, i)
     end
@@ -517,7 +517,7 @@ M.dispose_invalid_tabs = function()
     local state = all_states[i]
     -- if not valid_tabs[state.tabid] then
     if not vim.api.nvim_tabpage_is_valid(state.tabid) then
-      log.trace(state.name, " disposing of tab: ", state.tabid, state.name)
+      log.trace(state.name, "disposing of tab:", state.tabid, state.name)
       dispose_state(state)
       table.remove(all_states, i)
     end
@@ -531,7 +531,7 @@ M.dispose_window = function(winid)
   for i = #all_states, 1, -1 do
     local state = all_states[i]
     if state.id == winid then
-      log.trace(state.name, " disposing of window: ", winid, state.name)
+      log.trace(state.name, "disposing of window:", winid, state.name)
       dispose_state(state)
       table.remove(all_states, i)
     end
@@ -760,7 +760,7 @@ end
 ---@param global_config neotree.Config.Base Global configuration table, shared between all sources.
 ---@param module neotree.Source Module containing the source's code.
 M.setup = function(source_name, config, global_config, module)
-  log.debug(source_name, " setup ", config)
+  log.debug(source_name, "setup", config)
   M.unsubscribe_all(source_name)
   M.set_default_config(source_name, config)
   if module == nil then

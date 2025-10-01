@@ -173,7 +173,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
       end
 
       -- finally do the search
-      log.trace("Setting search in on_change to: " .. value)
+      log.trace("Setting search in on_change to:" .. value)
       state.search_pattern = value
       local len_to_delay = { [0] = 500, 500, 400, 200 }
       local delay = len_to_delay[#value] or 100

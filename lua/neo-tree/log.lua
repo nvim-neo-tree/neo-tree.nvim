@@ -97,8 +97,9 @@ log.new = function(config, parent)
   end)
 
   local outfile = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
-  logger.outfile = outfile
 
+  ---@type file*
+  local fp
   ---@param file string|boolean
   ---@param quiet boolean?
   logger.use_file = function(file, quiet)
@@ -113,11 +114,17 @@ log.new = function(config, parent)
       else
         logger.outfile = outfile
       end
+      fp = assert(io.open(logger.outfile, "a+"))
+      fp:setvbuf("line")
       config.use_file = true
       if not quiet then
         logger.info("Logging to file: " .. logger.outfile)
       end
     end
+  end
+
+  if config.use_file then
+    logger.use_file(outfile)
   end
 
   local round = function(x, increment)
@@ -127,35 +134,35 @@ log.new = function(config, parent)
   end
 
   local make_string = function(...)
-    local t = {}
+    local tbl = {}
     for i = 1, select("#", ...) do
       local x = select(i, ...)
 
-      if type(x) == "number" and config.float_precision then
-        x = tostring(round(x, config.float_precision))
-      elseif type(x) == "table" then
-        x = vim.inspect(x)
-        if #x > 300 then
-          x = x:sub(1, 300) .. "..."
+      local _type = type(x)
+      if _type ~= "string" then
+        if _type == "number" and config.float_precision then
+          x = tostring(round(x, config.float_precision))
+        elseif _type == "table" then
+          x = vim.inspect(x, { depth = 2 })
+          if #x > 300 then
+            x = x:sub(1, 300) .. "..."
+          end
+        else
+          x = tostring(x)
         end
-      else
-        x = tostring(x)
       end
 
-      t[#t + 1] = x
+      tbl[#tbl + 1] = x
     end
-    return table.concat(t, " ")
+    return table.concat(tbl, " ")
   end
-
-  local fp = assert(io.open(logger.outfile, "a+"))
-  fp:setvbuf("line")
   local prefix = table.concat({ config.plugin, unpack(config.context) }, ".")
   ---@param name string
   ---@param msg string
   local log_to_file = function(name, msg)
     local info = debug.getinfo(2, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
-    local str = string.format("[%-6s%s] %s: %s\n", name, os.date(), lineinfo, msg)
+    local str = string.format("[%-6s%s] %s: %s\n", name, os.date("%F-%T"), lineinfo, msg)
     if not fp:write(str) then
       vim.schedule(function()
         vim.notify_once("[neo-tree] Could not open log file: " .. logger.outfile)
@@ -173,7 +180,6 @@ log.new = function(config, parent)
   })
 
   ---@alias neotree.LogFunction fun(...)
-  local log_lines = 0
 
   ---@return neotree.LogFunction
   ---@param log_level vim.log.levels
@@ -191,7 +197,6 @@ log.new = function(config, parent)
         return
       end
 
-      log_lines = log_lines + 1
       local msg = message_maker(...)
 
       -- Output to log file
@@ -236,9 +241,8 @@ log.new = function(config, parent)
       ---@cast level neotree.Log.Level
       logger.log_level = {
         file = to_loglevel(level),
-        console = math.min(to_loglevel(level), Levels.INFO),
+        console = math.max(to_loglevel(level), Levels.INFO),
       }
-      vim.print(logger.log_level)
     end
 
     ---@class neotree.Logger.LevelConfig
@@ -264,6 +268,8 @@ log.new = function(config, parent)
     end
     error(...)
   end
+
+  logger.format = function(fmt, ...) end
 
   ---@param context string
   logger.new = function(context)

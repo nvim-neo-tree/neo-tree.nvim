@@ -130,7 +130,7 @@ M.expand_all_nodes = function(state, node, prefetcher)
 
   local task = function()
     for _, root in pairs(root_nodes) do
-      log.debug("Expanding all nodes under " .. root:get_id())
+      log.debug("Expanding all nodes under", root:get_id())
       node_expander.expand_directory_recursively(state, root, prefetcher)
     end
   end
@@ -220,7 +220,7 @@ M.toggle_auto_expand_width = function(state)
     vim.api.nvim_win_set_width(0, state.window.last_user_width)
     state.win_width = state.window.last_user_width
     state.longest_width_exact = 0
-    log.trace(string.format("Collapse auto_expand_width."))
+    log.trace("Collapse auto_expand_width.")
   end
   renderer.redraw(state)
 end
