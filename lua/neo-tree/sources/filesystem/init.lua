@@ -143,7 +143,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   end
 
   if backed_out then
-    log.warn(("Root path %s doesn't exist, backing out to %s"):format(orig_path, path))
+    log.at.warn.format("Root path %s doesn't exist, backing out to %s", orig_path, path)
   end
 
   if path ~= state.path then

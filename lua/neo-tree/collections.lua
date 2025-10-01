@@ -100,7 +100,9 @@ function Queue:for_each(func)
           log.trace(
             "Handler",
             node.value.id,
-            "for" .. node.value.event .. "returned handled = true, skipping the rest of the queue."
+            "for",
+            node.value.event,
+            "was handled, skipping the rest of the queue."
           )
           return result
         end

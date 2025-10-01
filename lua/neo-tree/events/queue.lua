@@ -99,7 +99,7 @@ local fire_event_internal = function(event, args)
       if success then
         log.trace("Handler", id, "for", event, "called successfully.")
       else
-        log.error(string.format("Error in event handler for event %s[%s]: %s", event, id, result))
+        log.at.error.format("Error in event handler for event %s[%s]: %s", event, id, result)
       end
       if event_handler.once then
         event_handler.cancelled = true

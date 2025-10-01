@@ -56,7 +56,7 @@ end
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_directory_recursively = function(state, node, prefetcher)
-  log.debug("Expanding directory" .. node:get_id())
+  log.debug("Expanding directory", node:get_id())
   prefetcher = prefetcher or M.default_prefetcher
   if not utils.is_expandable(node) then
     return

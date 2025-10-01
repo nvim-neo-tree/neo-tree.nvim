@@ -611,10 +611,8 @@ M.merge_config = function(user_config)
   if not match and M.config.default_source ~= "last" then
     M.config.default_source = M.config.sources[1]
     log.warn(
-      string.format(
-        "Invalid default source found in configuration. Using first available source: %s",
-        M.config.default_source
-      )
+      "Invalid default source found in configuration. Using first available source:",
+      M.config.default_source
     )
   end
 
@@ -644,7 +642,7 @@ M.merge_config = function(user_config)
     if vim.tbl_contains(M.config.sources, ss_source.source) then
       table.insert(source_selector_sources, ss_source)
     else
-      log.debug(string.format("Unable to locate Neo-tree extension %s", ss_source.source))
+      log.at.debug.format("Unable to locate Neo-tree extension %s", ss_source.source)
     end
   end
   M.config.source_selector.sources = source_selector_sources

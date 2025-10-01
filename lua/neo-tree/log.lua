@@ -16,6 +16,7 @@ local uv = vim.uv or vim.loop
 ---|"warn"
 ---|"error"
 ---|"fatal"
+local logfile_check_interval = {}
 
 ---@alias neotree.Logger.Config.Level neotree.Logger.Config.ConsoleAndFileLevel|neotree.Log.Level
 
@@ -68,15 +69,15 @@ local default_config = {
   float_precision = 0.01,
 }
 
-local log = {}
+local log_maker = {}
 
 ---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
 ---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
 ---@param parent neotree.Logger?
 ---@return neotree.Logger
-log.new = function(config, parent)
+log_maker.new = function(config, parent)
   ---@class neotree.Logger
-  local logger = {}
+  local log = {}
   ---@diagnostic disable-next-line: cast-local-type
   config = vim.tbl_deep_extend("force", default_config, config)
 
@@ -100,33 +101,10 @@ log.new = function(config, parent)
 
   local outfile = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
 
-  ---@type file*
+  ---@type file*?
   local fp
-  ---@param file string|boolean
-  ---@param quiet boolean?
-  logger.use_file = function(file, quiet)
-    if file == false then
-      if not quiet then
-        logger.info("Logging to file disabled")
-      end
-      config.use_file = false
-    else
-      if type(file) == "string" then
-        logger.outfile = file
-      else
-        logger.outfile = outfile
-      end
-      fp = assert(io.open(logger.outfile, "a+"))
-      fp:setvbuf("line")
-      config.use_file = true
-      if not quiet then
-        logger.info("Logging to file: " .. logger.outfile)
-      end
-    end
-  end
-
   if config.use_file then
-    logger.use_file(outfile)
+    log.use_file(outfile)
   end
 
   local round = function(x, increment)
@@ -136,6 +114,33 @@ log.new = function(config, parent)
   end
 
   local inspect_opts = { depth = 2, newline = " " }
+  local prefix = table.concat(config.context, ".")
+  ---@param name string
+  ---@param msg string
+  local log_to_file = function(name, msg)
+    local info = debug.getinfo(4, "Sl")
+    local lineinfo = info.short_src .. ":" .. info.currentline
+    local str = string.format("[%-6s%s] %s%s: %s\n", name, os.date("%F-%T"), prefix, lineinfo, msg)
+    if fp and assert(fp:write(str)) then
+      return
+    end
+
+    vim.schedule(function()
+      vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
+    end)
+  end
+
+  ---@type { file: vim.log.levels, console: vim.log.levels }
+  log.log_level = nil
+
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    callback = function()
+      if fp then
+        fp:close()
+      end
+    end,
+  })
+
   local make_string = function(...)
     local tbl = {}
     for i = 1, select("#", ...) do
@@ -159,36 +164,13 @@ log.new = function(config, parent)
     end
     return table.concat(tbl, " ")
   end
-  local prefix = table.concat({ config.plugin, unpack(config.context) }, ".")
-  ---@param name string
-  ---@param msg string
-  local log_to_file = function(name, msg)
-    local info = debug.getinfo(4, "Sl")
-    local lineinfo = info.short_src .. ":" .. info.currentline
-    local str = string.format("[%-6s%s] %s: %s\n", name, os.date("%F-%T"), lineinfo, msg)
-    if not fp:write(str) then
-      vim.schedule(function()
-        vim.notify_once("[neo-tree] Could not open log file: " .. logger.outfile)
-      end)
-    end
-  end
-
-  ---@type { file: vim.log.levels, console: vim.log.levels }
-  logger.log_level = nil
-
-  vim.api.nvim_create_autocmd("VimLeavePre", {
-    callback = function()
-      fp:close()
-    end,
-  })
-
   ---@alias neotree.LogFunction fun(...)
 
   ---@return neotree.LogFunction
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level > logger.log_level.file and log_level > logger.log_level.console then
+    if log_level > log.log_level.file and log_level > log.log_level.console then
       return function() end
     end
     local level_config = config.level_configs[log_level]
@@ -203,12 +185,12 @@ log.new = function(config, parent)
       local msg = message_maker(...)
 
       -- Output to log file
-      if config.use_file and log_level >= logger.log_level.file then
+      if config.use_file and log_level >= log.log_level.file then
         log_to_file(name_upper, msg)
       end
 
       -- Output to console
-      if config.use_console and log_level >= logger.log_level.console then
+      if config.use_console and log_level >= log.log_level.console then
         vim.schedule(function()
           notify(msg, log_level)
         end)
@@ -217,7 +199,7 @@ log.new = function(config, parent)
   end
 
   ---@param level neotree.Logger.Config.Level
-  logger.set_level = function(level)
+  log.set_level = function(level)
     ---@param lvl neotree.Log.Level
     ---@return vim.log.levels
     local to_loglevel = function(lvl)
@@ -236,13 +218,13 @@ log.new = function(config, parent)
     end
 
     if type(level) == "table" then
-      logger.log_level = {
+      log.log_level = {
         file = to_loglevel(level.file),
         console = to_loglevel(level.console),
       }
     else
       ---@cast level neotree.Log.Level
-      logger.log_level = {
+      log.log_level = {
         file = to_loglevel(level),
         console = math.max(to_loglevel(level), Levels.INFO),
       }
@@ -252,17 +234,66 @@ log.new = function(config, parent)
     ---@field name string
     ---@field hl string
 
-    logger.trace = logfunc(Levels.TRACE, make_string)
-    logger.debug = logfunc(Levels.TRACE, make_string)
-    logger.info = logfunc(Levels.INFO, make_string)
-    logger.warn = logfunc(Levels.WARN, make_string)
-    logger.error = logfunc(Levels.ERROR, make_string)
-    logger.fatal = logfunc(Levels.OFF, make_string)
+    log.trace = logfunc(Levels.TRACE, make_string)
+    log.debug = logfunc(Levels.DEBUG, make_string)
+    log.info = logfunc(Levels.INFO, make_string)
+    log.warn = logfunc(Levels.WARN, make_string)
+    log.error = logfunc(Levels.ERROR, make_string)
+    log.fatal = logfunc(Levels.OFF, make_string)
+    -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
+    log.at = {
+      trace = {
+        format = logfunc(Levels.TRACE, string.format),
+      },
+      debug = {
+        format = logfunc(Levels.DEBUG, string.format),
+      },
+      info = {
+        format = logfunc(Levels.INFO, string.format),
+      },
+      warn = {
+        format = logfunc(Levels.WARN, string.format),
+      },
+      error = {
+        format = logfunc(Levels.ERROR, string.format),
+      },
+      fatal = {
+        format = logfunc(Levels.OFF, string.format),
+      },
+    }
   end
 
-  logger.set_level(config.level)
+  log.set_level(config.level)
 
-  logger.assert = function(v, ...)
+  ---@param file string|boolean
+  ---@param quiet boolean?
+  log.use_file = function(file, quiet)
+    if file == false then
+      if not quiet then
+        log.info("Logging to file disabled")
+      end
+      config.use_file = false
+    else
+      if type(file) == "string" then
+        log.outfile = file
+      else
+        log.outfile = outfile
+      end
+      fp = io.open(log.outfile, "a+")
+      if fp then
+        fp:setvbuf("line")
+        config.use_file = true
+        if not quiet then
+          log.info("Logging to file: ", log.outfile)
+        end
+      else
+        config.use_file = false
+        log.warn("Could not open log file: ", log.outfile)
+      end
+    end
+  end
+
+  log.assert = function(v, ...)
     if v then
       return v, ...
     end
@@ -272,22 +303,20 @@ log.new = function(config, parent)
     error(...)
   end
 
-  logger.format = function(fmt, ...) end
-
   ---@param context string
-  logger.new = function(context)
+  log.new = function(context)
     local new_context = vim.deepcopy(config.context)
-    return log.new(
+    return log_maker.new(
       vim.tbl_deep_extend(
         "force",
         config,
         { context = vim.list_extend({ new_context }, { context }) }
       ),
-      logger
+      log
     )
   end
 
-  return logger
+  return log
 end
 
-return log.new({})
+return log_maker.new({})
