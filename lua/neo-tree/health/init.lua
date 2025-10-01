@@ -30,14 +30,11 @@ function M.check()
   check_dependency("nvim-web-devicons", "nvim-tree/nvim-web-devicons", true)
 
   health.start("Optional preview image support (only need one):")
-  check_dependency("snacks.image", "folke/snacks.image", true)
+  check_dependency("snacks.image", "folke/snacks.nvim", true)
   check_dependency("image", "3rd/image.nvim", true)
 
   health.start("Optional LSP integration for commands (like copy/delete/move/etc.)")
   check_dependency("lsp-file-operations", "antosha417/nvim-lsp-file-operations", true)
-
-  health.start("Optional window picker (for _with_window_picker commands)")
-  check_dependency("window-picker", "s1n7ax/nvim-window-picker", true)
 
   health.start("Optional window picker (for _with_window_picker commands)")
   check_dependency("window-picker", "s1n7ax/nvim-window-picker", true)
