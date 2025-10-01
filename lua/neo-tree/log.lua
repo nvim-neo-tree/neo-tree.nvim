@@ -115,12 +115,13 @@ log_maker.new = function(config, parent)
 
   local inspect_opts = { depth = 2, newline = " " }
   local prefix = table.concat(config.context, ".")
-  ---@param name string
+  ---@param log_type string
   ---@param msg string
-  local log_to_file = function(name, msg)
+  local log_to_file = function(log_type, msg)
     local info = debug.getinfo(4, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
-    local str = string.format("[%-6s%s] %s%s: %s\n", name, os.date("%F-%T"), prefix, lineinfo, msg)
+    local str =
+      string.format("[%-6s%s] %s%s: %s\n", log_type, os.date("%F-%T"), prefix, lineinfo, msg)
     if fp and assert(fp:write(str)) then
       return
     end
@@ -293,14 +294,31 @@ log_maker.new = function(config, parent)
     end
   end
 
-  log.assert = function(v, ...)
+  ---Quick wrapper around assert that also supports subsequent args being the same as string.format (to reduce work done on happy paths)
+  ---@see string.format
+  ---@generic T
+  ---@generic F
+  ---@generic A
+  ---@param v? T
+  ---@param errmsg F?
+  ---@param ... A
+  ---@return T
+  ---@return F
+  ---@return A ...
+  log.assert = function(v, errmsg, ...)
     if v then
-      return v, ...
+      return v, errmsg, ...
+    end
+    if type(errmsg) == "string" then
+      ---@cast errmsg string
+      errmsg = errmsg:format(...)
+    else
+      errmsg = "assertion failed!"
     end
     if config.use_file then
-      log_to_file("ASSERTION ERROR", table.concat({ ... }, " "))
+      log_to_file("ERROR", errmsg)
     end
-    error(...)
+    return assert(v, errmsg)
   end
 
   ---@param context string
