@@ -140,7 +140,7 @@ log_maker.new = function(config, parent)
   end
 
   ---@type { file: vim.log.levels, console: vim.log.levels }
-  log.log_level = nil
+  log.minimum_level = nil
 
   vim.api.nvim_create_autocmd("VimLeavePre", {
     callback = function()
@@ -179,7 +179,7 @@ log_maker.new = function(config, parent)
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level > log.log_level.file and log_level > log.log_level.console then
+    if log_level > log.minimum_level.file and log_level > log.minimum_level.console then
       return function() end
     end
     local level_config = config.level_configs[log_level]
@@ -194,12 +194,12 @@ log_maker.new = function(config, parent)
       local msg = message_maker(...)
 
       -- Output to log file
-      if config.use_file and log_level >= log.log_level.file then
+      if config.use_file and log_level >= log.minimum_level.file then
         log_to_file(name_upper, msg)
       end
 
       -- Output to console
-      if config.use_console and log_level >= log.log_level.console then
+      if config.use_console and log_level >= log.minimum_level.console then
         vim.schedule(function()
           notify(msg, log_level)
         end)
@@ -230,13 +230,13 @@ log_maker.new = function(config, parent)
     end
 
     if type(level) == "table" then
-      log.log_level = {
+      log.minimum_level = {
         file = to_loglevel(level.file),
         console = to_loglevel(level.console),
       }
     else
       ---@cast level neotree.Log.Level
-      log.log_level = {
+      log.minimum_level = {
         file = to_loglevel(level),
         console = math.max(to_loglevel(level), Levels.INFO),
       }
