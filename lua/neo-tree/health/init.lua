@@ -1,62 +1,56 @@
 local typecheck = require("neo-tree.health.typecheck")
+local M = {}
 local health = vim.health
 
-local M = {}
-
----@param modname string
----@param repo string
----@param optional boolean?
-local check_dependency = function(modname, repo, optional)
-  local m = pcall(require, modname)
-  if not m then
-    local errmsg = repo .. " is not installed"
-    if optional then
-      health.info(errmsg)
-    else
-      health.error(errmsg)
-    end
-    return
+local function check_dependencies()
+  local devicons_ok = pcall(require, "nvim-web-devicons")
+  if devicons_ok then
+    health.ok("nvim-web-devicons is installed")
+  else
+    health.info("nvim-web-devicons not installed")
   end
 
-  health.ok(repo .. " is installed")
-end
+  local plenary_ok = pcall(require, "plenary")
+  if plenary_ok then
+    health.ok("plenary.nvim is installed")
+  else
+    health.error("plenary.nvim is not installed")
+  end
 
-function M.check()
-  health.start("Dependencies")
-  check_dependency("plenary", "nvim-lua/plenary.nvim")
-  check_dependency("nui.tree", "MunifTanjim/nui.nvim")
+  local nui_ok = pcall(require, "nui.tree")
+  if nui_ok then
+    health.ok("nui.nvim is installed")
+  else
+    health.error("nui.nvim not installed")
+  end
 
-  health.start("Optional icons")
-  check_dependency("nvim-web-devicons", "nvim-tree/nvim-web-devicons", true)
+  health.info("Optional dependencies for preview image support (only need one):")
+  -- optional
+  local snacks_ok = pcall(require, "snacks.image")
+  if snacks_ok then
+    health.ok("snacks.image is installed")
+  else
+    health.info("nui.nvim not installed")
+  end
 
-  health.start("Optional preview image support (only need one):")
-  check_dependency("snacks.image", "folke/snacks.image", true)
-  check_dependency("image", "3rd/image.nvim", true)
-
-  health.start("Optional LSP integration for commands (like copy/delete/move/etc.)")
-  check_dependency("lsp-file-operations", "antosha417/nvim-lsp-file-operations", true)
-
-  health.start("Optional window picker (for _with_window_picker commands)")
-  check_dependency("window-picker", "s1n7ax/nvim-window-picker", true)
-
-  health.start("Optional window picker (for _with_window_picker commands)")
-  check_dependency("window-picker", "s1n7ax/nvim-window-picker", true)
-
-  health.start("Configuration")
-  local config = require("neo-tree").ensure_config()
-  M.check_config(config)
+  local image_ok = pcall(require, "image")
+  if image_ok then
+    health.ok("image.nvim is installed")
+  else
+    health.info("nui.nvim not installed")
+  end
 end
 
 local validate = typecheck.validate
 
 ---@module "neo-tree.types.config"
 ---@param config neotree.Config.Base
----@return boolean
 function M.check_config(config)
   ---@type [string, string?][]
   local errors = {}
+  local start = vim.uv.hrtime()
   local verbose = vim.o.verbose > 0
-  local valid, missed = validate(
+  local matched, missed = validate(
     "config",
     config,
     function(cfg)
@@ -301,6 +295,7 @@ function M.check_config(config)
     end,
     true
   )
+  local _end = vim.uv.hrtime()
 
   if #errors == 0 then
     health.ok("Configuration conforms to the neotree.Config.Base schema")
@@ -319,7 +314,14 @@ function M.check_config(config)
       end
     end
   end
-  return valid
+end
+
+function M.check()
+  health.start("Dependencies")
+  check_dependencies()
+  health.start("Configuration")
+  local config = require("neo-tree").ensure_config()
+  M.check_config(config)
 end
 
 return M
