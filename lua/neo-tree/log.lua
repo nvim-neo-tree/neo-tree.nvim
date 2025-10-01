@@ -129,13 +129,13 @@ log_maker.new = function(config, parent)
       -- make sure the file is valid every so often
       if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
         last_logfile_check_time = curtime
-        log.use_file(log.filepath, true)
+        log.use_file(log.outfile, true)
       end
       return
     end
 
     vim.schedule(function()
-      vim.notify_once("[neo-tree] Could not open log file: " .. log.filepath)
+      vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
     end)
   end
 
@@ -285,13 +285,13 @@ log_maker.new = function(config, parent)
       config.use_file = false
     else
       if type(file) == "string" then
-        log.filepath = file
+        log.outfile = file
       else
-        log.filepath = initial_filepath
+        log.outfile = initial_filepath
       end
-      local fp = io.open(log.filepath, "a+")
+      local fp = io.open(log.outfile, "a+")
       if fp then
-        local new_logfile_ino = assert(uv.fs_stat(log.filepath)).ino
+        local new_logfile_ino = assert(uv.fs_stat(log.outfile)).ino
         if new_logfile_ino ~= current_logfile_inode then
           -- the fp is pointing to a new/different file than previously
           log.file = fp
@@ -300,11 +300,11 @@ log_maker.new = function(config, parent)
         end
         config.use_file = true
         if not quiet then
-          log.info("Logging to file:", log.filepath)
+          log.info("Logging to file:", log.outfile)
         end
       else
         config.use_file = false
-        log.warn("Could not open log file:", log.filepath)
+        log.warn("Could not open log file:", log.outfile)
       end
     end
     return config.use_file
