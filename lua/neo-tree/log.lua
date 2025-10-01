@@ -80,9 +80,8 @@ local log_maker = {}
 
 ---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
 ---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
----@param parent neotree.Logger?
 ---@return neotree.Logger
-log_maker.new = function(config, parent)
+log_maker.new = function(config)
   ---@class neotree.Logger
   local log = {}
   ---@diagnostic disable-next-line: cast-local-type
@@ -188,7 +187,6 @@ log_maker.new = function(config, parent)
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
     if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
-      vim.print("noop", log_level)
       return function() end
     end
     local level_config = config.level_configs[log_level]
@@ -221,6 +219,10 @@ log_maker.new = function(config, parent)
     ---@param lvl neotree.Log.Level
     ---@return vim.log.levels
     local to_loglevel = function(lvl)
+      if type(lvl) == "number" then
+        return lvl
+      end
+
       if type(lvl) == "string" then
         local levelupper = lvl:upper()
         for name, level_num in pairs(Levels) do
@@ -228,8 +230,6 @@ log_maker.new = function(config, parent)
             return level_num
           end
         end
-      elseif type(lvl) == "number" then
-        return lvl
       end
       notify("Couldn't resolve log level " .. lvl .. "defaulting to log level INFO", Levels.WARN)
       return Levels.INFO
@@ -288,39 +288,39 @@ log_maker.new = function(config, parent)
   ---@return boolean using_file
   log.use_file = function(file, quiet)
     if file == false then
+      config.use_file = false
       if not quiet then
         log.info("Logging to file disabled")
       end
-      config.use_file = false
-      return false
+      return config.use_file
     end
     log.outfile = type(file) == "string" and file or initial_filepath
-    local fp = io.open(log.outfile, "a+")
+    local fp, err = io.open(log.outfile, "a+")
 
     if not fp then
-      log.warn("Could not open log file:", log.outfile)
       config.use_file = false
+      log.warn("Could not open log file:", log.outfile, err)
       return config.use_file
     end
 
-    local new_logfile_stat, err = uv.fs_stat(log.outfile)
-    if not new_logfile_stat then
-      log.warn("Could not stat log file:", log.outfile, err)
+    local stat, stat_err = uv.fs_stat(log.outfile)
+    if not stat then
       config.use_file = false
-      return false
+      log.warn("Could not stat log file:", log.outfile, stat_err)
+      return config.use_file
     end
 
-    if new_logfile_stat.ino ~= current_logfile_inode then
+    if stat.ino ~= current_logfile_inode then
       -- the fp is pointing to a different file
       log.file = fp
       log.file:setvbuf("line")
-      current_logfile_inode = new_logfile_stat.ino
+      current_logfile_inode = stat.ino
     end
+    config.use_file = true
     if not quiet then
       log.info("Logging to file:", log.outfile)
     end
-    config.use_file = true
-    return true
+    return config.use_file
   end
 
   ---Quick wrapper around assert that also supports subsequent args being the same as string.format (to reduce work done on happy paths)
@@ -358,8 +358,7 @@ log_maker.new = function(config, parent)
         "force",
         config,
         { context = vim.list_extend({ new_context }, { context }) }
-      ),
-      log
+      )
     )
   end
 
