@@ -3,13 +3,7 @@ local M = {}
 local health = vim.health
 
 local function check_dependencies()
-  local devicons_ok = pcall(require, "nvim-web-devicons")
-  if devicons_ok then
-    health.ok("nvim-web-devicons is installed")
-  else
-    health.info("nvim-web-devicons not installed")
-  end
-
+  health.start("Dependencies")
   local plenary_ok = pcall(require, "plenary")
   if plenary_ok then
     health.ok("plenary.nvim is installed")
@@ -24,20 +18,28 @@ local function check_dependencies()
     health.error("nui.nvim not installed")
   end
 
-  health.info("Optional dependencies for preview image support (only need one):")
+  health.start("Optional icon dependencies")
+  local devicons_ok = pcall(require, "nvim-web-devicons")
+  if devicons_ok then
+    health.ok("nvim-tree/nvim-web-devicons is installed")
+  else
+    health.info("nvim-tree/nvim-web-devicons not installed")
+  end
+
+  health.start("Optional preview image support (only need one):")
   -- optional
   local snacks_ok = pcall(require, "snacks.image")
   if snacks_ok then
-    health.ok("snacks.image is installed")
+    health.ok("folke/snacks.image is installed")
   else
-    health.info("nui.nvim not installed")
+    health.info("folke/snacks.image not installed")
   end
 
   local image_ok = pcall(require, "image")
   if image_ok then
-    health.ok("image.nvim is installed")
+    health.ok("3rd/image.nvim is installed")
   else
-    health.info("nui.nvim not installed")
+    health.info("3rd/image.nvim not installed")
   end
 end
 
@@ -317,7 +319,6 @@ function M.check_config(config)
 end
 
 function M.check()
-  health.start("Dependencies")
   check_dependencies()
   health.start("Configuration")
   local config = require("neo-tree").ensure_config()

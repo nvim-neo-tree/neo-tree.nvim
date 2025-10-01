@@ -1,3 +1,5 @@
+local Levels = vim.log.levels
+local uv = vim.uv or vim.loop
 -- log.lua
 --
 -- Inspired by rxi/log.lua
@@ -6,96 +8,115 @@
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
 
--- User configuration section
+---@alias neotree.Log.Level
+---|vim.log.levels
+---|"trace"
+---|"debug"
+---|"info"
+---|"warn"
+---|"error"
+---|"fatal"
+
+---@alias neotree.Logger.Config.Level neotree.Logger.Config.LogLevels|neotree.Log.Level
+
+---@class neotree.Logger.Config.LogLevels
+---@field console neotree.Log.Level
+---@field file neotree.Log.Level
+
+---@class neotree.Logger.Config
+---@type neotree.Logger.Config
 local default_config = {
   -- Name of the plugin. Prepended to log messages
+  ---@type string
   plugin = "neo-tree.nvim",
 
+  plugin_short = "Neo-tree",
+
+  ---@type string[]
+  context = {},
+
   -- Should print the output to neovim while running
+  ---@type boolean
   use_console = true,
 
   -- Should highlighting be used in console (using echohl)
+  ---@type boolean
   highlights = true,
 
   -- Should write to a file
+  ---@type boolean
   use_file = false,
 
-  -- Any messages above this level will be logged.
-  level = "info",
-
-  -- Level configuration
-  modes = {
-    { name = "trace", hl = "None", level = vim.log.levels.TRACE },
-    { name = "debug", hl = "None", level = vim.log.levels.DEBUG },
-    { name = "info", hl = "None", level = vim.log.levels.INFO },
-    { name = "warn", hl = "WarningMsg", level = vim.log.levels.WARN },
-    { name = "error", hl = "ErrorMsg", level = vim.log.levels.ERROR },
-    { name = "fatal", hl = "ErrorMsg", level = vim.log.levels.ERROR },
+  ---@type table<vim.log.levels, neotree.Logger.LevelConfig>
+  level_configs = {
+    [Levels.TRACE] = { name = "trace", hl = "None" },
+    [Levels.DEBUG] = { name = "debug", hl = "None" },
+    [Levels.INFO] = { name = "info", hl = "None" },
+    [Levels.WARN] = { name = "warn", hl = "WarningMsg" },
+    [Levels.ERROR] = { name = "error", hl = "ErrorMsg" },
+    [Levels.OFF] = { name = "fatal", hl = "ErrorMsg" },
   },
 
+  -- Any messages above this level will be logged.
+  ---@type string|vim.log.levels Any string that can be uppercased to one of the fields of vim.log.levels is okay.
+  level = vim.log.levels.INFO,
+
   -- Can limit the number of decimals displayed for floats
+  ---@type number
   float_precision = 0.01,
 }
 
--- {{{ NO NEED TO CHANGE
 local log = {}
 
-local notify = function(message, level_config)
-  if type(vim.notify) == "table" then
-    -- probably using nvim-notify
-    vim.notify(message, level_config.level, { title = "Neo-tree" })
-  else
-    local nameupper = level_config.name:upper()
-    local console_string = string.format("[Neo-tree %s] %s", nameupper, message)
-    vim.notify(console_string, level_config.level)
-  end
-end
-
-log.new = function(config, standalone)
+---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
+---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
+---@param parent neotree.Logger?
+---@return neotree.Logger
+log.new = function(config, parent)
+  ---@class neotree.Logger
+  local logger = {}
+  ---@diagnostic disable-next-line: cast-local-type
   config = vim.tbl_deep_extend("force", default_config, config)
 
-  local outfile =
-    string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "data" }), config.plugin)
+  local title_opts = { title = config.plugin_short }
+  ---@param message string
+  ---@param level vim.log.levels
+  local notify = vim.schedule_wrap(function(message, level)
+    if type(vim.notify) == "table" then
+      -- probably using nvim-notify
+      vim.notify(message, level, title_opts)
+    else
+      local level_config = config.level_configs[level]
+      local console_string = ("[%s %s] %s"):format(
+        config.plugin_short,
+        level_config.name:upper(),
+        message
+      )
+      vim.notify(console_string, level)
+    end
+  end)
 
-  local obj
-  if not standalone then
-    obj = log
-  else
-    obj = {}
-  end
-  obj.outfile = outfile
+  local outfile = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
+  logger.outfile = outfile
 
-  obj.use_file = function(file, quiet)
+  ---@param file string|boolean
+  ---@param quiet boolean?
+  logger.use_file = function(file, quiet)
     if file == false then
       if not quiet then
-        obj.info("Logging to file disabled")
+        logger.info("Logging to file disabled")
       end
       config.use_file = false
     else
       if type(file) == "string" then
-        obj.outfile = file
+        logger.outfile = file
       else
-        obj.outfile = outfile
+        logger.outfile = outfile
       end
       config.use_file = true
       if not quiet then
-        obj.info("Logging to file: " .. obj.outfile)
+        logger.info("Logging to file: " .. logger.outfile)
       end
-    end
-  end
-
-  local levels = {}
-  for i, v in ipairs(config.modes) do
-    levels[v.name] = i
-  end
-
-  obj.set_level = function(level)
-    if levels[level] then
-      if config.level ~= level then
-        config.level = level
-      end
-    else
-      notify("Invalid log level: " .. level, config.modes[5])
     end
   end
 
@@ -126,77 +147,138 @@ log.new = function(config, standalone)
     return table.concat(t, " ")
   end
 
+  local fp = assert(io.open(logger.outfile, "a+"))
+  fp:setvbuf("line")
+  local prefix = table.concat({ config.plugin, unpack(config.context) }, ".")
   ---@param name string
   ---@param msg string
   local log_to_file = function(name, msg)
     local info = debug.getinfo(2, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
     local str = string.format("[%-6s%s] %s: %s\n", name, os.date(), lineinfo, msg)
-    local fp = io.open(obj.outfile, "a")
-    if fp then
-      fp:write(str)
-      fp:close()
-    else
-      print("[neo-tree] Could not open log file: " .. obj.outfile)
-    end
-  end
-
-  local log_at_level = function(level, level_config, message_maker, ...)
-    -- Return early if we're below the config.level
-    if level < levels[config.level] then
-      return
-    end
-    -- Ignore this if vim is exiting
-    if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-      return
-    end
-
-    local msg = message_maker(...)
-
-    -- Output to log file
-    if config.use_file then
-      local nameupper = level_config.name:upper()
-      log_to_file(nameupper, msg)
-    end
-
-    -- Output to console
-    if config.use_console and level > 2 then
+    if not fp:write(str) then
       vim.schedule(function()
-        notify(msg, level_config)
+        vim.notify_once("[neo-tree] Could not open log file: " .. logger.outfile)
       end)
     end
   end
 
-  for i, mode in ipairs(config.modes) do
-    obj[mode.name] = function(...)
-      return log_at_level(i, mode, make_string, ...)
-    end
+  ---@type { file: vim.log.levels, console: vim.log.levels }
+  logger.log_level = nil
 
-    obj[("fmt_%s"):format(mode.name)] = function()
-      return log_at_level(i, mode, function(...)
-        local passed = { ... }
-        local fmt = table.remove(passed, 1)
-        local inspected = {}
-        for _, v in ipairs(passed) do
-          table.insert(inspected, vim.inspect(v))
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    callback = function()
+      fp:close()
+    end,
+  })
+
+  ---@alias neotree.LogFunction fun(...)
+  local log_lines = 0
+
+  ---@return neotree.LogFunction
+  ---@param log_level vim.log.levels
+  ---@param message_maker fun(...):string
+  local logfunc = function(log_level, message_maker)
+    if log_level > logger.log_level.file and log_level > logger.log_level.console then
+      return function() end
+    end
+    local level_config = config.level_configs[log_level]
+    local name_upper = level_config.name:upper()
+    return function(...)
+      -- Return early if we're below the config.level
+      -- Ignore this if vim is exiting
+      if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+        return
+      end
+
+      log_lines = log_lines + 1
+      local msg = message_maker(...)
+
+      -- Output to log file
+      if config.use_file and log_level >= logger.log_level.file then
+        log_to_file(name_upper, msg)
+      end
+
+      -- Output to console
+      if config.use_console and log_level >= logger.log_level.console then
+        vim.schedule(function()
+          notify(msg, log_level)
+        end)
+      end
+    end
+  end
+
+  ---@param level neotree.Logger.Config.Level
+  logger.set_level = function(level)
+    ---@param lvl neotree.Log.Level
+    ---@return vim.log.levels
+    local to_loglevel = function(lvl)
+      if type(lvl) == "string" then
+        local levelupper = lvl:upper()
+        for name, level_num in pairs(Levels) do
+          if levelupper == name then
+            return level_num
+          end
         end
-        return string.format(fmt, unpack(inspected))
-      end)
+      elseif type(lvl) == "number" then
+        return lvl
+      end
+      notify("Couldn't resolve log level " .. lvl .. "defaulting to log level INFO", Levels.WARN)
+      return Levels.INFO
     end
+
+    if type(level) == "table" then
+      logger.log_level = {
+        file = to_loglevel(level.file),
+        console = to_loglevel(level.console),
+      }
+    else
+      ---@cast level neotree.Log.Level
+      logger.log_level = {
+        file = to_loglevel(level),
+        console = math.min(to_loglevel(level), Levels.INFO),
+      }
+      vim.print(logger.log_level)
+    end
+
+    ---@class neotree.Logger.LevelConfig
+    ---@field name string
+    ---@field hl string
+
+    logger.trace = logfunc(Levels.TRACE, make_string)
+    logger.debug = logfunc(Levels.TRACE, make_string)
+    logger.info = logfunc(Levels.INFO, make_string)
+    logger.warn = logfunc(Levels.WARN, make_string)
+    logger.error = logfunc(Levels.ERROR, make_string)
+    logger.fatal = logfunc(Levels.OFF, make_string)
   end
 
-  obj.assert = function(v, ...)
+  logger.set_level(config.level)
+
+  logger.assert = function(v, ...)
     if v then
       return v, ...
     end
     if config.use_file then
-      log_to_file("ERROR", table.concat({ ... }, " "))
+      log_to_file("ASSERTION ERROR", table.concat({ ... }, " "))
     end
     error(...)
   end
+
+  ---@param context string
+  logger.new = function(context)
+    local new_context = vim.deepcopy(config.context)
+    return log.new(
+      vim.tbl_deep_extend(
+        "force",
+        config,
+        { context = vim.list_extend({ new_context }, { context }) }
+      ),
+      logger
+    )
+  end
+
+  return logger
 end
 
-log.new(default_config, false)
--- }}}
-
-return log
+return log.new({})
