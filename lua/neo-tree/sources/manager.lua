@@ -245,7 +245,7 @@ M.get_path_to_reveal = function(include_terminals)
     return nil
   end
 
-  local buf_relpath = utils.normalize_path(vim.fn.expand("%"))
+  local buf_relpath = vim.fn.expand("%")
   local abspath = vim.api.nvim_buf_get_name(0)
   if not utils.truthy(buf_relpath) or not utils.truthy(abspath) then
     return nil
@@ -255,7 +255,11 @@ M.get_path_to_reveal = function(include_terminals)
     return nil
   end
 
-  return utils.path_join(vim.fn.getcwd(), buf_relpath)
+  if buf_relpath == abspath then
+    return abspath
+  end
+
+  return utils.path_join(vim.fn.getcwd(), utils.normalize_path(buf_relpath))
 end
 
 ---@param source_name string
