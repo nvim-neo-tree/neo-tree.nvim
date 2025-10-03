@@ -11,7 +11,7 @@ local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local Path = require("plenary").path
+local Path = require("plenary.path")
 
 local M = {}
 
@@ -152,6 +152,7 @@ local function rename_buffer(old_path, new_path)
   end
 end
 
+local folder_perm = tonumber("755", 8)
 local function create_all_parents(path)
   local function create_all_as_folders(in_path)
     if not uv.fs_stat(in_path) then
@@ -159,7 +160,7 @@ local function create_all_parents(path)
       if parent then
         create_all_as_folders(parent)
       end
-      uv.fs_mkdir(in_path, 493)
+      uv.fs_mkdir(in_path, folder_perm)
     end
   end
 
@@ -170,7 +171,7 @@ end
 -- Gets a non-existing filename from the user and executes the callback with it.
 ---@param source string
 ---@param destination string
----@param using_root_directory boolean
+---@param using_root_directory string?
 ---@param name_chosen_callback fun(string)
 ---@param first_message string?
 local function get_unused_name(
@@ -204,23 +205,37 @@ local function get_unused_name(
   end
 end
 
--- Move Node
+---Copy Node
+---@generic S : string
+---@generic D : string?
+---@param source S
+---@param destination D
+---@param callback fun(source: S, destination: D|S)
+---@param using_root_directory string?
 M.move_node = function(source, destination, callback, using_root_directory)
   log.trace(
-    "Moving node: ",
+    "Moving node:",
     source,
-    " to ",
+    "to",
     destination,
-    ", using root directory: ",
+    ", using root directory:",
     using_root_directory
   )
   local _, name = utils.split_path(source)
   get_unused_name(source, destination or source, using_root_directory, function(dest)
-    -- Resolve user-inputted relative paths out of the absolute paths
-    dest = vim.fs.normalize(dest)
-    if utils.is_windows then
-      dest = utils.windowize_path(dest)
+    local parent_of_dest, _ = utils.split_path(dest)
+    if source == parent_of_dest then
+      log.warn("Cannot move " .. source .. " to itself")
+      return
     end
+
+    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
+      log.warn("Cannot move " .. source .. " to its own descendant " .. parent_of_dest)
+      return
+    end
+
+    -- Resolve user-inputted relative paths out of the absolute paths
+    dest = utils.normalize_path(dest)
     local function move_file()
       create_all_parents(dest)
       uv.fs_rename(source, dest, function(err)
@@ -284,52 +299,70 @@ local function check_path_copy_result(flat_result)
   return true
 end
 
--- Copy Node
-M.copy_node = function(source, _destination, callback, using_root_directory)
+---Copy Node
+---@generic S : string
+---@generic D : string?
+---@param source S
+---@param destination D
+---@param callback fun(source: S, destination: D|S)
+---@param using_root_directory string?
+M.copy_node = function(source, destination, callback, using_root_directory)
   local _, name = utils.split_path(source)
-  get_unused_name(source, _destination or source, using_root_directory, function(destination)
-    local parent_path, _ = utils.split_path(destination)
-    if source == parent_path then
-      log.warn("Cannot copy a file/folder to itself")
+  get_unused_name(source, destination or source, using_root_directory, function(dest)
+    local parent_of_dest, _ = utils.split_path(dest)
+    if source == parent_of_dest then
+      log.warn("Cannot copy " .. source .. " to itself")
       return
     end
 
-    local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
+    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
+      log.warn("Cannot copy " .. source .. " to its own descendant " .. parent_of_dest)
+      return
+    end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_ADD, dest) or {}
     if event_result.handled then
       return
     end
 
-    local source_path = Path:new(source)
-    if source_path:is_file() then
-      -- When the source is a file, then Path.copy() currently doesn't create
-      -- the potential non-existing parent directories of the destination.
-      create_all_parents(destination)
-    end
-    local success, result = pcall(source_path.copy, source_path, {
-      destination = destination,
-      recursive = true,
-      parents = true,
-    })
-    if not success then
-      log.error("Could not copy the file(s) from", source, "to", destination, ":", result)
-      return
-    end
+    local source_stat = log.assert(uv.fs_lstat(source))
+    if source_stat.type == "link" then
+      local target = log.assert(uv.fs_readlink(source))
+      local symlink_ok, err = uv.fs_symlink(target, destination)
+      log.assert(symlink_ok, "Could not copy symlink ", source, "to", destination, ":", err)
+    else
+      local source_path = Path:new(source)
+      if source_path:is_file() then
+        -- When the source is a file, then Path.copy() currently doesn't create
+        -- the potential non-existing parent directories of the destination.
+        create_all_parents(dest)
+      end
+      local success, result = pcall(source_path.copy, source_path, {
+        destination = dest,
+        recursive = true,
+        parents = true,
+      })
+      if not success then
+        log.error("Could not copy the file(s) from", source, "to", dest, ":", result)
+        return
+      end
 
-    -- It can happen that the Path.copy() function returns successfully but
-    -- the copy action still failed. In this case the copy() result contains
-    -- a nested table of Path instances for each file copied, and the success
-    -- result.
-    local flat_result = {}
-    flatten_path_copy_result(flat_result, result)
-    if not check_path_copy_result(flat_result) then
-      log.error("Could not copy the file(s) from", source, "to", destination, ":", flat_result)
-      return
+      -- It can happen that the Path.copy() function returns successfully but
+      -- the copy action still failed. In this case the copy() result contains
+      -- a nested table of Path instances for each file copied, and the success
+      -- result.
+      local flat_result = {}
+      flatten_path_copy_result(flat_result, result)
+      if not check_path_copy_result(flat_result) then
+        log.error("Could not copy the file(s) from", source, "to", dest, ":", flat_result)
+        return
+      end
     end
 
     vim.schedule(function()
-      events.fire_event(events.FILE_ADDED, destination)
+      events.fire_event(events.FILE_ADDED, dest)
       if callback then
-        callback(source, destination)
+        callback(source, dest)
       end
     end)
   end, 'Copy "' .. name .. '" to:')
@@ -378,7 +411,7 @@ M.create_directory = function(in_directory, callback, using_root_directory)
       end
 
       create_all_parents(destination)
-      uv.fs_mkdir(destination, 493)
+      uv.fs_mkdir(destination, folder_perm)
 
       vim.schedule(function()
         events.fire_event(events.FILE_ADDED, destination)
@@ -513,7 +546,7 @@ M.delete_node = function(path, callback, noconfirm)
   local _, name = utils.split_path(path)
   local msg = string.format("Are you sure you want to delete '%s'?", name)
 
-  log.trace("Deleting node: ", path)
+  log.trace("Deleting node:", path)
   local _type = "unknown"
   local stat = uv.fs_stat(path)
   if stat then

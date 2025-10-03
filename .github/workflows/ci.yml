@@ -27,56 +27,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        rev: ["0.8", "0.9", "0.10", "0.11"]
+        os: [ubuntu-22.04]
         include:
-          - os: ubuntu-22.04
-            rev: nightly/nvim-linux-x86_64.tar.gz
-          - os: ubuntu-22.04
-            rev: v0.8.3/nvim-linux64.tar.gz
-          - os: ubuntu-22.04
-            rev: v0.9.5/nvim-linux64.tar.gz
-          - os: ubuntu-22.04
-            rev: v0.10.4/nvim-linux-x86_64.tar.gz
+          - rev: "latest"
+            os: [windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - run: date +%F > todays-date
-      - name: Restore cache for today's nightly.
-        uses: actions/cache@v4
+      - uses: jdx/mise-action@v2
         with:
-          path: build
-          key: ${{ runner.os }}-${{ matrix.rev }}-${{ hashFiles('todays-date') }}
-      - name: Prepare
-        run: |
-          test -d build || {
-            mkdir -p build
-            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/build"
-          }
-
-      # - name: Get Luver Cache Key
-      #   id: luver-cache-key
-      #   env:
-      #     CI_RUNNER_OS: ${{ runner.os }}
-      #   run: |
-      #     echo "::set-output name=value::${CI_RUNNER_OS}-luver-v1-$(date -u +%Y-%m-%d)"
-      #   shell: bash
-      # - name: Setup Luver Cache
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: ~/.local/share/luver
-      #     key: ${{ steps.luver-cache-key.outputs.value }}
-
-      # - name: Setup Lua
-      #   uses: MunifTanjim/luver-action@v1
-      #   with:
-      #     default: 5.1.5
-      #     lua_versions: 5.1.5
-      #     luarocks_versions: 5.1.5:3.8.0
-      # - name: Setup luacov
-      #   run: |
-      #     luarocks install luacov
-
-      - name: Run tests
-        run: |
-          export PATH="${PWD}/build/bin:${PATH}"
+          install: true # [default: true] run `mise install`
+          install_args: "neovim@${{matrix.rev}}" # [default: ""] additional arguments to `mise install`
+      - run: |
+          mise use neovim@${{matrix.rev}}
           make setup
           make test
 

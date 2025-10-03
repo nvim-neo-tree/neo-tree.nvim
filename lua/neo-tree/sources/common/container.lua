@@ -198,7 +198,7 @@ end
 local try_fade_content = function(layer, fade_char_count)
   local success, err = pcall(fade_content, layer, fade_char_count)
   if not success then
-    log.debug("Error while trying to fade content: ", err)
+    log.debug("Error while trying to fade content:", err)
   end
 end
 
@@ -304,7 +304,7 @@ local merge_content = function(context)
 
   vim.list_extend(result, right)
   context.merged_content = result
-  log.trace("wanted width: ", wanted_width, " actual width: ", context.container_width)
+  log.trace("wanted width:", wanted_width, ", actual width:", context.container_width)
   context.wanted_width = math.max(wanted_width, context.wanted_width)
 end
 

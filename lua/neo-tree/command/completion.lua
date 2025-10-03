@@ -5,6 +5,9 @@ local M = {
   show_key_value_completions = true,
 }
 
+---@param key_prefix string?
+---@param base_path string
+---@return string paths_string
 local get_path_completions = function(key_prefix, base_path)
   key_prefix = key_prefix or ""
   local completions = {}
@@ -29,6 +32,8 @@ local get_path_completions = function(key_prefix, base_path)
   return table.concat(completions, "\n")
 end
 
+---@param key_prefix string?
+---@return string references_string
 local get_ref_completions = function(key_prefix)
   key_prefix = key_prefix or ""
   local completions = { key_prefix .. "HEAD" }
@@ -46,6 +51,9 @@ local get_ref_completions = function(key_prefix)
   return table.concat(completions, "\n")
 end
 
+---@param argLead string
+---@param cmdLine string
+---@return string candidates_string
 M.complete_args = function(argLead, cmdLine)
   local candidates = {}
   local existing = utils.split(cmdLine, " ")
@@ -80,12 +88,12 @@ M.complete_args = function(argLead, cmdLine)
     -- continuation of a key=value pair
     local key = string.sub(argLead, 1, eq - 1)
     local value = string.sub(argLead, eq + 1)
-    local arg_type = parser.arg_type_lookup[key]
-    if arg_type == parser.PATH then
+    local arg_type = parser.argtype_lookup[key]
+    if arg_type == parser.argtypes.PATH then
       return get_path_completions(key .. "=", value)
-    elseif arg_type == parser.REF then
+    elseif arg_type == parser.argtypes.REF then
       return get_ref_completions(key .. "=")
-    elseif arg_type == parser.LIST then
+    elseif arg_type == parser.argtypes.LIST then
       local valid_values = parser.arguments[key].values
       if valid_values and not (parsed[key] and #parsed[key] > 0) then
         for _, vv in ipairs(valid_values) do
@@ -101,7 +109,7 @@ M.complete_args = function(argLead, cmdLine)
   for value, key in pairs(parser.reverse_lookup) do
     value = tostring(value)
     local key_already_used = false
-    if parser.arg_type_lookup[key] == parser.LIST then
+    if parser.argtype_lookup[key] == parser.argtypes.LIST then
       key_already_used = type(parsed[key]) ~= "nil"
     else
       key_already_used = type(parsed[value]) ~= "nil"

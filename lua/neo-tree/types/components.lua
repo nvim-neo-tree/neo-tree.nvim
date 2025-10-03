@@ -1,6 +1,8 @@
 ---@meta
 
----@alias neotree.Renderer fun(config: table, node: table, state: table):(neotree.Render.Node|neotree.Render.Node[])
+---@alias neotree.Renderer fun(config: table, node: NuiTree.Node, state: neotree.StateWithTree):(neotree.Render.Node|neotree.Render.Node[])
+
+---@alias neotree.FileRenderer fun(config: table, node: neotree.FileNode, state: neotree.StateWithTree):(neotree.Render.Node|neotree.Render.Node[])
 
 ---@class (exact) neotree.Render.Node
 ---@field text string The text to display.
@@ -11,4 +13,4 @@
 ---@field enabled boolean?
 ---@field highlight string?
 
----@alias neotree.IconProvider fun(icon: table, node: table, state: table):(neotree.Render.Node|neotree.Render.Node[]|nil)
+---@alias neotree.IconProvider fun(icon: neotree.Render.Node, node: NuiTree.Node, state: neotree.StateWithTree):(neotree.Render.Node|neotree.Render.Node[]|nil)

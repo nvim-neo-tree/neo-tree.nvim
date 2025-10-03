@@ -5,6 +5,8 @@ local events = require("neo-tree.events")
 
 local M = {}
 
+---@param input NuiInput
+---@param callback function?
 M.show_input = function(input, callback)
   input:mount()
 
@@ -31,6 +33,10 @@ M.show_input = function(input, callback)
     end
   end, { once = true })
 
+  input:on({ event.WinEnter }, function()
+    vim.cmd.startinsert()
+  end, { once = true })
+
   if input.prompt_type ~= "confirm" then
     vim.schedule(function()
       events.fire_event(events.NEO_TREE_POPUP_INPUT_READY, {
@@ -41,6 +47,11 @@ M.show_input = function(input, callback)
   end
 end
 
+---@param message string
+---@param default_value string?
+---@param callback function
+---@param options nui_popup_options?
+---@param completion string?
 M.input = function(message, default_value, callback, options, completion)
   if nt.config.use_popups_for_input then
     local popup_options = popups.popup_options(message, 10, options)
@@ -58,7 +69,7 @@ M.input = function(message, default_value, callback, options, completion)
       default = default_value,
     }
     if vim.opt.cmdheight:get() == 0 then
-      -- NOTE: I really don't know why but letters before the first '\n' is not rendered execpt in noice.nvim
+      -- NOTE: I really don't know why but letters before the first '\n' is not rendered except in noice.nvim
       --       when vim.opt.cmdheight = 0 <2023-10-24, pysan3>
       opts.prompt = "Neo-tree Popup\n" .. opts.prompt
     end
@@ -69,25 +80,33 @@ M.input = function(message, default_value, callback, options, completion)
   end
 end
 
+---Blocks if callback is omitted
+---@param message string
+---@param callback? fun(confirmed: boolean)
+---@return boolean? confirmed_if_no_callback
 M.confirm = function(message, callback)
-  if nt.config.use_popups_for_input then
-    local popup_options = popups.popup_options(message, 10)
+  if callback then
+    if nt.config.use_popups_for_input then
+      local popup_options = popups.popup_options(message, 10)
 
-    ---@class NuiInput
-    local input = NuiInput(popup_options, {
-      prompt = " y/n: ",
-      on_close = function()
-        callback(false)
-      end,
-      on_submit = function(value)
-        callback(value == "y" or value == "Y")
-      end,
-    })
+      ---@class NuiInput
+      local input = NuiInput(popup_options, {
+        prompt = " y/n: ",
+        on_close = function()
+          callback(false)
+        end,
+        on_submit = function(value)
+          callback(value == "y" or value == "Y")
+        end,
+      })
 
-    input.prompt_type = "confirm"
-    M.show_input(input)
+      input.prompt_type = "confirm"
+      M.show_input(input)
+    else
+      callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
+    end
   else
-    callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
+    return vim.fn.confirm(message, "&Yes\n&No") == 1
   end
 end
 

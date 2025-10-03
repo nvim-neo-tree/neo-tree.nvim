@@ -7,6 +7,7 @@ local items = require("neo-tree.sources.git_status.lib.items")
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 
+---@class neotree.sources.GitStatus : neotree.Source
 local M = {
   name = "git_status",
   display_name = " 󰊢 Git ",
@@ -39,8 +40,14 @@ M.refresh = function()
   manager.refresh(M.name)
 end
 
+---@class neotree.Config.GitStatus.Renderers : neotree.Config.Renderers
+
+---@class (exact) neotree.Config.GitStatus : neotree.Config.Source
+---@field bind_to_cwd boolean?
+---@field renderers neotree.Config.GitStatus.Renderers?
+
 ---Configures the plugin, should be called before the plugin is used.
----@param config table Configuration table containing any keys that the user
+---@param config neotree.Config.GitStatus Configuration table containing any keys that the user
 --wants to change from the defaults. May be empty to accept default values.
 M.setup = function(config, global_config)
   if config.before_render then

@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 REPO="nvim-neo-tree/neo-tree.nvim"
 LAST_VERSION=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | jq -r .tag_name)
 echo "LAST_VERSION=$LAST_VERSION"

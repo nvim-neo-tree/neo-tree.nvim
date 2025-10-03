@@ -22,6 +22,14 @@ M.ensure_config = function()
   return M.config
 end
 
+---A performance-focused version for checking a specific key of a config while trying not to do expensive setup work
+---@return neotree.Config.Base
+M.peek_config = function()
+  return new_user_config or M.ensure_config()
+end
+
+---@param ignore_filetypes string[]?
+---@param ignore_winfixbuf boolean?
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   local utils = require("neo-tree.utils")
   ignore_filetypes = ignore_filetypes or {}
@@ -54,7 +62,7 @@ end
 
 M.paste_default_config = function()
   local utils = require("neo-tree.utils")
-  local base_path = debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$")
+  local base_path = assert(debug.getinfo(utils.truthy).source:match("@(.*)/utils/init.lua$"))
   local config_path = base_path .. utils.path_separator .. "defaults.lua"
   local lines = vim.fn.readfile(config_path)
   if lines == nil then
@@ -62,6 +70,7 @@ M.paste_default_config = function()
   end
 
   -- read up to the end of the config, jut to omit the final return
+  ---@type string[]
   local config = {}
   for _, line in ipairs(lines) do
     table.insert(config, line)
@@ -100,6 +109,10 @@ end
 M.setup = function(config)
   -- merging is deferred until ensure_config
   new_user_config = config
+  if new_user_config.log_level ~= nil then
+    M.set_log_level(new_user_config.log_level)
+  end
+  require("neo-tree.log").use_file(new_user_config.log_to_file, true)
   if vim.v.vim_did_enter == 0 then
     try_netrw_hijack(vim.fn.argv(0) --[[@as string]])
   end

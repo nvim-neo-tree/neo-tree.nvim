@@ -9,8 +9,12 @@ describe("is_subpath", function()
     assert.are.same(false, utils.is_subpath("a", "b"))
   end
   it("should work with unix paths", function()
-    local old = utils.is_windows
+    local old = {
+      is_windows = utils.is_windows,
+      path_separator = utils.path_separator,
+    }
     utils.is_windows = false
+    utils.path_separator = "/"
     common_tests()
     assert.are.same(true, utils.is_subpath("/a", "/a/subpath"))
     assert.are.same(false, utils.is_subpath("/a", "/b/c"))
@@ -29,15 +33,20 @@ describe("is_subpath", function()
     assert.are.same(true, utils.is_subpath("/TeSt", "/TeSt/subpath"))
     assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
     assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
-    utils.is_windows = old
+    utils.is_windows = old.is_windows
+    utils.path_separator = old.path_separator
   end)
   it("should work on windows paths", function()
-    local old = utils.is_windows
+    local old = {
+      is_windows = utils.is_windows,
+      path_separator = utils.path_separator,
+    }
     utils.is_windows = true
+    utils.path_separator = "\\"
     common_tests()
     assert.are.same(true, utils.is_subpath("C:", "C:"))
     assert.are.same(false, utils.is_subpath("C:", "D:"))
-    assert.are.same(true, utils.is_subpath("C:/A", [[C:\A]]))
+    assert.are.same(true, utils.is_subpath("C:/A", [[c:\A]]))
 
     -- Test Windows paths with backslashes
     assert.are.same(true, utils.is_subpath([[C:\Users\user]], [[C:\Users\user\Documents]]))
@@ -61,6 +70,7 @@ describe("is_subpath", function()
     assert.are.same(true, utils.is_subpath([[C:\Users\user\]], [[C:\Users\user\Documents]]))
     assert.are.same(true, utils.is_subpath("C:/Users/user/", "C:/Users/user/Documents"))
 
-    utils.is_windows = old
+    utils.is_windows = old.is_windows
+    utils.path_separator = old.path_separator
   end)
 end)

@@ -8,6 +8,9 @@ local git_utils = require("neo-tree.git.utils")
 local M = {}
 local sep = utils.path_separator
 
+---@param ignored string[]
+---@param path string
+---@param _type neotree.Filetype
 M.is_ignored = function(ignored, path, _type)
   if _type == "directory" and not utils.is_windows then
     path = path .. sep
@@ -41,6 +44,10 @@ local get_root_for_item = function(item)
   return root
 end
 
+---@param state neotree.State
+---@param items neotree.FileItem[]
+---@param callback fun(results: string[])
+---@overload fun(state: neotree.State, items: neotree.FileItem[]):string[]
 M.mark_ignored = function(state, items, callback)
   local folders = {}
   log.trace("================================================================================")
@@ -49,50 +56,50 @@ M.mark_ignored = function(state, items, callback)
   for _, item in ipairs(items) do
     local folder = utils.split_path(item.path)
     if folder then
-      if not folders[folder] then
-        folders[folder] = {}
-      end
+      folders[folder] = folders[folder] or {}
       table.insert(folders[folder], item.path)
     end
   end
 
-  local function process_result(result)
+  ---@param results string[]
+  local function process_results(results)
     if utils.is_windows then
       --on Windows, git seems to return quotes and double backslash "path\\directory"
-      result = vim.tbl_map(function(item)
+      ---@param item string
+      results = vim.tbl_map(function(item)
         item = item:gsub("\\\\", "\\")
         return item
-      end, result)
+      end, results)
     else
       --check-ignore does not indicate directories the same as 'status' so we need to
       --add the trailing slash to the path manually if not on Windows.
-      log.trace("IGNORED: Checking types of", #result, "items to see which ones are directories")
-      for i, item in ipairs(result) do
+      log.trace("IGNORED: Checking types of", #results, "items to see which ones are directories")
+      for i, item in ipairs(results) do
         local stat = uv.fs_stat(item)
         if stat and stat.type == "directory" then
-          result[i] = item .. sep
+          results[i] = item .. sep
         end
       end
     end
-    result = vim.tbl_map(function(item)
+    ---@param item string
+    results = vim.tbl_map(function(item)
+      item = item:gsub("\\\\", "\\")
       -- remove leading and trailing " from git output
       item = item:gsub('^"', ""):gsub('"$', "")
       -- convert octal encoded lines to utf-8
       item = git_utils.octal_to_utf8(item)
       return item
-    end, result)
-    return result
+    end, results)
+    return results
   end
 
+  ---@param all_results string[]
   local function finalize(all_results)
-    local show_gitignored = state.filtered_items and state.filtered_items.hide_gitignored == false
-    log.trace("IGNORED: Comparing results to mark items as ignored:", show_gitignored)
     local ignored, not_ignored = 0, 0
     for _, item in ipairs(items) do
       if M.is_ignored(all_results, item.path, item.type) then
         item.filtered_by = item.filtered_by or {}
         item.filtered_by.gitignored = true
-        item.filtered_by.show_gitignored = show_gitignored
         ignored = ignored + 1
       else
         not_ignored = not_ignored + 1
@@ -102,6 +109,7 @@ M.mark_ignored = function(state, items, callback)
     log.trace("================================================================================")
   end
 
+  ---@type string[]
   local all_results = {}
   if type(callback) == "function" then
     local jobs = {}
@@ -137,17 +145,17 @@ M.mark_ignored = function(state, items, callback)
         enabled_recording = true,
         writer = folder_items,
         on_start = function()
-          log.trace("IGNORED: Running async git with args: ", args)
+          log.trace("IGNORED: Running async git with args:", args)
         end,
         on_exit = function(self, code, _)
-          local result
+          local results
           if code ~= 0 then
             log.debug("Failed to load ignored files for", folder, ":", self:stderr_result())
-            result = {}
+            results = {}
           else
-            result = self:result()
+            results = self:result()
           end
-          vim.list_extend(all_results, process_result(result))
+          vim.list_extend(all_results, process_results(results))
 
           running_jobs = running_jobs - 1
           completed_jobs = completed_jobs + 1
@@ -162,13 +170,13 @@ M.mark_ignored = function(state, items, callback)
   else
     for folder, folder_items in pairs(folders) do
       local cmd = { "git", "-C", folder, "check-ignore", unpack(folder_items) }
-      log.trace("IGNORED: Running cmd: ", cmd)
+      log.trace("IGNORED: Running cmd:", cmd)
       local result = vim.fn.systemlist(cmd)
       if vim.v.shell_error == 128 then
         log.debug("Failed to load ignored files for", state.path, ":", result)
         result = {}
       end
-      vim.list_extend(all_results, process_result(result))
+      vim.list_extend(all_results, process_results(result))
     end
     finalize(all_results)
     return all_results

@@ -11,17 +11,27 @@ local hijack_cursor = require("neo-tree.sources.common.hijack_cursor")
 
 local M = {}
 
-local normalize_mappings = function(config)
-  if config == nil then
-    return false
+---@param source_config { window: {mappings: neotree.Config.Window.Mappings} }
+local normalize_mappings = function(source_config)
+  if source_config == nil then
+    return
   end
-  local mappings = utils.get_value(config, "window.mappings", nil)
+  local mappings = vim.tbl_get(source_config, { "window", "mappings" })
   if mappings then
-    local fixed = mapping_helper.normalize_map(mappings)
-    config.window.mappings = fixed
-    return true
-  else
-    return false
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.mappings = fixed --[[@as neotree.Config.Window.Mappings]]
+  end
+end
+
+---@param source_config neotree.Config.Filesystem
+local normalize_fuzzy_mappings = function(source_config)
+  if source_config == nil then
+    return
+  end
+  local mappings = source_config.window and source_config.window.fuzzy_finder_mappings
+  if mappings then
+    local fixed = mapping_helper.normalize_mappings(mappings)
+    source_config.window.fuzzy_finder_mappings = fixed --[[@as neotree.Config.FuzzyFinder.Mappings]]
   end
 end
 
@@ -240,7 +250,7 @@ M.buffer_enter_event = function()
     end
 
     local bufname = vim.api.nvim_buf_get_name(0)
-    log.debug("redirecting buffer " .. bufname .. " to new split")
+    log.debug("redirecting buffer", bufname, " to new split")
     vim.cmd("b#")
     local win_width = vim.api.nvim_win_get_width(current_winid)
     -- Using schedule at this point  fixes problem with syntax
@@ -267,60 +277,8 @@ M.win_enter_event = function()
   if utils.is_floating(win_id) then
     return
   end
-
   -- if the new win is not a floating window, make sure all neo-tree floats are closed
   manager.close_all("float")
-
-  if M.config.close_if_last_window then
-    local tabid = vim.api.nvim_get_current_tabpage()
-    local wins = utils.prior_windows[tabid]
-    local prior_exists = utils.truthy(wins)
-    local non_floating_wins = vim.tbl_filter(function(win)
-      return not utils.is_floating(win)
-    end, vim.api.nvim_tabpage_list_wins(tabid))
-    local win_count = #non_floating_wins
-    log.trace("checking if last window")
-    log.trace("prior window exists = ", prior_exists)
-    log.trace("win_count: ", win_count)
-    if prior_exists and win_count == 1 and vim.o.filetype == "neo-tree" then
-      local position = vim.api.nvim_buf_get_var(0, "neo_tree_position")
-      local source = vim.api.nvim_buf_get_var(0, "neo_tree_source")
-      if position ~= "current" then
-        -- close_if_last_window just doesn't make sense for a split style
-        log.trace("last window, closing")
-        local state = require("neo-tree.sources.manager").get_state(source)
-        if state == nil then
-          return
-        end
-        local mod = utils.get_opened_buffers()
-        log.debug("close_if_last_window, modified files found: ", vim.inspect(mod))
-        for filename, buf_info in pairs(mod) do
-          if buf_info.modified then
-            local buf_name, message
-            if vim.startswith(filename, "[No Name]#") then
-              buf_name = string.sub(filename, 11)
-              message =
-                "Cannot close because an unnamed buffer is modified. Please save or discard this file."
-            else
-              buf_name = filename
-              message =
-                "Cannot close because one of the files is modified. Please save or discard changes."
-            end
-            log.trace("close_if_last_window, showing unnamed modified buffer: ", filename)
-            vim.schedule(function()
-              log.warn(message)
-              vim.cmd("rightbelow vertical split")
-              vim.api.nvim_win_set_width(win_id, state.window.width or 40)
-              vim.cmd("b " .. buf_name)
-            end)
-            return
-          end
-        end
-        vim.cmd("q!")
-        return
-      end
-    end
-  end
 
   if vim.o.filetype == "neo-tree" then
     local _, position = pcall(vim.api.nvim_buf_get_var, 0, "neo_tree_position")
@@ -344,7 +302,7 @@ M.win_enter_event = function()
             return
           end
           -- create a new tree for this window
-          local state = manager.get_state("filesystem", nil, current_winid)
+          local state = manager.get_state("filesystem", nil, current_winid) --[[@as neotree.sources.filesystem.State]]
           state.path = old_state.path
           state.current_position = "current"
           local renderer = require("neo-tree.ui.renderer")
@@ -359,6 +317,7 @@ M.win_enter_event = function()
   end
 end
 
+---@param level neotree.Logger.Config.Level
 M.set_log_level = function(level)
   log.set_level(level)
 end
@@ -420,7 +379,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
   if source_default_config == nil then
     -- first override the default config global renderer with the user's global renderers
     for name, renderer in pairs(user_config.renderers or {}) do
-      log.debug("overriding global renderer for " .. name)
+      log.debug("overriding global renderer for", name)
       default_config.renderers[name] = renderer
     end
   else
@@ -428,7 +387,7 @@ local merge_renderers = function(default_config, source_default_config, user_con
     source_default_config.renderers = source_default_config.renderers or {}
     for name, renderer in pairs(default_config.renderers or {}) do
       if source_default_config.renderers[name] == nil then
-        log.debug("overriding source renderer for " .. name)
+        log.debug("overriding source renderer for", name)
         local r = {}
         -- Only copy components that exist in the target source.
         -- This alllows us to specify global renderers that include components from all sources,
@@ -469,13 +428,11 @@ M.merge_config = function(user_config)
     end, 50)
   end
 
-  if user_config.log_level ~= nil then
-    M.set_log_level(user_config.log_level)
-  end
-  log.use_file(user_config.log_to_file, true)
   log.debug("setup")
 
-  events.clear_all_events()
+  if events_setup then
+    events.clear_all_events()
+  end
   define_events()
 
   -- Prevent netrw hijacking lazy-loading from conflicting with normal hijacking.
@@ -556,9 +513,14 @@ M.merge_config = function(user_config)
       table.insert(all_source_names, name)
     end
   end
-  log.debug("Sources to load: ", vim.inspect(all_sources))
+  log.debug("Sources to load:", vim.inspect(all_sources))
   require("neo-tree.command.parser").setup(all_source_names)
 
+  normalize_fuzzy_mappings(default_config.filesystem)
+  normalize_fuzzy_mappings(user_config.filesystem)
+  if user_config.use_default_mappings == false then
+    default_config.filesystem.window.fuzzy_finder_mappings = {}
+  end
   -- setup the default values for all sources
   normalize_mappings(default_config)
   normalize_mappings(user_config)
@@ -610,7 +572,6 @@ M.merge_config = function(user_config)
       user_config[source_name].window.position = "left"
     end
   end
-  --print(vim.inspect(default_config.filesystem))
 
   -- local orig_sources = user_config.sources and user_config.sources or {}
 
@@ -647,10 +608,8 @@ M.merge_config = function(user_config)
   if not match and M.config.default_source ~= "last" then
     M.config.default_source = M.config.sources[1]
     log.warn(
-      string.format(
-        "Invalid default source found in configuration. Using first available source: %s",
-        M.config.default_source
-      )
+      "Invalid default source found in configuration. Using first available source:",
+      M.config.default_source
     )
   end
 
@@ -680,7 +639,7 @@ M.merge_config = function(user_config)
     if vim.tbl_contains(M.config.sources, ss_source.source) then
       table.insert(source_selector_sources, ss_source)
     else
-      log.debug(string.format("Unable to locate Neo-tree extension %s", ss_source.source))
+      log.at.debug.format("Unable to locate Neo-tree extension %s", ss_source.source)
     end
   end
   M.config.source_selector.sources = source_selector_sources
@@ -698,16 +657,6 @@ M.merge_config = function(user_config)
     end
     manager.setup(source_name, M.config[source_name] --[[@as table]], M.config, module)
     manager.redraw(source_name)
-  end
-
-  if M.config.auto_clean_after_session_restore then
-    require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(false)
-    events.subscribe({
-      event = events.VIM_AFTER_SESSION_LOAD,
-      handler = function()
-        require("neo-tree.ui.renderer").clean_invalid_neotree_buffers(true)
-      end,
-    })
   end
 
   events.subscribe({
@@ -740,6 +689,9 @@ M.merge_config = function(user_config)
     event = events.VIM_WIN_CLOSED,
     handler = function(args)
       local winid = tonumber(args.afile)
+      if not winid then
+        return
+      end
       log.debug("VIM_WIN_CLOSED: disposing state for window", winid)
       manager.dispose_window(winid)
     end,

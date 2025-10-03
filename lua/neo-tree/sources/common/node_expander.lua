@@ -6,12 +6,12 @@ local M = {}
 --- Recursively expand all loaded nodes under the given node
 --- returns table with all discovered nodes that need to be loaded
 ---@param node table a node to expand
----@param state table current state of the source
+---@param state neotree.State current state of the source
 ---@return table discovered nodes that need to be loaded
 local function expand_loaded(node, state, prefetcher)
   local function rec(current_node, to_load)
     if prefetcher.should_prefetch(current_node) then
-      log.trace("Node " .. current_node:get_id() .. "not loaded, saving for later")
+      log.trace("Node", current_node:get_id(), "not loaded, saving for later")
       table.insert(to_load, current_node)
     else
       if not current_node:is_expanded() then
@@ -19,12 +19,12 @@ local function expand_loaded(node, state, prefetcher)
         state.explicitly_opened_nodes[current_node:get_id()] = true
       end
       local children = state.tree:get_nodes(current_node:get_id())
-      log.debug("Expanding childrens of " .. current_node:get_id())
+      log.debug("Expanding childrens of", current_node:get_id())
       for _, child in ipairs(children) do
         if utils.is_expandable(child) then
           rec(child, to_load)
         else
-          log.trace("Child: " .. (child.name or "") .. " is not expandable, skipping")
+          log.trace("Child:", (child.name or ""), "is not expandable, skipping")
         end
       end
     end
@@ -39,7 +39,7 @@ end
 --- Then run prefetcher on all unloaded nodes. Finally, expand loded nodes.
 --- async method
 ---@param node table a node to expand
----@param state table current state of the source
+---@param state neotree.State current state of the source
 local function expand_and_load(node, state, prefetcher)
   local to_load = expand_loaded(node, state, prefetcher)
   for _, _node in ipairs(to_load) do
@@ -52,11 +52,11 @@ end
 --- Expands given node recursively loading all descendant nodes if needed
 --- Nodes will be loaded using given prefetcher
 --- async method
----@param state table current state of the source
+---@param state neotree.State current state of the source
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_directory_recursively = function(state, node, prefetcher)
-  log.debug("Expanding directory " .. node:get_id())
+  log.debug("Expanding directory", node:get_id())
   prefetcher = prefetcher or M.default_prefetcher
   if not utils.is_expandable(node) then
     return

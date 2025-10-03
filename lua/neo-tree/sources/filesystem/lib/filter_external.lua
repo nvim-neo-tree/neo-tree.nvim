@@ -5,7 +5,6 @@ local Queue = require("neo-tree.collections").Queue
 
 local M = {}
 local fd_supports_max_results = nil
-local unpack = unpack or table.unpack
 
 local test_for_max_results = function(cmd)
   if fd_supports_max_results == nil then
@@ -101,9 +100,12 @@ M.filter_files_external = function(
   on_insert,
   on_exit
 )
-  if glob ~= nil and regex ~= nil then
-    local log_msg = string.format([[glob: %s, regex: %s]], glob, regex)
-    log.warn("both glob and regex are set. glob will take precedence. " .. log_msg)
+  if glob and regex then
+    log.at.warn.format(
+      "both glob and regex are set. glob will take precedence. glob: %s, regex: %s",
+      glob,
+      regex
+    )
   end
   ignore = ignore or {}
   kind = kind or {}
@@ -278,6 +280,7 @@ local function modify_parent_scores(result_scores, path, score)
   end
 end
 
+---@param state neotree.State
 M.fzy_sort_files = function(opts, state)
   state = state or {}
   local filters = opts.filtered_items

@@ -14,7 +14,7 @@ local highlights = require("neo-tree.ui.highlights")
 local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
-local log = require("neo-tree.log")
+local nt = require("neo-tree")
 
 ---@alias neotree.Component.Common._Key
 ---|"bufnr"
@@ -37,7 +37,7 @@ local log = require("neo-tree.log")
 ---@class neotree.Component.Common Use the neotree.Component.Common.* types to get more specific types.
 ---@field [1] neotree.Component.Common._Key
 
----@type table<neotree.Component.Common._Key, neotree.Renderer>
+---@type table<neotree.Component.Common._Key, neotree.FileRenderer>
 local M = {}
 
 local make_two_char = function(symbol)
@@ -337,40 +337,48 @@ end
 
 ---@class neotree.Component.Common.FilteredBy
 ---@field [1] "filtered_by"?
-
-M.filtered_by = function(_, node, _)
-  local result = {}
-  if type(node.filtered_by) == "table" then
-    local fby = node.filtered_by
+---@param node neotree.FileNode
+M.filtered_by = function(_, node, state)
+  local fby = node.filtered_by
+  if not state.filtered_items or type(fby) ~= "table" then
+    return {}
+  end
+  repeat
     if fby.name then
-      result = {
+      return {
         text = "(hide by name)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.pattern then
-      result = {
+      return {
         text = "(hide by pattern)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
     elseif fby.gitignored then
-      result = {
+      return {
         text = "(gitignored)",
         highlight = highlights.GIT_IGNORED,
       }
     elseif fby.dotfiles then
-      result = {
+      return {
         text = "(dotfile)",
         highlight = highlights.DOTFILE,
       }
+    elseif fby.ignored then
+      local _, fname = utils.split_path(fby.ignore_file)
+      return {
+        text = ("(ignored by %s)"):format(fname),
+        highlight = highlights.IGNORED,
+      }
     elseif fby.hidden then
-      result = {
+      return {
         text = "(hidden)",
         highlight = highlights.WINDOWS_HIDDEN,
       }
     end
-    fby = nil
-  end
-  return result
+    fby = fby.parent
+  until not state.filtered_items.children_inherit_highlights or not fby
+  return {}
 end
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Component
@@ -385,6 +393,7 @@ end
 ---@param config neotree.Component.Common.Icon
 M.icon = function(config, node, state)
   -- calculate default icon
+  ---@type neotree.Render.Node
   local icon =
     { text = config.default or " ", highlight = config.highlight or highlights.FILE_ICON }
   if node.type == "directory" then
@@ -510,6 +519,7 @@ M.indent = function(config, node, state)
 
   local strlen = vim.fn.strdisplaywidth
   local skip_marker = state.skip_marker_at_level
+  ---@cast skip_marker -nil
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
   local level = node.level
@@ -679,18 +689,18 @@ end
 
 ---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Component
 ---@field [1] "symlink_target"?
----@field text_format string
+---@field text_format string?
 
 ---@param config neotree.Component.Common.SymlinkTarget
 M.symlink_target = function(config, node, _)
-  if node.is_link then
-    return {
-      text = string.format(config.text_format, node.link_to),
-      highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
-    }
-  else
+  if not node.is_link then
     return {}
   end
+
+  return {
+    text = (config.text_format or "-> %s"):format(node.link_to),
+    highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
+  }
 end
 
 ---@class (exact) neotree.Component.Common.Type : neotree.Component

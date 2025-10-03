@@ -56,13 +56,13 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
   if not allow_git_watch then
     if path:find("/%.git$") or path:find("/%.git/") then
       -- git folders seem to throw off fs events constantly.
-      log.debug("watch_folder(path): Skipping git folder: ", path)
+      log.debug("watch_folder(path): Skipping git folder:", path)
       return
     end
   end
   local h = watched[path]
   if h == nil then
-    log.trace("Starting new fs watch on: ", path)
+    log.trace("Starting new fs watch on:", path)
     local callback = custom_callback
       or vim.schedule_wrap(function(err, fname)
         if fname and fname:match("^%.null[-]ls_.+") then
@@ -85,7 +85,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
     watched[path] = h
     --w:start(path, flags, callback)
   else
-    log.trace("Incrementing references for fs watch on: ", path)
+    log.trace("Incrementing references for fs watch on:", path)
   end
   h.references = h.references + 1
 end
@@ -123,13 +123,13 @@ M.updated_watched = function()
   for path, w in pairs(watched) do
     if w.references > 0 then
       if not w.active then
-        log.trace("References added for fs watch on: ", path, ", starting.")
+        log.trace("References added for fs watch on:", path, ", starting.")
         w.handle:start(path, flags, w.callback)
         w.active = true
       end
     else
       if w.active then
-        log.trace("No more references for fs watch on: ", path, ", stopping.")
+        log.trace("No more references for fs watch on:", path, ", stopping.")
         w.handle:stop()
         w.active = false
       end
@@ -143,10 +143,10 @@ end
 M.unwatch_folder = function(path, callback_id)
   local h = watched[path]
   if h then
-    log.trace("Decrementing references for fs watch on: ", path, callback_id)
+    log.trace("Decrementing references for fs watch on:", path, callback_id)
     h.references = h.references - 1
   else
-    log.trace("(unwatch_folder) No fs watch found for: ", path)
+    log.trace("(unwatch_folder) No fs watch found for:", path)
   end
 end
 

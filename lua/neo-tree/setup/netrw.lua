@@ -78,18 +78,19 @@ M.hijack = function()
       end
     end)
 
+    ---@type neotree.sources.filesystem.State
     local state
     if should_open_current and not is_currently_neo_tree then
       log.debug("hijack_netrw: opening current")
-      state = manager.get_state("filesystem", nil, dir_window)
+      state = manager.get_state("filesystem", nil, dir_window) --[[@as neotree.sources.filesystem.State]]
       state.current_position = "current"
     elseif is_currently_neo_tree then
       log.debug("hijack_netrw: opening in existing Neo-tree")
-      state = manager.get_state("filesystem")
+      state = manager.get_state("filesystem") --[[@as neotree.sources.filesystem.State]]
     else
       log.debug("hijack_netrw: opening default")
       manager.close_all_except("filesystem")
-      state = manager.get_state("filesystem")
+      state = manager.get_state("filesystem") --[[@as neotree.sources.filesystem.State]]
     end
 
     require("neo-tree.sources.filesystem")._navigate_internal(state, path_to_hijack, nil, cleanup)

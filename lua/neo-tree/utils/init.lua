@@ -12,12 +12,6 @@ if ffi_available then
   ]])
 end
 
--- Backwards compatibility
-table.pack = table.pack or function(...)
-  return { n = select("#", ...), ... }
-end
-table.unpack = table.unpack or unpack
-
 local M = {}
 
 local diag_severity_to_string = function(severity)
@@ -34,14 +28,19 @@ local diag_severity_to_string = function(severity)
   end
 end
 
+-- Backwards compatibility
+M.pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
+
 local tracked_functions = {}
----@enum NeotreeDebounceStrategy
+---@enum neotree.utils.DebounceStrategy
 M.debounce_strategy = {
   CALL_FIRST_AND_LAST = 0,
   CALL_LAST_ONLY = 1,
 }
 
----@enum NeotreeDebounceAction
+---@enum neotree.utils.DebounceAction?
 M.debounce_action = {
   START_NORMAL = 0,
   START_ASYNC_JOB = 1,
@@ -51,8 +50,8 @@ M.debounce_action = {
 ---Part of debounce. Moved out of the function to eliminate memory leaks.
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction?? The debounce_action to use, determines how the function is invoked
 local function defer_function(id, frequency_in_ms, strategy, action)
   tracked_functions[id].in_debounce_period = true
   vim.defer_fn(function()
@@ -77,8 +76,8 @@ end
 ---@param id string Identifier for the debounce group, such as the function name.
 ---@param fn function Function to be executed.
 ---@param frequency_in_ms number Miniumum amount of time between invocations of fn.
----@param strategy NeotreeDebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
----@param action NeotreeDebounceAction? The debounce_action to use, determines how the function is invoked
+---@param strategy neotree.utils.DebounceStrategy The debounce_strategy to use, determines which calls to fn are not dropped.
+---@param action neotree.utils.DebounceAction? The debounce_action to use, determines how the function is invoked
 M.debounce = function(id, fn, frequency_in_ms, strategy, action)
   local fn_data = tracked_functions[id]
 
@@ -282,19 +281,21 @@ M.date = function(format, seconds)
   return formatted_date
 end
 
+---@class (exact) neotree.utils.DiagnosticCounts
+---@field severity_number integer
+---@field severity_string string
+---@field Error integer?
+---@field Warn integer?
+---@field Info integer?
+---@field Hint integer?
+
+---@alias neotree.utils.DiagnosticLookup table<string, neotree.utils.DiagnosticCounts?>
+
 ---Gets non-zero diagnostics counts for each open file and each ancestor directory.
 ---severity_number and severity_string refer to the highest severity with
 ---non-zero diagnostics count.
 ---Entry is nil if all counts are 0
----@return table table
----{ [file_path] = {
----    severity_number = int,
----    severity_string = string,
----    Error = int or nil,
----    Warn = int or nil,
----    Info = int or nil
----    Hint = int or nil,
----  } or nil }
+---@return neotree.utils.DiagnosticLookup
 M.get_diagnostic_counts = function()
   local lookup = {}
 
@@ -351,7 +352,7 @@ M.get_diagnostic_counts = function()
     -- Now bubble this status up to the parent directories
     local parts = M.split(file_name, M.path_separator)
     table.remove(parts) -- pop the last part so we don't override the file's status
-    M.reduce(parts, "", function(acc, part)
+    M.reduce(parts, M.abspath_prefix(file_name) or "", function(acc, part)
       local path = (M.is_windows and acc == "") and part or M.path_join(acc, part)
 
       if file_entry.severity_number then
@@ -376,17 +377,22 @@ end
 ---@deprecated
 ---This will be removed in v4. Use `get_opened_buffers` instead.
 ---Gets a lookup of all open buffers keyed by path with the modifed flag as the value
----@return table<string, boolean> opened_buffers { [buffer_name] = bool }
+---@return table<string, boolean> opened_buffers
 M.get_modified_buffers = function()
   local opened_buffers = M.get_opened_buffers()
+  local copy = {}
   for bufname, bufinfo in pairs(opened_buffers) do
-    opened_buffers[bufname] = bufinfo.modified
+    copy[bufname] = bufinfo.modified
   end
-  return opened_buffers
+  return copy
 end
 
+---@class neotree.utils.OpenedBuffers
+---@field modified boolean
+---@field loaded boolean
+
 ---Gets a lookup of all open buffers keyed by path with additional information
----@return table opened_buffers { [buffer_name] = { modified = bool } }
+---@return table<string, neotree.utils.OpenedBuffers> opened_buffers
 M.get_opened_buffers = function()
   local opened_buffers = {}
   for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
@@ -396,8 +402,8 @@ M.get_opened_buffers = function()
         buffer_name = "[No Name]#" .. buffer
       end
       opened_buffers[buffer_name] = {
-        ["modified"] = vim.bo[buffer].modified,
-        ["loaded"] = vim.api.nvim_buf_is_loaded(buffer),
+        modified = vim.bo[buffer].modified,
+        loaded = vim.api.nvim_buf_is_loaded(buffer),
       }
     end
   end
@@ -406,9 +412,10 @@ end
 
 ---Resolves some variable to a string. The object can be either a string or a
 --function that returns a string.
----@param functionOrString any The object to resolve.
----@param node table The current node, which is passed to the function if it is a function.
----@param state any The current state, which is passed to the function if it is a function.
+---@param functionOrString fun(node: NuiTree.Node, state: neotree.State):string The object to resolve.
+---@param node NuiTree.Node The current node, which is passed to the function if it is a function.
+---@param state neotree.State The current state, which is passed to the function if it is a function.
+---@overload fun(functionOrString: string):string
 ---@return string string The resolved string.
 M.getStringValue = function(functionOrString, node, state)
   if type(functionOrString) == "function" then
@@ -419,9 +426,9 @@ M.getStringValue = function(functionOrString, node, state)
 end
 
 ---Return the keys of a given table.
----@param tbl table The table to get the keys of.
----@param sorted boolean Whether to sort the keys.
----@return table table The keys of the table.
+---@param tbl string[] The table to get the keys of.
+---@param sorted boolean? Whether to sort the keys.
+---@return string[] keys The keys of the table.
 M.get_keys = function(tbl, sorted)
   local keys = {}
   for k, _ in pairs(tbl) do
@@ -445,25 +452,24 @@ M.get_inner_win_width = function(winid)
   return vim.o.columns
 end
 
+---@type table<string, fun(node: NuiTree.Node):uv.fs_stat.result?>
 local stat_providers = {
   default = function(node)
     return uv.fs_stat(node.path)
   end,
 }
 
+---@class neotree.utils.StatTime
+--- @field sec number
+---@class neotree.utils.StatTable
+--- @field birthtime neotree.utils.StatTime
+--- @field mtime neotree.utils.StatTime
+--- @field size number
+
 --- Gets the statics for a node in the file system. The `stat` object will be cached
 --- for the lifetime of the node.
----
 ---@param node table The Nui TreeNode node to get the stats for.
----@return StatTable | table
----
----@class StatTime
---- @field sec number
----
----@class StatTable
---- @field birthtime StatTime
---- @field mtime StatTime
---- @field size number
+---@return neotree.utils.StatTable | table
 M.get_stat = function(node)
   if node.stat == nil then
     local provider = stat_providers[node.stat_provider or "default"]
@@ -482,11 +488,11 @@ M.register_stat_provider = function(name, func)
 end
 
 ---Handles null coalescing into a table at any depth.
+---Use vim.tbl_get instead.
 ---@param sourceObject table The table to get a vlue from.
 ---@param valuePath string The path to the value to get.
----@param defaultValue any|nil The default value to return if the value is nil.
----@param strict_type_check boolean? Whether to require the type of the value is
----the same as the default value.
+---@param defaultValue any? The default value to return if the value is nil.
+---@param strict_type_check boolean? Whether to require the type of the value is the same as the default value.
 ---@return any value The value at the path or the default value.
 M.get_value = function(sourceObject, valuePath, defaultValue, strict_type_check)
   if sourceObject == nil then
@@ -648,6 +654,9 @@ M.map = function(tbl, fn)
   return t
 end
 
+---Finds an appropriate window to open a file from neo-tree
+---@param state neotree.State
+---@param ignore_winfixbuf boolean?
 M.get_appropriate_window = function(state, ignore_winfixbuf)
   -- Avoid triggering autocommands when switching windows
   local eventignore = vim.o.eventignore
@@ -753,7 +762,7 @@ M.force_new_split = function(current_position, escaped_path)
 end
 
 ---Open file in the appropriate window.
----@param state table The state of the source
+---@param state neotree.State
 ---@param path string The file to open
 ---@param open_cmd string? The vimcommand to use to open the file
 ---@param bufnr number|nil The buffer number to open
@@ -850,6 +859,9 @@ M.reverse_list = function(list)
   return result
 end
 
+---@param state neotree.State|neotree.Config.Base
+---@param config_option string
+---@param default_value any
 M.resolve_config_option = function(state, config_option, default_value)
   local opt = M.get_value(state, config_option, default_value, false)
   if type(opt) == "function" then
@@ -865,16 +877,17 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
+local fs_normalize = vim.fs.normalize
+if vim.fn.has("nvim-0.11") == 0 then
+  fs_normalize = compat.fs_normalize
+end
+
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
 ---@return string string The normalized path.
 M.normalize_path = function(path)
+  path = fs_normalize(path, { win = M.is_windows })
   if M.is_windows then
-    -- normalize the drive letter to uppercase
-    path = path:sub(1, 1):upper() .. path:sub(2)
-    -- Turn mixed forward and back slashes into all forward slashes
-    -- using NeoVim's logic
-    path = vim.fs.normalize(path, { win = true })
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
   end
@@ -884,11 +897,13 @@ end
 ---Check if a path is a subpath of another.
 ---@param base string The base path.
 ---@param path string The path to check is a subpath.
----@return boolean boolean True if it is a subpath, false otherwise.
+---@return boolean path_is_subpath True if it is a subpath, false otherwise.
 M.is_subpath = function(base, path)
   if not M.truthy(base) or not M.truthy(path) then
     return false
-  elseif base == path then
+  end
+
+  if base == path then
     return true
   end
 
@@ -897,8 +912,8 @@ M.is_subpath = function(base, path)
   if path:sub(1, #base) == base then
     local base_parts = M.split(base, M.path_separator)
     local path_parts = M.split(path, M.path_separator)
-    for i, part in ipairs(base_parts) do
-      if path_parts[i] ~= part then
+    for i, base_part in ipairs(base_parts) do
+      if path_parts[i] ~= base_part then
         return false
       end
     end
@@ -907,14 +922,99 @@ M.is_subpath = function(base, path)
   return false
 end
 
----The file system path separator for the current platform.
-M.path_separator = "/"
-M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-if M.is_windows == true then
-  M.path_separator = "\\"
+---Checks whether the parent file has the child path as a true descendant (i.e. not through a link).
+---Will also return true the child doesn't exist.
+---@param parent string
+---@param child string
+---@return boolean parent_contains_child
+M.is_descendant = function(parent, child)
+  local parent_ino = assert(uv.fs_lstat(parent)).ino
+
+  for parent_path in M.fs_parents(child, true) do
+    if assert(uv.fs_stat(parent_path)).ino == parent_ino then
+      return true
+    end
+  end
+  return false
 end
 
+---Iterates over all true parents of the file referenced by the path.
+---@param path string Any filepath.
+---@param loose boolean? If this is enabled, when given a path to a file that doesn't exist, starts from the first valid parent of that path.
+---@return fun():(string?)
+M.fs_parents = function(path, loose)
+  ---@type string?
+  local parent = M.fs_parent(path, loose)
+  local next_parent = parent
+  return function()
+    parent = next_parent
+    next_parent = parent and M.fs_parent(parent)
+    return parent
+  end
+end
+
+---Returns the true parent of the file, if one exists. Handles the edge case of infinite symlink loops.
+---@param path string Any path to a file.
+---@param loose boolean? If given a path to a non-existent file, finds the first parent of that path.
+---@return string? parent_path The path of the parent directory. If the first parent of the path is not a directory, or if there is no parent directory, returns nil.
+---@return string? err Error string
+M.fs_parent = function(path, loose)
+  path = M.path_join(vim.fn.getcwd(), path)
+  local prefix = M.abspath_prefix(path)
+  if prefix and #prefix >= #path then
+    return nil
+  end
+
+  local stat = uv.fs_lstat(path)
+
+  if not stat then
+    for parent in M.path_parents(path) do
+      if uv.fs_lstat(parent) then
+        local realstat = uv.fs_stat(parent)
+        if realstat and realstat.type ~= "directory" then
+          return nil, "parent of path " .. path .. " is not a directory"
+        end
+        return parent
+      end
+
+      -- only iter once if loose
+      if not loose then
+        return nil, "immediate parent of path " .. path .. " does not exist"
+      end
+    end
+
+    return nil, "no parents found for " .. path
+  end
+
+  -- For invalid links
+  if stat.type == "link" and not uv.fs_stat(path) then
+    -- Return the parent of path
+    return (M.split_path(path))
+  end
+
+  -- Otherwise, Return the parent of realpath
+  local realpath = assert(uv.fs_realpath(path))
+  return (M.split_path(realpath))
+end
+
+---Finds all paths that are parents of the current path, naively by removing the tail segments
+---@param path string
+---@return fun():string?,string?
+M.path_parents = function(path)
+  path = M.normalize_path(path)
+  ---@type string?
+  local parent = path
+  local tail
+  return function()
+    parent, tail = M.split_path(parent)
+    return parent, tail
+  end
+end
+
+---The file system path separator for the current platform.
+M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1012,9 +1112,9 @@ M.split = function(inputString, sep)
   return fields
 end
 
----Split a path into a parentPath and a name.
+---Split a path into a parent path and a name.
 ---@param path string? The path to split.
----@return string? parentPath
+---@return string? parent_path
 ---@return string? name
 M.split_path = function(path)
   if not path then
@@ -1023,17 +1123,13 @@ M.split_path = function(path)
   if path == M.path_separator then
     return nil, M.path_separator
   end
-  local parts = M.split(path, M.path_separator)
+  local parts = vim.split(path, M.path_separator, { plain = true })
   local name = table.remove(parts)
+  ---@type string?
   local parentPath = table.concat(parts, M.path_separator)
-  if M.is_windows then
-    if #parts == 1 then
-      parentPath = parentPath .. M.path_separator
-    elseif parentPath == "" then
-      return nil, name
-    end
-  else
-    parentPath = M.path_separator .. parentPath
+  local prefix = M.abspath_prefix(path)
+  if #parentPath == 0 and prefix then
+    parentPath = prefix
   end
   return parentPath, name
 end
@@ -1048,19 +1144,40 @@ M.path_join = function(...)
   end
 
   local all_parts = {}
-  if type(args[1]) == "string" and args[1]:sub(1, 1) == M.path_separator then
-    all_parts[1] = ""
-  end
+  local root = ""
 
   for _, arg in ipairs(args) do
-    if arg == "" and #all_parts == 0 and not M.is_windows then
-      all_parts = { "" }
+    if M.is_windows then
+      arg = M.windowize_path(arg)
+    end
+    local prefix = M.abspath_prefix(arg)
+    if prefix then
+      root = prefix
+      all_parts = M.split(arg:sub(#root + 1), M.path_separator)
     else
-      local arg_parts = M.split(arg, M.path_separator)
-      vim.list_extend(all_parts, arg_parts)
+      vim.list_extend(all_parts, M.split(arg, M.path_separator))
     end
   end
-  return table.concat(all_parts, M.path_separator)
+  local relpath = table.concat(all_parts, M.path_separator)
+  return root .. relpath
+end
+
+---@param path string Any path.
+---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
+M.abspath_prefix = function(path)
+  if M.is_windows then
+    local only_drive_prefix = path:match("^[A-Za-z]:$")
+    if only_drive_prefix then
+      return only_drive_prefix .. "\\"
+    end
+    return path:match("^[A-Za-z]:[/\\]")
+      or path:match([[^\\]])
+      or path:match([[^\]])
+      or path:match([[^//]])
+      or path:match([[^/]])
+  end
+
+  return path:match("^/")
 end
 
 local table_merge_internal
@@ -1108,20 +1225,20 @@ end
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)
-  if value == nil then
+  if not value then
     return false
   end
-  if type(value) == "boolean" then
-    return value
-  end
   if type(value) == "string" then
-    return value > ""
+    return #value > 0
   end
   if type(value) == "number" then
     return value > 0
   end
   if type(value) == "table" then
     return next(value) ~= nil
+  end
+  if type(value) == "boolean" then
+    return value
   end
   return true
 end
@@ -1139,9 +1256,9 @@ end
 ---
 ---For Windows systems, this function handles punctuation characters that will
 ---be escaped, but may appear at the beginning of a path segment. For example,
----the path `C:\foo\(bar)\baz.txt` (where foo, (bar), and baz.txt are segments)
+---the path `C:\foo\(bar\baz.txt` (where foo, (bar), and baz.txt are segments)
 ---will remain unchanged when escaped by `fnaemescape` on a Windows system.
----However, if that string is used to edit a file with `:e`, `:b`, etc., the open
+---However, if that strig is used to edit a file with `:e`, `:b`, etc., the open
 ---parenthesis will be treated as an escaped character and the path separator will
 ---be lost.
 ---
@@ -1171,8 +1288,8 @@ M.wrap = function(func, ...)
   end
   local wrapped_args = { ... }
   return function(...)
-    local all_args = table.pack(table.unpack(wrapped_args), ...)
-    func(table.unpack(all_args))
+    local all_args = M.pack(unpack(wrapped_args), ...)
+    func(unpack(all_args))
   end
 end
 
@@ -1267,11 +1384,11 @@ local brace_expand_contents = function(s)
     return items
   end
 
-  ---@alias neotree.Utils.Resolver fun(from: string, to: string, step: string): string[]
+  ---@alias neotree.utils.Resolver fun(from: string, to: string, step: string): string[]
 
   ---If pattern matches the input string `s`, apply an expansion by `resolve_func`
   ---@param pattern string: regex to match on `s`
-  ---@param resolve_func neotree.Utils.Resolver
+  ---@param resolve_func neotree.utils.Resolver
   ---@return string[]|nil sequence Expanded sequence or nil if failed
   local function try_sequence_on_pattern(pattern, resolve_func)
     local from, to, step = string.match(s, pattern)
@@ -1301,7 +1418,7 @@ local brace_expand_contents = function(s)
     end)
   end
 
-  ---@type table<string, neotree.Utils.Resolver>
+  ---@type table<string, neotree.utils.Resolver>
   local check_list = {
     { [=[^(-?%d+)%.%.(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },
     { [=[^(-?%d+)%.%.(-?%d+)$]=], resolve_sequence_num },

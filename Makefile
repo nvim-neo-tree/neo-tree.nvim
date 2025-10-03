@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua',sequential=true})"
+	nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
 
 .PHONY: test-docker
 test-docker:
@@ -13,7 +13,7 @@ format:
 
 # Dependencies:
 
-DEPS := ./.dependencies/site/pack/vendor/start
+DEPS := ${CURDIR}/.dependencies/pack/vendor/start
 
 $(DEPS):
 	mkdir -p "$(DEPS)"
@@ -27,16 +27,19 @@ $(DEPS)/nvim-web-devicons: $(DEPS)
 $(DEPS)/plenary.nvim: $(DEPS)
 	@test -d "$(DEPS)/plenary.nvim" || git clone https://github.com/nvim-lua/plenary.nvim "$(DEPS)/plenary.nvim"
 
-setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim
+$(DEPS)/snacks.nvim: $(DEPS)
+	@test -d "$(DEPS)/snacks.nvim" || git clone https://github.com/folke/snacks.nvim "$(DEPS)/snacks.nvim"
+
+setup: $(DEPS)/nui.nvim $(DEPS)/nvim-web-devicons $(DEPS)/plenary.nvim $(DEPS)/snacks.nvim
 	@echo "[setup] environment ready"
 
 .PHONY: clean
 clean:
 	rm -rf "$(DEPS)"
 
-CONFIGURATION = .luarc.json
+CONFIGURATION = ${CURDIR}/.luarc.json
 luals-check: setup
 	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" lua-language-server --configpath=$(CONFIGURATION) --check=.
 
 emmylua-check: setup
-	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" emmylua_check -c $(CONFIGURATION) .
+	VIMRUNTIME="`nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit'`" emmylua_check -c $(CONFIGURATION) -i ".dependencies/**" --  .

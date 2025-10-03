@@ -1,21 +1,20 @@
 ---@meta
 
----@class neotree.Config.MappingOptions
+---@class neotree.Config.Mapping.Options
 ---@field noremap boolean?
 ---@field nowait boolean?
+---@field desc string?
 
----@class neotree.Config.Mapping : neotree.Config.MappingOptions
----@field [1] string
----@field nowait boolean?
----@field noremap boolean?
+---@class neotree.Config.Window.Command.Configured : neotree.Config.Mapping.Options
+---@field [1] string?
+---@field command string?
 ---@field config table?
 
 ---@class neotree.Config.Source
----@field window neotree.Config.Source.Window?
----@field renderers neotree.Component[]?
-
----@class neotree.Config.Source.Window
----@field mappings table<string, string|neotree.Config.Mapping>?
+---@field window neotree.Config.Window?
+---@field renderers neotree.Config.Renderers?
+---@field commands table<string, neotree.Config.TreeCommand?>?
+---@field before_render fun(state: neotree.State)?
 
 ---@class neotree.Config.SourceSelector.Item
 ---@field source string?
@@ -38,8 +37,8 @@
 ---@field statusline boolean?
 ---@field show_scrolled_off_parent_node boolean?
 ---@field sources neotree.Config.SourceSelector.Item[]?
----@field content_layout string? "start"|"end"|"center"
----@field tabs_layout string? "equal"|"start"|"end"|"center"|"focus"
+---@field content_layout? "start"|"end"|"center"
+---@field tabs_layout? "equal"|"start"|"end"|"center"|"focus"
 ---@field truncation_character string
 ---@field tabs_min_width integer?
 ---@field tabs_max_width integer?
@@ -63,9 +62,17 @@
 ---@field width string|number?
 
 ---@class neotree.Config.Window.Popup
----@field title fun(state:table):string?
+---@field title (fun(state:table):string)?
 ---@field size neotree.Config.Window.Size?
 ---@field border neotree.Config.BorderStyle?
+
+---@alias neotree.Config.TreeCommand string|neotree.TreeCommand|neotree.Config.Window.Command.Configured
+
+---@class (exact) neotree.Config.Commands
+---@field [string] function
+
+---@class (exact) neotree.Config.Window.Mappings
+---@field [string] neotree.Config.TreeCommand?
 
 ---@class neotree.Config.Window
 ---@field position string?
@@ -73,10 +80,9 @@
 ---@field height integer?
 ---@field auto_expand_width boolean?
 ---@field popup neotree.Config.Window.Popup?
----@field same_level boolean?
 ---@field insert_as "child"|"sibling"|nil
----@field mapping_options neotree.Config.MappingOptions?
----@field mappings neotree.Config.Mapping[]?
+---@field mapping_options neotree.Config.Mapping.Options?
+---@field mappings neotree.Config.Window.Mappings?
 
 ---@class neotree.Config.Renderers
 ---@field directory neotree.Component.Common[]?
@@ -99,6 +105,8 @@
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
+---@alias neotree.Config.SortFunction fun(a: NuiTree.Node, b: NuiTree.Node):boolean?
+
 ---@class (exact) neotree.Config.Base
 ---@field sources string[]
 ---@field add_blank_line_at_top boolean
@@ -115,7 +123,7 @@
 ---@field git_status_async_options neotree.Config.GitStatusAsync
 ---@field hide_root_node boolean
 ---@field retain_hidden_root_indent boolean
----@field log_level "trace"|"debug"|"info"|"warn"|"error"|"fatal"|nil
+---@field log_level neotree.Logger.Config.Level
 ---@field log_to_file boolean|string
 ---@field open_files_in_last_window boolean
 ---@field open_files_do_not_replace_types string[]
@@ -123,20 +131,21 @@
 ---@field popup_border_style neotree.Config.BorderStyle
 ---@field resize_timer_interval integer|-1
 ---@field sort_case_insensitive boolean
----@field sort_function? fun(a: any, b: any):boolean
+---@field sort_function? neotree.Config.SortFunction
 ---@field use_popups_for_input boolean
 ---@field use_default_mappings boolean
 ---@field source_selector neotree.Config.SourceSelector
----@field event_handlers? neotree.Event.Handler[]
+---@field event_handlers? neotree.event.Handler[]
 ---@field default_component_configs neotree.Config.ComponentDefaults
 ---@field renderers neotree.Config.Renderers
----@field nesting_rules neotree.FileNesting.Rule[]
----@field commands table<string, fun()>
+---@field nesting_rules neotree.filenesting.Rule[]
+---@field commands table<string, neotree.Config.TreeCommand?>
 ---@field window neotree.Config.Window
 ---
 ---@field filesystem neotree.Config.Filesystem
 ---@field buffers neotree.Config.Buffers
 ---@field git_status neotree.Config.GitStatus
 ---@field document_symbols neotree.Config.DocumentSymbols
+---@field bind_to_cwd boolean?
 
 ---@class (partial) neotree.Config : neotree.Config.Base

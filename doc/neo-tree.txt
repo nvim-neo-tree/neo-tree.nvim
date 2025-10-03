@@ -430,7 +430,15 @@ an existing split by configuring the command like this:
     require("neo-tree").setup({
       window = {
         mappings = {
-          ["P"] = { "toggle_preview", config = { use_float = false, use_image_nvim = true, force = nil } },
+          ["P"] = {
+            "toggle_preview",
+            config = {
+              use_float = false,
+              use_snacks_image = true,
+              use_image_nvim = true,
+              force = nil
+            }
+          },
           ["l"] = "focus_preview",
           ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
           ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
@@ -471,10 +479,15 @@ variable `neo_tree_preview` set to `1` to indicate that it is being used as a
 preview window. You can refer to this in statusline and winbar configs to mark a
 window as being used as a preview.
 
-If you have [3rd/image.nvim](https://github.com/3rd/image.nvim) installed, preview
-mode supports image rendering by default using kitty graphics protocol or ueberzug.
-However, if you do not want this feature, you can disable it by changing the option
-`use_image_nvim = false` in the mappings config mentioned above.
+If you have folke/snacks.nvim or 3rd/image.nvim installed, preview mode supports
+image rendering by default using kitty graphics protocol or ueberzug.
+
+- https://github.com/folke/snacks.nvim/blob/main/docs/image.md
+- https://github.com/3rd/image.nvim
+
+However, if you do not want this feature, you can disable it by setting
+`use_snacks_image = false` or `use_image_nvim = false` in the mappings config
+mentioned above.
 
 CUSTOM MAPPINGS                                       *neo-tree-custom-mappings*
 
@@ -800,7 +813,7 @@ with your overrides. For example, to add your own mappings in 'lua':
 
 NOTE: The mappings you define will be merged with the default mappings. If you
 wish to remove a default mapping without overriding it with your own function,
-assign it the the string "none". This will cause it to be skipped and allow any
+assign it the string "none". This will cause it to be skipped and allow any
 existing global mappings to work.
 
 NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!~
@@ -994,9 +1007,19 @@ highlight group which will be applied when they are visible, see
     require("neo-tree").setup({
       filesystem = {
         filtered_items = {
-          visible = false, -- when true, they will just be displayed differently than normal items
+          -- when true, they will just be displayed differently than normal items
+          visible = false,
+          -- whether children of filtered parents should inherit their parent's highlight group
+          children_inherit_highlights = true,
           hide_dotfiles = true,
           hide_gitignored = true,
+          hide_ignored = true, -- hide files that are ignored by other gitignore-like files
+          -- other gitignore-like files, in descending order of precedence.
+          ignore_files = {
+            ".neotreeignore",
+            ".ignore",
+            -- ".rgignore"
+          },
           hide_hidden = true, -- only works on Windows for hidden files/directories
           hide_by_name = {
             ".DS_Store",
@@ -1028,16 +1051,29 @@ highlight group which will be applied when they are visible, see
 The `visible` option just defines the default value. This value is toggled by
 the "toggle_hidden" command, which is mapped to H by default.
 
+The `children_inherit_highlights` option specifies whether children of filtered
+items should inherit the parent's (filtered) highlight. This is useful if you
+are editing inside filtered directories and want more detailed highlights in the
+tree.
+
 The `hide_dotfiles` option just hides anything that starts with `. `(period).
 
 The `hide_gitignored` option will query git for the files and folders being
 shown, and hide those that are marked as ignored.
 
-The `hide_hidden` option only will work on Windows using the Windows logic
-that determines if a file or directory is hidden.
+The `hide_ignored` option will hide files that match the patterns found in
+`ignore_files`.
 
-The `hide_by_name` option is a list of file/folder names that should be
-hidden. This is an exact match.
+The `ignore_files` options specifies which gitignore-like files should be
+respected. If two ignore files are at the same level, the `ignore_files` option
+is in descending order of precedence, so the first file specified should win
+(e.g. `.neotreeignore` over `.ignore`).
+
+The `hide_hidden` option checks a Windows-specific API to determine if a file or
+directory is hidden in the Windows sense.
+
+The `hide_by_name` option is a list of file/folder names that should be hidden.
+This is an exact match.
 
 The `hide_by_pattern` option uses glob syntax, which is converted to lua
 patterns. No guarantees on how it handles advanced patterns.
@@ -1472,6 +1508,8 @@ NeoTreeGitUnstaged        Used for git unstaged symbol.
 NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeGitStaged          Used for git staged symbol.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
+NeoTreeIgnored            File name when the file is ignored by a
+                          `.neotreeignore` or similar
 NeoTreeIndentMarker       The style of indentation markers (guides). By default,
                           the "Normal" highlight is used.
 NeoTreeExpander           Used for collapsed/expanded icons.
@@ -1965,6 +2003,7 @@ specific commands:
       ["A"]  = "git_add_all",
       ["ga"] = "git_add_file",
       ["gu"] = "git_unstage_file",
+      ["gU"] = "git_undo_last_commit",
       ["gr"] = "git_revert_file",
       ["gc"] = "git_commit"
       ["gp"] = "git_push",

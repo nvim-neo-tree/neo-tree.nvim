@@ -18,7 +18,7 @@ M.get_repository_root = function(path, callback)
       enabled_recording = true,
       on_exit = function(self, code, _)
         if code ~= 0 then
-          log.trace("GIT ROOT ERROR ", self:stderr_result())
+          log.trace("GIT ROOT ERROR", self:stderr_result())
           callback(nil)
           return
         end
@@ -35,7 +35,7 @@ M.get_repository_root = function(path, callback)
   else
     local ok, git_output = utils.execute_command({ "git", unpack(args) })
     if not ok then
-      log.trace("GIT ROOT ERROR ", git_output)
+      log.trace("GIT ROOT ERROR", git_output)
       return nil
     end
     local git_root = git_output[1]

@@ -31,8 +31,17 @@ local config = {
   hide_root_node = false, -- Hide the root node.
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
-  log_level = "info", -- "trace", "debug", "info", "warn", "error", "fatal"
-  log_to_file = false, -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file
+  -- The minimum level of log statements that should be logged to the log file.
+  log_level = vim.log.levels.INFO, -- or other vim.log.levels (up to .ERROR), or "trace", "debug", "info", "warn", "error", "fatal"
+  -- For usabiliity, the minimum console log level = max(log_level, INFO) unless set explicitly using a table:
+  -- log_level = {
+  --   file = vim.log.levels.INFO,
+  --   console = vim.log.levels.INFO,
+  -- },
+
+  -- true, false, "/path/to/file.log", use ':lua require("neo-tree").show_logs()' to show the file.
+  -- Default location is `vim.fn.stdpath("data") .. "/" .. "neo-tree.nvim.log"`
+  log_to_file = false,
   open_files_in_last_window = true, -- false = open files in top left window
   open_files_do_not_replace_types = { "terminal", "Trouble", "qf", "edgy" }, -- when opening files, do not use windows containing these filetypes or buftypes
   open_files_using_relative_paths = false,
@@ -279,6 +288,12 @@ local config = {
       text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
+  -- The renderer section provides the renderers that will be used to render the tree.
+  --   The first level is the node type.
+  --   For each node type, you can specify a list of components to render.
+  --       Components are rendered in the order they are specified.
+  --         The first field in each component is the name of the function to call.
+  --         The rest of the fields are passed to the function as the "config" argument.
   renderers = {
     directory = {
       { "indent" },
@@ -375,7 +390,6 @@ local config = {
       -- you can also specify border here, if you want a different setting from
       -- the global popup_border_style.
     },
-    same_level = false, -- Create and paste/move files/directories on the same level as the directory under cursor (as opposed to within the directory under cursor).
     insert_as = "child", -- Affects how nodes get inserted into the tree during creation/pasting/moving of files if the node under the cursor is a directory:
                         -- "child":   Insert nodes as children of the directory under cursor.
                         -- "sibling": Insert nodes  as siblings of the directory under cursor.
@@ -396,6 +410,7 @@ local config = {
       ["<esc>"] = "cancel", -- close preview or floating neo-tree window
       ["P"] = { "toggle_preview", config = {
         use_float = true,
+        use_snacks_image = true,
         use_image_nvim = false,
         -- force = nil,
         -- title = "Neo-tree Preview", -- You can define a custom title for the preview floating window.
@@ -437,6 +452,9 @@ local config = {
       ["e"] = "toggle_auto_expand_width",
       ["q"] = "close_window",
       ["?"] = "show_help",
+      -- You can sort by command name with:
+      -- ["?"] = { "show_help", config = { sorter = function(a, b) return a.mapping.text < b.mapping.text end } },
+      -- The type of a and b are neotree.Help.Mapping
       ["<"] = "prev_source",
       [">"] = "next_source",
     },
@@ -446,10 +464,11 @@ local config = {
       mappings = {
         ["H"] = "toggle_hidden",
         ["/"] = "fuzzy_finder",
-        ["D"] = "fuzzy_finder_directory",
+        --["/"] = {"fuzzy_finder", config = { keep_filter_on_submit = true }},
         --["/"] = "filter_as_you_type", -- this was the default until v1.28
-        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
+        ["D"] = "fuzzy_finder_directory",
         -- ["D"] = "fuzzy_sorter_directory",
+        ["#"] = "fuzzy_sorter", -- fuzzy sorting using the fzy algorithm
         ["f"] = "filter_on_submit",
         ["<C-x>"] = "clear_filter",
         ["<bs>"] = "navigate_up",
@@ -472,7 +491,22 @@ local config = {
         ["<C-n>"] = "move_cursor_down",
         ["<up>"] = "move_cursor_up",
         ["<C-p>"] = "move_cursor_up",
-        ["<esc>"] = "close"
+        ["<Esc>"] = "close",
+        ["<S-CR>"] = "close_keep_filter",
+        ["<C-CR>"] = "close_clear_filter",
+        ["<C-w>"] = { "<C-S-w>", raw = true },
+        {
+          -- normal mode mappings
+          n = {
+            ["j"] = "move_cursor_down",
+            ["k"] = "move_cursor_up",
+            ["<S-CR>"] = "close_keep_filter",
+            ["<C-CR>"] = "close_clear_filter",
+            ["<esc>"] = "close",
+          }
+        }
+        -- ["<esc>"] = "noop", -- if you want to use normal mode
+        -- ["key"] = function(state, scroll_padding) ... end,
       },
     },
     async_directory_scan = "auto", -- "auto"   means refreshes are async, but it's synchronous when called from the Neotree commands.
@@ -485,21 +519,24 @@ local config = {
       sidebar = "tab",   -- sidebar is when position = left or right
       current = "window" -- current is when position = current
     },
-    check_gitignore_in_search = true, -- check gitignore status for files/directories when searching
-                                      -- setting this to false will speed up searches, but gitignored
-                                      -- items won't be marked if they are visible.
-    -- The renderer section provides the renderers that will be used to render the tree.
-    --   The first level is the node type.
-    --   For each node type, you can specify a list of components to render.
-    --       Components are rendered in the order they are specified.
-    --         The first field in each component is the name of the function to call.
-    --         The rest of the fields are passed to the function as the "config" argument.
+    -- check gitignore status for files/directories when searching.
+    -- setting this to false will speed up searches, but gitignored
+    -- items won't be marked if they are visible.
+    check_gitignore_in_search = true,
     filtered_items = {
       visible = false, -- when true, they will just be displayed differently than normal items
       force_visible_in_empty_folder = false, -- when true, hidden files will be shown if the root folder is otherwise empty
+      children_inherit_highlights = true, -- whether children of filtered parents should inherit their parent's highlight group
       show_hidden_count = true, -- when true, the number of hidden items in each folder will be shown as the last entry
       hide_dotfiles = true,
       hide_gitignored = true,
+      hide_ignored = true, -- hide files that are ignored by other gitignore-like files
+      -- other gitignore-like files, in descending order of precedence.
+      ignore_files = {
+        ".neotreeignore",
+        ".ignore",
+        -- ".rgignore"
+      },
       hide_hidden = true, -- only works on Windows for hidden files/directories
       hide_by_name = {
         ".DS_Store",
@@ -606,6 +643,7 @@ local config = {
       mappings = {
         ["A"] = "git_add_all",
         ["gu"] = "git_unstage_file",
+        ["gU"] = "git_undo_last_commit",
         ["ga"] = "git_add_file",
         ["gr"] = "git_revert_file",
         ["gc"] = "git_commit",
