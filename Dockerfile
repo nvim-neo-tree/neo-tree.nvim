@@ -10,8 +10,8 @@ RUN apk update && apk add --no-cache \
     gettext-tiny-dev \
     git
 
-# Install neovim
-RUN git clone --depth=1 https://github.com/neovim/neovim --branch release-0.10
+# install neovim
+RUN git clone https://github.com/neovim/neovim
 RUN cd neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo && make install
 
 # --- Final Stage ---

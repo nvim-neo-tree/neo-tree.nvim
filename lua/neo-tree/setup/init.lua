@@ -671,6 +671,94 @@ M.merge_config = function(user_config)
     id = "neo-tree-win-enter",
   })
 
+  vim.api.nvim_create_autocmd("WinClosed", {
+    callback = function(args)
+      local closing_win = tonumber(args.match)
+      if utils.is_floating(closing_win) then
+        return
+      end
+
+      local neotree_sidebar_exists = false
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if win ~= closing_win then
+          local buf = vim.api.nvim_win_get_buf(win)
+          local neotree_pos = vim.b[buf].neo_tree_position
+          if not utils.is_floating(win) and neotree_pos then
+            neotree_sidebar_exists = true
+            if neotree_pos == "left" then
+              left_neotree = win
+            elseif neotree_pos == "right" then
+              right_neotree = win
+            end
+          end
+        end
+      end
+
+      if not neotree_sidebar_exists then
+        return
+      end
+
+      -- When we have an open sidebar and the other non-floating windows are all closed, prevent neo-tree from expanding.
+      local left_neotree, right_neotree, bottom_neotree, top_neotree
+      local floating_wins = {}
+      local neotree_wins = {}
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local neotree_pos = vim.b[buf].neo_tree_position
+        if utils.is_floating(win) then
+          table.insert(floating_wins, win)
+        end
+        if neotree_pos then
+          table.insert(neotree_wins, win)
+        end
+      end
+
+      -- skip buffers shown in floating windows and edgy windows
+      local skip = {}
+      for _, win in pairs(floating_wins) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        skip[buf] = buf
+      end
+      for _, win in pairs(neotree_wins) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        skip[buf] = buf
+      end
+
+      local bufs = {}
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if not skip[buf] then
+          table.insert(bufs, buf)
+        end
+      end
+
+      -- sort by last enter time
+      table.sort(bufs, function(a, b)
+        return (vim.b[a].neotree_enter or 0) > (vim.b[b].neotree_enter or 0)
+      end)
+
+      local direction
+      if left_neotree then
+        direction = "vertical rightbelow"
+      elseif right_neotree then
+        direction = "vertical leftabove"
+      elseif bottom_neotree then
+        direction = "topleft"
+      elseif top_neotree then
+        direction = "botright"
+      end
+      local edit_cmd = bufs[1] and "sb " .. bufs[1] or "new"
+      vim.cmd(([[%s %s]]):format(direction, edit_cmd))
+    end,
+  })
+
+  local enter_tick = 1
+  vim.api.nvim_create_autocmd("WinEnter", {
+    callback = function(args)
+      vim.b[args.buf].neotree_enter = enter_tick
+      enter_tick = enter_tick + 1
+    end,
+  })
+
   --Dispose ourselves if the tab closes
   events.subscribe({
     event = events.VIM_TAB_CLOSED,
