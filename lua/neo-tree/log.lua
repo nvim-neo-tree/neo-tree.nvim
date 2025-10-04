@@ -7,7 +7,6 @@ local Levels = {
   ERROR = 4,
   FATAL = 5,
 }
-local stop_logging_to_file = false
 local uv = vim.uv or vim.loop
 -- log.lua
 --
@@ -128,33 +127,27 @@ log_maker.new = function(config)
   ---@param log_type string
   ---@param msg string
   local log_to_file = function(log_type, msg)
-    local info = debug.getinfo(3, "Sl")
-    local lineinfo = info.short_src .. ":" .. info.currentline
-    local str =
-      string.format("[%-6s%s] %s%s: %s\n", log_type, os.date("%F-%T"), prefix, lineinfo, msg)
-    if log.file and assert(log.file:write(str)) then
-      local curtime = os.time()
-      -- make sure the file is valid every so often
-      if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
-        last_logfile_check_time = curtime
-        log.use_file(log.outfile, true)
-      end
+    if not log.file then
+      vim.schedule(function()
+        vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
+      end)
       return
     end
+    local info = debug.getinfo(3, "Sl")
+    local lineinfo = info.short_src .. ":" .. info.currentline
+    local str = ("[%-6s%s] %s%s: %s\n"):format(log_type, os.date("%F-%T"), prefix, lineinfo, msg)
+    assert(log.file:write(str))
 
-    vim.schedule(function()
-      vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
-    end)
+    local curtime = os.time()
+    -- make sure the file is valid every so often
+    if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
+      last_logfile_check_time = curtime
+      log.use_file(log.outfile, true)
+    end
   end
 
   ---@type { file: vim.log.levels, console: vim.log.levels }
   log.minimum_level = nil
-
-  vim.api.nvim_create_autocmd("VimLeave", {
-    callback = function()
-      stop_logging_to_file = true
-    end,
-  })
 
   local make_string = function(...)
     local tbl = {}
