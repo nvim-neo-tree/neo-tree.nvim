@@ -139,7 +139,13 @@ log_maker.new = function(config)
     local info = debug.getinfo(3, "Sl")
     local lineinfo = info.short_src .. ":" .. info.currentline
     local str = ("[%-6s%s] %s%s: %s\n"):format(log_type, os.date("%F-%T"), prefix, lineinfo, msg)
-    assert(log.file:write(str))
+    local _, writeerr = log.file:write(str)
+    if writeerr then
+      -- We should assume that subsequent writes will fail too, so stop logging to file.
+      config.use_file = false
+      log.error("Error writing to log:", writeerr)
+      log.file:close()
+    end
 
     local curtime = os.time()
     -- make sure the file is valid every so often
@@ -253,30 +259,47 @@ log_maker.new = function(config)
     ---@field name string
     ---@field hl string
 
+    ---Log trace-level information.
     log.trace = logfunc(Levels.TRACE, make_string)
+    ---Log debug information.
     log.debug = logfunc(Levels.DEBUG, make_string)
+    ---Log useful information/UI feedback.
     log.info = logfunc(Levels.INFO, make_string)
+    ---Log a warning.
     log.warn = logfunc(Levels.WARN, make_string)
+    ---Log at an "error" level. Doesn't actually raise an error.
     log.error = logfunc(Levels.ERROR, make_string)
+    ---Unused, kept around for compatibility at the moment. Remove in v4.0.
     log.fatal = logfunc(Levels.FATAL, make_string)
     -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
+    ---@type table<string, { format: fun(fmt: string?, ...: any) }
     log.at = {
       trace = {
+        ---Log trace-level information, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.TRACE, string.format),
       },
       debug = {
+        ---Log debug information, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.DEBUG, string.format),
       },
       info = {
+        ---Log useful information/UI feedback, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.INFO, string.format),
       },
       warn = {
+        ---Log a warning, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.WARN, string.format),
       },
       error = {
+        ---Log an error, but like string.format.
         format = logfunc(Levels.ERROR, string.format),
       },
       fatal = {
+        ---Unused, kept around for compatibility at the moment. Remove in v4.0.
         format = logfunc(Levels.FATAL, string.format),
       },
     }
