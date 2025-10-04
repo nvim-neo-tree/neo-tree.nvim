@@ -272,7 +272,7 @@ log_maker.new = function(config)
     ---Unused, kept around for compatibility at the moment. Remove in v4.0.
     log.fatal = logfunc(Levels.FATAL, make_string)
     -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
-    ---@type table<string, { format: fun(fmt: string?, ...: any) }
+    ---@type table<string, { format: fun(fmt: string?, ...: any) }>
     log.at = {
       trace = {
         ---Log trace-level information, but like string.format.
