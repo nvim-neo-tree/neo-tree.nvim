@@ -68,6 +68,9 @@ function M.check_config(config)
             end
           end
         end,
+        ---@generic T
+        ---@param literals T[]
+        ---@return fun(a: T):boolean
         literal = function(literals)
           return function(value)
             return vim.tbl_contains(literals, value),
@@ -76,6 +79,20 @@ function M.check_config(config)
         end,
       }
       local schema = {
+        LogLevel = v.literal({
+          "trace",
+          "debug",
+          "info",
+          "warn",
+          "error",
+          "fatal",
+          vim.log.levels.TRACE,
+          vim.log.levels.DEBUG,
+          vim.log.levels.INFO,
+          vim.log.levels.WARN,
+          vim.log.levels.ERROR,
+          vim.log.levels.ERROR + 1,
+        }),
         Filesystem = {
           ---@param follow_current_file neotree.Config.Filesystem.FollowCurrentFile
           FollowCurrentFile = function(follow_current_file)
@@ -104,6 +121,17 @@ function M.check_config(config)
         },
         Renderers = v.array("table"),
       }
+      ---@param log_level neotree.Logger.Config.Level
+      schema.ConfigLogLevel = function(log_level)
+        if type(log_level) == "table" then
+          return validate("log_level", log_level, function(ll)
+            validate("console", ll.console, schema.LogLevel)
+            validate("file", ll.file, schema.LogLevel)
+          end)
+        else
+          validate("log_level", log_level, schema.LogLevel)
+        end
+      end
 
       if not validate("config", cfg, "table") then
         health.error("Config does not exist")
@@ -129,12 +157,7 @@ function M.check_config(config)
       end)
       validate("hide_root_node", cfg.hide_root_node, "boolean")
       validate("retain_hidden_root_indent", cfg.retain_hidden_root_indent, "boolean")
-      validate(
-        "log_level",
-        cfg.log_level,
-        v.literal({ "trace", "debug", "info", "warn", "error", "fatal" }),
-        true
-      )
+      validate("log_level", cfg.log_level, schema.ConfigLogLevel, true)
       validate("log_to_file", cfg.log_to_file, { "boolean", "string" })
       validate("open_files_in_last_window", cfg.open_files_in_last_window, "boolean")
       validate(

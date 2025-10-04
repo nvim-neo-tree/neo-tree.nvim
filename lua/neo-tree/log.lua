@@ -78,6 +78,15 @@ local default_config = {
 
 local log_maker = {}
 
+---@param x number
+---@param increment number
+---@return number rounded
+local round = function(x, increment)
+  increment = increment or 1
+  x = x / increment
+  return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
+end
+
 ---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
 ---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
 ---@return neotree.Logger
@@ -113,12 +122,6 @@ log_maker.new = function(config)
     log.use_file(initial_filepath)
   end
 
-  local round = function(x, increment)
-    increment = increment or 1
-    x = x / increment
-    return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
-  end
-
   local last_logfile_check_time = 0
   local current_logfile_inode = -1
   local logfile_check_interval = 20 -- TODO: probably use filesystem events rather than this
@@ -127,35 +130,33 @@ log_maker.new = function(config)
   ---@param log_type string
   ---@param msg string
   local log_to_file = function(log_type, msg)
-    local info = debug.getinfo(3, "Sl")
-    local lineinfo = info.short_src .. ":" .. info.currentline
-    local str =
-      string.format("[%-6s%s] %s%s: %s\n", log_type, os.date("%F-%T"), prefix, lineinfo, msg)
-    if log.file and assert(log.file:write(str)) then
-      local curtime = os.time()
-      -- make sure the file is valid every so often
-      if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
-        last_logfile_check_time = curtime
-        log.use_file(log.outfile, true)
-      end
+    if not log.file then
+      vim.schedule(function()
+        vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
+      end)
       return
     end
+    local info = debug.getinfo(3, "Sl")
+    local lineinfo = info.short_src .. ":" .. info.currentline
+    local str = ("[%-6s%s] %s%s: %s\n"):format(log_type, os.date("%F-%T"), prefix, lineinfo, msg)
+    local _, writeerr = log.file:write(str)
+    if writeerr then
+      -- Assume that subsequent writes will fail too, so stop logging to file.
+      log.use_file(false, true)
+      log.error("Error writing to log:", writeerr)
+      log.file:close()
+    end
 
-    vim.schedule(function()
-      vim.notify_once("[neo-tree] Could not open log file: " .. log.outfile)
-    end)
+    local curtime = os.time()
+    -- make sure the file is valid every so often
+    if os.difftime(curtime, last_logfile_check_time) >= logfile_check_interval then
+      last_logfile_check_time = curtime
+      log.use_file(log.outfile, true)
+    end
   end
 
   ---@type { file: vim.log.levels, console: vim.log.levels }
   log.minimum_level = nil
-
-  vim.api.nvim_create_autocmd("VimLeavePre", {
-    callback = function()
-      if log.file then
-        log.file:close()
-      end
-    end,
-  })
 
   local make_string = function(...)
     local tbl = {}
@@ -186,27 +187,33 @@ log_maker.new = function(config)
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
+    local can_log_to_file = log_level >= log.minimum_level.file
+    local can_log_to_console = log_level >= log.minimum_level.console
+    if not can_log_to_file and not can_log_to_console then
       return function() end
     end
+
     local level_config = config.level_configs[log_level]
     local name_upper = level_config.name:upper()
     return function(...)
       -- Return early if we're below the config.level
       -- Ignore this if vim is exiting
       if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-        return
+        if log.file then
+          config.use_file = false
+          log.file:close()
+        end
       end
 
       local msg = message_maker(...)
 
       -- Output to log file
-      if config.use_file and log_level >= log.minimum_level.file then
+      if config.use_file and can_log_to_file then
         log_to_file(name_upper, msg)
       end
 
       -- Output to console
-      if config.use_console and log_level >= log.minimum_level.console then
+      if config.use_console and can_log_to_console then
         vim.schedule(function()
           notify(msg, log_level)
         end)
@@ -252,30 +259,47 @@ log_maker.new = function(config)
     ---@field name string
     ---@field hl string
 
+    ---Log trace-level information.
     log.trace = logfunc(Levels.TRACE, make_string)
+    ---Log debug information.
     log.debug = logfunc(Levels.DEBUG, make_string)
+    ---Log useful information/UI feedback.
     log.info = logfunc(Levels.INFO, make_string)
+    ---Log a warning.
     log.warn = logfunc(Levels.WARN, make_string)
+    ---Log at an "error" level. Doesn't actually raise an error.
     log.error = logfunc(Levels.ERROR, make_string)
+    ---Unused, kept around for compatibility at the moment. Remove in v4.0.
     log.fatal = logfunc(Levels.FATAL, make_string)
     -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
+    ---@type table<string, { format: fun(fmt: string?, ...: any) }>
     log.at = {
       trace = {
+        ---Log trace-level information, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.TRACE, string.format),
       },
       debug = {
+        ---Log debug information, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.DEBUG, string.format),
       },
       info = {
+        ---Log useful information/UI feedback, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.INFO, string.format),
       },
       warn = {
+        ---Log a warning, but like string.format.
+        ---@see string.format
         format = logfunc(Levels.WARN, string.format),
       },
       error = {
+        ---Log an error, but like string.format.
         format = logfunc(Levels.ERROR, string.format),
       },
       fatal = {
+        ---Unused, kept around for compatibility at the moment. Remove in v4.0.
         format = logfunc(Levels.FATAL, string.format),
       },
     }
@@ -295,6 +319,8 @@ log_maker.new = function(config)
       return config.use_file
     end
     log.outfile = type(file) == "string" and file or initial_filepath
+    log.outfile = vim.fn.expand(log.outfile)
+    log.outfile = vim.fn.fnamemodify(log.outfile, ":p")
     local fp, err = io.open(log.outfile, "a+")
 
     if not fp then
@@ -307,10 +333,14 @@ log_maker.new = function(config)
     if not stat then
       config.use_file = false
       log.warn("Could not stat log file:", log.outfile, stat_err)
+      fp:close()
       return config.use_file
     end
 
     if stat.ino ~= current_logfile_inode then
+      if log.file then
+        log.file:close()
+      end
       -- the fp is pointing to a different file
       log.file = fp
       log.file:setvbuf("line")
