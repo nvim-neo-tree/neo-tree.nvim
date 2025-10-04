@@ -185,9 +185,12 @@ log_maker.new = function(config)
   ---@param log_level vim.log.levels
   ---@param message_maker fun(...):string
   local logfunc = function(log_level, message_maker)
-    if log_level < log.minimum_level.file and log_level < log.minimum_level.console then
+    local can_log_to_file = log_level >= log.minimum_level.file
+    local can_log_to_console = log_level >= log.minimum_level.console
+    if not can_log_to_file and not can_log_to_console then
       return function() end
     end
+
     local level_config = config.level_configs[log_level]
     local name_upper = level_config.name:upper()
     return function(...)
@@ -203,12 +206,12 @@ log_maker.new = function(config)
       local msg = message_maker(...)
 
       -- Output to log file
-      if config.use_file and log_level >= log.minimum_level.file then
+      if config.use_file and can_log_to_file then
         log_to_file(name_upper, msg)
       end
 
       -- Output to console
-      if config.use_console and log_level >= log.minimum_level.console then
+      if config.use_console and can_log_to_console then
         vim.schedule(function()
           notify(msg, log_level)
         end)
@@ -309,10 +312,14 @@ log_maker.new = function(config)
     if not stat then
       config.use_file = false
       log.warn("Could not stat log file:", log.outfile, stat_err)
+      fp:close()
       return config.use_file
     end
 
     if stat.ino ~= current_logfile_inode then
+      if log.file then
+        log.file:close()
+      end
       -- the fp is pointing to a different file
       log.file = fp
       log.file:setvbuf("line")
