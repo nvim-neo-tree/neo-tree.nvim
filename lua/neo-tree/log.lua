@@ -78,6 +78,15 @@ local default_config = {
 
 local log_maker = {}
 
+---@param x number
+---@param increment number
+---@return number rounded
+local round = function(x, increment)
+  increment = increment or 1
+  x = x / increment
+  return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
+end
+
 ---@class (partial) neotree.Logger.PartialConfig : neotree.Logger.Config
 ---@param config neotree.Logger.PartialConfig|neotree.Logger.Config
 ---@return neotree.Logger
@@ -111,12 +120,6 @@ log_maker.new = function(config)
   log.file = nil
   if config.use_file then
     log.use_file(initial_filepath)
-  end
-
-  local round = function(x, increment)
-    increment = increment or 1
-    x = x / increment
-    return (x > 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)) * increment
   end
 
   local last_logfile_check_time = 0
@@ -293,6 +296,8 @@ log_maker.new = function(config)
       return config.use_file
     end
     log.outfile = type(file) == "string" and file or initial_filepath
+    log.outfile = vim.fn.expand(log.outfile)
+    log.outfile = vim.fn.fnamemodify(log.outfile, ":p")
     local fp, err = io.open(log.outfile, "a+")
 
     if not fp then
