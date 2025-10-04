@@ -7,6 +7,7 @@ local Levels = {
   ERROR = 4,
   FATAL = 5,
 }
+local stop_logging_to_file = false
 local uv = vim.uv or vim.loop
 -- log.lua
 --
@@ -151,9 +152,7 @@ log_maker.new = function(config)
 
   vim.api.nvim_create_autocmd("VimLeave", {
     callback = function()
-      if log.file then
-        log.file:close()
-      end
+      stop_logging_to_file = true
     end,
   })
 
@@ -195,6 +194,9 @@ log_maker.new = function(config)
       -- Return early if we're below the config.level
       -- Ignore this if vim is exiting
       if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+        if log.file then
+          log.file:close()
+        end
         return
       end
 
