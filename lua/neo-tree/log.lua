@@ -141,8 +141,8 @@ log_maker.new = function(config)
     local str = ("[%-6s%s] %s%s: %s\n"):format(log_type, os.date("%F-%T"), prefix, lineinfo, msg)
     local _, writeerr = log.file:write(str)
     if writeerr then
-      -- We should assume that subsequent writes will fail too, so stop logging to file.
-      config.use_file = false
+      -- Assume that subsequent writes will fail too, so stop logging to file.
+      log.use_file(false, true)
       log.error("Error writing to log:", writeerr)
       log.file:close()
     end
