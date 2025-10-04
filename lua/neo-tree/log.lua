@@ -197,7 +197,10 @@ log_maker.new = function(config)
       -- Return early if we're below the config.level
       -- Ignore this if vim is exiting
       if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-        return
+        if log.file then
+          config.use_file = false
+          log.file:close()
+        end
       end
 
       local msg = message_maker(...)
