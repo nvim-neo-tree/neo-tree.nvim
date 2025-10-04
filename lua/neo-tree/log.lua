@@ -149,7 +149,7 @@ log_maker.new = function(config)
   ---@type { file: vim.log.levels, console: vim.log.levels }
   log.minimum_level = nil
 
-  vim.api.nvim_create_autocmd("VimLeavePre", {
+  vim.api.nvim_create_autocmd("VimLeave", {
     callback = function()
       if log.file then
         log.file:close()
