@@ -144,7 +144,6 @@ log_maker.new = function(config)
       -- Assume that subsequent writes will fail too, so stop logging to file.
       log.use_file(false, true)
       log.error("Error writing to log:", writeerr)
-      log.file:close()
     end
 
     local curtime = os.time()
@@ -199,10 +198,7 @@ log_maker.new = function(config)
       -- Return early if we're below the config.level
       -- Ignore this if vim is exiting
       if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-        if log.file then
-          config.use_file = false
-          log.file:close()
-        end
+        log.use_file(false, true)
       end
 
       local msg = message_maker(...)
@@ -313,6 +309,10 @@ log_maker.new = function(config)
   log.use_file = function(file, quiet)
     if file == false then
       config.use_file = false
+      if log.file then
+        log.file:close()
+      end
+      log.file = nil
       if not quiet then
         log.info("Logging to file disabled")
       end
@@ -374,9 +374,7 @@ log_maker.new = function(config)
     else
       errmsg = "assertion failed!"
     end
-    if config.use_file then
-      log_to_file("ERROR", errmsg)
-    end
+    log.error(errmsg)
     return assert(v, errmsg)
   end
 
