@@ -198,9 +198,7 @@ log_maker.new = function(config)
       -- Return early if we're below the config.level
       -- Ignore this if vim is exiting
       if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-        if log.file then
-          log.use_file(false, true)
-        end
+        log.use_file(false, true)
       end
 
       local msg = message_maker(...)
@@ -313,8 +311,8 @@ log_maker.new = function(config)
       config.use_file = false
       if log.file then
         log.file:close()
-        log.file = nil
       end
+      log.file = nil
       if not quiet then
         log.info("Logging to file disabled")
       end
