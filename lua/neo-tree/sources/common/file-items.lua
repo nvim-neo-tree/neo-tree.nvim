@@ -99,7 +99,7 @@ local advanced_sort = function(tbl, state)
   deep_sort(tbl, sort_func, field_provider, direction)
 end
 
-local create_item, set_parents
+local set_parents
 
 ---@alias neotree.Filetype
 ---|"file"
@@ -159,8 +159,9 @@ local create_item, set_parents
 ---@param _type neotree.Filetype?
 ---@param bufnr integer?
 ---@return neotree.FileItem
-function create_item(context, path, _type, bufnr)
-  local parent_path, name = utils.split_path(utils.normalize_path(path))
+local function create_item(context, path, _type, bufnr)
+  path = utils.normalize_path(path)
+  local parent_path, name = utils.split_path(path)
   name = name or ""
   local id = path
   if path == "[No Name]" and bufnr then
@@ -169,8 +170,9 @@ function create_item(context, path, _type, bufnr)
     id = tostring(bufnr)
   else
     -- avoid creating duplicate items
-    if context.folders[path] or context.nesting[path] or context.item_exists[path] then
-      return context.folders[path] or context.nesting[path] or context.item_exists[path]
+    local cached_item = context.folders[id] or context.nesting[id] or context.item_exists[id]
+    if cached_item then
+      return cached_item
     end
   end
 
@@ -298,7 +300,7 @@ function set_parents(context, item)
   end
   if parent == nil then
     local success
-    success, parent = pcall(create_item, context, item.parent_path, "directory")
+    success, parent = pcall(create_item, context, item.parent_path)
     if not success then
       log.error("Error creating item for ", item.parent_path, ":", parent)
     end
@@ -307,7 +309,7 @@ function set_parents(context, item)
     set_parents(context, parent)
   end
   table.insert(parent.children, item)
-  context.item_exists[item.id] = true
+  context.item_exists[item.id] = item
 
   if not item.filtered_by and parent.filtered_by then
     item.filtered_by = {
@@ -319,8 +321,8 @@ end
 ---@class (exact) neotree.FileItemContext
 ---@field state neotree.State?
 ---@field folders table<string, neotree.FileItem.Directory|neotree.FileItem.Link?>
----@field nesting neotree.FileItem[]
----@field item_exists table<string, boolean?>
+---@field nesting table<string, neotree.FileItem?>
+---@field item_exists table<string, neotree.FileItem?>
 ---@field all_items neotree.FileItem[]?
 ---@field path_to_reveal string?
 

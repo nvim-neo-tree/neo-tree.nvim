@@ -319,8 +319,6 @@ log_maker.new = function(config)
       return config.use_file
     end
     log.outfile = type(file) == "string" and file or initial_filepath
-    log.outfile = vim.fn.expand(log.outfile)
-    log.outfile = vim.fn.fnamemodify(log.outfile, ":p")
     local fp, err = io.open(log.outfile, "a+")
 
     if not fp then
