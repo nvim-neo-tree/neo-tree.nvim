@@ -197,10 +197,10 @@ vim.pack.add({
     version = vim.version.range('3')
   },
   -- dependencies
-  "nvim-lua/plenary.nvim",
-  "MunifTanjim/nui.nvim",
+  "https://github.com/nvim-lua/plenary.nvim",
+  "https://github.com/MunifTanjim/nui.nvim",
   -- optional, but recommended
-  "nvim-tree/nvim-web-devicons",
+  "https://github.com/nvim-tree/nvim-web-devicons",
 })
 ```
 
