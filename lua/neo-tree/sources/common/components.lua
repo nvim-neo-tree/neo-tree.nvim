@@ -382,8 +382,6 @@ M.filtered_by = function(_, node, state)
 end
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Component
-
----@class (exact) neotree.Component.Common.Icon : neotree.Component
 ---@field [1] "icon"?
 ---@field default string The default icon for a node.
 ---@field folder_empty string The string to display to represent an empty folder.
