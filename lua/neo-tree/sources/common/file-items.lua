@@ -160,7 +160,8 @@ local create_item, set_parents
 ---@param bufnr integer?
 ---@return neotree.FileItem
 function create_item(context, path, _type, bufnr)
-  local parent_path, name = utils.split_path(utils.normalize_path(path))
+  path = utils.normalize_path(path)
+  local parent_path, name = utils.split_path(path)
   name = name or ""
   local id = path
   if path == "[No Name]" and bufnr then
@@ -169,8 +170,9 @@ function create_item(context, path, _type, bufnr)
     id = tostring(bufnr)
   else
     -- avoid creating duplicate items
-    if context.folders[path] or context.nesting[path] or context.item_exists[path] then
-      return context.folders[path] or context.nesting[path] or context.item_exists[path]
+    local cached_item = context.folders[id] or context.nesting[id] or context.item_exists[id]
+    if cached_item then
+      return cached_item
     end
   end
 
@@ -307,7 +309,7 @@ function set_parents(context, item)
     set_parents(context, parent)
   end
   table.insert(parent.children, item)
-  context.item_exists[item.id] = true
+  context.item_exists[item.id] = item
 
   if not item.filtered_by and parent.filtered_by then
     item.filtered_by = {
