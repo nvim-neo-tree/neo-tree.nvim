@@ -322,6 +322,7 @@ require("neo-tree").setup({
       -- then these will never be used.
       default = "*",
       highlight = "NeoTreeFileIcon",
+      use_filtered_colors = true, -- Whether to use a different highlight when the file is filtered (hidden, dotfile, etc.).
     },
     modified = {
       symbol = "[+]",
@@ -329,6 +330,7 @@ require("neo-tree").setup({
     },
     name = {
       trailing_slash = false,
+      use_filtered_colors = true, -- Whether to use a different highlight when the file is filtered (hidden, dotfile, etc.).
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
     },
