@@ -382,12 +382,15 @@ M.filtered_by = function(_, node, state)
 end
 
 ---@class (exact) neotree.Component.Common.Icon : neotree.Component
+
+---@class (exact) neotree.Component.Common.Icon : neotree.Component
 ---@field [1] "icon"?
 ---@field default string The default icon for a node.
 ---@field folder_empty string The string to display to represent an empty folder.
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.
 ---@field folder_open string The icon to display for an open folder.
 ---@field folder_closed string The icon to display for a closed folder.
+---@field use_filtered_colors boolean Whether to use the same highlight as filtered_by when the item is filtered.
 ---@field provider neotree.IconProvider?
 
 ---@param config neotree.Component.Common.Icon
@@ -412,10 +415,11 @@ M.icon = function(config, node, state)
     icon = config.provider(icon, node, state) or icon
   end
 
-  local filtered_by = M.filtered_by(config, node, state)
-
   icon.text = icon.text .. " " -- add padding
-  icon.highlight = filtered_by.highlight or icon.highlight --  prioritize filtered highlighting
+  if config.use_filtered_colors then
+    local filtered_by = M.filtered_by(config, node, state)
+    icon.highlight = filtered_by.highlight or icon.highlight --  prioritize filtered highlighting
+  end
 
   return icon
 end
@@ -443,6 +447,7 @@ end
 ---@field [1] "name"?
 ---@field trailing_slash boolean?
 ---@field use_git_status_colors boolean?
+---@field use_filtered_colors boolean? Whether to use the same highlight as filtered_by when the item is filtered.
 ---@field highlight_opened_files boolean|"all"?
 ---@field right_padding integer?
 
@@ -464,8 +469,10 @@ M.name = function(config, node, state)
       text = text .. "  " .. icon
     end
   else
-    local filtered_by = M.filtered_by(config, node, state)
-    highlight = filtered_by.highlight or highlight
+    if config.use_filtered_colors then
+      local filtered_by = M.filtered_by(config, node, state)
+      highlight = filtered_by.highlight or highlight
+    end
     if config.use_git_status_colors then
       local git_status = state.components.git_status({}, node, state)
       if git_status and git_status.highlight then
