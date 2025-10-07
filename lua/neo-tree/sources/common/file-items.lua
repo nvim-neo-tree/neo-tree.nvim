@@ -300,7 +300,7 @@ function set_parents(context, item)
   end
   if parent == nil then
     local success
-    success, parent = pcall(create_item, context, item.parent_path, "directory")
+    success, parent = pcall(create_item, context, item.parent_path)
     if not success then
       log.error("Error creating item for ", item.parent_path, ":", parent)
     end
