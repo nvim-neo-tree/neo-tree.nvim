@@ -217,9 +217,9 @@ end
 M.get_state_for_window = function(winid)
   winid = winid or vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_win_get_buf(winid)
-  local source_status, source_name = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_source")
-  local position_status, position = pcall(vim.api.nvim_buf_get_var, bufnr, "neo_tree_position")
-  if not source_status or not position_status then
+  local source_name = vim.b[bufnr].neo_tree_source
+  local position = vim.b[bufnr].neo_tree_position
+  if source_name == nil or position == nil then
     return nil
   end
 

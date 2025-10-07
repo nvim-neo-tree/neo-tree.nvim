@@ -1154,15 +1154,16 @@ M.acquire_window = function(state)
     location.source = state.name
   end
   event_args.winid = state.winid
-  events.fire_event(events.NEO_TREE_WINDOW_AFTER_OPEN, event_args)
 
   if type(state.bufnr) == "number" then
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_source", state.name)
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabnr", tabid_to_tabnr(state.tabid))
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_tabid", state.tabid)
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_position", state.current_position)
-    vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
+    vim.b[state.bufnr].neo_tree_source = state.name
+    vim.b[state.bufnr].neo_tree_tabnr = tabid_to_tabnr(state.tabid)
+    vim.b[state.bufnr].neo_tree_tabid = state.tabid
+    vim.b[state.bufnr].neo_tree_position = state.current_position
+    vim.b[state.bufnr].neo_tree_winid = state.winid
   end
+
+  events.fire_event(events.NEO_TREE_WINDOW_AFTER_OPEN, event_args)
 
   if win ~= nil then
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
