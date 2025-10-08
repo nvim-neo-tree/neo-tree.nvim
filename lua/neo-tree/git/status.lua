@@ -134,10 +134,21 @@ M.status = function(base, exclude_directories, path)
   if not utils.truthy(git_root) then
     return {}
   end
+  local git_root_dir = git_root .. utils.path_separator
 
   local s1 = vim.uv.hrtime()
-  local status_cmd =
-    { "git", "-c", "status.relativePaths=true", "-C", git_root, "status", "--porcelain=v2", "-z" }
+  local status_cmd = {
+    "git",
+    "-c",
+    "status.relativePaths=true",
+    "-C",
+    git_root,
+    "status",
+    "--porcelain=v2",
+    "--untracked-files=normal",
+    "--ignored=traditional",
+    "-z",
+  }
   local status_result = vim.fn.system(status_cmd)
 
   local status_ok = vim.v.shell_error == 0
@@ -145,7 +156,7 @@ M.status = function(base, exclude_directories, path)
     return {}
   end
 
-  local git_root_dir = git_root .. utils.path_separator
+  local m1 = vim.uv.hrtime()
   ---@type table<string, string>
   local gs = {}
   -- system() replaces \000 with \001
@@ -237,23 +248,19 @@ M.status = function(base, exclude_directories, path)
   end
 
   if prev_line:sub(1, 1) == "?" then
-    -- untracked
     gs[git_root_dir .. prev_line:sub(3)] = "?"
     for line in status_iter do
       if line:sub(1, 1) ~= "?" then
         prev_line = line
         break
       end
-      gs[git_root_dir .. prev_line:sub(3)] = "?"
+      gs[git_root_dir .. line:sub(3)] = "?"
     end
   end
 
-  -- local gitignored = {}
   if prev_line:sub(1, 1) == "!" then
-    -- gitignored[#gitignored + 1] = prev_line:sub(3)
     gs[git_root_dir .. prev_line:sub(3)] = "!"
     for line in status_iter do
-      -- gitignored[#gitignored + 1] = line:sub(3)
       gs[git_root_dir .. line:sub(3)] = "!"
     end
   end
@@ -265,13 +272,12 @@ M.status = function(base, exclude_directories, path)
       if not parent_status then
         gs[parent] = status
       else
-        local better_status =
-          get_priority_git_status_code(parent_status:sub(1, 1), status:sub(1, 1))
+        local better_status
+        if status == "?" then
         if better_status == parent_status then
           break -- stop bubbling
-        else
-          gs[parent] = better_status
         end
+        gs[parent] = better_status
       end
     end
   end
@@ -293,6 +299,7 @@ M.status = function(base, exclude_directories, path)
   if not untracked_ok then
     return {}
   end
+  local m2 = vim.uv.hrtime()
 
   local context = {
     git_root = git_root,
@@ -317,9 +324,14 @@ M.status = function(base, exclude_directories, path)
     parse_git_status_line(context, line)
   end
   local e2 = vim.uv.hrtime()
-  print(e1 - s1)
+  print("entire:", e1 - s1)
+  print("cmd:", m1 - s1)
+  print("parse:", e1 - m1)
   print(vim.inspect(gs))
-  print(e2 - s2)
+
+  print("entire:", e2 - s2)
+  print("cmd:", m2 - s2)
+  print("parse:", e2 - m2)
   print(vim.inspect(context.git_status))
 
   return context.git_status, git_root

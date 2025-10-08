@@ -14,6 +14,11 @@ end
 
 local M = {}
 
+---The file system path separator for the current platform.
+M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
+
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
     return "Error"
@@ -1004,24 +1009,38 @@ M.fs_parent = function(path, loose)
   return (M.split_path(realpath))
 end
 
+M.str_lastindexof = function(str, needle)
+  local i, j
+  local k = 0
+  repeat
+    i = j
+    j, k = haystack:find(needle, k + 1, true)
+  until j == nil
+
+  return i
+end
 ---Finds all paths that are parents of the current path, naively by removing the tail segments
 ---@param path string
+---@param fast boolean
 ---@return fun():string?,string?
-M.path_parents = function(path)
+M.path_parents = function(path, fast)
   path = M.normalize_path(path)
   ---@type string?
   local parent = path
   local tail
+  if fast then
+    local seperator_indices = {}
+    seperator_indices = {}
+    return function()
+      parent:find(M.path_se)
+      return parent, tail
+    end
+  end
   return function()
     parent, tail = M.split_path(parent)
     return parent, tail
   end
 end
-
----The file system path separator for the current platform.
-M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-M.is_macos = vim.fn.has("mac") == 1
-M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
