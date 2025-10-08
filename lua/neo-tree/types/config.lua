@@ -38,7 +38,7 @@
 ---@field show_scrolled_off_parent_node boolean?
 ---@field sources neotree.Config.SourceSelector.Item[]?
 ---@field content_layout? "start"|"end"|"center"
----@field tabs_layout? "equal"|"start"|"end"|"center"|"focus"
+---@field tabs_layout? "equal"|"start"|"end"|"center"|"active"
 ---@field truncation_character string
 ---@field tabs_min_width integer?
 ---@field tabs_max_width integer?
