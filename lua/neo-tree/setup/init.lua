@@ -685,11 +685,6 @@ M.merge_config = function(user_config)
           local neotree_pos = vim.b[buf].neo_tree_position
           if not utils.is_floating(win) and neotree_pos then
             neotree_sidebar_exists = true
-            if neotree_pos == "left" then
-              left_neotree = win
-            elseif neotree_pos == "right" then
-              right_neotree = win
-            end
           end
         end
       end
@@ -699,7 +694,6 @@ M.merge_config = function(user_config)
       end
 
       -- When we have an open sidebar and the other non-floating windows are all closed, prevent neo-tree from expanding.
-      local left_neotree, right_neotree, bottom_neotree, top_neotree
       local floating_wins = {}
       local neotree_wins = {}
       for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -713,7 +707,7 @@ M.merge_config = function(user_config)
         end
       end
 
-      -- skip buffers shown in floating windows and edgy windows
+      -- skip buffers shown in floating windows and neotree windows
       local skip = {}
       for _, win in pairs(floating_wins) do
         local buf = vim.api.nvim_win_get_buf(win)
@@ -736,18 +730,15 @@ M.merge_config = function(user_config)
         return (vim.b[a].neotree_enter or 0) > (vim.b[b].neotree_enter or 0)
       end)
 
-      local direction
-      if left_neotree then
-        direction = "vertical rightbelow"
-      elseif right_neotree then
-        direction = "vertical leftabove"
-      elseif bottom_neotree then
-        direction = "topleft"
-      elseif top_neotree then
-        direction = "botright"
+      local altbuf = nil
+      for _, buf in ipairs(bufs) do
+        if args.buf ~= buf then
+          altbuf = buf
+          break
+        end
       end
-      local edit_cmd = bufs[1] and "sb " .. bufs[1] or "new"
-      vim.cmd(([[%s %s]]):format(direction, edit_cmd))
+
+      vim.cmd(altbuf and "sb " .. altbuf or "new")
     end,
   })
 
