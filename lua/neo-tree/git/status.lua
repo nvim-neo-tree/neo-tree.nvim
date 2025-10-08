@@ -136,7 +136,6 @@ M.status = function(base, exclude_directories, path)
   end
   local git_root_dir = git_root .. utils.path_separator
 
-  local s1 = vim.uv.hrtime()
   local status_cmd = {
     "git",
     "-c",
@@ -156,7 +155,6 @@ M.status = function(base, exclude_directories, path)
     return {}
   end
 
-  local m1 = vim.uv.hrtime()
   ---@type table<string, string>
   local gs = {}
   -- system() replaces \000 with \001
@@ -265,25 +263,30 @@ M.status = function(base, exclude_directories, path)
     end
   end
 
-  -- bubble up every status
+  -- bubble up every status besides ignored
+  local status_prio = { "U", "?", "M", "A" }
   for dir, status in pairs(gs) do
-    for parent in utils.path_parents(dir) do
-      local parent_status = gs[parent]
-      if not parent_status then
-        gs[parent] = status
-      else
-        local better_status
-        if status == "?" then
-        if better_status == parent_status then
-          break -- stop bubbling
+    if status ~= "!" then
+      for parent in utils.path_parents(dir, true) do
+        local parent_status = gs[parent]
+        if not parent_status then
+          gs[parent] = status
+        else
+          local p = parent_status:sub(1, 1)
+          local s = status:sub(1, 1)
+          for _, c in ipairs(status_prio) do
+            if p == c then
+              break
+            end
+            if s == c then
+              gs[parent] = c
+            end
+          end
         end
-        gs[parent] = better_status
       end
     end
   end
-  local e1 = vim.uv.hrtime()
 
-  local s2 = vim.uv.hrtime()
   local staged_cmd = { "git", "-C", git_root, "diff", "--staged", "--name-status", base, "--" }
   local staged_ok, staged_result = utils.execute_command(staged_cmd)
   if not staged_ok then
@@ -299,7 +302,6 @@ M.status = function(base, exclude_directories, path)
   if not untracked_ok then
     return {}
   end
-  local m2 = vim.uv.hrtime()
 
   local context = {
     git_root = git_root,
@@ -323,16 +325,6 @@ M.status = function(base, exclude_directories, path)
     end
     parse_git_status_line(context, line)
   end
-  local e2 = vim.uv.hrtime()
-  print("entire:", e1 - s1)
-  print("cmd:", m1 - s1)
-  print("parse:", e1 - m1)
-  print(vim.inspect(gs))
-
-  print("entire:", e2 - s2)
-  print("cmd:", m2 - s2)
-  print("parse:", e2 - m2)
-  print(vim.inspect(context.git_status))
 
   return context.git_status, git_root
 end
