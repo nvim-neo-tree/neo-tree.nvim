@@ -904,7 +904,7 @@ then the `default_source` will be updated to be the first entry of
 
 `content_layout` defines how the labels are placed inside a tab. This only takes
 effect when the tab width is greater than the length of label i.e.
-`tabs_layout = "equal", "focus"` or when `tabs_min_width` is large enough.
+`tabs_layout = "equal", "active"` or when `tabs_min_width` is large enough.
 Following options are available.
     'start'  : left aligned                  / 󰓩 bufname     \/..
     'end'    : right aligned                 /     󰓩 bufname \/...
