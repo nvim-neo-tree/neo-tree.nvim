@@ -1121,12 +1121,12 @@ M.split_path = function(path)
   if not path then
     return nil, nil
   end
-  if path == M.path_separator then
-    return nil, M.path_separator
+  if M.is_windows then
+    path = M.windowize_path(path)
   end
   local prefix = M.abspath_prefix(path)
-  if prefix and #path == #prefix then
-    return nil, prefix
+  if prefix and vim.startswith(prefix, path) then
+    return nil, path
   end
   if path:sub(-1) == M.path_separator then
     -- trim it off
@@ -1150,9 +1150,6 @@ end
 ---@return string
 M.path_join = function(...)
   local args = { ... }
-  for _, a in ipairs(args) do
-    log.info(a)
-  end
   if #args == 0 then
     return ""
   end
@@ -1180,6 +1177,10 @@ end
 ---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)
   if M.is_windows then
+    local only_drive_letter_match = path:match("^[A-Za-z]:$")
+    if only_drive_letter_match then
+      return only_drive_letter_match .. "\\"
+    end
     local match = path:match("^[A-Za-z]:[/\\]")
       or path:match([[^\\]])
       or path:match([[^\]])

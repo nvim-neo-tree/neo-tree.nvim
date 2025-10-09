@@ -129,6 +129,7 @@ describe("utils path functions", function()
       assert.are.same({ [[C:\Users]], "user" }, { utils.split_path([[C:\Users\user]]) })
       assert.are.same({ [[C:\Users]], "user" }, { utils.split_path([[C:\Users\user\]]) })
       assert.are.same({ nil, "C:" }, { utils.split_path([[C:]]) })
+      assert.are.same({ nil, "C:\\" }, { utils.split_path([[C:\]]) })
       assert.are.same({ [[C:\]], "_" }, { utils.split_path([[C:\_]]) })
 
       -- UNC paths
