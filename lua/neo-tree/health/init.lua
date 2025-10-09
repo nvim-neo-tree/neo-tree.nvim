@@ -185,7 +185,7 @@ function M.check_config(config)
         validate(
           "tabs_layout",
           ss.tabs_layout,
-          v.literal({ "equal", "start", "end", "center", "focus" })
+          v.literal({ "equal", "start", "end", "center", "active" })
         )
         validate("truncation_character", ss.truncation_character, "string", false)
         validate("tabs_min_width", ss.tabs_min_width, "number", true)
