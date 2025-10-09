@@ -20,6 +20,7 @@ end
 
 function fs.create_dir(path)
   local abspath = Path:new(path):absolute()
+  vim.print(abspath)
   vim.fn.mkdir(abspath, "p")
 end
 
