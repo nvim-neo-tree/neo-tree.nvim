@@ -1150,6 +1150,9 @@ end
 ---@return string
 M.path_join = function(...)
   local args = { ... }
+  for _, a in ipairs(args) do
+    log.info(a)
+  end
   if #args == 0 then
     return ""
   end
