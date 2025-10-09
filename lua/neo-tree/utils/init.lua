@@ -1127,8 +1127,12 @@ M.split_path = function(path)
   local name = table.remove(parts)
   ---@type string?
   local parentPath = table.concat(parts, M.path_separator)
+
   local prefix = M.abspath_prefix(path)
-  if #parentPath < prefix then
+  if #parentPath == 0 then
+    return nil, name
+  end
+  if #parentPath < #prefix then
     parentPath = prefix
   end
   return parentPath, name
