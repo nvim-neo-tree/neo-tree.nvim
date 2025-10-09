@@ -1133,12 +1133,13 @@ M.split_path = function(path)
     path = path:sub(1, -2)
   end
 
-  local parts = vim.split(path, M.path_separator, { plain = true })
-  local name = table.remove(parts)
-  local parentPath = table.concat(parts, M.path_separator)
+  local rest_of_path = prefix and path:sub(#prefix + 1) or path
+  local rest_parts = vim.split(rest_of_path, M.path_separator, { plain = true })
+  local name = table.remove(rest_parts)
+  local parentPath = (prefix or "") .. table.concat(rest_parts, M.path_separator)
 
-  if #parentPath <= #(prefix or "") then
-    return prefix, name
+  if #parentPath == 0 then
+    return nil, name
   end
 
   return parentPath, name
