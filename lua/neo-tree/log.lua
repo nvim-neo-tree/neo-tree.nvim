@@ -188,6 +188,7 @@ log_maker.new = function(config)
   local logfunc = function(log_level, message_maker)
     local can_log_to_file = log_level >= log.minimum_level.file
     local can_log_to_console = log_level >= log.minimum_level.console
+    local log_verbose = vim.env.NEOTREE_TESTING == "true"
     if not can_log_to_file and not can_log_to_console then
       return function() end
     end
@@ -210,7 +211,12 @@ log_maker.new = function(config)
 
       -- Output to console
       if config.use_console and can_log_to_console then
+        local info = debug.getinfo(2, "Sl")
         vim.schedule(function()
+          if log_verbose then
+            local lineinfo = info.short_src .. ":" .. info.currentline
+            msg = lineinfo .. msg
+          end
           notify(msg, log_level)
         end)
       end
