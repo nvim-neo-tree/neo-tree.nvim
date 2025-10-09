@@ -374,7 +374,10 @@ log_maker.new = function(config)
     else
       errmsg = "assertion failed!"
     end
+    local temp = config.use_console
+    config.use_console = false
     log.error(errmsg)
+    config.use_console = temp
     return assert(v, errmsg)
   end
 
