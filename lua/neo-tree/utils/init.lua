@@ -1113,6 +1113,7 @@ M.split = function(inputString, sep)
 end
 
 ---Split a path into a parent path and a name.
+---This differs from python's os.path.split in that root paths (like C:\ or /) return (nil, root_path_normalized)
 ---@param path string? The path to split.
 ---@return string? parent_path
 ---@return string? name
@@ -1123,18 +1124,23 @@ M.split_path = function(path)
   if path == M.path_separator then
     return nil, M.path_separator
   end
+  local prefix = M.abspath_prefix(path)
+  if prefix and #path == #prefix then
+    return nil, prefix
+  end
+  if path:sub(-1) == M.path_separator then
+    -- trim it off
+    path = path:sub(1, -2)
+  end
+
   local parts = vim.split(path, M.path_separator, { plain = true })
   local name = table.remove(parts)
-  ---@type string?
   local parentPath = table.concat(parts, M.path_separator)
 
-  local prefix = M.abspath_prefix(path)
-  if #parentPath == 0 then
-    return nil, name
+  if #parentPath <= #(prefix or "") then
+    return prefix, name
   end
-  if #parentPath < #prefix then
-    parentPath = prefix
-  end
+
   return parentPath, name
 end
 
@@ -1170,15 +1176,14 @@ end
 ---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)
   if M.is_windows then
-    local only_drive_prefix = path:match("^[A-Za-z]:$")
-    if only_drive_prefix then
-      return only_drive_prefix .. "\\"
-    end
-    return path:match("^[A-Za-z]:[/\\]")
+    local match = path:match("^[A-Za-z]:[/\\]")
       or path:match([[^\\]])
       or path:match([[^\]])
       or path:match([[^//]])
       or path:match([[^/]])
+    if match then
+      return M.windowize_path(match)
+    end
   end
 
   return path:match("^/")
