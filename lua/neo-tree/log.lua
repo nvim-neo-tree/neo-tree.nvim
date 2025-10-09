@@ -211,9 +211,9 @@ log_maker.new = function(config)
 
       -- Output to console
       if config.use_console and can_log_to_console then
+        local info = debug.getinfo(2, "Sl")
         vim.schedule(function()
           if log_verbose then
-            local info = debug.getinfo(3, "Sl")
             local lineinfo = info.short_src .. ":" .. info.currentline
             msg = lineinfo .. msg
           end
