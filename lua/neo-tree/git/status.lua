@@ -3,6 +3,7 @@ local events = require("neo-tree.events")
 local Job = require("plenary.job")
 local log = require("neo-tree.log")
 local git_utils = require("neo-tree.git.utils")
+local uv = vim.uv or vim.loop
 
 local M = {}
 
@@ -57,73 +58,6 @@ end
 
 ---@alias neotree.git.Status table<string, string>
 
----@param context neotree.git.Context
-local parse_git_status_line = function(context, line)
-  context.lines_parsed = context.lines_parsed + 1
-  if type(line) ~= "string" then
-    return
-  end
-  if #line < 3 then
-    return
-  end
-  local git_root = context.git_root
-  local git_status = context.git_status
-  local exclude_directories = context.exclude_directories
-
-  local line_parts = vim.split(line, "	")
-  if #line_parts < 2 then
-    return
-  end
-  local status = line_parts[1]
-  local relative_path = line_parts[2]
-
-  -- rename output is `R000 from/filename to/filename`
-  if status:match("^R") then
-    relative_path = line_parts[3]
-  end
-
-  -- remove any " due to whitespace or utf-8 in the path
-  relative_path = relative_path:gsub('^"', ""):gsub('"$', "")
-  -- convert octal encoded lines to utf-8
-  relative_path = git_utils.octal_to_utf8(relative_path)
-
-  if utils.is_windows == true then
-    relative_path = utils.windowize_path(relative_path)
-  end
-  local absolute_path = utils.path_join(git_root, relative_path)
-  -- merge status result if there are results from multiple passes
-  local existing_status = git_status[absolute_path]
-  if existing_status then
-    local merged = ""
-    local i = 0
-    while i < 2 do
-      i = i + 1
-      local existing_char = #existing_status >= i and existing_status:sub(i, i) or ""
-      local new_char = #status >= i and status:sub(i, i) or ""
-      local merged_char = get_priority_git_status_code(existing_char, new_char)
-      merged = merged .. merged_char
-    end
-    status = merged
-  end
-  git_status[absolute_path] = status
-
-  if not exclude_directories then
-    -- Now bubble this status up to the parent directories
-    local parts = utils.split(absolute_path, utils.path_separator)
-    table.remove(parts) -- pop the last part so we don't override the file's status
-    utils.reduce(parts, "", function(acc, part)
-      local path = acc .. utils.path_separator .. part
-      if utils.is_windows == true then
-        path = path:gsub("^" .. utils.path_separator, "")
-      end
-      local path_status = git_status[path]
-      local file_status = get_simple_git_status_code(status)
-      git_status[path] = get_priority_git_status_code(path_status, file_status)
-      return path
-    end)
-  end
-end
-
 ---Parse "git status" output for the current working directory.
 ---@param base string git ref base
 ---@param exclude_directories boolean Whether to skip bubling up status to directories
@@ -138,8 +72,6 @@ M.status = function(base, exclude_directories, path)
 
   local status_cmd = {
     "git",
-    "-c",
-    "status.relativePaths=true",
     "-C",
     git_root,
     "status",
@@ -239,12 +171,12 @@ M.status = function(base, exclude_directories, path)
     -- D           U    unmerged, deleted by us
     -- A           A    unmerged, both added
     -- U           U    unmerged, both modified
-    -- -------------------------------------------------
-    -- ?           ?    untracked
-    -- !           !    ignored
-    -- -------------------------------------------------
   end
 
+  -- -------------------------------------------------
+  -- ?           ?    untracked
+  -- !           !    ignored
+  -- -------------------------------------------------
   if prev_line:sub(1, 1) == "?" then
     gs[git_root_dir .. prev_line:sub(3)] = "?"
     for line in status_iter do
@@ -267,13 +199,16 @@ M.status = function(base, exclude_directories, path)
   local status_prio = { "U", "?", "M", "A" }
   for dir, status in pairs(gs) do
     if status ~= "!" then
+      local s = status:sub(1, 1)
       for parent in utils.path_parents(dir, true) do
+        if parent == git_root then
+          break
+        end
         local parent_status = gs[parent]
         if not parent_status then
           gs[parent] = status
         else
           local p = parent_status:sub(1, 1)
-          local s = status:sub(1, 1)
           for _, c in ipairs(status_prio) do
             if p == c then
               break
@@ -287,44 +222,11 @@ M.status = function(base, exclude_directories, path)
     end
   end
 
-  local staged_cmd = { "git", "-C", git_root, "diff", "--staged", "--name-status", base, "--" }
-  local staged_ok, staged_result = utils.execute_command(staged_cmd)
-  if not staged_ok then
-    return {}
-  end
-  local unstaged_cmd = { "git", "-C", git_root, "diff", "--name-status" }
-  local unstaged_ok, unstaged_result = utils.execute_command(unstaged_cmd)
-  if not unstaged_ok then
-    return {}
-  end
-  local untracked_cmd = { "git", "-C", git_root, "ls-files", "--exclude-standard", "--others" }
-  local untracked_ok, untracked_result = utils.execute_command(untracked_cmd)
-  if not untracked_ok then
-    return {}
-  end
-
   local context = {
     git_root = git_root,
-    git_status = {},
-    exclude_directories = exclude_directories,
+    git_status = gs,
     lines_parsed = 0,
   }
-
-  for _, line in ipairs(staged_result) do
-    parse_git_status_line(context, line)
-  end
-  for _, line in ipairs(unstaged_result) do
-    if line then
-      line = " " .. line
-    end
-    parse_git_status_line(context, line)
-  end
-  for _, line in ipairs(untracked_result) do
-    if line then
-      line = "?	" .. line
-    end
-    parse_git_status_line(context, line)
-  end
 
   return context.git_status, git_root
 end
@@ -362,6 +264,9 @@ local function parse_lines_batch(context, job_complete_callback)
   end
 end
 
+---@param path string path to run commands in
+---@param base string git ref base
+---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
   git_utils.get_repository_root(path, function(git_root)
     if utils.truthy(git_root) then
@@ -376,25 +281,12 @@ M.status_async = function(path, base, opts)
     local context = {
       git_root = git_root,
       git_status = {},
-      exclude_directories = false,
       lines = {},
       lines_parsed = 0,
       batch_size = opts.batch_size or 1000,
       batch_delay = opts.batch_delay or 10,
       max_lines = opts.max_lines or 100000,
     }
-
-    local should_process = function(err, line, job, err_msg)
-      if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
-        job:shutdown()
-        return false
-      end
-      if err and err > 0 then
-        log.error(err_msg, err, line)
-        return false
-      end
-      return true
-    end
 
     local job_complete_callback = function()
       vim.schedule(function()
@@ -410,87 +302,151 @@ M.status_async = function(path, base, opts)
     end)
 
     utils.debounce(event_id, function()
+      -- ---@diagnostic disable-next-line: missing-fields
+      -- local staged_job = Job:new({
+      --   command = "git",
+      --   args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
+      --   enable_recording = false,
+      --   maximium_results = context.max_lines,
+      --   on_stdout = function(err, line, job)
+      --     table.insert(context.lines, line)
+      --   end,
+      --   on_stderr = function(err, line)
+      --     if err and err > 0 then
+      --       log.error("status_async staged error: ", err, line)
+      --     end
+      --   end,
+      -- })
+      --
+      -- ---@diagnostic disable-next-line: missing-fields
+      -- local unstaged_job = Job:new({
+      --   command = "git",
+      --   args = { "-C", git_root, "diff", "--name-status" },
+      --   enable_recording = false,
+      --   maximium_results = context.max_lines,
+      --   on_stdout = function(err, line, job)
+      --     if should_process(err, line, job, "status_async unstaged error:") then
+      --       if line then
+      --         line = " " .. line
+      --       end
+      --       table.insert(context.lines, line)
+      --     end
+      --   end,
+      --   on_stderr = function(err, line)
+      --     if err and err > 0 then
+      --       log.error("status_async unstaged error: ", err, line)
+      --     end
+      --   end,
+      -- })
+      --
+      -- ---@diagnostic disable-next-line: missing-fields
+      -- local untracked_job = Job:new({
+      --   command = "git",
+      --   args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
+      --   enable_recording = false,
+      --   maximium_results = context.max_lines,
+      --   on_stdout = function(err, line, job)
+      --     if should_process(err, line, job, "status_async untracked error:") then
+      --       if line then
+      --         line = "?	" .. line
+      --       end
+      --       table.insert(context.lines, line)
+      --     end
+      --   end,
+      --   on_stderr = function(err, line)
+      --     if err and err > 0 then
+      --       log.error("status_async untracked error: ", err, line)
+      --     end
+      --   end,
+      -- })
+      --
+      -- ---@diagnostic disable-next-line: missing-fields
+      -- Job:new({
+      --   command = "git",
+      --   args = {
+      --     "-C",
+      --     git_root,
+      --     "config",
+      --     "--get",
+      --     "status.showUntrackedFiles",
+      --   },
+      --   enabled_recording = true,
+      --   on_exit = function(self, _, _)
+      --     local result = self:result()
+      --     log.debug("git status.showUntrackedFiles =", result[1])
+      --     if result[1] == "no" then
+      --       unstaged_job:after(parse_lines)
+      --       Job.chain(staged_job, unstaged_job)
+      --     else
+      --       untracked_job:after(parse_lines)
+      --       Job.chain(staged_job, unstaged_job, untracked_job)
+      --     end
+      --   end,
+      -- }):start()
+      --
+      -- Job:new({
+      --   command = "git",
+      --   args = {
+      --     "-C",
+      --     git_root,
+      --     "status",
+      --     "--porcelain=v2",
+      --     "--untracked-files=normal",
+      --     "--ignored=traditional",
+      --     "-z",
+      --   },
+      --   on_stdout = function(err, line, job)
+      --     if vim.v.dying > 0 or vim.v.exiting ~= vim.NIL then
+      --       job:shutdown()
+      --       return
+      --     end
+      --     if err and err > 0 then
+      --       log.error("status_async error:", err, line)
+      --       return
+      --     end
+      --     table.insert(context.lines, line)
+      --   end,
+      --   on_stderr = function(err, line)
+      --     if err and err > 0 then
+      --       log.error("status_async untracked error: ", err, line)
+      --     end
+      --   end,
+      --   on_exit = function(self)
+      --     local result = self:result()
+      --   end,
+      -- }):start()
+      local stdin = log.assert(uv.new_pipe())
+      local stdout = log.assert(uv.new_pipe())
+      local stderr = log.assert(uv.new_pipe())
       ---@diagnostic disable-next-line: missing-fields
-      local staged_job = Job:new({
-        command = "git",
-        args = { "-C", git_root, "diff", "--staged", "--name-status", base, "--" },
-        enable_recording = false,
-        maximium_results = context.max_lines,
-        on_stdout = function(err, line, job)
-          table.insert(context.lines, line)
-        end,
-        on_stderr = function(err, line)
-          if err and err > 0 then
-            log.error("status_async staged error: ", err, line)
-          end
-        end,
-      })
-
-      ---@diagnostic disable-next-line: missing-fields
-      local unstaged_job = Job:new({
-        command = "git",
-        args = { "-C", git_root, "diff", "--name-status" },
-        enable_recording = false,
-        maximium_results = context.max_lines,
-        on_stdout = function(err, line, job)
-          if should_process(err, line, job, "status_async unstaged error:") then
-            if line then
-              line = " " .. line
-            end
-            table.insert(context.lines, line)
-          end
-        end,
-        on_stderr = function(err, line)
-          if err and err > 0 then
-            log.error("status_async unstaged error: ", err, line)
-          end
-        end,
-      })
-
-      ---@diagnostic disable-next-line: missing-fields
-      local untracked_job = Job:new({
-        command = "git",
-        args = { "-C", git_root, "ls-files", "--exclude-standard", "--others" },
-        enable_recording = false,
-        maximium_results = context.max_lines,
-        on_stdout = function(err, line, job)
-          if should_process(err, line, job, "status_async untracked error:") then
-            if line then
-              line = "?	" .. line
-            end
-            table.insert(context.lines, line)
-          end
-        end,
-        on_stderr = function(err, line)
-          if err and err > 0 then
-            log.error("status_async untracked error: ", err, line)
-          end
-        end,
-      })
-
-      ---@diagnostic disable-next-line: missing-fields
-      Job:new({
-        command = "git",
+      local handle = uv.spawn("git", {
         args = {
           "-C",
           git_root,
-          "config",
-          "--get",
-          "status.showUntrackedFiles",
+          "status",
+          "--porcelain=v2",
+          "--untracked-files=normal",
+          "--ignored=traditional",
+          "-z",
         },
-        enabled_recording = true,
-        on_exit = function(self, _, _)
-          local result = self:result()
-          log.debug("git status.showUntrackedFiles =", result[1])
-          if result[1] == "no" then
-            unstaged_job:after(parse_lines)
-            Job.chain(staged_job, unstaged_job)
-          else
-            untracked_job:after(parse_lines)
-            Job.chain(staged_job, unstaged_job, untracked_job)
-          end
-        end,
-      }):start()
+        stdio = { stdin, stdout, stderr },
+      }, function(code, signal) end)
+
+      stdout:read_start(function(err, data)
+        log.assert(not err, err)
+        if data then
+          print("data\n")
+          print(data)
+        else
+          print("stdout end")
+        end
+      end)
+
+      stderr:read_start(function(err, data) end)
+
+      uv.shutdown(stdin, function()
+        uv.close(handle, function() end)
+      end)
     end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
     return true
