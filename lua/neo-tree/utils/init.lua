@@ -1139,7 +1139,7 @@ M.split_path = function(path)
   local parentPath = (prefix or "") .. table.concat(rest_parts, M.path_separator)
 
   if #parentPath == 0 then
-    return nil, name
+    return prefix, name
   end
 
   return parentPath, name
