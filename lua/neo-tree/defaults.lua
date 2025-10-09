@@ -67,11 +67,11 @@ local config = {
       { source = "buffers" },
       { source = "git_status" },
     },
-    content_layout = "start", -- only with `tabs_layout` = "equal", "focus"
+    content_layout = "start", -- only with `tabs_layout` = "equal", "active"
     --                start  : |/ 󰓩 bufname     \/...
     --                end    : |/     󰓩 bufname \/...
     --                center : |/   󰓩 bufname   \/...
-    tabs_layout = "equal", -- start, end, center, equal, focus
+    tabs_layout = "equal", -- start, end, center, equal, active
     --             start  : |/  a  \/  b  \/  c  \            |
     --             end    : |            /  a  \/  b  \/  c  \|
     --             center : |      /  a  \/  b  \/  c  \      |
