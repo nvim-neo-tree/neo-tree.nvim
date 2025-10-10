@@ -1009,16 +1009,6 @@ M.fs_parent = function(path, loose)
   return (M.split_path(realpath))
 end
 
-M.str_lastindexof = function(str, needle)
-  local i, j
-  local k = 0
-  repeat
-    i = j
-    j, k = haystack:find(needle, k + 1, true)
-  until j == nil
-
-  return i
-end
 ---Finds all paths that are parents of the current path, naively by removing the tail segments
 ---@param path string
 ---@param fast boolean?

@@ -378,7 +378,8 @@ log_maker.new = function(config)
     config.use_console = false
     log.error(errmsg)
     config.use_console = temp
-    return assert(v, errmsg)
+    -- actually raise the error so execution stops
+    error(errmsg, 2)
   end
 
   ---@param context string
