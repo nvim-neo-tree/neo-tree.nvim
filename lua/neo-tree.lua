@@ -30,6 +30,7 @@ end
 
 ---@param ignore_filetypes string[]?
 ---@param ignore_winfixbuf boolean?
+---@return integer valid_or_negative
 M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
   local utils = require("neo-tree.utils")
   ignore_filetypes = ignore_filetypes or {}
@@ -38,13 +39,13 @@ M.get_prior_window = function(ignore_filetypes, ignore_winfixbuf)
 
   local tabid = vim.api.nvim_get_current_tabpage()
   local wins = utils.prior_windows[tabid]
-  if wins == nil then
+  if not wins then
     return -1
   end
   local win_index = #wins
   while win_index > 0 do
     local last_win = wins[win_index]
-    if type(last_win) == "number" then
+    if last_win then
       local success, is_valid = pcall(vim.api.nvim_win_is_valid, last_win)
       if success and is_valid and not (ignore_winfixbuf and utils.is_winfixbuf(last_win)) then
         local buf = vim.api.nvim_win_get_buf(last_win)
