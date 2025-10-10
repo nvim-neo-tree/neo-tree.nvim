@@ -1,9 +1,9 @@
 local utils = require("neo-tree.utils")
 local events = require("neo-tree.events")
-local Job = require("plenary.job")
 local log = require("neo-tree.log")
 local git_utils = require("neo-tree.git.utils")
 local uv = vim.uv or vim.loop
+local co = coroutine
 
 local M = {}
 
@@ -50,48 +50,35 @@ local function get_priority_git_status_code(status, other_status)
   end
 end
 
----@class (exact) neotree.git.Context
+---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
 ---@field git_status neotree.git.Status
 ---@field git_root string
----@field exclude_directories boolean
 ---@field lines_parsed integer
 
----@alias neotree.git.Status table<string, string>
-
----Parse "git status" output for the current working directory.
----@param base string git ref base
----@param exclude_directories boolean Whether to skip bubling up status to directories
----@param path string Path to run the git status command in, defaults to cwd.
----@return neotree.git.Status, string? git_status the neotree.Git.Status of the given root
-M.status = function(base, exclude_directories, path)
-  local git_root = git_utils.get_repository_root(path)
-  if not utils.truthy(git_root) then
-    return {}
-  end
-  local git_root_dir = git_root .. utils.path_separator
-
-  local status_cmd = {
-    "git",
-    "-C",
-    git_root,
-    "status",
-    "--porcelain=v2",
-    "--untracked-files=normal",
-    "--ignored=traditional",
-    "-z",
-  }
-  local status_result = vim.fn.system(status_cmd)
-
-  local status_ok = vim.v.shell_error == 0
-  if not status_ok then
-    return {}
-  end
-
-  ---@type table<string, string>
-  local gs = {}
-  -- system() replaces \000 with \001
-  local status_iter = vim.gsplit(status_result, "\001", { plain = true })
+---@param git_root string
+---@param status_iter fun():string?
+---@param batch_size integer? This will use coroutine.yield if provided.
+---@param skip_bubbling boolean?
+---@return neotree.git.Status
+local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_bubbling)
+  local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
   local prev_line = ""
+  local num_in_batch = 0
+  local git_status = {}
+  if batch_size == 0 then
+    batch_size = nil
+  end
+  local yield_if_batch_completed = function() end
+
+  if batch_size then
+    yield_if_batch_completed = function()
+      num_in_batch = num_in_batch + 1
+      if num_in_batch > batch_size then
+        num_in_batch = 0
+        coroutine.yield(git_status)
+      end
+    end
+  end
   for line in status_iter do
     -- Example status:
     -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
@@ -117,8 +104,8 @@ M.status = function(base, exclude_directories, path)
       -- local mW = line:sub(25, 30)
       -- local hH = line:sub(32, 71)
       -- local hI = line:sub(73, 112)
-      local pathname = line:sub(114)
-      gs[git_root_dir .. pathname] = XY
+      local path = line:sub(114)
+      git_status[git_root_dir .. path] = XY
     elseif t == "2" then
       -- local XY = line:sub(3, 4)
       -- local submodule_state = line:sub(6, 9)
@@ -128,9 +115,11 @@ M.status = function(base, exclude_directories, path)
       -- local hH = line:sub(32, 71)
       -- local hI = line:sub(73, 112)
       local rest = line:sub(114)
-      local score_and_pathname = vim.split(rest, " ", { plain = true })
-      -- iterate over the original path
-      gs[git_root_dir .. score_and_pathname[2]] = score_and_pathname[1]
+      local first_space = rest:find(" ", 1, true)
+      local Xscore = rest:sub(1, first_space - 1)
+      local path = rest:sub(first_space + 1)
+      git_status[git_root_dir .. path] = Xscore
+      -- ignore the original path
       status_iter()
     elseif t == "u" then
       local XY = line:sub(3, 4)
@@ -142,8 +131,8 @@ M.status = function(base, exclude_directories, path)
       -- local h1 = line:sub(39, 78)
       -- local h2 = line:sub(80, 119)
       -- local h3 = line:sub(121, 160)
-      local pathname = line:sub(162)
-      gs[git_root_dir .. pathname] = XY
+      local path = line:sub(162)
+      git_status[git_root_dir .. path] = XY
     else
       prev_line = line
       break
@@ -171,6 +160,7 @@ M.status = function(base, exclude_directories, path)
     -- D           U    unmerged, deleted by us
     -- A           A    unmerged, both added
     -- U           U    unmerged, both modified
+    yield_if_batch_completed()
   end
 
   -- -------------------------------------------------
@@ -178,49 +168,92 @@ M.status = function(base, exclude_directories, path)
   -- !           !    ignored
   -- -------------------------------------------------
   if prev_line:sub(1, 1) == "?" then
-    gs[git_root_dir .. prev_line:sub(3)] = "?"
+    git_status[git_root_dir .. prev_line:sub(3)] = "?"
     for line in status_iter do
       if line:sub(1, 1) ~= "?" then
         prev_line = line
         break
       end
-      gs[git_root_dir .. line:sub(3)] = "?"
+      git_status[git_root_dir .. line:sub(3)] = "?"
     end
+    yield_if_batch_completed()
   end
 
-  if prev_line:sub(1, 1) == "!" then
-    gs[git_root_dir .. prev_line:sub(3)] = "!"
-    for line in status_iter do
-      gs[git_root_dir .. line:sub(3)] = "!"
-    end
-  end
+  if not skip_bubbling then
+    -- bubble up every status besides ignored
+    local status_prio = { "U", "?", "M", "A" }
 
-  -- bubble up every status besides ignored
-  local status_prio = { "U", "?", "M", "A" }
-  for dir, status in pairs(gs) do
-    if status ~= "!" then
-      local s = status:sub(1, 1)
-      for parent in utils.path_parents(dir, true) do
-        if parent == git_root then
-          break
-        end
-        local parent_status = gs[parent]
-        if not parent_status then
-          gs[parent] = status
-        else
-          local p = parent_status:sub(1, 1)
-          for _, c in ipairs(status_prio) do
-            if p == c then
-              break
-            end
-            if s == c then
-              gs[parent] = c
+    for dir, status in pairs(git_status) do
+      if status ~= "!" then
+        local s = status:sub(1, 1)
+        for parent in utils.path_parents(dir, true) do
+          if parent == git_root then
+            break
+          end
+
+          local parent_status = git_status[parent]
+          if not parent_status then
+            git_status[parent] = status
+          else
+            -- Bubble up the most important status
+            local p = parent_status:sub(1, 1)
+            for _, c in ipairs(status_prio) do
+              if p == c then
+                break
+              end
+              if s == c then
+                git_status[parent] = c
+              end
             end
           end
         end
       end
+      yield_if_batch_completed()
     end
   end
+  if prev_line:sub(1, 1) == "!" then
+    git_status[git_root_dir .. prev_line:sub(3)] = "!"
+    for line in status_iter do
+      git_status[git_root_dir .. line:sub(3)] = "!"
+    end
+    yield_if_batch_completed()
+  end
+
+  return git_status
+end
+---@alias neotree.git.Status table<string, string>
+
+---Parse "git status" output for the current working directory.
+---@param base string git ref base
+---@param skip_bubbling boolean? Whether to skip bubling up status to directories
+---@param path string? Path to run the git status command in, defaults to cwd.
+---@return neotree.git.Status, string? git_status the neotree.Git.Status of the given root
+M.status = function(base, skip_bubbling, path)
+  local git_root = git_utils.get_repository_root(path)
+  if not utils.truthy(git_root) then
+    return {}
+  end
+
+  local status_cmd = {
+    "git",
+    "-C",
+    git_root,
+    "status",
+    "--porcelain=v2",
+    "--untracked-files=normal",
+    "--ignored=traditional",
+    "-z",
+  }
+  local status_result = vim.fn.system(status_cmd)
+
+  local status_ok = vim.v.shell_error == 0
+  if not status_ok then
+    return {}
+  end
+
+  -- system() replaces \000 with \001
+  local status_iter = vim.gsplit(status_result, "\001", { plain = true })
+  local gs = parse_porcelain_output(git_root, status_iter, nil, skip_bubbling)
 
   local context = {
     git_root = git_root,
@@ -228,41 +261,48 @@ M.status = function(base, exclude_directories, path)
     lines_parsed = 0,
   }
 
+  vim.schedule(function()
+    events.fire_event(events.GIT_STATUS_CHANGED, {
+      git_root = context.git_root,
+      git_status = context.git_status,
+    })
+  end)
+
   return context.git_status, git_root
 end
-
-local function parse_lines_batch(context, job_complete_callback)
-  local i, batch_size = 0, context.batch_size
-
-  if context.lines_total == nil then
-    -- first time through, get the total number of lines
-    context.lines_total = math.min(context.max_lines, #context.lines)
-    context.lines_parsed = 0
-    if context.lines_total == 0 then
-      if type(job_complete_callback) == "function" then
-        job_complete_callback()
-      end
-      return
-    end
-  end
-  batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
-
-  while i < batch_size do
-    i = i + 1
-    parse_git_status_line(context, context.lines[context.lines_parsed + 1])
-  end
-
-  if context.lines_parsed >= context.lines_total then
-    if type(job_complete_callback) == "function" then
-      job_complete_callback()
-    end
-  else
-    -- add small delay so other work can happen
-    vim.defer_fn(function()
-      parse_lines_batch(context, job_complete_callback)
-    end, context.batch_delay)
-  end
-end
+--
+-- local function parse_lines_batch(context, job_complete_callback)
+--   local i, batch_size = 0, context.batch_size
+--
+--   if context.lines_total == nil then
+--     -- first time through, get the total number of lines
+--     context.lines_total = math.min(context.max_lines, #context.lines)
+--     context.lines_parsed = 0
+--     if context.lines_total == 0 then
+--       if type(job_complete_callback) == "function" then
+--         job_complete_callback()
+--       end
+--       return
+--     end
+--   end
+--   batch_size = math.min(context.batch_size, context.lines_total - context.lines_parsed)
+--
+--   while i < batch_size do
+--     i = i + 1
+--     parse_git_status_line(context, context.lines[context.lines_parsed + 1])
+--   end
+--
+--   if context.lines_parsed >= context.lines_total then
+--     if type(job_complete_callback) == "function" then
+--       job_complete_callback()
+--     end
+--   else
+--     -- add small delay so other work can happen
+--     vim.defer_fn(function()
+--       parse_lines_batch(context, job_complete_callback)
+--     end, context.batch_delay)
+--   end
+-- end
 
 ---@param path string path to run commands in
 ---@param base string git ref base
@@ -287,19 +327,6 @@ M.status_async = function(path, base, opts)
       batch_delay = opts.batch_delay or 10,
       max_lines = opts.max_lines or 100000,
     }
-
-    local job_complete_callback = function()
-      vim.schedule(function()
-        events.fire_event(events.GIT_STATUS_CHANGED, {
-          git_root = context.git_root,
-          git_status = context.git_status,
-        })
-      end)
-    end
-
-    local parse_lines = vim.schedule_wrap(function()
-      parse_lines_batch(context, job_complete_callback)
-    end)
 
     utils.debounce(event_id, function()
       -- ---@diagnostic disable-next-line: missing-fields
@@ -419,7 +446,38 @@ M.status_async = function(path, base, opts)
       local stdout = log.assert(uv.new_pipe())
       local stderr = log.assert(uv.new_pipe())
       ---@diagnostic disable-next-line: missing-fields
+
+      local output_chunks = {}
+      local on_exit = function()
+        local str = output_chunks[1]
+        if #output_chunks > 1 then
+          str = table.concat(output_chunks, "")
+        end
+        local status_iter = vim.gsplit(str, "\000", { plain = true })
+        local parsing_task = co.create(parse_porcelain_output)
+        local _, git_status =
+          log.assert(co.resume(parsing_task, git_root, status_iter, context.batch_size))
+
+        local do_next_batch_later
+        do_next_batch_later = function()
+          if co.status(parsing_task) ~= "dead" then
+            _, git_status = log.assert(co.resume(parsing_task))
+            vim.defer_fn(do_next_batch_later, 500)
+            return
+          end
+          context.git_status = git_status
+          vim.schedule(function()
+            events.fire_event(events.GIT_STATUS_CHANGED, {
+              git_root = context.git_root,
+              git_status = context.git_status,
+            })
+          end)
+        end
+        do_next_batch_later()
+      end
+      ---@diagnostic disable-next-line: missing-fields
       local handle = uv.spawn("git", {
+        hide = true,
         args = {
           "-C",
           git_root,
@@ -430,23 +488,34 @@ M.status_async = function(path, base, opts)
           "-z",
         },
         stdio = { stdin, stdout, stderr },
-      }, function(code, signal) end)
+      }, function(code, signal)
+        log.assert(
+          code == 0,
+          "git status async process exited abnormally, code: %s, signal: %s",
+          code,
+          signal
+        )
+        on_exit()
+      end)
 
       stdout:read_start(function(err, data)
         log.assert(not err, err)
-        if data then
-          print("data\n")
-          print(data)
-        else
-          print("stdout end")
+        -- for some reason data can be a table here?
+        if type(data) == "string" then
+          table.insert(output_chunks, data)
         end
       end)
 
-      stderr:read_start(function(err, data) end)
-
-      uv.shutdown(stdin, function()
-        uv.close(handle, function() end)
+      stderr:read_start(function(err, data)
+        if err then
+          local errfmt = (err or "") .. "%s"
+          log.at.error.format(errfmt, data)
+        end
       end)
+
+      -- uv.shutdown(stdin, function()
+      --   uv.close(handle)
+      -- end)
     end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
 
     return true
