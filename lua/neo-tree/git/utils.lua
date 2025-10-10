@@ -5,6 +5,9 @@ local log = require("neo-tree.log")
 
 local M = {}
 
+---@param path string? Defaults to cwd
+---@param callback fun(git_root: string)?
+---@return string?
 M.get_repository_root = function(path, callback)
   local args = { "rev-parse", "--show-toplevel" }
   if utils.truthy(path) then
