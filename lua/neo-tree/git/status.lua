@@ -236,6 +236,7 @@ M.status = function(base, skip_bubbling, path)
 
   local status_cmd = {
     "git",
+    "--no-optional-locks",
     "-C",
     git_root,
     "status",
@@ -309,12 +310,12 @@ end
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
   git_utils.get_repository_root(path, function(git_root)
-    if utils.truthy(git_root) then
-      log.trace("git.status.status_async called")
-    else
+    if not utils.truthy(git_root) then
       log.trace("status_async: not a git folder:", path)
-      return false
+      return
     end
+
+    log.trace("git.status.status_async called")
 
     local event_id = "git_status_" .. git_root
     ---@type neotree.git.Context
@@ -448,7 +449,27 @@ M.status_async = function(path, base, opts)
       ---@diagnostic disable-next-line: missing-fields
 
       local output_chunks = {}
-      local on_exit = function()
+      ---@diagnostic disable-next-line: missing-fields
+      local handle = uv.spawn("git", {
+        hide = true,
+        args = {
+          "--no-optional-locks",
+          "-C",
+          git_root,
+          "status",
+          "--porcelain=v2",
+          "--untracked-files=normal",
+          "--ignored=traditional",
+          "-z",
+        },
+        stdio = { stdin, stdout, stderr },
+      }, function(code, signal)
+        log.assert(
+          code == 0,
+          "git status async process exited abnormally, code: %s, signal: %s",
+          code,
+          signal
+        )
         local str = output_chunks[1]
         if #output_chunks > 1 then
           str = table.concat(output_chunks, "")
@@ -474,28 +495,6 @@ M.status_async = function(path, base, opts)
           end)
         end
         do_next_batch_later()
-      end
-      ---@diagnostic disable-next-line: missing-fields
-      local handle = uv.spawn("git", {
-        hide = true,
-        args = {
-          "-C",
-          git_root,
-          "status",
-          "--porcelain=v2",
-          "--untracked-files=normal",
-          "--ignored=traditional",
-          "-z",
-        },
-        stdio = { stdin, stdout, stderr },
-      }, function(code, signal)
-        log.assert(
-          code == 0,
-          "git status async process exited abnormally, code: %s, signal: %s",
-          code,
-          signal
-        )
-        on_exit()
       end)
 
       stdout:read_start(function(err, data)
@@ -512,13 +511,7 @@ M.status_async = function(path, base, opts)
           log.at.error.format(errfmt, data)
         end
       end)
-
-      -- uv.shutdown(stdin, function()
-      --   uv.close(handle)
-      -- end)
     end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
-
-    return true
   end)
 end
 
