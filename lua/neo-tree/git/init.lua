@@ -156,6 +156,7 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
         local s = status:sub(1, 1)
         for parent in utils.path_parents(dir, true) do
           if parent == git_root then
+            -- bubble only up to the children of the git root
             break
           end
 
@@ -353,6 +354,9 @@ M.is_ignored = function(path)
   local git_root = M.get_repository_root(path)
   if not git_root then
     return false
+  end
+  if not M.cache[git_root] then
+    M.status("HEAD", false, path)
   end
   local direct_lookup = M.cache[git_root][path] or M.cache[git_root][path .. utils.path_separator]
   if direct_lookup then
