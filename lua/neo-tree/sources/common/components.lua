@@ -353,7 +353,7 @@ M.filtered_by = function(_, node, state)
         text = "(hide by pattern)",
         highlight = highlights.HIDDEN_BY_NAME,
       }
-    elseif fby.gitignored then
+    elseif require("neo-tree.git").is_ignored(node.path) then
       return {
         text = "(gitignored)",
         highlight = highlights.GIT_IGNORED,

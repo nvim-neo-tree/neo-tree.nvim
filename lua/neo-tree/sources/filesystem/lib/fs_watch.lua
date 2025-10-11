@@ -164,6 +164,21 @@ M.unwatch_git_index = function(path, async)
   end
 end
 
+---@generic P : string
+---@param path P
+---@param callback fun(path: P)
+M.on_destroyed = function(path, callback)
+  local ev = log.assert(uv.new_fs_event())
+  ev:start(path, flags, function(err, path, events)
+    if events.change then
+      if not uv.fs_stat(path) then
+        callback(path)
+        ev:close()
+      end
+    end
+  end)
+end
+
 ---Stop watching all directories. This is the nuclear option and it affects all
 ---sources.
 M.unwatch_all = function()

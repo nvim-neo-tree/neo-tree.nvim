@@ -537,11 +537,7 @@ M.order_by_git_status = function(state)
       return git_status
     end
 
-    if node.filtered_by and node.filtered_by.gitignored then
-      return "!!"
-    else
-      return ""
-    end
+    return ""
   end
 
   require("neo-tree.sources.manager").refresh(state.name)
