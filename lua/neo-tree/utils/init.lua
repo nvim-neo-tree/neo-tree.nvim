@@ -14,6 +14,11 @@ end
 
 local M = {}
 
+---The file system path separator for the current platform.
+M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+M.is_macos = vim.fn.has("mac") == 1
+M.path_separator = M.is_windows and "\\" or "/"
+
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
     return "Error"
@@ -894,7 +899,7 @@ M.normalize_path = function(path)
   return path
 end
 
----Check if a path is a subpath of another.
+---Check if a path is a subpath of another. In other words, whether the path starts with the base path.
 ---@param base string The base path.
 ---@param path string The path to check is a subpath.
 ---@return boolean path_is_subpath True if it is a subpath, false otherwise.
@@ -910,10 +915,10 @@ M.is_subpath = function(base, path)
   base = M.normalize_path(base)
   path = M.normalize_path(path)
   if path:sub(1, #base) == base then
-    local base_parts = M.split(base, M.path_separator)
-    local path_parts = M.split(path, M.path_separator)
-    for i, base_part in ipairs(base_parts) do
-      if path_parts[i] ~= base_part then
+    local base_parts = M.split(base:sub(#base), M.path_separator)
+    local path_parts = M.split(path:sub(#base), M.path_separator)
+    for i, remaining_parts in ipairs(base_parts) do
+      if path_parts[i] ~= remaining_parts then
         return false
       end
     end
@@ -999,9 +1004,39 @@ end
 
 ---Finds all paths that are parents of the current path, naively by removing the tail segments
 ---@param path string
+---@param fast boolean?
 ---@return fun():string?,string?
-M.path_parents = function(path)
-  path = M.normalize_path(path)
+M.path_parents = function(path, fast)
+  if not fast then
+    path = M.normalize_path(path)
+  end
+  local prefix = M.abspath_prefix(path)
+  if fast then
+    local parent = path
+    local seperator_indices = {}
+    do
+      local res
+      local i = 1
+      repeat
+        res = path:find(M.path_separator, i, true)
+        seperator_indices[#seperator_indices + 1] = res
+        if res then
+          i = res + 1
+        end
+      until not res
+    end
+    local i = #seperator_indices
+    return function()
+      local idx = seperator_indices[i]
+      i = i - 1
+      if not idx or #parent <= #prefix then
+        return nil
+      end
+
+      parent = parent:sub(1, idx - 1)
+      return parent, parent:sub(idx + 1)
+    end
+  end
   ---@type string?
   local parent = path
   local tail
@@ -1010,11 +1045,6 @@ M.path_parents = function(path)
     return parent, tail
   end
 end
-
----The file system path separator for the current platform.
-M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
-M.is_macos = vim.fn.has("mac") == 1
-M.path_separator = M.is_windows and "\\" or "/"
 
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
@@ -1581,7 +1611,7 @@ local slice = vim.fn.exists("*slice") == 1 and vim.fn.slice
 
 -- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
--- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough
+-- TODO: maybe use vim.str_utf* functions instead of strchars, once neovim updates enough
 
 -- Truncate a string based on number of display columns/cells it occupies
 -- so that multibyte characters are not broken up mid-character
