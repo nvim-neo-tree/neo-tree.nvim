@@ -154,7 +154,7 @@ local focus_next_git_modified = function(state, reverse)
   ---@cast g -nil
   local paths = { current_path }
   for path, status in pairs(g) do
-    if path ~= current_path and not vim.tbl_contains({ "!!", "?" }, status) then
+    if path ~= current_path and not vim.tbl_contains({ "!", "?" }, status) then
       --don't include files not in the current working directory
       if utils.is_subpath(state.path, path) then
         table.insert(paths, path)

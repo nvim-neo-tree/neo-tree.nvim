@@ -115,89 +115,12 @@ local render_context = function(context)
 end
 
 ---@param context neotree.sources.filesystem.Context
-local should_check_gitignore = function(context)
-  local state = context.state
-  if #context.all_items == 0 then
-    log.debug("No items, skipping git ignored/status lookups")
-    return false
-  end
-  if state.search_pattern and state.check_gitignore_in_search == false then
-    return false
-  end
-  if state.filtered_items.hide_gitignored then
-    return true
-  end
-  if state.enable_git_status == false then
-    return false
-  end
-  return true
-end
-
----@param context neotree.sources.filesystem.Context
-local job_complete_async = function(context)
-  local state = context.state
-  local parent_id = context.parent_id
-
-  file_nesting.nest_items(context)
-
-  -- if state.search_pattern and #context.all_items > 50 then
-  --   -- don't do git ignored/status lookups when searching unless we are down to a reasonable number of items
-  --   return context
-  -- end
-  if should_check_gitignore(context) then
-    local mark_ignored_async = async.wrap(function(_state, _all_items, _callback)
-      ---lua-ls can't narrow this properly
-      ---@diagnostic disable-next-line: redundant-parameter
-      git.mark_ignored(_state, _all_items, _callback)
-    end, 3)
-    local all_items = mark_ignored_async(state, context.all_items)
-
-    if parent_id then
-      vim.list_extend(state.git_ignored, all_items)
-    else
-      state.git_ignored = all_items
-    end
-  end
-
-  ignored.mark_ignored(state, context.all_items)
-  return context
-end
-
----@param context neotree.sources.filesystem.Context
 local job_complete = function(context)
   local state = context.state
-  local parent_id = context.parent_id
-
   file_nesting.nest_items(context)
-
   ignored.mark_ignored(state, context.all_items)
-  if should_check_gitignore(context) then
-    if require("neo-tree").config.git_status_async then
-      ---lua-ls can't narrow this properly
-      ---@diagnostic disable-next-line: redundant-parameter
-      git.mark_ignored(state, context.all_items, function(all_items)
-        if parent_id then
-          vim.list_extend(state.git_ignored, all_items)
-        else
-          state.git_ignored = all_items
-        end
-        vim.schedule(function()
-          render_context(context)
-        end)
-      end)
-      return
-    else
-      local all_items = git.mark_ignored(state, context.all_items)
-      if parent_id then
-        vim.list_extend(state.git_ignored, all_items)
-      else
-        state.git_ignored = all_items
-      end
-    end
-    render_context(context)
-  else
-    render_context(context)
-  end
+  render_context(context)
+  return context
 end
 
 local function create_node(context, node)
@@ -708,7 +631,7 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  job_complete_async(context)
+  job_complete(context)
 
   local finalize = async.wrap(function(_context, _callback)
     vim.schedule(function()

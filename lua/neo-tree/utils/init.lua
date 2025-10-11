@@ -906,7 +906,7 @@ M.normalize_path = function(path)
   return path
 end
 
----Check if a path is a subpath of another.
+---Check if a path is a subpath of another. In other words, whether the path starts with the base path.
 ---@param base string The base path.
 ---@param path string The path to check is a subpath.
 ---@return boolean path_is_subpath True if it is a subpath, false otherwise.
@@ -922,10 +922,10 @@ M.is_subpath = function(base, path)
   base = M.normalize_path(base)
   path = M.normalize_path(path)
   if path:sub(1, #base) == base then
-    local base_parts = M.split(base, M.path_separator)
-    local path_parts = M.split(path, M.path_separator)
-    for i, base_part in ipairs(base_parts) do
-      if path_parts[i] ~= base_part then
+    local base_parts = M.split(base:sub(#base), M.path_separator)
+    local path_parts = M.split(path:sub(#base), M.path_separator)
+    for i, remaining_parts in ipairs(base_parts) do
+      if path_parts[i] ~= remaining_parts then
         return false
       end
     end
@@ -1631,7 +1631,7 @@ local slice = vim.fn.exists("*slice") == 1 and vim.fn.slice
 
 -- Function below provided by @akinsho, modified by @pynappo
 -- https://github.com/nvim-neo-tree/neo-tree.nvim/pull/427#discussion_r924947766
--- TODO: maybe use vim.stf_utf* functions instead of strchars, once neovim updates enough
+-- TODO: maybe use vim.str_utf* functions instead of strchars, once neovim updates enough
 
 -- Truncate a string based on number of display columns/cells it occupies
 -- so that multibyte characters are not broken up mid-character

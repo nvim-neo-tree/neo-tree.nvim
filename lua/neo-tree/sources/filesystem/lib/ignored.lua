@@ -43,9 +43,8 @@ end
 ---@param items neotree.FileItem[]
 ---@return string[] results
 M.mark_ignored = function(state, items)
-  local config = require("neo-tree").config
-  local ignore_files = config.filesystem.filtered_items.ignore_files
-  if not ignore_files or vim.tbl_isempty(config.filesystem.filtered_items.ignore_files) then
+  local ignore_files = state.filtered_items.ignore_files
+  if not ignore_files or vim.tbl_isempty(ignore_files) then
     return {}
   end
   ---@type table<string, neotree.FileItem[]>
