@@ -8,18 +8,18 @@ local co = coroutine
 local M = {}
 
 ---@type table<string, neotree.git.Status>
-M.cache = setmetatable({}, {
-  __mode = "kv",
+M.status_cache = setmetatable({}, {
+  __mode = "v",
   __newindex = function(_, root_dir, status)
     require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(root_dir, function()
-      rawset(M.cache, root_dir, nil)
+      rawset(M.status_cache, root_dir, nil)
     end)
-    rawset(M.cache, root_dir, status)
+    rawset(M.status_cache, root_dir, status)
   end,
 })
 
 ---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
----@field git_status neotree.git.Status
+---@field git_status neotree.git.Status?
 ---@field git_root string
 ---@field lines_parsed integer
 
@@ -188,7 +188,7 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
     yield_if_batch_completed()
   end
 
-  M.cache[git_root] = git_status
+  M.status_cache[git_root] = git_status
   return git_status
 end
 ---@alias neotree.git.Status table<string, string>
@@ -197,14 +197,11 @@ end
 ---@param base string git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
 ---@param path string? Path to run the git status command in, defaults to cwd.
----@return neotree.git.Status, string? git_status the neotree.Git.Status of the given root
+---@return neotree.git.Status?, string? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 M.status = function(base, skip_bubbling, path)
   local git_root = M.get_repository_root(path)
   if not utils.truthy(git_root) then
-    if git_root then
-      M.cache[git_root] = {}
-    end
-    return {}
+    return nil
   end
   ---@cast git_root -nil
 
@@ -222,27 +219,27 @@ M.status = function(base, skip_bubbling, path)
   local status_result = vim.fn.system(status_cmd)
 
   local status_ok = vim.v.shell_error == 0
-  if not status_ok then
-    M.cache[git_root] = {}
-    return {}
-  end
-
-  -- system() replaces \000 with \001
-  local status_iter = vim.gsplit(status_result, "\001", { plain = true })
-  local gs = parse_porcelain_output(git_root, status_iter, nil, skip_bubbling)
-
+  ---@type neotree.git.Context
   local context = {
     git_root = git_root,
-    git_status = gs,
+    git_status = nil,
     lines_parsed = 0,
   }
 
-  vim.schedule(function()
-    events.fire_event(events.GIT_STATUS_CHANGED, {
-      git_root = context.git_root,
-      git_status = context.git_status,
-    })
-  end)
+  if status_ok then
+    -- system() replaces \000 with \001
+    local status_iter = vim.gsplit(status_result, "\001", { plain = true })
+    local gs = parse_porcelain_output(git_root, status_iter, nil, skip_bubbling)
+
+    context.git_status = gs
+    vim.schedule(function()
+      events.fire_event(events.GIT_STATUS_CHANGED, {
+        git_root = context.git_root,
+        git_status = context.git_status,
+      })
+    end)
+    M.status_cache[git_root] = {}
+  end
 
   return context.git_status, git_root
 end
@@ -252,10 +249,7 @@ end
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
   M.get_repository_root(path, function(git_root)
-    if not utils.truthy(git_root) then
-      if git_root then
-        M.cache[git_root] = {}
-      end
+    if not git_root then
       log.trace("status_async: not a git folder:", path)
       return
     end
@@ -297,21 +291,26 @@ M.status_async = function(path, base, opts)
         },
         stdio = { stdin, stdout, stderr },
       }, function(code, signal)
-        log.assert(
-          code == 0,
-          "git status async process exited abnormally, code: %s, signal: %s",
-          code,
-          signal
-        )
+        if code ~= 0 then
+          log.at.debug.format(
+            "git status async process exited abnormally, code: %s, signal: %s",
+            code,
+            signal
+          )
+          return
+        end
         local str = output_chunks[1]
         if #output_chunks > 1 then
           str = table.concat(output_chunks, "")
         end
-        assert(str)
         local status_iter = vim.gsplit(str, "\000", { plain = true })
         local parsing_task = co.create(parse_porcelain_output)
         local _, git_status =
           log.assert(co.resume(parsing_task, git_root, status_iter, context.batch_size))
+
+        stdin:shutdown()
+        stdout:shutdown()
+        stderr:shutdown()
 
         local do_next_batch_later
         do_next_batch_later = function()
@@ -321,7 +320,7 @@ M.status_async = function(path, base, opts)
             return
           end
           context.git_status = git_status
-          M.cache[git_root] = git_status
+          M.status_cache[git_root] = git_status
           vim.schedule(function()
             events.fire_event(events.GIT_STATUS_CHANGED, {
               git_root = context.git_root,
@@ -350,30 +349,50 @@ M.status_async = function(path, base, opts)
   end)
 end
 
-M.is_ignored = function(path)
-  local git_root = M.get_repository_root(path)
-  if not git_root then
-    return false
-  end
-  if not M.cache[git_root] then
-    M.status("HEAD", false, path)
-  end
-  local direct_lookup = M.cache[git_root][path] or M.cache[git_root][path .. utils.path_separator]
-  if direct_lookup then
-    vim.print(direct_lookup, path)
-    return direct_lookup == "!"
+---@param state neotree.State
+---@param items neotree.FileItem[]
+M.mark_ignored = function(state, items)
+  for _, i in ipairs(items) do
+    repeat
+      local path = i.path
+      local git_root = M.get_repository_root(path)
+      if not git_root then
+        break
+      end
+      local status = M.status_cache[git_root] or M.status("HEAD", false, path)
+      if not status then
+        break
+      end
+
+      local direct_lookup = M.status_cache[git_root][path]
+        or M.status_cache[git_root][path .. utils.path_separator]
+      if direct_lookup then
+        i.filtered_by = i.filtered_by or {}
+        i.filtered_by.gitignored = true
+      end
+    until true
   end
 end
 
 ---@type table<string, string|false>
-local git_rootdir_cache = setmetatable({}, { __mode = "kv" })
----@param path string? Defaults to cwd
----@param callback fun(git_root: string|false?)?
----@return string?
-M.get_repository_root = function(path, callback)
-  path = path or log.assert(vim.uv.cwd())
+do
+  local git_rootdir_cache = setmetatable({}, { __mode = "kv" })
+  local finalize = function(path, git_root)
+    if utils.is_windows then
+      git_root = utils.windowize_path(git_root)
+    end
 
-  do -- direct lookup in cache
+    log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
+    git_rootdir_cache[path] = git_root
+    git_rootdir_cache[git_root] = git_root
+  end
+
+  ---@param path string? Defaults to cwd
+  ---@param callback fun(git_root: string?)?
+  ---@return string?
+  M.get_repository_root = function(path, callback)
+    path = path or log.assert(vim.uv.cwd())
+
     local cached_rootdir = git_rootdir_cache[path]
     if cached_rootdir ~= nil then
       log.trace("git.get_repository_root: cache hit for", path, "was", cached_rootdir)
@@ -383,9 +402,7 @@ M.get_repository_root = function(path, callback)
       end
       return cached_rootdir
     end
-  end
 
-  do -- check parents in cache
     for parent in utils.path_parents(path, true) do
       local cached_parent_entry = git_rootdir_cache[parent]
       if cached_parent_entry ~= nil then
@@ -401,54 +418,42 @@ M.get_repository_root = function(path, callback)
         return cached_parent_entry
       end
     end
+
+    log.trace("git.get_repository_root: cache miss for", path)
+    local args = { "-C", path, "rev-parse", "--show-toplevel" }
+
+    if type(callback) == "function" then
+      ---@diagnostic disable-next-line: missing-fields
+      Job:new({
+        command = "git",
+        args = args,
+        enabled_recording = true,
+        on_exit = function(self, code, _)
+          if code ~= 0 then
+            log.trace("GIT ROOT ERROR", self:stderr_result())
+            git_rootdir_cache[path] = false
+            callback(nil)
+            return
+          end
+          local git_root = self:result()[1]
+
+          finalize(path, git_root)
+          callback(git_root)
+        end,
+      }):start()
+      return
+    end
+
+    local ok, git_output = utils.execute_command({ "git", unpack(args) })
+    if not ok then
+      log.trace("GIT ROOT NOT FOUND", git_output)
+      git_rootdir_cache[path] = false
+      return nil
+    end
+    local git_root = git_output[1]
+
+    finalize(path, git_root)
+    return git_root
   end
-
-  log.trace("git.get_repository_root: cache miss for", path)
-  local args = { "-C", path, "rev-parse", "--show-toplevel" }
-
-  if type(callback) == "function" then
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-      command = "git",
-      args = args,
-      enabled_recording = true,
-      on_exit = function(self, code, _)
-        if code ~= 0 then
-          log.trace("GIT ROOT ERROR", self:stderr_result())
-          git_rootdir_cache[path] = false
-          callback(nil)
-          return
-        end
-        local git_root = self:result()[1]
-
-        if utils.is_windows then
-          git_root = utils.windowize_path(git_root)
-        end
-
-        log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
-        git_rootdir_cache[path] = git_root
-        git_rootdir_cache[git_root] = git_root
-        callback(git_root)
-      end,
-    }):start()
-    return
-  end
-
-  local ok, git_output = utils.execute_command({ "git", unpack(args) })
-  if not ok then
-    log.trace("GIT ROOT ERROR", git_output)
-    git_rootdir_cache[path] = false
-    return nil
-  end
-  local git_root = git_output[1]
-
-  if utils.is_windows then
-    git_root = utils.windowize_path(git_root)
-  end
-
-  log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
-  git_rootdir_cache[path] = path
-  git_rootdir_cache[git_root] = git_root
-  return git_root
 end
 return M
