@@ -113,17 +113,9 @@ M.close = function(state, focus_prior_window)
   if focus_prior_window == nil then
     focus_prior_window = true
   end
-  if not M.window_exists(state) then
-    return false
-  end
 
-  log.debug("Closing window, but saving position first.")
-  M.position.save(state, true)
-  local closed = false
-  -- if bufnr is different then we expect, then it was taken over by
-  -- another buffer, so we can't delete it now
-  if vim.api.nvim_win_get_buf(state.winid) == state.bufnr then
-    closed = true
+  local window_existed = M.window_exists(state)
+  if window_existed then
     if state.current_position == "current" then
       -- we are going to hide the buffer instead of closing the window
       local new_buf = vim.fn.bufnr("#")
@@ -143,9 +135,10 @@ M.close = function(state, focus_prior_window)
       local win_list = vim.api.nvim_tabpage_list_wins(0)
       if focus_prior_window and #win_list > 1 then
         -- focus the prior used window if we are closing the currently focused window
-        if vim.api.nvim_get_current_win() == state.winid then
+        local current_winid = vim.api.nvim_get_current_win()
+        if current_winid == state.winid then
           local pwin = nt.get_prior_window()
-          if pwin > 0 then
+          if type(pwin) == "number" and pwin > 0 then
             pcall(vim.api.nvim_set_current_win, pwin)
           end
         end
@@ -155,8 +148,8 @@ M.close = function(state, focus_prior_window)
       events.fire_event(events.NEO_TREE_WINDOW_AFTER_CLOSE, args)
     end
   end
-
   state.winid = nil
+
   local bufnr = state.bufnr or 0
   if bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) then
     state.bufnr = nil
@@ -1258,7 +1251,6 @@ M.window_exists = function(state)
 
   local buf_position = vim.b[bufnr].neo_tree_position
   if buf_position ~= position then
-    log.trace("pos won't work")
     return false
   end
   return window_exists
