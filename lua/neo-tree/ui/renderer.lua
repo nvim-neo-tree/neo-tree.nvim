@@ -160,7 +160,7 @@ M.close = function(state, focus_prior_window)
       end)()
     end
   end
-  return closed
+  return window_existed
 end
 
 M.close_floating_window = function(source_name)
