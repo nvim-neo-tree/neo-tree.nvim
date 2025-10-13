@@ -116,6 +116,8 @@ M.close = function(state, focus_prior_window)
 
   local window_existed = M.window_exists(state)
   if window_existed then
+    log.debug("Closing window, but saving position first.")
+    M.position.save(state, true)
     if state.current_position == "current" then
       -- we are going to hide the buffer instead of closing the window
       local new_buf = vim.fn.bufnr("#")
