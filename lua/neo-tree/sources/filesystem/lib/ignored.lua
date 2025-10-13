@@ -72,7 +72,7 @@ M.mark_ignored = function(state, items)
     ignorers[folder] = ignorers[folder] or {}
     local folder_ignorers = ignorers[folder]
     local applicable_ignore_files =
-      vim.fs.find(ignore_files, { upward = true, limit = math.huge, path = folder })
+      vim.fs.find(ignore_files, { upward = true, limit = math.huge, path = folder, type = "file" })
 
     for _, ignore_filepath in ipairs(applicable_ignore_files) do
       globs[ignore_filepath] = globs[ignore_filepath] or file_to_glob(ignore_filepath)
