@@ -137,10 +137,9 @@ M.close = function(state, focus_prior_window)
       local win_list = vim.api.nvim_tabpage_list_wins(0)
       if focus_prior_window and #win_list > 1 then
         -- focus the prior used window if we are closing the currently focused window
-        local current_winid = vim.api.nvim_get_current_win()
-        if current_winid == state.winid then
+        if vim.api.nvim_get_current_win() == state.winid then
           local pwin = nt.get_prior_window()
-          if type(pwin) == "number" and pwin > 0 then
+          if pwin > 0 then
             pcall(vim.api.nvim_set_current_win, pwin)
           end
         end
