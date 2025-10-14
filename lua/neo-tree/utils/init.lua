@@ -1128,6 +1128,54 @@ M.split_path = function(path)
   if prefix and vim.startswith(prefix, path) then
     return nil, path
   end
+
+  -- this is more than just a root path
+  if path:sub(-1) == M.path_separator then
+    -- trim it off
+    path = path:sub(1, -2)
+  end
+
+  -- old
+  -- local rest_parts = vim.split(rest_of_path, M.path_separator, { plain = true })
+  -- local name = table.remove(rest_parts)
+  -- local parentPath = (prefix or "") .. table.concat(rest_parts, M.path_separator)
+
+  local last_separator_index
+  local i = prefix and #prefix + 1 or 1
+  local j
+  repeat
+    j = path:find(M.path_separator, i, true)
+    if j then
+      last_separator_index = j
+      i = j + 1
+    end
+  until not j
+
+  if not last_separator_index then
+    if not prefix then
+      return nil, path
+    end
+    return prefix, path:sub(#prefix + 1)
+  end
+
+  local parent_path = path:sub(1, last_separator_index - 1)
+  local tail = path:sub(last_separator_index + 1)
+  return parent_path, tail
+end
+
+M.split_path_old = function(path)
+  if not path then
+    return nil, nil
+  end
+  if M.is_windows then
+    path = M.windowize_path(path)
+  end
+  local prefix = M.abspath_prefix(path)
+  if prefix and vim.startswith(prefix, path) then
+    return nil, path
+  end
+
+  -- this is more than just a root path
   if path:sub(-1) == M.path_separator then
     -- trim it off
     path = path:sub(1, -2)
@@ -1136,13 +1184,9 @@ M.split_path = function(path)
   local rest_of_path = prefix and path:sub(#prefix + 1) or path
   local rest_parts = vim.split(rest_of_path, M.path_separator, { plain = true })
   local name = table.remove(rest_parts)
-  local parentPath = (prefix or "") .. table.concat(rest_parts, M.path_separator)
+  local parent_path = (prefix or "") .. table.concat(rest_parts, M.path_separator)
 
-  if #parentPath == 0 then
-    return prefix, name
-  end
-
-  return parentPath, name
+  return parent_path, name
 end
 
 ---Joins arbitrary number of paths together.

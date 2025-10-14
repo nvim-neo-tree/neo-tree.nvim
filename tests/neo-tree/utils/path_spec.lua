@@ -104,6 +104,7 @@ describe("utils path functions", function()
 
       -- Absolute paths
       assert.are.same({ "/a", "b" }, { utils.split_path("/a/b") })
+      assert.are.same({ "/a/b/c/d", "e" }, { utils.split_path("/a/b/c/d/e") })
       assert.are.same({ "/", "a" }, { utils.split_path("/a") })
 
       -- Edge cases
