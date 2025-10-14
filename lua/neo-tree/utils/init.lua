@@ -1163,32 +1163,6 @@ M.split_path = function(path)
   return parent_path, tail
 end
 
-M.split_path_old = function(path)
-  if not path then
-    return nil, nil
-  end
-  if M.is_windows then
-    path = M.windowize_path(path)
-  end
-  local prefix = M.abspath_prefix(path)
-  if prefix and vim.startswith(prefix, path) then
-    return nil, path
-  end
-
-  -- this is more than just a root path
-  if path:sub(-1) == M.path_separator then
-    -- trim it off
-    path = path:sub(1, -2)
-  end
-
-  local rest_of_path = prefix and path:sub(#prefix + 1) or path
-  local rest_parts = vim.split(rest_of_path, M.path_separator, { plain = true })
-  local name = table.remove(rest_parts)
-  local parent_path = (prefix or "") .. table.concat(rest_parts, M.path_separator)
-
-  return parent_path, name
-end
-
 ---Joins arbitrary number of paths together.
 ---@param ... string The paths to join.
 ---@return string
