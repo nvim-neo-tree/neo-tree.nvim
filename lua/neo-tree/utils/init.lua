@@ -1135,11 +1135,6 @@ M.split_path = function(path)
     path = path:sub(1, -2)
   end
 
-  -- old
-  -- local rest_parts = vim.split(rest_of_path, M.path_separator, { plain = true })
-  -- local name = table.remove(rest_parts)
-  -- local parentPath = (prefix or "") .. table.concat(rest_parts, M.path_separator)
-
   local last_separator_index
   local i = prefix and #prefix + 1 or 1
   local j
