@@ -1,7 +1,7 @@
 ---A backend for the clipboard that uses a file in stdpath('state')/neo-tree.nvim/clipboards/ .. self.filename
 ---to sync the clipboard between everything.
 local BaseBackend = require("neo-tree.clipboard.sync.base")
-local log = require("neo-tree.log")
+local log = require("neo-tree.log").new("clipboard.sync.universal")
 local uv = vim.uv or vim.loop
 
 ---@class neotree.clipboard.FileBackend.Opts
@@ -14,7 +14,6 @@ local pid = uv.os_getpid()
 
 ---@class (exact) neotree.clipboard.FileBackend.FileFormat
 ---@field pid integer
----@field time integer
 ---@field state_name string
 ---@field contents neotree.clipboard.Contents
 
@@ -26,7 +25,7 @@ local pid = uv.os_getpid()
 ---@field cached_contents neotree.clipboard.Contents
 ---@field last_time_saved integer
 ---@field saving boolean
-local FileBackend = BaseBackend:new()
+local UniversalBackend = BaseBackend:new()
 
 ---@param filename string
 ---@return boolean created
@@ -57,7 +56,7 @@ end
 
 ---@param opts neotree.clipboard.FileBackend.Opts?
 ---@return neotree.clipboard.FileBackend?
-function FileBackend:new(opts)
+function UniversalBackend:new(opts)
   local backend = {} -- create object if user does not provide one
   setmetatable(backend, self)
   self.__index = self
@@ -85,28 +84,26 @@ function FileBackend:new(opts)
 end
 
 ---@return boolean started true if working
-function FileBackend:_start()
+function UniversalBackend:_start()
   if self.handle then
     return true
   end
   local event_handle = uv.new_fs_event()
   if event_handle then
     self.handle = event_handle
-    local start_success = event_handle:start(self.filename, {}, function(err, _, fs_events)
-      local write_time = uv.fs_stat(self.filename).mtime.nsec
-      if self.last_time_saved == write_time then
-      end
+    local start_success = event_handle:start(self.filename, {}, function(err)
       if err then
+        log.error("universal clipboard file handle error:", err)
         event_handle:close()
         return
       end
       require("neo-tree.clipboard").sync_to_clipboards()
       -- we should check whether we just wrote or not
     end)
-    log.info("Watching " .. self.filename)
+    log.info("Watching", self.filename)
     return start_success == 0
   else
-    log.warn("could not watch shared clipboard on file events")
+    log.warn("Could not watch shared clipboard on file events")
     --todo: implement polling?
   end
   return false
@@ -120,12 +117,11 @@ local validate_clipboard_from_file = function(wrapped_clipboard)
   return validate("clipboard_from_file", wrapped_clipboard, function(c)
     validate("contents", c.contents, "table")
     validate("pid", c.pid, "number")
-    validate("time", c.time, "number")
     validate("state_name", c.state_name, "string")
   end, false, "Clipboard from file could not be validated")
 end
 
-function FileBackend:load(state)
+function UniversalBackend:load(state)
   if state.name ~= "filesystem" then
     return nil, nil
   end
@@ -163,49 +159,50 @@ function FileBackend:load(state)
 
       -- try creating a new file without content
       state.clipboard = {}
-      self:save(state)
+      local ok, save_err = self:save(state)
+      if ok == false then
+        log.error(save_err)
+      end
       -- clear the current clipboard
       return {}
     end
-    return nil, "could not parse a valid clipboard from clipboard file"
+    return nil, "Could not parse a valid clipboard from clipboard file"
   end
 
   return clipboard_file.contents
 end
 
-function FileBackend:save(state)
+function UniversalBackend:save(state)
   if state.name ~= "filesystem" then
     return nil
   end
 
-  local c = state.clipboard
   ---@type neotree.clipboard.FileBackend.FileFormat
   local wrapped = {
     pid = pid,
-    time = os.time(),
     state_name = assert(state.name),
-    contents = c,
+    contents = state.clipboard,
   }
   if not file_touch(self.filename) then
-    return false, "couldn't write to  " .. self.filename .. self.filename
+    return false, "Couldn't write to  " .. self.filename .. self.filename
   end
   local encode_ok, str = pcall(vim.json.encode, wrapped)
   if not encode_ok then
     local encode_err = str
-    return false, "couldn't encode clipboard into json: " .. encode_err
+    return false, "Couldn't encode clipboard into json: " .. encode_err
   end
   local file, err = io.open(self.filename, "w")
   if not file or err then
-    return false, "couldn't open " .. self.filename
+    return false, "Couldn't open " .. self.filename
   end
   local _, write_err = file:write(str)
   if write_err then
-    return false, "couldn't write to " .. self.filename
+    return false, "Couldn't write to " .. self.filename
   end
   file:flush()
-  file:close()
   self.last_time_saved = uv.fs_stat(self.filename).mtime.nsec
+  self.last_clipboard_saved = state.clipboard
   return true
 end
 
-return FileBackend
+return UniversalBackend

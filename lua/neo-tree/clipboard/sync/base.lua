@@ -7,6 +7,7 @@ local Backend = {}
 
 ---@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
 
+---A backend has the responsibility of storing a single instance of a clipboard for other clipboards to save.
 ---@return neotree.clipboard.Backend?
 function Backend:new()
   local o = {}
@@ -15,15 +16,15 @@ function Backend:new()
   return o
 end
 
----Loads the clipboard from the backend
----Return a nil clipboard to not make any changes.
+---Given a particular state, determines whether the backend should load its saved clipboard into the state.
+---Return nil if no clipboard change should be made
 ---@param state neotree.State
----@return neotree.clipboard.Contents|false? clipboard
+---@return neotree.clipboard.Contents? clipboard_or_nil
 ---@return string? err
 function Backend:load(state) end
 
----Writes the clipboard to the backend
----Returns nil when nothing was saved
+---Saves a state's clipboard to the backend.
+---Returns nil when the save is not applicable.
 ---@param state neotree.State
 ---@return boolean? success_or_noop
 function Backend:save(state)

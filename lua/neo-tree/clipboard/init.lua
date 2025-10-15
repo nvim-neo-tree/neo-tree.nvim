@@ -1,6 +1,7 @@
 local events = require("neo-tree.events")
 local manager = require("neo-tree.sources.manager")
 local log = require("neo-tree.log")
+local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
@@ -38,7 +39,7 @@ M.setup = function(opts)
     log.error("invalid clipboard sync method, disabling sync")
     selected_backend = builtins.none
   end
-  M.current_backend = assert(selected_backend:new())
+  M.current_backend = log.assert(selected_backend:new())
 
   events.subscribe({
     event = events.STATE_CREATED,
@@ -46,9 +47,7 @@ M.setup = function(opts)
     handler = function(new_state)
       local clipboard, err = M.current_backend:load(new_state)
       if not clipboard then
-        if err then
-          log.error(err)
-        end
+        log.assert(not err, err)
         return
       end
       new_state.clipboard = clipboard
@@ -73,7 +72,7 @@ function M.sync_to_clipboards(exclude_state)
   -- try loading the changed clipboard into all other states
   vim.schedule(function()
     manager._for_each_state(nil, function(state)
-      if exclude_state == state then
+      if state == exclude_state then
         return
       end
       local modified_clipboard, err = M.current_backend:load(state)
@@ -84,6 +83,7 @@ function M.sync_to_clipboards(exclude_state)
         return
       end
       state.clipboard = modified_clipboard
+      renderer.redraw(state)
     end)
   end)
 end
