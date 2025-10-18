@@ -1,12 +1,6 @@
 ---@class neotree.clipboard.Backend
 local Backend = {}
 
----@class neotree.clipboard.Node
----@field action string
----@field node NuiTree.Node
-
----@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
-
 ---A backend has the responsibility of storing a single instance of a clipboard for other clipboards to save.
 ---@return neotree.clipboard.Backend?
 function Backend:new()

@@ -1,6 +1,6 @@
 ---A backend for the clipboard that uses a file in stdpath('state')/neo-tree.nvim/clipboards/ .. self.filename
 ---to sync the clipboard between everything.
-local BaseBackend = require("neo-tree.clipboard.sync.base")
+local Backend = require("neo-tree.clipboard.sync.base")
 local log = require("neo-tree.log").new("clipboard")
 local uv = vim.uv or vim.loop
 
@@ -25,7 +25,7 @@ local pid = uv.os_getpid()
 ---@field cached_contents neotree.clipboard.Contents
 ---@field last_stat_seen uv.fs_stat.result?
 ---@field saving boolean
-local UniversalBackend = BaseBackend:new()
+local UniversalBackend = Backend:new()
 
 ---@param filename string
 ---@return uv.fs_stat.result? stat
