@@ -115,6 +115,7 @@ end
 
 ---@class (exact) neotree.StateWithTree : neotree.State
 ---@field tree NuiTree
+---@field _in_pre_render boolean?
 
 local a = {}
 

@@ -33,9 +33,8 @@ will be a new branch that you can opt into, when it is a good time for you.
 
 See [What is a Breaking Change?](#what-is-a-breaking-change) for details.
 
-See [Changelog
-3.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#30) for
-breaking changes and deprecations in 3.0.
+See [Changelog 3.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#30)
+for breaking changes and deprecations in 3.0.
 
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
 
@@ -48,10 +47,10 @@ should you!
 - Neo-tree won't let other buffers take over its window.
 - Neo-tree won't leave its window scrolled to the last line when there is plenty
   of room to display the whole tree.
-- Neo-tree does not need to be manually refreshed (set `use_libuv_file_watcher =
-  true`)
-- Neo-tree can intelligently follow the current file (set
-  `follow_current_file.enabled = true`)
+- Neo-tree does not need to be manually refreshed
+  (set `use_libuv_file_watcher = true`)
+- Neo-tree can intelligently follow the current file
+  (set `follow_current_file.enabled = true`)
 - Neo-tree can sync its clipboard across multiple instances, either globally
   (within the same Neovim instance) or universally (across multiple Neovim
   instances). Set `clipboard.sync = "global" | "universal"`
@@ -279,6 +278,9 @@ vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
 require("neo-tree").setup({
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   popup_border_style = "NC", -- or "" to use 'winborder' on Neovim v0.11+
+  clipboard = {
+    sync = "none", -- or "global"/"universal" to share a clipboard for each/all Neovim instance(s), respectively
+  },
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes

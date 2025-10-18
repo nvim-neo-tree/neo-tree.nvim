@@ -5,6 +5,12 @@ local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
+---@class neotree.clipboard.Node
+---@field action string
+---@field node NuiTree.Node
+
+---@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
+
 ---@enum (key) neotree.clipboard.BackendNames.Builtin
 local builtins = {
   none = require("neo-tree.clipboard.sync.base"),
@@ -40,7 +46,6 @@ M.setup = function(opts)
     selected_backend = builtins.none
   end
   M.current_backend = log.assert(selected_backend:new())
-
   events.subscribe({
     event = events.STATE_CREATED,
     ---@param new_state neotree.State

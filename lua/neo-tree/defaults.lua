@@ -13,7 +13,7 @@ local config = {
   add_blank_line_at_top = false, -- Add a blank line at the top of the tree.
   auto_clean_after_session_restore = false, -- Automatically clean up broken neo-tree buffers saved in sessions
   clipboard = {
-    sync = "none", -- or "global" or "universal"
+    sync = "none", -- or "global"/"universal" to share a clipboard for each/all Neovim instance(s), respectively
   },
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   default_source = "filesystem", -- you can choose a specific source `last` here which indicates the last used source
