@@ -67,7 +67,9 @@ M.setup = function(opts)
       if ok == false then
         log.error(err)
       end
-      M.sync_to_clipboards(state)
+      if ok then
+        M.sync_to_clipboards(state)
+      end
     end,
   })
 end

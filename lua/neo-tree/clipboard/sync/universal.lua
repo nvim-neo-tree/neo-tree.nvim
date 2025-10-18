@@ -18,6 +18,7 @@ local pid = uv.os_getpid()
 ---@field contents neotree.clipboard.Contents
 
 ---@class neotree.clipboard.FileBackend : neotree.clipboard.Backend
+---@field dir string
 ---@field handle uv.uv_fs_event_t
 ---@field filename string
 ---@field source string
@@ -58,7 +59,7 @@ end
 ---@param opts neotree.clipboard.FileBackend.Opts?
 ---@return neotree.clipboard.FileBackend?
 function UniversalBackend:new(opts)
-  local backend = {} -- create object if user does not provide one
+  local backend = {}
   setmetatable(backend, self)
   self.__index = self
 
@@ -76,7 +77,6 @@ function UniversalBackend:new(opts)
     return nil
   end
 
-  ---@cast backend neotree.clipboard.FileBackend
   backend.filename = filename
   backend.source = state_source
   backend.pid = pid
@@ -114,6 +114,40 @@ end
 
 local typecheck = require("neo-tree.health.typecheck")
 local validate = typecheck.validate
+
+function UniversalBackend:save(state)
+  if state.name ~= "filesystem" then
+    return nil
+  end
+
+  ---@type neotree.clipboard.FileBackend.FileFormat
+  local wrapped = {
+    pid = pid,
+    state_name = assert(state.name),
+    contents = state.clipboard,
+  }
+  local touch_ok, err = file_touch(self.filename)
+  if not touch_ok then
+    return false, "Couldn't write to  " .. self.filename .. ":" .. err
+  end
+  local encode_ok, str = pcall(vim.json.encode, wrapped)
+  if not encode_ok then
+    local encode_err = str
+    return false, "Couldn't encode clipboard into json: " .. encode_err
+  end
+  local file, open_err = io.open(self.filename, "w")
+  if not file then
+    return false, "Couldn't open " .. self.filename .. ": " .. open_err
+  end
+  local _, write_err = file:write(str)
+  if write_err then
+    return false, "Couldn't write to " .. self.filename .. ": " .. write_err
+  end
+  file:flush()
+  self.last_stat_seen = log.assert(uv.fs_stat(self.filename))
+  self.last_clipboard_saved = state.clipboard
+  return true
+end
 
 ---@param wrapped_clipboard neotree.clipboard.FileBackend.FileFormat
 local validate_clipboard_from_file = function(wrapped_clipboard)
@@ -188,40 +222,6 @@ function UniversalBackend:load(state)
   end
 
   return saved_clipboard.contents
-end
-
-function UniversalBackend:save(state)
-  if state.name ~= "filesystem" then
-    return nil
-  end
-
-  ---@type neotree.clipboard.FileBackend.FileFormat
-  local wrapped = {
-    pid = pid,
-    state_name = assert(state.name),
-    contents = state.clipboard,
-  }
-  local touch_ok, err = file_touch(self.filename)
-  if not touch_ok then
-    return false, "Couldn't write to  " .. self.filename .. ":" .. err
-  end
-  local encode_ok, str = pcall(vim.json.encode, wrapped)
-  if not encode_ok then
-    local encode_err = str
-    return false, "Couldn't encode clipboard into json: " .. encode_err
-  end
-  local file, open_err = io.open(self.filename, "w")
-  if not file then
-    return false, "Couldn't open " .. self.filename .. ": " .. open_err
-  end
-  local _, write_err = file:write(str)
-  if write_err then
-    return false, "Couldn't write to " .. self.filename .. ": " .. write_err
-  end
-  file:flush()
-  self.last_stat_seen = log.assert(uv.fs_stat(self.filename))
-  self.last_clipboard_saved = state.clipboard
-  return true
 end
 
 return UniversalBackend
