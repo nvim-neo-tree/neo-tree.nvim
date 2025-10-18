@@ -23,35 +23,36 @@ local pid = uv.os_getpid()
 ---@field source string
 ---@field pid integer
 ---@field cached_contents neotree.clipboard.Contents
----@field last_write_stat uv.fs_stat.result?
+---@field last_stat_seen uv.fs_stat.result?
 ---@field saving boolean
 local UniversalBackend = BaseBackend:new()
 
 ---@param filename string
----@return boolean created
+---@return uv.fs_stat.result? stat
 ---@return string? err
 local function file_touch(filename)
-  if uv.fs_stat(filename) then
-    return true
+  local stat = uv.fs_stat(filename)
+  if stat then
+    return stat
   end
   local dir = vim.fn.fnamemodify(filename, ":h")
   local mkdir_ok = vim.fn.mkdir(dir, "p")
   if mkdir_ok == 0 then
-    return false, "couldn't make dir " .. dir
+    return nil, "couldn't make dir " .. dir
   end
   local file, file_err = io.open(filename, "a+")
   if not file then
-    return false, file_err
+    return nil, file_err
   end
 
   local _, write_err = file:write("")
   if write_err then
-    return false, write_err
+    return nil, write_err
   end
 
   file:flush()
   file:close()
-  return true
+  return uv.fs_stat(filename)
 end
 
 ---@param opts neotree.clipboard.FileBackend.Opts?
@@ -79,7 +80,9 @@ function UniversalBackend:new(opts)
   backend.filename = filename
   backend.source = state_source
   backend.pid = pid
-  backend:_start()
+  if not backend:_start() then
+    return nil
+  end
   return backend
 end
 
@@ -100,7 +103,7 @@ function UniversalBackend:_start()
       require("neo-tree.clipboard").sync_to_clipboards()
       -- we should check whether we just wrote or not
     end)
-    log.info("Watching", self.filename)
+    log.debug("Watching", self.filename)
     return start_success == 0
   else
     log.warn("Could not watch shared clipboard on file events")
@@ -126,12 +129,13 @@ function UniversalBackend:load(state)
     return nil, nil
   end
   local stat = uv.fs_stat(self.filename)
-  if stat and self.last_write_stat then
-    if stat.mtime == self.last_write_stat.mtime then
-      -- use local saved clipboard
+  if stat and self.last_stat_seen then
+    if stat.mtime == self.last_stat_seen.mtime then
+      log.debug("Using cached clipboard from ", stat.mtime)
       return self.last_clipboard_saved
     end
   end
+  self.last_stat_seen = stat
   local file_ok, touch_err = file_touch(self.filename)
   if not file_ok then
     return nil, touch_err
@@ -172,13 +176,12 @@ function UniversalBackend:load(state)
         log.error(delete_err)
       end
 
-      -- try creating a new file without content
+      -- clear out current state clipboard
       state.clipboard = {}
       local ok, save_err = self:save(state)
       if ok == false then
         log.error(save_err)
       end
-      -- clear the current clipboard
       return {}
     end
     return nil, "Could not parse a valid clipboard from clipboard file"
@@ -198,24 +201,25 @@ function UniversalBackend:save(state)
     state_name = assert(state.name),
     contents = state.clipboard,
   }
-  if not file_touch(self.filename) then
-    return false, "Couldn't write to  " .. self.filename .. self.filename
+  local touch_ok, err = file_touch(self.filename)
+  if not touch_ok then
+    return false, "Couldn't write to  " .. self.filename .. ":" .. err
   end
   local encode_ok, str = pcall(vim.json.encode, wrapped)
   if not encode_ok then
     local encode_err = str
     return false, "Couldn't encode clipboard into json: " .. encode_err
   end
-  local file, err = io.open(self.filename, "w")
-  if not file or err then
-    return false, "Couldn't open " .. self.filename
+  local file, open_err = io.open(self.filename, "w")
+  if not file then
+    return false, "Couldn't open " .. self.filename .. ": " .. open_err
   end
   local _, write_err = file:write(str)
   if write_err then
-    return false, "Couldn't write to " .. self.filename
+    return false, "Couldn't write to " .. self.filename .. ": " .. write_err
   end
   file:flush()
-  self.last_write_stat = log.assert(uv.fs_stat(self.filename))
+  self.last_stat_seen = log.assert(uv.fs_stat(self.filename))
   self.last_clipboard_saved = state.clipboard
   return true
 end

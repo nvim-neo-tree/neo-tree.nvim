@@ -1,5 +1,4 @@
 local Backend = require("neo-tree.clipboard.sync.base")
-local g = vim.g
 ---@class neotree.clipboard.GlobalBackend : neotree.clipboard.Backend
 local GlobalBackend = Backend:new()
 
