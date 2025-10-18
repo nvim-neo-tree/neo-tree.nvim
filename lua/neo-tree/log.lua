@@ -96,6 +96,8 @@ log_maker.new = function(config)
   ---@diagnostic disable-next-line: cast-local-type
   config = vim.tbl_deep_extend("force", default_config, config)
   local prefix = table.concat(config.context, ".")
+  local notify_prefix = vim.tbl_isempty(config.context) and config.plugin_short
+    or table.concat({ config.plugin_short, prefix }, " ")
 
   local title_opts = { title = config.plugin_short }
   ---@param message string
@@ -107,7 +109,7 @@ log_maker.new = function(config)
     else
       local level_config = config.level_configs[level]
       local console_string = ("[%s %s] %s"):format(
-        config.plugin_short,
+        notify_prefix,
         level_config.name:upper(),
         message
       )
