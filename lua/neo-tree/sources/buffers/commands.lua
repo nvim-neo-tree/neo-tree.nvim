@@ -65,6 +65,11 @@ M.paste_from_clipboard = function(state)
   cc.paste_from_clipboard(state, refresh)
 end
 
+M.clear_clipboard = function(state)
+  cc.clear_clipboard(state)
+  redraw()
+end
+
 M.delete = function(state)
   cc.delete(state, refresh)
 end

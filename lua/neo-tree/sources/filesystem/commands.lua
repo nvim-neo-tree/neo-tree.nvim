@@ -63,6 +63,11 @@ M.paste_from_clipboard = function(state)
   cc.paste_from_clipboard(state, utils.wrap(fs.show_new_children, state))
 end
 
+M.clear_clipboard = function(state)
+  cc.clear_clipboard(state)
+  redraw()
+end
+
 M.delete = function(state)
   cc.delete(state, utils.wrap(refresh, state))
 end
