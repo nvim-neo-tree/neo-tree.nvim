@@ -1954,24 +1954,23 @@ default is to not sync at all. To change this option, change the
 universal sync option relies on a file located under `stdpath("state") ..
 "/neo-tree.nvim/clipboards".` You can also implement your own backend and pass
 it to that option as well:
-
 >lua
     ---Code derived from require('neo-tree.clipboard.sync.base')
 
-    ---@class your.neotree.clipboard.Backend
+    ---@class neotree.clipboard.Backend
     local Backend = {}
 
     ---A backend saves and loads clipboards to and from states.
     ---Returns nil if the backend couldn't be created properly.
     ---@return neotree.clipboard.Backend?
     function Backend:new()
-      local o = {}
-      setmetatable(o, self)
+      local backend = {}
+      setmetatable(backend, self)
       self.__index = self
       -- if not do_setup() then
       --   return nil -- will default to no sync/backend
       -- end
-      return o
+      return backend
     end
 
     -- local function applicable(state)
@@ -2024,6 +2023,20 @@ it to that option as well:
       }
     })
 <
+
+Additionally, this helper method exists on `require('neo-tree.clipboard')`:
+
+>lua
+    ---Load saved clipboards into all states (except one, if provided).
+    ---@param exclude_state neotree.State?
+    function M.update_states(exclude_state)
+      -- ...
+    end
+<
+
+This method may be useful to call if a new clipboard exists but save hasn't
+updated yet. For example, the universal backend calls this method when a
+different instance of Neovim updates a clipboard file.
 
 ================================================================================
 OTHER SOURCES                                                                  ~

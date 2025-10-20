@@ -51,9 +51,9 @@ should you!
   (set `use_libuv_file_watcher = true`)
 - Neo-tree can intelligently follow the current file
   (set `follow_current_file.enabled = true`)
-- Neo-tree can sync its clipboard across multiple instances, either globally
+- Neo-tree can sync its clipboard across multiple trees, either globally
   (within the same Neovim instance) or universally (across all Neovim
-  instances). Set `clipboard.sync = "global" | "universal"`
+  instances). Try `clipboard.sync = "global" | "universal"`.
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!

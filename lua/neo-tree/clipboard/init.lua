@@ -11,15 +11,25 @@ local M = {}
 
 ---@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
 
----@enum (key) neotree.clipboard.BackendNames.Builtin
+---@alias neotree.clipboard.BackendNames.Builtin
+---|"none"
+---|"global"
+---|"universal"
+
+---@type table<string, fun():neotree.clipboard.Backend>
 local builtins = {
-  none = require("neo-tree.clipboard.sync.base"),
-  global = require("neo-tree.clipboard.sync.global"),
-  universal = require("neo-tree.clipboard.sync.universal"),
+  none = function()
+    return require("neo-tree.clipboard.sync.base")
+  end,
+  global = function()
+    return require("neo-tree.clipboard.sync.global")
+  end,
+  universal = function()
+    return require("neo-tree.clipboard.sync.universal")
+  end,
 }
 
----@type table<string, neotree.clipboard.Backend?>
-M.backends = builtins
+M.builtin_backends = builtins
 
 ---@alias neotree.Config.Clipboard.Sync neotree.clipboard.BackendNames.Builtin|neotree.clipboard.Backend
 
@@ -34,7 +44,11 @@ M.setup = function(opts)
   ---@type neotree.clipboard.Backend?
   local selected_backend
   if type(opts.sync) == "string" then
-    selected_backend = M.backends[opts.sync]
+    local lazy_loaded_backend = M.builtin_backends[opts.sync]
+    if lazy_loaded_backend then
+      ---@cast lazy_loaded_backend fun():neotree.clipboard.Backend
+      selected_backend = lazy_loaded_backend()
+    end
   elseif type(opts.sync) == "table" then
     local sync = opts.sync
     ---@cast sync -neotree.clipboard.BackendNames.Builtin
@@ -43,7 +57,7 @@ M.setup = function(opts)
 
   if not selected_backend then
     log.error("invalid clipboard sync method, disabling sync")
-    selected_backend = builtins.none
+    selected_backend = builtins.none()
   end
   M.current_backend = log.assert(selected_backend:new())
   events.subscribe({
@@ -68,14 +82,15 @@ M.setup = function(opts)
         log.error(err)
       end
       if ok then
-        M.sync_to_clipboards(state)
+        M.update_states(state)
       end
     end,
   })
 end
 
+---Load saved clipboards into all states (except one, if provided).
 ---@param exclude_state neotree.State?
-function M.sync_to_clipboards(exclude_state)
+function M.update_states(exclude_state)
   -- try loading the changed clipboard into all other states
   vim.schedule(function()
     manager._for_each_state(nil, function(state)
@@ -84,9 +99,7 @@ function M.sync_to_clipboards(exclude_state)
       end
       local modified_clipboard, err = M.current_backend:load(state)
       if not modified_clipboard then
-        if err then
-          log.error(err)
-        end
+        log.assert(not err, err)
         return
       end
       state.clipboard = modified_clipboard

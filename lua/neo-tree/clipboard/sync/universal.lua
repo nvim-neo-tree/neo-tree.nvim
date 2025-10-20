@@ -2,7 +2,9 @@
 ---to sync the clipboard between everything.
 local Backend = require("neo-tree.clipboard.sync.base")
 local log = require("neo-tree.log").new("clipboard")
+local validate = require("neo-tree.health.typecheck").validate
 local uv = vim.uv or vim.loop
+local utils = require("neo-tree.utils")
 
 ---@class neotree.clipboard.FileBackend.Opts
 ---@field source string
@@ -10,50 +12,38 @@ local uv = vim.uv or vim.loop
 ---@field filename string
 
 local clipboard_states_dir = vim.fn.stdpath("state") .. "/neo-tree.nvim/clipboards"
-local pid = uv.os_getpid()
 
 ---@class (exact) neotree.clipboard.FileBackend.FileFormat
----@field pid integer
 ---@field state_name string
 ---@field contents neotree.clipboard.Contents
 
 ---@class neotree.clipboard.FileBackend : neotree.clipboard.Backend
+---@field paths table<string, string?>
 ---@field dir string
----@field handle uv.uv_fs_event_t
----@field filename string
----@field source string
----@field pid integer
+---@field handles table<string, uv.uv_handle_t>
 ---@field cached_contents neotree.clipboard.Contents
 ---@field last_stat_seen uv.fs_stat.result?
 ---@field saving boolean
 local UniversalBackend = Backend:new()
 
 ---@param filename string
----@return uv.fs_stat.result? stat
+---@return boolean? stat
 ---@return string? err
-local function file_touch(filename)
-  local stat = uv.fs_stat(filename)
-  if stat then
-    return stat
-  end
+local function file_touch(filename, mkdir)
   local dir = vim.fn.fnamemodify(filename, ":h")
   local mkdir_ok = vim.fn.mkdir(dir, "p")
   if mkdir_ok == 0 then
     return nil, "couldn't make dir " .. dir
   end
-  local file, file_err = io.open(filename, "a+")
+
+  local file, file_err = io.open(filename, "w")
   if not file then
     return nil, file_err
   end
 
-  local _, write_err = file:write("")
-  if write_err then
-    return nil, write_err
-  end
-
   file:flush()
   file:close()
-  return uv.fs_stat(filename)
+  return true
 end
 
 ---@param opts neotree.clipboard.FileBackend.Opts?
@@ -65,87 +55,104 @@ function UniversalBackend:new(opts)
 
   -- setup the clipboard file
   opts = opts or {}
+  self.handles = {}
 
   backend.dir = opts.dir or clipboard_states_dir
-  local state_source = opts.source or "filesystem"
-
-  local filename = ("%s/%s.json"):format(backend.dir, state_source)
-
-  local success, err = file_touch(filename)
-  if not success then
-    log.error("Could not make shared clipboard file:", clipboard_states_dir, err)
-    return nil
-  end
-
-  backend.filename = filename
-  backend.source = state_source
-  backend.pid = pid
-  if not backend:_start() then
-    return nil
-  end
   return backend
 end
 
----@return boolean started true if working
-function UniversalBackend:_start()
-  if self.handle then
-    return true
+---@param filename string
+---@return uv.uv_fs_event_t? started true if working
+function UniversalBackend:_watch_file(filename)
+  local cached = self.handles[filename]
+  if cached then
+    return cached
   end
   local event_handle = uv.new_fs_event()
-  if event_handle then
-    self.handle = event_handle
-    local start_success = event_handle:start(self.filename, {}, function(err)
-      if err then
-        log.error("universal clipboard file handle error:", err)
-        event_handle:close()
-        return
-      end
-      require("neo-tree.clipboard").sync_to_clipboards()
-      -- we should check whether we just wrote or not
-    end)
-    log.debug("Watching", self.filename)
-    return start_success == 0
-  else
+  if not event_handle then
     log.warn("Could not watch shared clipboard on file events")
-    --todo: implement polling?
-  end
-  return false
-end
-
-local typecheck = require("neo-tree.health.typecheck")
-local validate = typecheck.validate
-
-function UniversalBackend:save(state)
-  if state.name ~= "filesystem" then
     return nil
   end
 
+  local start_success = event_handle:start(filename, {}, function(err)
+    if err then
+      log.error("File handle error:", err)
+      event_handle:close()
+      return
+    end
+
+    local stat = uv.fs_stat(filename)
+    if not stat then
+      log.warn("Clipboard file", filename, "was replaced or deleted")
+      self.handles[filename] = nil
+      event_handle:close()
+      return
+    end
+
+    local last_write_from_here = self.saving or stat.mtime.nsec == self.last_stat_seen.mtime.nsec
+    self.last_stat_seen = stat
+    if last_write_from_here then
+      return
+    end
+
+    require("neo-tree.clipboard").update_states()
+  end)
+  log.debug("Watching", filename)
+  local handle = start_success and event_handle
+  self.handles[filename] = handle
+  return handle
+end
+
+do
+  local cache = {}
+  function UniversalBackend:get_filename(state)
+    local cached = cache[state.name]
+    if cached then
+      return cached
+    end
+
+    local fname = utils.path_join(self.dir, state.name .. ".json")
+    cache[state.name] = fname
+    return fname
+  end
+end
+
+function UniversalBackend:save(state)
   ---@type neotree.clipboard.FileBackend.FileFormat
   local wrapped = {
-    pid = pid,
     state_name = assert(state.name),
     contents = state.clipboard,
   }
-  local touch_ok, err = file_touch(self.filename)
-  if not touch_ok then
-    return false, "Couldn't write to  " .. self.filename .. ":" .. err
+  local filename = self:get_filename(state)
+
+  if not uv.fs_stat(filename) then
+    local touch_ok, err = file_touch(filename)
+    if not touch_ok then
+      return false, "Couldn't write to " .. filename .. ":" .. err
+    end
   end
+
   local encode_ok, str = pcall(vim.json.encode, wrapped)
   if not encode_ok then
     local encode_err = str
     return false, "Couldn't encode clipboard into json: " .. encode_err
   end
-  local file, open_err = io.open(self.filename, "w")
+  local file, open_err = io.open(filename, "w")
   if not file then
-    return false, "Couldn't open " .. self.filename .. ": " .. open_err
+    return false, "Couldn't open " .. filename .. ": " .. open_err
   end
+  self.saving = true
   local _, write_err = file:write(str)
-  if write_err then
-    return false, "Couldn't write to " .. self.filename .. ": " .. write_err
-  end
   file:flush()
-  self.last_stat_seen = log.assert(uv.fs_stat(self.filename))
+
+  if write_err then
+    self.saving = false
+    return false, "Couldn't write to " .. filename .. ": " .. write_err
+  end
+
+  self.last_stat_seen = log.assert(uv.fs_stat(filename))
   self.last_clipboard_saved = state.clipboard
+  self.saving = false
   return true
 end
 
@@ -153,31 +160,35 @@ end
 local validate_clipboard_from_file = function(wrapped_clipboard)
   return validate("clipboard_from_file", wrapped_clipboard, function(c)
     validate("contents", c.contents, "table")
-    validate("pid", c.pid, "number")
     validate("state_name", c.state_name, "string")
-  end, false, "Clipboard from file could not be validated")
+  end, false, "Clipboard from file could not be validated", function() end)
 end
 
 function UniversalBackend:load(state)
-  if state.name ~= "filesystem" then
-    return nil, nil
-  end
-  local stat = uv.fs_stat(self.filename)
+  local filename = self:get_filename(state)
+  local stat = uv.fs_stat(filename)
   if stat and self.last_stat_seen then
     if stat.mtime == self.last_stat_seen.mtime then
-      log.debug("Using cached clipboard from ", stat.mtime)
+      log.debug("Using cached clipboard from", stat.mtime)
       return self.last_clipboard_saved
     end
   end
   self.last_stat_seen = stat
-  local file_ok, touch_err = file_touch(self.filename)
-  if not file_ok then
-    return nil, touch_err
+
+  if not stat then
+    local file_ok, touch_err = file_touch(filename)
+    if not file_ok then
+      return nil, touch_err
+    end
   end
 
-  local file, err = io.open(self.filename, "r")
-  if not file or err then
-    return nil, self.filename .. " could not be opened"
+  if not self.handles[filename] then
+    self:_watch_file(filename)
+  end
+
+  local file, err = io.open(filename, "r")
+  if not file then
+    return nil, filename .. " could not be opened: " .. err
   end
 
   ---@type string
@@ -186,26 +197,20 @@ function UniversalBackend:load(state)
   content = vim.trim(content)
   if content == "" then
     -- not populated yet, just do nothing
-    return nil, nil
+    return nil
   end
   ---@type boolean, neotree.clipboard.FileBackend.FileFormat|any
   local is_success, saved_clipboard = pcall(vim.json.decode, content)
-  if not is_success then
-    local decode_err = saved_clipboard
-    return nil,
-      ("JSON decode from universal clipboard file @ %s failed: decode_err"):format(
-        self.filename,
-        decode_err
-      )
-  end
-
-  if not validate_clipboard_from_file(saved_clipboard) then
+  if not is_success or not validate_clipboard_from_file(saved_clipboard) then
+    log.debug("Clipboard file", filename, "looks to be invalid", saved_clipboard)
     if
       require("neo-tree.ui.inputs").confirm(
-        "Neo-tree clipboard file seems invalid, clear out clipboard?"
+        "Neo-tree universal clipboard file for "
+          .. state.name
+          .. " seems invalid, clear out clipboard?"
       )
     then
-      local success, delete_err = os.remove(self.filename)
+      local success, delete_err = os.remove(filename)
       if not success then
         log.error(delete_err)
       end

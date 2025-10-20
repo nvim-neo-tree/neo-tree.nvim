@@ -5,13 +5,13 @@ local Backend = {}
 ---Returns nil if the backend couldn't be created properly.
 ---@return neotree.clipboard.Backend?
 function Backend:new()
-  local o = {}
-  setmetatable(o, self)
+  local backend = {}
+  setmetatable(backend, self)
   self.__index = self
   -- if not do_setup() then
   --   return nil -- will default to no sync/backend
   -- end
-  return o
+  return backend
 end
 
 -- local function applicable(state)
