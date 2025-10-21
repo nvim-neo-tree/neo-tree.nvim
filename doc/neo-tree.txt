@@ -1944,8 +1944,8 @@ highlight group.
 CLIPBOARD                                                   *neo-tree-clipboard*
 
 Neo-tree features a clipboard that you can copy, cut, and paste nodes with (by
-default, with y, x, and p respectively). This is currently only available for the
-filesystem source.
+default, with y, x, and p respectively). You can also clear a clipboard with
+<C-R> by default.
 
 CLIPBOARD SYNC                                         *neo-tree-clipboard-sync*
 
