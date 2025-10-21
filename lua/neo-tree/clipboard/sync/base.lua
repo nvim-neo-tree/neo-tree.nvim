@@ -15,7 +15,7 @@ function Backend:new()
 end
 
 -- local function applicable(state)
---   return state.name == "filesystem"
+--   return state.name ~= "document_symbols"
 -- end
 
 ---Saves a state's clipboard to the backend.

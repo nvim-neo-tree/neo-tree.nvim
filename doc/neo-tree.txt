@@ -1953,18 +1953,26 @@ Neo-tree's clipboard can be synced globally (across all Neo-trees within the
 same Neovim instance) or universally (across all Neo-trees on a computer). The
 default is to not sync at all. To change this option, change the
 `clipboard.sync` option (options are `"none"|"global"|"universal"`). The
-universal sync option relies on a file located under `stdpath("state") ..
-"/neo-tree.nvim/clipboards".` You can also implement your own backend and pass
-it to that option as well:
+universal sync option will also persist your clipboards.
+
+>lua
+    require('neo-tree').setup({
+      clipboard = {
+        sync = "global"
+      }
+    })
+<
+
+You can also implement your own backend and pass it to that option as well:
 >lua
     ---Code derived from require('neo-tree.clipboard.sync.base')
 
-    ---@class neotree.clipboard.Backend
+    ---@class your.neotree.clipboard.Backend : neotree.clipboard.Backend
     local Backend = {}
 
     ---A backend saves and loads clipboards to and from states.
     ---Returns nil if the backend couldn't be created properly.
-    ---@return neotree.clipboard.Backend?
+    ---@return your.neotree.clipboard.Backend?
     function Backend:new()
       local backend = {}
       setmetatable(backend, self)
@@ -1976,7 +1984,7 @@ it to that option as well:
     end
 
     -- local function applicable(state)
-    --   return state.name == "filesystem"
+    --   return state.name ~= "document_symbols"
     -- end
 
     ---Saves a state's clipboard to the backend.
@@ -2019,6 +2027,8 @@ it to that option as well:
       -- return clipboard
     end
 
+    return Backend
+
     require("neo-tree").setup({
       clipboard = {
         sync = Backend
@@ -2036,9 +2046,9 @@ Additionally, this helper method exists on `require('neo-tree.clipboard')`:
     end
 <
 
-This method may be useful to call if a new clipboard exists but save hasn't
-updated yet. For example, the universal backend calls this method when a
-different instance of Neovim updates a clipboard file.
+This method may be useful to call if a new clipboard exists somewhere, but an
+instance of Neo-tree doesn't know about it yet. For example, the universal backend
+calls this method when a different instance of Neovim updates a clipboard file.
 
 ================================================================================
 OTHER SOURCES                                                                  ~
