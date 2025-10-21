@@ -688,16 +688,17 @@ end
 ---Saves a window position to be restored later
 ---@param state neotree.State
 ---@param force boolean?
+---@return boolean saved
 M.position.save = function(state, force)
   if not force and state.position.topline and state.position.lnum then
     log.debug("There's already a position saved to be restored. Cannot save another.")
-    return
+    return false
   end
   if not state.tree then
-    return
+    return false
   end
   if not M.window_exists(state) then
-    return
+    return false
   end
 
   local win_state = vim.api.nvim_win_call(state.winid, vim.fn.winsaveview)
@@ -713,6 +714,7 @@ M.position.save = function(state, force)
     local b = vim.fn.getpos("v")
     state.position.visual_selection = { a, b }
   end
+  return true
 end
 
 ---Queues a node to focus
@@ -1161,22 +1163,26 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
-    local restored_after_window_change = false
-    win:on({ "CursorMoved", "ModeChanged" }, function(args)
-      if win.winid == vim.api.nvim_get_current_win() and restored_after_window_change then
-        M.position.save(state, true)
+    local wait_for_save = true
+    win:on({ "CursorMoved", "ModeChanged" }, function()
+      if state.winid == vim.api.nvim_get_current_win() then
+        if not wait_for_save then
+          M.position.save(state, true)
+        elseif M.position.save(state) then
+          wait_for_save = false
+        end
       end
     end)
     win:on({ "BufDelete" }, function()
       M.position.save(state)
     end)
-    win:on({ "WinEnter" }, function(args)
+    win:on({ "WinEnter" }, function()
       M.position.restore_selection(state)
-      if win.winid == vim.api.nvim_get_current_win() then
+      if state.winid == vim.api.nvim_get_current_win() then
         M.position.restore(state)
-        restored_after_window_change = true
+        wait_for_save = false
       else
-        restored_after_window_change = false
+        wait_for_save = true
       end
     end)
     win:on({ "BufDelete" }, function()

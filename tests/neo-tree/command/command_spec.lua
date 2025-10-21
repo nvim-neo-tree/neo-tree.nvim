@@ -143,6 +143,15 @@ describe("Command", function()
       -- It seems like in headless mode, CursorMoved is not emitted.
       vim.api.nvim_exec_autocmds("CursorMoved", {})
       verify.filesystem_tree_node_is(testfile)
+
+      -- toggle on and off
+      require("neo-tree.command").execute({
+        toggle = true,
+      })
+      require("neo-tree.command").execute({
+        toggle = true,
+      })
+      verify.filesystem_tree_node_is(testfile)
     end)
   end)
 
