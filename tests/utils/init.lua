@@ -190,8 +190,10 @@ function mod.wait_for_neo_tree(options)
 end
 
 function mod.changedtick_waiter(bufnr, offset_goal, timeout)
-  local changedtick = vim.b[bufnr].changedtick
+  bufnr = bufnr or 0
   timeout = timeout or 4000
+  offset_goal = offset_goal or 1
+  local changedtick = vim.b[bufnr].changedtick
   return function()
     assert(
       vim.wait(timeout, function()

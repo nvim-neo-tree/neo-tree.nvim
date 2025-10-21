@@ -313,6 +313,19 @@ function M.check_config(config)
         validate("renderers", ds.renderers, schema.Renderers)
         validate("window", ds.window, schema.Window)
       end)
+      validate("clipboard", cfg.clipboard, function(clip)
+        validate("sync", clip.sync, function(sync)
+          if type(sync) == "string" then
+            return vim.tbl_contains({ "global", "none", "universal" }, sync)
+          elseif type(sync) == "table" then
+            validate("new", sync.new, "callable")
+            validate("load", sync.load, "callable")
+            validate("save", sync.save, "callable")
+          else
+            return false
+          end
+        end, true)
+      end, true)
     end,
     false,
     nil,

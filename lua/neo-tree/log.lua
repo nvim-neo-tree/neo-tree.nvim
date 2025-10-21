@@ -95,6 +95,9 @@ log_maker.new = function(config)
   local log = {}
   ---@diagnostic disable-next-line: cast-local-type
   config = vim.tbl_deep_extend("force", default_config, config)
+  local prefix = table.concat(config.context, ".")
+  local notify_prefix = vim.tbl_isempty(config.context) and config.plugin_short
+    or table.concat({ config.plugin_short, prefix }, " ")
 
   local title_opts = { title = config.plugin_short }
   ---@param message string
@@ -106,7 +109,7 @@ log_maker.new = function(config)
     else
       local level_config = config.level_configs[level]
       local console_string = ("[%s %s] %s"):format(
-        config.plugin_short,
+        notify_prefix,
         level_config.name:upper(),
         message
       )
@@ -116,17 +119,9 @@ log_maker.new = function(config)
 
   local initial_filepath = string.format("%s/%s.log", vim.fn.stdpath("data"), config.plugin)
 
-  ---@type file*?
-  log.file = nil
-  if config.use_file then
-    log.use_file(initial_filepath)
-  end
-
   local last_logfile_check_time = 0
-  local current_logfile_inode = -1
   local logfile_check_interval = 20 -- TODO: probably use filesystem events rather than this
   local inspect_opts = { depth = 2, newline = " " }
-  local prefix = table.concat(config.context, ".")
   ---@param log_type string
   ---@param msg string
   local log_to_file = function(log_type, msg)
@@ -188,7 +183,6 @@ log_maker.new = function(config)
   local logfunc = function(log_level, message_maker)
     local can_log_to_file = log_level >= log.minimum_level.file
     local can_log_to_console = log_level >= log.minimum_level.console
-    local log_verbose = vim.env.NEOTREE_TESTING == "true"
     if not can_log_to_file and not can_log_to_console then
       return function() end
     end
@@ -211,12 +205,7 @@ log_maker.new = function(config)
 
       -- Output to console
       if config.use_console and can_log_to_console then
-        local info = debug.getinfo(2, "Sl")
         vim.schedule(function()
-          if log_verbose then
-            local lineinfo = info.short_src .. ":" .. info.currentline
-            msg = lineinfo .. msg
-          end
           notify(msg, log_level)
         end)
       end
@@ -309,6 +298,7 @@ log_maker.new = function(config)
 
   log.set_level(config.level)
 
+  local current_logfile_inode = -1
   ---@param file string|boolean
   ---@param quiet boolean?
   ---@return boolean using_file
@@ -357,6 +347,12 @@ log_maker.new = function(config)
     return config.use_file
   end
 
+  ---@type file*?
+  log.file = nil
+  if config.use_file then
+    log.use_file(initial_filepath, true)
+  end
+
   ---Quick wrapper around assert that also supports subsequent args being the same as string.format (to reduce work done on happy paths)
   ---@see string.format
   ---@generic T
@@ -385,13 +381,9 @@ log_maker.new = function(config)
   ---@param context string
   log.new = function(context)
     local new_context = vim.deepcopy(config.context)
-    return log_maker.new(
-      vim.tbl_deep_extend(
-        "force",
-        config,
-        { context = vim.list_extend({ new_context }, { context }) }
-      )
-    )
+    local new_config =
+      vim.tbl_deep_extend("force", config, { context = vim.list_extend(new_context, { context }) })
+    return log_maker.new(new_config)
   end
 
   return log

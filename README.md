@@ -33,9 +33,8 @@ will be a new branch that you can opt into, when it is a good time for you.
 
 See [What is a Breaking Change?](#what-is-a-breaking-change) for details.
 
-See [Changelog
-3.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#30) for
-breaking changes and deprecations in 3.0.
+See [Changelog 3.0](https://github.com/nvim-neo-tree/neo-tree.nvim/wiki/Changelog#30)
+for breaking changes and deprecations in 3.0.
 
 ### User Experience GOOD :slightly_smiling_face: :thumbsup:
 
@@ -47,11 +46,14 @@ should you!
 
 - Neo-tree won't let other buffers take over its window.
 - Neo-tree won't leave its window scrolled to the last line when there is plenty
-of room to display the whole tree.
-- Neo-tree does not need to be manually refreshed (set
-`use_libuv_file_watcher=true`)
-- Neo-tree can intelligently follow the current file (set
-`follow_current_file.enabled=true`)
+  of room to display the whole tree.
+- Neo-tree does not need to be manually refreshed
+  (set `use_libuv_file_watcher = true`)
+- Neo-tree can intelligently follow the current file
+  (set `follow_current_file.enabled = true`)
+- Neo-tree can sync its clipboard across multiple trees, either globally
+  (within the same Neovim instance) or universally (across all Neovim
+  instances). Try `clipboard.sync = "global" | "universal"`.
 - Neo-tree is thoughtful about maintaining or setting focus on the right node
 - Neo-tree windows in different tabs are completely separate
 - `respect_gitignore` actually works!
@@ -72,15 +74,19 @@ utilities, such as scanning the filesystem.
 
 There are also some optional plugins that work with Neo-tree:
 
-- [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons.
-- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations) for LSP-enhanced renames/etc.
-- [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews, see Preview Mode section.
-  - [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim) can also work with
-  Neo-tree
+- [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons)
+  for file icons.
+- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations)
+  for LSP-enhanced renames/etc.
+- [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews,
+  see Preview Mode section.
+- [snacks.rename](https://github.com/folke/snacks.nvim/blob/main/docs/rename.md#neo-treenvim)
+  can also work with Neo-tree
 - [3rd/image.nvim](https://github.com/3rd/image.nvim) for image previews.
-  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will
-  try to preview with snacks.nvim first, then try image.nvim.
-- [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for `_with_window_picker` keymaps.
+  - If both snacks.nvim and image.nvim are installed. Neo-tree currently will try
+    to preview with snacks.nvim first, then try image.nvim.
+- [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for
+  `_with_window_picker` keymaps.
 
 
 ### mini.deps example:
@@ -272,6 +278,9 @@ vim.keymap.set("n", "<leader>e", "<Cmd>Neotree<CR>")
 require("neo-tree").setup({
   close_if_last_window = false, -- Close Neo-tree if it is the last window left in the tab
   popup_border_style = "NC", -- or "" to use 'winborder' on Neovim v0.11+
+  clipboard = {
+    sync = "none", -- or "global"/"universal" to share a clipboard for each/all Neovim instance(s), respectively
+  },
   enable_git_status = true,
   enable_diagnostics = true,
   open_files_do_not_replace_types = { "terminal", "trouble", "qf" }, -- when opening files, do not use windows containing these filetypes or buftypes
@@ -432,6 +441,7 @@ require("neo-tree").setup({
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
+      ["<C-r>"] = "clear_clipboard",
       ["c"] = "copy", -- takes text input for destination, also accepts the optional config.show_path option like "add":
       -- ["c"] = {
       --  "copy",

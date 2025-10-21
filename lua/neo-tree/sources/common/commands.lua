@@ -227,7 +227,6 @@ end
 
 ---@param state neotree.State
 local copy_node_to_clipboard = function(state, node)
-  state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
   if existing and existing.action == "copy" then
     state.clipboard[node.id] = nil
@@ -235,6 +234,7 @@ local copy_node_to_clipboard = function(state, node)
     state.clipboard[node.id] = { action = "copy", node = node }
     log.info("Copied " .. node.name .. " to clipboard")
   end
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
@@ -265,7 +265,6 @@ end
 ---@param state neotree.State
 ---@param node NuiTree.Node
 local cut_node_to_clipboard = function(state, node)
-  state.clipboard = state.clipboard or {}
   local existing = state.clipboard[node.id]
   if existing and existing.action == "cut" then
     state.clipboard[node.id] = nil
@@ -273,6 +272,7 @@ local cut_node_to_clipboard = function(state, node)
     state.clipboard[node.id] = { action = "cut", node = node }
     log.info("Cut " .. node.name .. " to clipboard")
   end
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
 end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
@@ -604,53 +604,59 @@ end
 ---Pastes all items from the clipboard to the current directory.
 ---@param callback fun(node: NuiTree.Node?, destination: string) The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
-  if state.clipboard then
-    local folder = get_folder_node(state):get_id()
-    -- Convert to list so to make it easier to pop items from the stack.
-    local clipboard_list = {}
-    for _, item in pairs(state.clipboard) do
-      table.insert(clipboard_list, item)
-    end
-    state.clipboard = nil
-    local handle_next_paste, paste_complete
+  local folder = get_folder_node(state):get_id()
+  -- Convert to list so to make it easier to pop items from the stack.
+  local clipboard_list = {}
+  for _, item in pairs(state.clipboard) do
+    table.insert(clipboard_list, item)
+  end
+  state.clipboard = {}
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
+  local handle_next_paste, paste_complete
 
-    paste_complete = function(source, destination)
-      if callback then
-        local insert_as = require("neo-tree").config.window.insert_as
-        -- open the folder so the user can see the new files
-        local node = insert_as == "sibling" and state.tree:get_node() or state.tree:get_node(folder)
-        if not node then
-          log.warn("Could not find node for " .. folder)
-        end
-        callback(node, destination)
+  paste_complete = function(source, destination)
+    if callback then
+      local insert_as = require("neo-tree").config.window.insert_as
+      -- open the folder so the user can see the new files
+      local node = insert_as == "sibling" and state.tree:get_node() or state.tree:get_node(folder)
+      if not node then
+        log.warn("Could not find node for " .. folder)
       end
-      local next_item = table.remove(clipboard_list)
-      if next_item then
-        handle_next_paste(next_item)
-      end
+      callback(node, destination)
     end
-
-    handle_next_paste = function(item)
-      if item.action == "copy" then
-        fs_actions.copy_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete
-        )
-      elseif item.action == "cut" then
-        fs_actions.move_node(
-          item.node.path,
-          folder .. utils.path_separator .. item.node.name,
-          paste_complete
-        )
-      end
-    end
-
     local next_item = table.remove(clipboard_list)
     if next_item then
       handle_next_paste(next_item)
     end
   end
+
+  handle_next_paste = function(item)
+    if item.action == "copy" then
+      fs_actions.copy_node(
+        item.node.path,
+        folder .. utils.path_separator .. item.node.name,
+        paste_complete
+      )
+    elseif item.action == "cut" then
+      fs_actions.move_node(
+        item.node.path,
+        folder .. utils.path_separator .. item.node.name,
+        paste_complete
+      )
+    end
+  end
+
+  local next_item = table.remove(clipboard_list)
+  if next_item then
+    handle_next_paste(next_item)
+  end
+end
+
+M.clear_clipboard = function(state)
+  state.clipboard = {}
+  log.info("Cleared clipboard")
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
+  renderer.redraw(state)
 end
 
 ---Copies a node to a new location, using typed input.

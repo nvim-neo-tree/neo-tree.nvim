@@ -28,6 +28,8 @@ Configuration ............... |neo-tree-configuration|
   Components and Renderers .. |neo-tree-renderers|
   Buffer Variables .......... |neo-tree-buffer-variables|
   Popups .................... |neo-tree-popups|
+Clipboard ................... |neo-tree-clipboard|
+  Sync ...................... |neo-tree-clipboard-sync|
 Other Sources ............... |neo-tree-sources|
   Buffers ................... |neo-tree-buffers|
   Git Status ................ |neo-tree-git-status-source|
@@ -336,6 +338,8 @@ x    = cut_to_clipboard:     Mark file to be cut (moved).
                              Supports visual selection.~
 
 p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
+
+<C-r> = clear_clipboard:     Clears the clipboard.
 
 c    = copy:                 Copy the selected file or directory.
                              Also accepts the optional `config.show_path` option
@@ -1936,6 +1940,115 @@ state to a string. The colors of the popup border are controlled by the
 `popup_border_style`, the title bar of that popup uses the `NeoTreeTitleBar`
 highlight group.
 
+
+CLIPBOARD                                                   *neo-tree-clipboard*
+
+Neo-tree features a clipboard that you can copy, cut, and paste nodes with (by
+default, with y, x, and p respectively). You can also clear a clipboard with
+<C-R> by default.
+
+CLIPBOARD SYNC                                         *neo-tree-clipboard-sync*
+
+Neo-tree's clipboard can be synced globally (across all Neo-trees within the
+same Neovim instance) or universally (across all Neo-trees on a computer). The
+default is to not sync at all. To change this option, change the
+`clipboard.sync` option (options are `"none"|"global"|"universal"`). The
+universal sync option will also persist your clipboards.
+
+>lua
+    require('neo-tree').setup({
+      clipboard = {
+        sync = "global"
+      }
+    })
+<
+
+You can also implement your own backend and pass it to that option as well:
+>lua
+    ---Code derived from require('neo-tree.clipboard.sync.base')
+
+    ---@class your.neotree.clipboard.Backend : neotree.clipboard.Backend
+    local Backend = {}
+
+    ---A backend saves and loads clipboards to and from states.
+    ---Returns nil if the backend couldn't be created properly.
+    ---@return your.neotree.clipboard.Backend?
+    function Backend:new()
+      local backend = {}
+      setmetatable(backend, self)
+      self.__index = self
+      -- if not do_setup() then
+      --   return nil -- will default to no sync/backend
+      -- end
+      return backend
+    end
+
+    -- local function applicable(state)
+    --   return state.name ~= "document_symbols"
+    -- end
+
+    ---Saves a state's clipboard to the backend.
+    ---Automatically called whenever a user changes a state's clipboard.
+    ---Returns nil when the save is not applicable.
+    ---@param state neotree.State
+    ---@return boolean? success_or_noop
+    function Backend:save(state)
+      -- if not applicable(state) then
+      --   return nil -- nothing happens
+      -- end
+
+      -- local saved, err = save_clipboard_to_somewhere(state)
+      -- if not saved then
+      --   return false, err -- will error
+      -- end
+
+      -- on true, neo-tree will try Backend:load with all other states
+      -- return true
+    end
+
+    ---Given a state, determines what clipboard (if any), should be loaded.
+    ---Automatically called when other states' clipboards saved successfully.
+    ---Returns nil if the clipboard should not be changed.
+    ---@param state neotree.State
+    ---@return neotree.clipboard.Contents? clipboard
+    ---@return string? err
+    function Backend:load(state)
+      -- if not applicable(state) then
+      --   return nil -- nothing happens
+      -- end
+
+      -- local clipboard, err = load_clipboard_from_somewhere(state)
+      -- if err then
+      --   -- don't modify the clipboard and log an error
+      --   return nil, err
+      -- end
+
+      -- change the clipboard to the saved clipboard
+      -- return clipboard
+    end
+
+    return Backend
+
+    require("neo-tree").setup({
+      clipboard = {
+        sync = Backend
+      }
+    })
+<
+
+Additionally, this helper method exists on `require('neo-tree.clipboard')`:
+
+>lua
+    ---Load saved clipboards into all states (except one, if provided).
+    ---@param exclude_state neotree.State?
+    function M.update_states(exclude_state)
+      -- ...
+    end
+<
+
+This method may be useful to call if a new clipboard exists somewhere, but an
+instance of Neo-tree doesn't know about it yet. For example, the universal backend
+calls this method when a different instance of Neovim updates a clipboard file.
 
 ================================================================================
 OTHER SOURCES                                                                  ~
