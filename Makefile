@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
+	nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua', sequential=true})"
 
 .PHONY: test-docker
 test-docker:
