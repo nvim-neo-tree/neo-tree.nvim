@@ -133,14 +133,15 @@ function UniversalBackend:save(state)
     local encode_err = str
     return false, "Couldn't encode clipboard into json: " .. encode_err
   end
+
   local file, open_err = io.open(filename, "w")
   if not file then
     return false, "Couldn't open " .. filename .. ": " .. open_err
   end
+
   self.saving = true
   local _, write_err = file:write(str)
   file:flush()
-
   if write_err then
     self.saving = false
     return false, "Couldn't write to " .. filename .. ": " .. write_err

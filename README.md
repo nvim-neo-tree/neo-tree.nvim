@@ -441,6 +441,7 @@ require("neo-tree").setup({
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
+      ["<C-r>"] = "clear_clipboard",
       ["c"] = "copy", -- takes text input for destination, also accepts the optional config.show_path option like "add":
       -- ["c"] = {
       --  "copy",

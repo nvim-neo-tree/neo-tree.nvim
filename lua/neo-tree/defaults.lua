@@ -423,8 +423,6 @@ local config = {
         }
       },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
-      ["<C-r>"] = "clear_clipboard",
-      ["<C-S-r>"] = { "clear_clipboard", config = {keep_in_cwd = true} },
       ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
       ["l"] = "focus_preview",
       ["S"] = "open_split",
@@ -456,6 +454,7 @@ local config = {
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
       ["p"] = "paste_from_clipboard",
+      ["<C-r>"] = "clear_clipboard",
       ["c"] = "copy", -- takes text input for destination, also accepts the config.show_path and config.insert_as options
       ["m"] = "move", -- takes text input for destination, also accepts the config.show_path and config.insert_as options
       ["e"] = "toggle_auto_expand_width",
