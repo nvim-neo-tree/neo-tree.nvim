@@ -1163,13 +1163,13 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
-    local restored_after_window_change = false
+    local wait_for_save = true
     win:on({ "CursorMoved", "ModeChanged" }, function()
       if state.winid == vim.api.nvim_get_current_win() then
-        if restored_after_window_change then
+        if not wait_for_save then
           M.position.save(state, true)
         elseif M.position.save(state) then
-          restored_after_window_change = true
+          wait_for_save = false
         end
       end
     end)
@@ -1180,9 +1180,9 @@ M.acquire_window = function(state)
       M.position.restore_selection(state)
       if state.winid == vim.api.nvim_get_current_win() then
         M.position.restore(state)
-        restored_after_window_change = true
+        wait_for_save = false
       else
-        restored_after_window_change = false
+        wait_for_save = true
       end
     end)
     win:on({ "BufDelete" }, function()
