@@ -653,8 +653,22 @@ M.paste_from_clipboard = function(state, callback)
 end
 
 M.clear_clipboard = function(state)
-  state.clipboard = {}
-  log.info("Cleared clipboard")
+  if state.config and state.config.keep_in_cwd then
+    local cwd = assert(state.path)
+    local entries_cleared = 0
+    for path in pairs(state.clipboard) do
+      if not utils.is_subpath(cwd, path) then
+        entries_cleared = entries_cleared + 1
+        state.clipboard[path] = nil
+      end
+    end
+    log.info("Cleared out", entries_cleared, "entires from clipboard")
+  else
+    state.clipboard = {}
+    log.info("Cleared clipboard")
+  end
+  events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, state)
+  renderer.redraw(state)
 end
 
 ---Copies a node to a new location, using typed input.

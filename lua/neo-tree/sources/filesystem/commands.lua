@@ -14,9 +14,7 @@ local refresh = function(state)
   fs._navigate_internal(state, nil, nil, nil, false)
 end
 
-local redraw = function(state)
-  renderer.redraw(state)
-end
+local redraw = renderer.redraw
 
 M.add = function(state)
   cc.add(state, utils.wrap(fs.show_new_children, state))
@@ -65,7 +63,7 @@ end
 
 M.clear_clipboard = function(state)
   cc.clear_clipboard(state)
-  redraw()
+  redraw(state)
 end
 
 M.delete = function(state)

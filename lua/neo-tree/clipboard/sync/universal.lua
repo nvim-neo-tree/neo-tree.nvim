@@ -64,10 +64,6 @@ end
 ---@param filename string
 ---@return uv.uv_fs_event_t? started true if working
 function UniversalBackend:_watch_file(filename)
-  local cached = self.handles[filename]
-  if cached then
-    return cached
-  end
   local event_handle = uv.new_fs_event()
   if not event_handle then
     log.warn("Could not watch shared clipboard on file events")
@@ -76,7 +72,7 @@ function UniversalBackend:_watch_file(filename)
 
   local start_success = event_handle:start(filename, {}, function(err)
     if err then
-      log.error("File handle error:", err)
+      log.error("File handle error:", err, ", syncing will be disabled")
       event_handle:close()
       return
     end
@@ -182,8 +178,11 @@ function UniversalBackend:load(state)
     end
   end
 
-  if not self.handles[filename] then
+  local handle = self.handles[filename]
+  if not handle then
     self:_watch_file(filename)
+  elseif not handle:is_active() then
+    log.debug("Handle for", filename, "is dead")
   end
 
   local file, err = io.open(filename, "r")

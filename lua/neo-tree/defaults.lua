@@ -423,6 +423,8 @@ local config = {
         }
       },
       ["<C-f>"] = { "scroll_preview", config = {direction = -10} },
+      ["<C-r>"] = "clear_clipboard",
+      ["<C-S-r>"] = { "clear_clipboard", config = {keep_in_cwd = true} },
       ["<C-b>"] = { "scroll_preview", config = {direction = 10} },
       ["l"] = "focus_preview",
       ["S"] = "open_split",
