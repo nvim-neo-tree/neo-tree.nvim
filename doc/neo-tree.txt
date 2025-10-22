@@ -1530,29 +1530,29 @@ of objects in the form:
 
 The following events are available:
 
-"before_render"~
+"before_render" ~
 Fired after items have been collected from the source but before drawing the
 nodes of the tree. This is the best place to gather additional data to be used
 by components. The argument passed is the state of the source, which is also
 passed to components and commands down the line.
 
-"after_render"~
+"after_render" ~
 Fired after the tree has been rendered. The argument passed is the state of the
 source, which is also passed to components and commands down the line.
 
-"file_added"~
+"file_added" ~
 Fired after a file (or folder) has been created, either by using the "add"
 command or by copy and paste. The arg is the full path to the new file.
 
-"file_deleted"~
+"file_deleted" ~
 Fired after a file (or folder) has been deleted. The arg is the full path to the
 deleted file.
 
-"file_moved"~
+"file_moved" ~
 Fired after a file (or folder) has been moved. The arg is a table containing
 `source` and `destination` properties.
 
-"file_open_requested"~
+"file_open_requested" ~
 Fired just before a file is opened. The arg is a table containing the `state`
 of the source being used, the `path` of the file to be opened, and `open_cmd`,
 which is the open command that was requested. `open_cmd` will be either |edit|,
@@ -1561,33 +1561,37 @@ which is the open command that was requested. `open_cmd` will be either |edit|,
 was not. If `{ handled = true }` is not returned, the file will be opened using
 the built-in logic.
 
-"file_opened"~
+"file_opened" ~
 Fired after a file has been opened. You might use this to auto-close the window
 or clear the filter. The arg is the path of the file opened.
 
-"file_renamed"~
+"file_renamed" ~
 Fired after a file (or folder) has been renamed. The arg is an table containing
 `source` and `destination` properties.
 
-"neo_tree_buffer_enter"~
+"neo_tree_buffer_enter" ~
 Fired after entering a neo-tree buffer. It is also right after neo-tree applies
 it's own settings, so it's the ideal place to apply any local settings you would
 like to have.
 
-"neo_tree_buffer_leave"~
+"neo_tree_buffer_leave" ~
 Fired after a neo-tree buffer was exited. Technically it fires when entering a
 buffer that is not neo-tree, when the last buffer enter event was neo-tree.
 
-"neo_tree_popup_buffer_enter"~
+"neo_tree_clipboard_changed" ~
+Fired after any change is made to the clipboard. The arg is `{state = state}`,
+where `state` is a Neo-tree state.
+
+"neo_tree_popup_buffer_enter" ~
 Fired after entering a neo-tree popup buffer. This includes things such as file
 rename prompts and filter inputs. It runs right after neo-tree applies it's own
 settings, so it's the ideal place to apply any local settings you would like to
 have.
 
-"neo_tree_popup_buffer_leave"~
+"neo_tree_popup_buffer_leave" ~
 Fired after leaving a neo-tree popup buffer.
 
-"neo_tree_popup_input_ready"~
+"neo_tree_popup_input_ready" ~
 Fired after NuiInput is ready. Use this event to default to normal mode etc.
 This is fired inside a vim.schedule.
 
@@ -1610,7 +1614,7 @@ This is fired inside a vim.schedule.
     }
 <
 
-"neo_tree_window_before_open"~
+"neo_tree_window_before_open" ~
 Fired before opening a new Neo-tree window. Called with the following arg:
                                                      *neo-tree-window-event-args*
 The event argument for all window events is a table with the following keys:
@@ -1620,15 +1624,15 @@ The event argument for all window events is a table with the following keys:
     `source`   = the name of the source that is in the window, such as "filesystem".
     `position` = the position of the window, i.e. "left", "bottom", "right".
 
-"neo_tree_window_after_open"~
+"neo_tree_window_after_open" ~
 Fired after opening a new Neo-tree window. Called with
 |neo-tree-window-event-args|.
 
-"neo_tree_window_before_close"~
+"neo_tree_window_before_close" ~
 Fired before closing a Neo-tree window. Called with
 |neo-tree-window-event-args|.
 
-"neo_tree_window_after_close"~
+"neo_tree_window_after_close" ~
 Fired after closing a Neo-tree window. Called with
 |neo-tree-window-event-args|.
 
@@ -1637,32 +1641,32 @@ usage. You can use them if you want, but beware that they may be debounced, and
 the details of how frequently they are fired and what events are dropped will be
 changed without warning.
 
-"vim_diagnostic_changed"~
+"vim_diagnostic_changed" ~
 Fired on the |DiagnosticChanged| autocmd event. The arg is a table with one
 property: `diagnostics_lookup`, which is a table where the keys are file names
 and the values are tables with diagnostic counts by severity level.
 
-"vim_buffer_changed"~
+"vim_buffer_changed" ~
 Fired on the following autocmd events: |BufDelete|, |BufWritePost|,
 |BufFilePost|, |BufNew|
 
-"vim_buffer_enter"~
+"vim_buffer_enter" ~
 Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
 
-"vim_dir_changed"~
+"vim_dir_changed" ~
 Fired on the |DirChanged| autocmd event
 
-"vim_win_enter"~
+"vim_win_enter" ~
 Fired on the |WinEnter| autocmd event
 
-"vim_colorscheme"~
+"vim_colorscheme" ~
 Fired on the |ColorScheme| autocmd event
 
 
 You can also define your own with:
->
+
 >lua
-    require("neo-tree.events.queue").define_event(event_name, {
+    require("neo-tree.events").define_event(event_name, {
       setup = <function>,
       seed = <function>,
       teardown = <function>,
@@ -1672,7 +1676,7 @@ You can also define your own with:
     })
 <
 
-The setup function is run the first time the event is subscribed to. For an
+The `setup` function is run the first time the event is subscribed to. For an
 autocmd event, this would define the vim autocmd to connect it to fire_event().
 
 The `seed` function is run at the beginning of every event firing. The diagnostics
@@ -1733,6 +1737,7 @@ A component is a function that returns a single text object:
         text = "I'm Special!",
         highlight = "SpecialChar"
       },
+      {
         text = "[",
         highlight = "Comment"
       }

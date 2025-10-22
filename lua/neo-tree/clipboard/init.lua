@@ -76,7 +76,8 @@ M.setup = function(opts)
   events.subscribe({
     event = events.NEO_TREE_CLIPBOARD_CHANGED,
     ---@param state neotree.State
-    handler = function(state)
+    handler = function(args)
+      local state = args.state
       local ok, err = M.current_backend:save(state)
       if ok == false then
         log.error(err)
