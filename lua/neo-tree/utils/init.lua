@@ -839,7 +839,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
         result, err = M.force_new_split(state.current_position, escaped_path)
       end
     end
-    if result or err == "Vim(edit):E325: ATTENTION" then
+    if result or err:find("Vim(edit):E325: ATTENTION") then
       -- fixes #321
       vim.bo[0].buflisted = true
       events.fire_event(events.FILE_OPENED, path)
