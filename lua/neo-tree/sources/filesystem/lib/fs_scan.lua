@@ -119,6 +119,7 @@ local job_complete = function(context)
   local state = context.state
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
+  git.mark_ignored(state, context.all_items)
   render_context(context)
   return context
 end

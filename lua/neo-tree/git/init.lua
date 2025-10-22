@@ -352,25 +352,16 @@ end
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
 M.mark_ignored = function(state, items)
+  local gs = state.git_status_lookup
+  if not gs then
+    return
+  end
   for _, i in ipairs(items) do
-    repeat
-      local path = i.path
-      local git_root = M.get_repository_root(path)
-      if not git_root then
-        break
-      end
-      local status = M.status_cache[git_root] or M.status("HEAD", false, path)
-      if not status then
-        break
-      end
-
-      local direct_lookup = M.status_cache[git_root][path]
-        or M.status_cache[git_root][path .. utils.path_separator]
-      if direct_lookup then
-        i.filtered_by = i.filtered_by or {}
-        i.filtered_by.gitignored = true
-      end
-    until true
+    local direct_lookup = gs[i.path] or gs[i.path .. utils.path_separator]
+    if direct_lookup == "!" then
+      i.filtered_by = i.filtered_by or {}
+      i.filtered_by.gitignored = true
+    end
   end
 end
 
