@@ -13,6 +13,7 @@ M.status_cache = setmetatable({}, {
   __newindex = function(_, root_dir, status)
     require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(root_dir, function()
       rawset(M.status_cache, root_dir, nil)
+      events.fire_event(events.GIT_STATUS_CHANGED, { git_root = root_dir, status = status })
     end)
     rawset(M.status_cache, root_dir, status)
   end,
