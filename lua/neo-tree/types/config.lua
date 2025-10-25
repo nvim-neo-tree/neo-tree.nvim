@@ -121,6 +121,7 @@
 ---@field git_status_async boolean
 ---@field git_status_async_options neotree.Config.GitStatusAsync
 ---@field hide_root_node boolean
+---@field keep_altfile boolean
 ---@field retain_hidden_root_indent boolean
 ---@field log_level neotree.Logger.Config.Level
 ---@field log_to_file boolean|string
