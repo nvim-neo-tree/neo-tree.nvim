@@ -34,7 +34,7 @@ local config = {
   hide_root_node = false, -- Hide the root node.
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.
-  keep_altfile = false, -- Whether the `:h alternate-file` should stay as the file used before opening neo-tree
+  keep_altfile = false, -- Whether the `:h alternate-file` should stay as the file used before opening Neo-tree
   -- The minimum level of log statements that should be logged to the log file.
   log_level = vim.log.levels.INFO, -- or other vim.log.levels (up to .ERROR), or "trace", "debug", "info", "warn", "error", "fatal"
   -- For usabiliity, the minimum console log level = max(log_level, INFO) unless set explicitly using a table:
