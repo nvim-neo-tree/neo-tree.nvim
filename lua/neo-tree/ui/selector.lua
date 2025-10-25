@@ -192,6 +192,11 @@ M.get_scrolled_off_node_text = function(state)
       return
     end
   end
+
+  if not state.tree then
+    return
+  end
+
   local win_top_line = vim.fn.line("w0")
   if win_top_line == nil or win_top_line == 1 then
     return
