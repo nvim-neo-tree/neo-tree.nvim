@@ -312,6 +312,9 @@ M.status_async = function(path, base, opts)
         stdin:shutdown()
         stdout:shutdown()
         stderr:shutdown()
+        stdin:close()
+        stdout:close()
+        stderr:close()
 
         local do_next_batch_later
         do_next_batch_later = function()
