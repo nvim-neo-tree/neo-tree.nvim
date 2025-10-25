@@ -792,8 +792,6 @@ M.open_file = function(state, path, open_cmd, bufnr)
   local escaped_path = M.escape_path_for_cmd(relative and vim.fn.fnamemodify(path, ":.") or path)
   local bufnr_or_path = bufnr or escaped_path
   local events = require("neo-tree.events")
-  local result = true
-  local err = nil
   local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
     state = state,
     path = path,
@@ -811,6 +809,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
     command = "keepalt " .. command
   end
 
+  local result, err = true, nil
   if state.current_position == "current" then
     ---@diagnostic disable-next-line: param-type-mismatch
     result, err = pcall(vim.cmd, command)
