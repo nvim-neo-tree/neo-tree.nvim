@@ -103,6 +103,9 @@
 ---@field created neotree.Component.Common.Created?
 ---@field symlink_target neotree.Component.Common.SymlinkTarget?
 
+---@class neotree.Config.Trash
+---@field cmd neotree.trash.Command?
+
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
 ---@class (exact) neotree.Config.Base
@@ -141,6 +144,7 @@
 ---@field nesting_rules neotree.filenesting.Rule[]
 ---@field commands table<string, neotree.Config.TreeCommand?>
 ---@field window neotree.Config.Window
+---@field trash neotree.Config.Trash
 ---
 ---@field filesystem neotree.Config.Filesystem
 ---@field buffers neotree.Config.Buffers

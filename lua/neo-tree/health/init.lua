@@ -59,6 +59,9 @@ function M.check_config(config)
     function(cfg)
       ---@class neotree.health.Validator.Generators
       local v = {
+        ---@generic T
+        ---@param validator neotree.health.Validator<T>
+        ---@return fun(arr: T[])
         array = function(validator)
           ---@generic T
           ---@param arr T[]
@@ -177,6 +180,16 @@ function M.check_config(config)
       validate("sort_function", cfg.sort_function, "function", true)
       validate("use_popups_for_input", cfg.use_popups_for_input, "boolean")
       validate("use_default_mappings", cfg.use_default_mappings, "boolean")
+      validate("trash", cfg.trash, function(trash)
+        validate("cmd", trash.cmd, function(cmd)
+          if type(cmd) == "function" then
+            local cmd_output = cmd({ "neotree/test/update" })
+            validate("<command output>", cmd_output, v.array("string"), true)
+          elseif type(cmd) == "table" then
+            v.array("string")(cmd)
+          end
+        end, true)
+      end)
       validate("source_selector", cfg.source_selector, function(ss)
         validate("winbar", ss.winbar, "boolean")
         validate("statusline", ss.statusline, "boolean")
