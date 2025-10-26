@@ -5,7 +5,9 @@ local M = {}
 ---Either rm-like, or a custom list of commands
 ---@alias neotree.trash.Command string[]|fun(paths: string[]):string[][]?
 
----Returns a list of possible commands for a platform.
+---Returns a list of possible trash commands for the current platform.
+---The commands will either be raw string[] form (possibly executable) or a function that returns a list of those same raw commands.
+---It is on the function to determine whether or not its commands are already executable.
 ---@param paths string[]
 ---@return (neotree.trash.Command)[] possible_commands
 M.generate_commands = function(paths)
@@ -64,8 +66,8 @@ M.generate_commands = function(paths)
     })
   else
     vim.list_extend(commands, {
-      { "gio", "trash" }, -- Most universally available on modern Linux
-      { "trash" }, -- trash-cli (Python or Node.js)
+      { "gio", "trash" },
+      { "trash" }, -- trash-cli, usually
       function(p)
         local kioclient = utils.executable("kioclient5") or utils.executable("kioclient")
         if not kioclient then
