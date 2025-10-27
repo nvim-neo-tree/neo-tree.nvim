@@ -2,17 +2,18 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local M = {}
 
----Either rm-like, or a function that will do the trashing for you and return true/false.
+---Either rm-like command, or a function that either returns commands, or a true/false, err result.
+---Functions must not return commands when they are not executable.
 ---@alias neotree.trash.CommandOrFunction neotree.trash.Command|neotree.trash.Function
 
 ---@class neotree.trash.Command
 ---@field healthcheck fun(paths: string[]):boolean,string?
+---@field [integer] string
 
 ---@alias neotree.trash.Function fun(paths: string[]):string[][]|boolean,string?
 
----@param cmds string[][]
-local function run_cmds(cmds) end
-
+-- Using programs mentioned by
+-- https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
 local builtins = {
   macos = {
     { "trash" }, -- trash-cli, usually
@@ -82,18 +83,28 @@ local builtins = {
   },
 }
 
----Returns a list of possible trash commands for the current platform.
----The commands will either be raw string[] form (possibly executable) or a function that returns a list of those same raw commands.
----It is on the function to determine whether or not its commands are already executable.
+---@param cmds string[][]
+---@return boolean success
+---@return string[]? err
+---@return integer? failed_at
+local execute_trash_commands = function(cmds)
+  for i, cmd in ipairs(cmds) do
+    local success, err = utils.execute_command(cmd)
+    if not success then
+      return false, err, i
+    end
+  end
+  return true
+end
+
 ---@param paths string[]
----@return (neotree.trash.CommandOrFunction)[] possible_commands
-M.generate_commands = function(paths)
+---@return boolean success
+---@return string? err
+M.trash = function(paths)
   log.assert(#paths > 0)
   local commands = {
-    require("neo-tree").config.trash.cmd,
+    require("neo-tree").ensure_config().trash.cmd,
   }
-
-  -- Using code from https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
   if utils.is_macos then
     vim.list_extend(commands, builtins.macos)
   elseif utils.is_windows then
@@ -101,15 +112,8 @@ M.generate_commands = function(paths)
   else
     vim.list_extend(commands, builtins.linux)
   end
-  return commands
-end
 
----@param paths string[]
----@return boolean success
----@return string? err
-M.trash = function(paths)
-  local cmds = M.generate_commands(paths)
-  for _, command in ipairs(cmds) do
+  for _, command in ipairs(commands) do
     repeat
       if type(command) == "table" then
         if command.healthcheck then
@@ -127,10 +131,11 @@ M.trash = function(paths)
           unpack(command),
         }, paths)
         log.debug("Running trash command", full_command)
-        local trash_ok, output = utils.execute_command(full_command)
+        local trash_ok, output = execute_trash_commands({ full_command })
         if not trash_ok then
           return false, "Could not trash with " .. full_command .. ":" .. output
         end
+
         log.debug("Trashed", paths, "using", full_command)
         return true
       end
@@ -147,13 +152,16 @@ M.trash = function(paths)
         end
 
         if type(success) == "table" then
-          for _, cmd in ipairs(success) do
-            local trash_ok, output = utils.execute_command(cmd)
-            if not trash_ok then
-              return false, "Could not trash with " .. cmd .. ":" .. output
-            end
-            log.debug("Trashed", paths, "using", cmd)
+          local cmds = success
+          local trash_ok, output, failed_at = execute_trash_commands(cmds)
+          if not trash_ok then
+            return false,
+              "Could not trash with " .. table.concat(cmds[failed_at], " ") .. ":" .. output
           end
+
+          log.debug("Trashed", paths, "using", cmds)
+        else
+          log.debug("Trashed", paths, "using function")
         end
         return true
       end
