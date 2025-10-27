@@ -142,18 +142,20 @@ M.trash = function(paths)
           return false, table.concat({ "Invalid trash function: ", success, err })
         end
 
-        if success then
-          if type(success) == "table" then
-            for _, cmd in ipairs(success) do
-              local trash_ok, output = utils.execute_command(cmd)
-              if not trash_ok then
-                return false, "Could not trash with " .. cmd .. ":" .. output
-              end
-              log.debug("Trashed", paths, "using", cmd)
-            end
-          end
-          break -- try next command
+        if not success then
+          break -- try next cmd
         end
+
+        if type(success) == "table" then
+          for _, cmd in ipairs(success) do
+            local trash_ok, output = utils.execute_command(cmd)
+            if not trash_ok then
+              return false, "Could not trash with " .. cmd .. ":" .. output
+            end
+            log.debug("Trashed", paths, "using", cmd)
+          end
+        end
+        return true
       end
 
       return false, "Invalid trash command:" .. command
