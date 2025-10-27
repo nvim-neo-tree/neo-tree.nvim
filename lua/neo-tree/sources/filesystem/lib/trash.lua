@@ -2,14 +2,91 @@ local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local M = {}
 
----Either rm-like, or a custom list of commands
----@alias neotree.trash.Command string[]|fun(paths: string[]):string[][]?
+---Either rm-like, or a function that will do the trashing for you and return true/false.
+---@alias neotree.trash.CommandOrFunction neotree.trash.Command|neotree.trash.Function
+
+---@class neotree.trash.Command
+---@field healthcheck fun(paths: string[]):boolean,string?
+
+---@alias neotree.trash.Function fun(paths: string[]):string[][]|boolean,string?
+
+---@param cmds string[][]
+local function run_cmds(cmds) end
+
+local builtins = {
+  macos = {
+    { "trash" }, -- trash-cli, usually
+    function(p)
+      local cmds = {}
+      for i, path in ipairs(p) do
+        cmds[i] = {
+          "osascript",
+          "-e",
+          ('tell application "Finder" to delete POSIX file "%s"'):format(
+            path:gsub("\\", "\\\\"):gsub('"', '\\"')
+          ),
+        }
+      end
+      return cmds
+    end,
+  },
+  linux = {
+    {
+      "gio",
+      "trash",
+      healthcheck = function()
+        return utils.executable("gio") and utils.execute_command({ "gio", "trash", "--list" })
+      end,
+    },
+    { "trash" }, -- trash-cli, usually
+    function(p)
+      local kioclient = utils.executable("kioclient") or utils.executable("kioclient5")
+      if not kioclient then
+        return nil
+      end
+      local kioclient_cmds = {}
+      for _, path in ipairs(p) do
+        kioclient_cmds[#kioclient_cmds + 1] = { kioclient, "move", path, "trash:/" }
+      end
+      return kioclient_cmds
+    end,
+  },
+  windows = {
+    { "trash" }, -- trash-cli, usually
+    function(p)
+      local powershell = utils.executable("pwsh") or utils.executable("powershell")
+      if not powershell then
+        return nil
+      end
+
+      local cmd = {
+        powershell,
+        "-NoProfile",
+        "-Command",
+      }
+
+      local pwsh_cmds = {
+        "Add-Type -AssemblyName Microsoft.VisualBasic;",
+      }
+      for _, path in ipairs(p) do
+        local escaped = path:gsub("\\", "\\\\"):gsub("'", "''")
+        pwsh_cmds[#pwsh_cmds + 1] = ("[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s','OnlyErrorDialogs', 'SendToRecycleBin');"):format(
+          escaped
+        )
+      end
+      cmd[#cmd + 1] = table.concat(pwsh_cmds, " ")
+      return {
+        cmd,
+      }
+    end,
+  },
+}
 
 ---Returns a list of possible trash commands for the current platform.
 ---The commands will either be raw string[] form (possibly executable) or a function that returns a list of those same raw commands.
 ---It is on the function to determine whether or not its commands are already executable.
 ---@param paths string[]
----@return (neotree.trash.Command)[] possible_commands
+---@return (neotree.trash.CommandOrFunction)[] possible_commands
 M.generate_commands = function(paths)
   log.assert(#paths > 0)
   local commands = {
@@ -18,68 +95,11 @@ M.generate_commands = function(paths)
 
   -- Using code from https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
   if utils.is_macos then
-    vim.list_extend(commands, {
-      { "trash" }, -- trash-cli (Python or Node.js)
-      function(p)
-        local cmds = {}
-        for i, path in ipairs(p) do
-          cmds[i] = {
-            "osascript",
-            "-e",
-            ('tell application "Finder" to delete POSIX file "%s"'):format(
-              path:gsub("\\", "\\\\"):gsub('"', '\\"')
-            ),
-          }
-        end
-        return cmds
-      end,
-    })
+    vim.list_extend(commands, builtins.macos)
   elseif utils.is_windows then
-    vim.list_extend(commands, {
-      { "trash" }, -- trash-cli (Python or Node.js)
-      function(p)
-        local powershell = utils.executable("pwsh") or utils.executable("powershell")
-        if not powershell then
-          return nil
-        end
-
-        local cmd = {
-          powershell,
-          "-NoProfile",
-          "-Command",
-        }
-
-        local pwsh_cmds = {
-          "Add-Type -AssemblyName Microsoft.VisualBasic;",
-        }
-        for _, path in ipairs(p) do
-          local escaped = path:gsub("\\", "\\\\"):gsub("'", "''")
-          pwsh_cmds[#pwsh_cmds + 1] = ("[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s','OnlyErrorDialogs', 'SendToRecycleBin');"):format(
-            escaped
-          )
-        end
-        cmd[#cmd + 1] = table.concat(pwsh_cmds, " ")
-        return {
-          cmd,
-        }
-      end,
-    })
+    vim.list_extend(commands, builtins.windows)
   else
-    vim.list_extend(commands, {
-      { "gio", "trash" },
-      { "trash" }, -- trash-cli, usually
-      function(p)
-        local kioclient = utils.executable("kioclient5") or utils.executable("kioclient")
-        if not kioclient then
-          return nil
-        end
-        local kioclient_cmds = {}
-        for _, path in ipairs(p) do
-          kioclient_cmds[#kioclient_cmds + 1] = { kioclient, "move", path, "trash:/" }
-        end
-        return kioclient_cmds
-      end,
-    })
+    vim.list_extend(commands, builtins.linux)
   end
   return commands
 end
@@ -92,7 +112,13 @@ M.trash = function(paths)
   for _, command in ipairs(cmds) do
     repeat
       if type(command) == "table" then
-        if not utils.executable(command[1]) then
+        if command.healthcheck then
+          local command_ok, err = command.healthcheck(paths)
+          if not command_ok then
+            log.debug("Trash command", command, "failed healthcheck:", err)
+            break -- try next command
+          end
+        elseif not utils.executable(command[1]) then
           log.debug("Trash command", command, "not executable")
           break -- try next command
         end
@@ -110,26 +136,30 @@ M.trash = function(paths)
       end
 
       if type(command) == "function" then
-        local commands = command(paths)
-        if not commands then
-          break -- try next command
+        local command_ok, success, err = pcall(command, paths)
+        log.debug("Trash function result:", command_ok, success, err)
+        if not command_ok then
+          return false, table.concat({ "Invalid trash function: ", success, err })
         end
 
-        for _, cmd in ipairs(commands) do
-          -- assume it's already executable
-          local trash_ok = utils.execute_command(cmd)
-          if not trash_ok then
-            return false,
-              "Error executing trash command " .. table.concat(cmd, " ") .. ", aborting operation."
+        if success then
+          if type(success) == "table" then
+            for _, cmd in ipairs(success) do
+              local trash_ok, output = utils.execute_command(cmd)
+              if not trash_ok then
+                return false, "Could not trash with " .. cmd .. ":" .. output
+              end
+              log.debug("Trashed", paths, "using", cmd)
+            end
           end
+          break -- try next command
         end
-        return true
       end
 
       return false, "Invalid trash command:" .. command
     until true
   end
-  return false
+  return false, "No trash commands or functions worked."
 end
 
 return M
