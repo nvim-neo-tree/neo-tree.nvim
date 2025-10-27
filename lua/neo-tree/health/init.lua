@@ -62,12 +62,9 @@ function M.check()
 
   health.start("Trash executables (prioritized in descending order)")
   if utils.is_windows then
-    check_executable(
-      "trash",
-      "(usually from https://github.com/andreafrancia/trash-cli or similar)"
-    )
-    if not check_executable("pwsh", "(builtin)") then
-      check_executable("powershell", "(builtin)")
+    check_executable("trash", "(from https://github.com/sindresorhus/trash#cli or similar)")
+    if not check_executable("pwsh", "(https://github.com/PowerShell/PowerShell)") then
+      check_executable("powershell", "(builtin Windows PowerShell)")
     end
   elseif utils.is_macos then
     check_executable("trash", "(builtin)")
@@ -75,13 +72,10 @@ function M.check()
   else
     if check_executable("gio", "(from glib2)") then
       if not utils.execute_command({ "gio", "trash", "--list" }) then
-        health.warn("gio trash --list failed, maybe you need `gvfs` installed?")
+        health.warn("`gio trash` --list failed, maybe you need `gvfs` installed?")
       end
     end
-    check_executable(
-      "trash",
-      "(usually from https://github.com/andreafrancia/trash-cli or similar)"
-    )
+    check_executable("trash", "(from https://github.com/andreafrancia/trash-cli or similar)")
     if not check_executable("kioclient") then
       check_executable("kioclient5")
     end
