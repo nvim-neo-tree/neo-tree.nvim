@@ -199,7 +199,7 @@ local function create_item(context, path, _type, bufnr)
   if item.type == "link" then
     ---@cast item neotree.FileItem.Link
     item.is_link = true
-    item.link_to = uv.fs_realpath(path)
+    item.link_to = uv.fs_readlink(path)
     if item.link_to then
       local link_to_stat = uv.fs_stat(item.path)
       if link_to_stat then
