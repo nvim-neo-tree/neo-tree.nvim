@@ -7,6 +7,7 @@ local M = {}
 
 ---@class neotree.trash.PureCommand
 ---@field healthcheck? fun(paths: string[]):boolean,string?
+---@field list? fun():boolean,string?
 ---@field [integer] string
 
 ---A function that may return commands to execute, in order.
@@ -17,9 +18,9 @@ local M = {}
 
 -- Using programs mentioned by
 -- https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
-local builtins = {
+local trash_builtins = {
   macos = {
-    { "trash" }, -- trash-cli, usually
+    { "trash" }, -- trash-cli, usually https://github.com/andreafrancia/trash-cli
     function(p)
       local cmds = {}
       for i, path in ipairs(p) do
@@ -42,7 +43,7 @@ local builtins = {
         return utils.executable("gio") and utils.execute_command({ "gio", "trash", "--list" })
       end,
     },
-    { "trash" }, -- trash-cli, usually
+    { "trash" }, -- trash-cli, usually https://github.com/andreafrancia/trash-cli
     function(p)
       local kioclient = utils.executable("kioclient") or utils.executable("kioclient5")
       if not kioclient then
@@ -56,7 +57,7 @@ local builtins = {
     end,
   },
   windows = {
-    { "trash" }, -- trash-cli, usually
+    { "trash" }, -- trash-cli, usually https://github.com/sindresorhus/trash#cli
     function(p)
       local powershell = utils.executable("pwsh") or utils.executable("powershell")
       if not powershell then
@@ -110,11 +111,11 @@ M.trash = function(paths)
     require("neo-tree").ensure_config().trash.cmd,
   }
   if utils.is_macos then
-    vim.list_extend(commands, builtins.macos)
+    vim.list_extend(commands, trash_builtins.macos)
   elseif utils.is_windows then
-    vim.list_extend(commands, builtins.windows)
+    vim.list_extend(commands, trash_builtins.windows)
   else
-    vim.list_extend(commands, builtins.linux)
+    vim.list_extend(commands, trash_builtins.linux)
   end
 
   ---@type string[][]
