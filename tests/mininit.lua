@@ -16,3 +16,23 @@ vim.cmd.source(root_dir .. "/plugin/neo-tree.lua")
 
 vim.g.mapleader = " "
 vim.keymap.set("n", "<Leader>e", "<Cmd>Neotree<CR>")
+require("neo-tree").setup({
+  trash = {
+    ---@type neotree.trash.FunctionGenerator
+    command = function(paths)
+      if not setup then
+        return nil -- defer to built-ins
+      end
+      return function()
+        for i, p in ipairs(paths) do
+          -- ... logic to trash the given paths
+          if something_failed then
+            return false, err
+          end
+        end
+
+        return true
+      end
+    end,
+  },
+})

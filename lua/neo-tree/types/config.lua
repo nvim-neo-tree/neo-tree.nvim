@@ -104,7 +104,7 @@
 ---@field symlink_target neotree.Component.Common.SymlinkTarget?
 
 ---@class neotree.Config.Trash
----@field cmd neotree.trash.CommandOrFunction?
+---@field cmd neotree.trash.Command?
 
 ---@alias neotree.Config.BorderStyle "NC"|"rounded"|"single"|"solid"|"double"|""
 
