@@ -1,16 +1,19 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
+local validate = require("neo-tree.health.typecheck").validate
 local M = {}
 
----Either rm-like command, or a function that either returns commands, or a true/false, err result.
----Functions must not return commands when they are not executable.
----@alias neotree.trash.CommandOrFunction neotree.trash.Command|neotree.trash.Function
+---@alias neotree.trash.Command neotree.trash.PureCommand|neotree.trash.FunctionGenerator|neotree.trash.CommandGenerator
 
----@class neotree.trash.Command
----@field healthcheck fun(paths: string[]):boolean,string?
+---@class neotree.trash.PureCommand
+---@field healthcheck? fun(paths: string[]):boolean,string?
 ---@field [integer] string
 
----@alias neotree.trash.Function fun(paths: string[]):string[][]|boolean,string?
+---A function that may return commands to execute, in order.
+---@alias neotree.trash.CommandGenerator fun(paths: string[]):neotree.trash.PureCommand[]?
+
+---A function that may return a function that will do the trashing.
+---@alias neotree.trash.FunctionGenerator fun(paths: string[]):((fun():success: boolean, err: string?)?)
 
 -- Using programs mentioned by
 -- https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
@@ -67,11 +70,12 @@ local builtins = {
       }
 
       local pwsh_cmds = {
-        "Add-Type -AssemblyName Microsoft.VisualBasic;",
+        "$shell = New-Object -ComObject 'Shell.Application';",
+        "$folder = $shell.NameSpace(0);",
       }
       for _, path in ipairs(p) do
         local escaped = path:gsub("\\", "\\\\"):gsub("'", "''")
-        pwsh_cmds[#pwsh_cmds + 1] = ("[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s','OnlyErrorDialogs', 'SendToRecycleBin');"):format(
+        pwsh_cmds[#pwsh_cmds + 1] = ([[$path = Get-Item '%s'; $folder.ParseName($path.FullName).InvokeVerb('delete');]]):format(
           escaped
         )
       end
@@ -113,8 +117,35 @@ M.trash = function(paths)
     vim.list_extend(commands, builtins.linux)
   end
 
+  ---@type string[][]
   for _, command in ipairs(commands) do
     repeat
+      if type(command) == "function" then
+        local res, err = command(paths)
+        log.debug("Trash function result:", res, err)
+        if not res then
+          break -- try next command
+        end
+
+        if type(res) == "table" then
+          local cmds = res
+          local trash_ok, output, failed_at = execute_trash_commands(cmds)
+          if not trash_ok then
+            return false,
+              "Trash commands failed at " .. table.concat(cmds[failed_at], " ") .. ":" .. output
+          end
+
+          log.debug("Trashed", paths, "using", cmds)
+        elseif type(res) == "function" then
+          local trash_ok, trashfunc_err = res()
+          if not trash_ok then
+            return false, "Trash function failed: " .. (trashfunc_err or "<no error returned>")
+          end
+          log.debug("Trashed", paths, "using function")
+        end
+        return true
+      end
+
       if type(command) == "table" then
         if command.healthcheck then
           local command_ok, err = command.healthcheck(paths)
@@ -137,32 +168,6 @@ M.trash = function(paths)
         end
 
         log.debug("Trashed", paths, "using", full_command)
-        return true
-      end
-
-      if type(command) == "function" then
-        local command_ok, success, err = pcall(command, paths)
-        log.debug("Trash function result:", command_ok, success, err)
-        if not command_ok then
-          return false, table.concat({ "Invalid trash function: ", success, err })
-        end
-
-        if not success then
-          break -- try next cmd
-        end
-
-        if type(success) == "table" then
-          local cmds = success
-          local trash_ok, output, failed_at = execute_trash_commands(cmds)
-          if not trash_ok then
-            return false,
-              "Could not trash with " .. table.concat(cmds[failed_at], " ") .. ":" .. output
-          end
-
-          log.debug("Trashed", paths, "using", cmds)
-        else
-          log.debug("Trashed", paths, "using function")
-        end
         return true
       end
 
