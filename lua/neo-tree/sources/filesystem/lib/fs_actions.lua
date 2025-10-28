@@ -704,22 +704,19 @@ M.trash_node = function(path, callback, noconfirm)
   end
 
   local do_trash = function()
-    local complete = vim.schedule_wrap(function()
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if not event_result.handled then
+      log.assert(trash.trash({ path }))
+      log.info("Trashed", path)
+      return
+    end
+
+    vim.schedule(function()
       events.fire_event(events.FILE_DELETED, path)
       if callback then
         callback(path)
       end
     end)
-
-    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
-    if event_result.handled then
-      complete()
-      return
-    end
-
-    log.assert(trash.trash({ path }))
-    log.info("Trashed", path)
-    complete()
   end
 
   if noconfirm then

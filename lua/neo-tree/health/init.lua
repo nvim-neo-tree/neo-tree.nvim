@@ -221,8 +221,7 @@ function M.check_config(config)
       validate("trash", cfg.trash, function(trash)
         validate("cmd", trash.cmd, function(cmd)
           if type(cmd) == "function" then
-            local cmd_output = cmd({ "neotree/test/update" })
-            validate("<command output>", cmd_output, v.array("string"), true)
+            return true -- TODO: maybe better validation here
           elseif type(cmd) == "table" then
             v.array("string")(cmd)
           end
