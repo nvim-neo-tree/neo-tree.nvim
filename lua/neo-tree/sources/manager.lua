@@ -262,7 +262,11 @@ M.get_path_to_reveal = function(include_terminals)
     return abspath
   end
 
-  return utils.path_join(vim.fn.getcwd(), utils.normalize_path(buf_relpath))
+  if utils.is_windows then
+    buf_relpath = utils.windowize_path(buf_relpath)
+  end
+
+  return utils.path_join(vim.fn.getcwd(), buf_relpath)
 end
 
 ---@param source_name string

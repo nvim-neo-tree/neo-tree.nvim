@@ -141,41 +141,37 @@ local function path_resolve_dot(path)
   return (is_path_absolute and "/" or "") .. table.concat(new_path_components, "/")
 end
 
---- Expand tilde (~) character at the beginning of the path to the user's home directory.
----
---- @param path string Path to expand.
---- @param sep string|nil Path separator to use. Uses os_sep by default.
---- @return string Expanded path.
-local function expand_home(path, sep)
-  sep = sep or require("neo-tree.utils").path_separator
-
-  if vim.startswith(path, "~") then
-    local home = uv.os_homedir() or "~" --- @type string
-
-    if home:sub(-1) == sep then
-      home = home:sub(1, -2)
-    end
-
-    path = home .. path:sub(2) --- @type string
-  end
-
-  return path
+local user = uv.os_get_passwd().username
+local path_segment_ends = { "/", "\\", "" }
+---@param c string
+---@return boolean
+local function path_segment_ends_at(path, i)
+  return vim.tbl_contains(path_segment_ends, path:sub(i, i))
 end
-
---- Backporting vim.fs.normalize from neovim 0.11
+--- A modified vim.fs.normalize from neovim 0.11, (removed path normalization to /, proper home expansion)
 function compat.fs_normalize(path, opts)
   opts = opts or {}
 
   local win = opts.win == nil and require("neo-tree.utils").is_windows or not not opts.win
-  local os_sep_local = win and "\\" or "/"
+  local os_sep = win and "\\" or "/"
 
   -- Empty path is already normalized
   if path == "" then
     return ""
   end
 
-  -- Expand ~ to user's home directory
-  path = expand_home(path, os_sep_local)
+  if path:sub(1, 1) == "~" then
+    local home = uv.os_homedir() or "~" --- @type string
+    if home:sub(-1) == os_sep then
+      home = home:sub(1, -2)
+    end
+
+    if path_segment_ends_at(path, 2) then
+      path = home .. path:sub(2)
+    elseif vim.startswith(path, "~" .. user) and path_segment_ends_at(path, 2 + #user) then
+      path = home .. path:sub(#user + 2) --- @type string
+    end
+  end
 
   -- Expand environment variables if `opts.expand_env` isn't `false`
   if opts.expand_env == nil or opts.expand_env then
@@ -184,7 +180,7 @@ function compat.fs_normalize(path, opts)
 
   if win then
     -- Convert path separator to `/`
-    path = path:gsub(os_sep_local, "/")
+    path = path:gsub(os_sep, "/")
   end
 
   -- Check for double slashes at the start of the path because they have special meaning
