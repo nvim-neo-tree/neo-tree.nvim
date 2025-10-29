@@ -60,6 +60,9 @@ local config = {
   sort_function = nil , -- uses a custom function for sorting files and directories in the tree
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   use_default_mappings = true,
+  trash = {
+    cmd = nil -- by default: powershell script on windows, `trash` or `osascript` on macOS, and `gio trash` or `trash` (like trash-cli) on other Unixes
+  },
   -- source_selector provides clickable tabs to switch between sources.
   source_selector = {
     winbar = false, -- toggle to show selector on winbar
@@ -451,6 +454,8 @@ local config = {
       },
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
+      -- ["d"] = "trash",
+      ["T"] = "trash",
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",
