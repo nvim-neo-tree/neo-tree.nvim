@@ -231,6 +231,7 @@ handle_reveal = function(args, state)
     return
   end
 
+  log.debug("Prompting for change cwd", args)
   -- force was not specified and the file does not belong to cwd, so we need to ask the user
   inputs.confirm("File not in cwd. Change cwd to " .. reveal_file_parent .. "?", function(response)
     if response == true then

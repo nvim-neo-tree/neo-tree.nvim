@@ -887,10 +887,7 @@ M.resolve_config_option = function(state, config_option, default_value)
   end
 end
 
-local fs_normalize = vim.fs.normalize
-if vim.fn.has("nvim-0.11") == 0 then
-  fs_normalize = compat.fs_normalize
-end
+local fs_normalize = compat.fs_normalize
 
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
