@@ -149,7 +149,7 @@ local path_segment_ends = { "/", "\\", "" }
 local function path_segment_ends_at(path, i)
   return vim.tbl_contains(path_segment_ends, path:sub(i, i))
 end
---- A modified vim.fs.normalize from neovim 0.11, (removed path normalization to /, proper home expansion)
+--- A modified vim.fs.normalize from neovim 0.11, with proper home expansion
 function compat.fs_normalize(path, opts)
   opts = opts or {}
 
