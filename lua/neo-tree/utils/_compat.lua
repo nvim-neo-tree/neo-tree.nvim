@@ -143,7 +143,8 @@ end
 
 local user = uv.os_get_passwd().username
 local path_segment_ends = { "/", "\\", "" }
----@param c string
+---@param path string
+---@param i integer
 ---@return boolean
 local function path_segment_ends_at(path, i)
   return vim.tbl_contains(path_segment_ends, path:sub(i, i))
