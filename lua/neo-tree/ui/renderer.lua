@@ -559,7 +559,7 @@ M.focus_node = function(state, id, do_not_focus_window, relative_movement, botto
           vim.cmd("normal! zz")
         end)
       end
-      M.position.save(state)
+      M.position.save(state, true)
     else
       log.debug("Failed to set cursor:" .. err)
     end
@@ -709,7 +709,8 @@ M.position.save = function(state, force)
 
   -- Save last visual selection in the neo-tree buffer
   local curbuf = vim.api.nvim_get_current_buf()
-  if state.bufnr == curbuf and vim.tbl_contains(visual_modes, vim.api.nvim_get_mode().mode) then
+  local curmode = vim.api.nvim_get_mode().mode
+  if state.bufnr == curbuf and curmode ~= "n" and vim.tbl_contains(visual_modes, curmode) then
     local a = vim.fn.getpos(".")
     local b = vim.fn.getpos("v")
     state.position.visual_selection = { a, b }
