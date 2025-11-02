@@ -7,7 +7,6 @@ local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
 local events = require("neo-tree.events")
 local keymap = require("nui.utils.keymap")
-local autocmd = require("nui.utils.autocmd")
 local log = require("neo-tree.log")
 local windows = require("neo-tree.ui.windows")
 local nt = require("neo-tree")
@@ -1039,6 +1038,56 @@ local function create_floating_window(state, win_options, bufname)
   return win
 end
 
+---Tracks position for the neo-tree bufnr
+---@param nt_bufnr integer
+---@param state neotree.State
+local attach_position_autocmds = function(nt_bufnr, state)
+  local autocmd = vim.api.nvim_create_autocmd
+  local wait_for_save = false
+  autocmd("BufDelete", {
+    buffer = nt_bufnr,
+    callback = function(args)
+      if args.buf == nt_bufnr then
+        M.position.save(state)
+      end
+    end,
+  })
+
+  autocmd({ "CursorMoved", "ModeChanged" }, {
+    buffer = nt_bufnr,
+    callback = function(args)
+      if state.bufnr ~= args.buf then
+        return
+      end
+
+      if not wait_for_save then
+        M.position.save(state, true)
+        return
+      end
+      if M.position.save(state) then
+        wait_for_save = false
+      end
+    end,
+  })
+
+  autocmd({ "WinEnter" }, {
+    buffer = nt_bufnr,
+    callback = function(args)
+      M.position.restore_selection(state)
+      if state.bufnr ~= args.buf then
+        wait_for_save = true
+        return
+      end
+
+      M.position.restore(state)
+      wait_for_save = false
+    end,
+  })
+end
+
+---Tries to reuse a neo-tree buffer, or creates a new one.
+---@param bufname string
+---@param state neotree.State
 local get_buffer = function(bufname, state)
   local bufnr = vim.fn.bufnr(bufname)
   if bufnr > 0 then
@@ -1057,9 +1106,7 @@ local get_buffer = function(bufname, state)
     vim.bo[bufnr].filetype = "neo-tree"
     vim.bo[bufnr].modifiable = false
     vim.bo[bufnr].undolevels = -1
-    autocmd.buf.define(bufnr, "BufDelete", function()
-      M.position.save(state)
-    end)
+    attach_position_autocmds(bufnr, state)
   end
   return bufnr
 end
@@ -1160,37 +1207,11 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
 
-  if win ~= nil then
+  if win then
     vim.api.nvim_buf_set_name(state.bufnr, bufname)
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
-    local wait_for_save = true
-    win:on({ "CursorMoved", "ModeChanged" }, function()
-      if state.winid == vim.api.nvim_get_current_win() then
-        if not wait_for_save then
-          M.position.save(state, true)
-        elseif M.position.save(state) then
-          wait_for_save = false
-        end
-      end
-    end)
-    win:on({ "BufDelete" }, function()
-      M.position.save(state)
-    end)
-    win:on({ "WinEnter" }, function()
-      M.position.restore_selection(state)
-      if state.winid == vim.api.nvim_get_current_win() then
-        M.position.restore(state)
-        wait_for_save = false
-      else
-        wait_for_save = true
-      end
-    end)
-    win:on({ "BufDelete" }, function()
-      vim.schedule(function()
-        win:unmount()
-      end)
-    end, { once = true })
+    attach_position_autocmds(state.bufnr, state)
   end
 
   set_buffer_mappings(state)
