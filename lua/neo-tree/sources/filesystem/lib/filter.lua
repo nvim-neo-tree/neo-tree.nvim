@@ -122,16 +122,6 @@ M.show_filter = function(
           return
         end
         state.search_pattern = value
-        manager.refresh("filesystem", function()
-          -- focus first file
-          local nodes = renderer.get_all_visible_nodes(state.tree)
-          for _, node in ipairs(nodes) do
-            if node.type == "file" then
-              renderer.focus_node(state, node:get_id(), false)
-              break
-            end
-          end
-        end)
       end
     end,
     --this can be bad in a deep folder structure
