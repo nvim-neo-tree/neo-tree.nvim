@@ -141,7 +141,13 @@ local function path_resolve_dot(path)
   return (is_path_absolute and "/" or "") .. table.concat(new_path_components, "/")
 end
 
-local user = uv.os_get_passwd().username
+local ok, passwd = pcall(uv.os_get_passwd)
+---@type string?
+local user
+if ok then
+  user = passwd.username
+end
+
 local path_segment_ends = { "/", "\\", "" }
 ---@param path string
 ---@param i integer
@@ -169,7 +175,7 @@ function compat.fs_normalize(path, opts)
 
     if path_segment_ends_at(path, 2) then
       path = home .. path:sub(2)
-    elseif vim.startswith(path, "~" .. user) and path_segment_ends_at(path, 2 + #user) then
+    elseif user and vim.startswith(path, "~" .. user) and path_segment_ends_at(path, 2 + #user) then
       path = home .. path:sub(#user + 2) --- @type string
     end
   end
