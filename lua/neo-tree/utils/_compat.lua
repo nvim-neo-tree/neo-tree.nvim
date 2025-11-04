@@ -141,12 +141,9 @@ local function path_resolve_dot(path)
   return (is_path_absolute and "/" or "") .. table.concat(new_path_components, "/")
 end
 
-local ok, passwd = pcall(uv.os_get_passwd)
+local passwd = uv.os_get_passwd()
 ---@type string?
-local user
-if ok then
-  user = passwd.username
-end
+local user = passwd and passwd.username or nil
 
 local path_segment_ends = { "/", "\\", "" }
 ---@param path string
