@@ -26,14 +26,16 @@ M.get_git_status = function(state)
 
   if status_lookup then
     for path, status in pairs(status_lookup) do
-      local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
-      if success then
-        item.status = status
-        item.extra = {
-          git_status = status,
-        }
-      else
-        log.error("Error creating item for " .. path .. ": " .. item)
+      if status ~= "!" then
+        local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
+        if success then
+          item.status = status
+          item.extra = {
+            git_status = status,
+          }
+        else
+          log.error("Error creating item for " .. path .. ": " .. item)
+        end
       end
     end
     state.git_status_lookup = status_lookup

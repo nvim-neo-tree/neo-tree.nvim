@@ -254,13 +254,10 @@ M.status = function(base, skip_bubbling, path)
   return context.git_status, git_root
 end
 
-local count = 1
 ---@param path string path to run commands in
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
-  vim.print("calling status", count)
-  count = count + 1
   M.get_repository_root(path, function(git_root)
     if not git_root then
       log.trace("status_async: not a git folder:", path)
