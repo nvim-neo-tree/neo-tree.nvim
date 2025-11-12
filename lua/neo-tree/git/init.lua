@@ -254,10 +254,13 @@ M.status = function(base, skip_bubbling, path)
   return context.git_status, git_root
 end
 
+local count = 1
 ---@param path string path to run commands in
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
+  vim.print("calling status", count)
+  count = count + 1
   M.get_repository_root(path, function(git_root)
     if not git_root then
       log.trace("status_async: not a git folder:", path)
@@ -268,18 +271,18 @@ M.status_async = function(path, base, opts)
     log.trace("git.status.status_async called")
 
     local event_id = "git_status_" .. git_root
-    ---@type neotree.git.Context
-    local context = {
-      git_root = git_root,
-      git_status = {},
-      lines = {},
-      lines_parsed = 0,
-      batch_size = opts.batch_size or 1000,
-      batch_delay = opts.batch_delay or 10,
-      max_lines = opts.max_lines or 100000,
-    }
 
     utils.debounce(event_id, function()
+      ---@type neotree.git.Context
+      local context = {
+        git_root = git_root,
+        git_status = {},
+        lines = {},
+        lines_parsed = 0,
+        batch_size = opts.batch_size or 1000,
+        batch_delay = opts.batch_delay or 10,
+        max_lines = opts.max_lines or 100000,
+      }
       local stdin = log.assert(uv.new_pipe())
       local stdout = log.assert(uv.new_pipe())
       local stderr = log.assert(uv.new_pipe())
