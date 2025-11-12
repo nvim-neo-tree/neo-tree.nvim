@@ -24,19 +24,21 @@ M.get_git_status = function(state)
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
 
-  for path, status in pairs(status_lookup) do
-    local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
-    if success then
-      item.status = status
-      item.extra = {
-        git_status = status,
-      }
-    else
-      log.error("Error creating item for " .. path .. ": " .. item)
+  if status_lookup then
+    for path, status in pairs(status_lookup) do
+      local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
+      if success then
+        item.status = status
+        item.extra = {
+          git_status = status,
+        }
+      else
+        log.error("Error creating item for " .. path .. ": " .. item)
+      end
     end
+    state.git_status_lookup = status_lookup
   end
 
-  state.git_status_lookup = status_lookup
   state.default_expanded_nodes = {}
   for id, _ in pairs(context.folders) do
     table.insert(state.default_expanded_nodes, id)
