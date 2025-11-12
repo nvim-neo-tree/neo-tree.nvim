@@ -578,7 +578,7 @@ M.show_file_details = function(state)
   table.insert(left, "Name")
   table.insert(right, node.name)
   table.insert(left, "Path")
-  table.insert(right, node:get_id())
+  table.insert(right, node.path)
   table.insert(left, "Type")
   table.insert(right, node.type)
   if stat.size then
@@ -590,6 +590,11 @@ M.show_file_details = function(state)
     table.insert(left, "Modified")
     local modified_format = state.config.modified_format or default_filetime_format
     table.insert(right, utils.date(modified_format, stat.mtime.sec))
+  end
+
+  if state.git_status_lookup and state.git_status_lookup[node.path] then
+    table.insert(left, "Git code")
+    table.insert(right, state.git_status_lookup[node.path])
   end
 
   local lines = {}

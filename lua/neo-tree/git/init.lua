@@ -37,7 +37,7 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
   if batch_size == 0 then
     batch_size = nil
   end
-  local yield_if_batch_completed = function() end
+  local yield_if_batch_completed
 
   if batch_size then
     yield_if_batch_completed = function()
@@ -129,7 +129,9 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
     -- D           U    unmerged, deleted by us
     -- A           A    unmerged, both added
     -- U           U    unmerged, both modified
-    yield_if_batch_completed()
+    if batch_size then
+      yield_if_batch_completed()
+    end
   end
 
   -- -------------------------------------------------
@@ -145,7 +147,9 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
       end
       git_status[git_root_dir .. line:sub(3)] = "?"
     end
-    yield_if_batch_completed()
+    if batch_size then
+      yield_if_batch_completed()
+    end
   end
 
   if not skip_bubbling then
@@ -178,15 +182,20 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
           end
         end
       end
-      yield_if_batch_completed()
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   end
+
   if prev_line:sub(1, 1) == "!" then
     git_status[git_root_dir .. prev_line:sub(3)] = "!"
     for line in status_iter do
       git_status[git_root_dir .. line:sub(3)] = "!"
     end
-    yield_if_batch_completed()
+    if batch_size then
+      yield_if_batch_completed()
+    end
   end
 
   M.status_cache[git_root] = git_status
