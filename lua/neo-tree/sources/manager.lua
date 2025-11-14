@@ -218,7 +218,7 @@ end
 ---@param source_name string
 ---@param tabid integer?
 ---@param winid integer?
----@param override neotree.PartialState
+---@param override table
 ---@return neotree.State new_state
 M._change_state = function(source_name, tabid, winid, override)
   assert(source_name, "get_state: source_name cannot be nil")

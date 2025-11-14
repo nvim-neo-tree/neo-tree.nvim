@@ -33,13 +33,12 @@ M._last = {
 ---@field dir string? The root directory to set.
 ---@field git_base string? The git base used for diff
 
----@class (partial) neotree.PartialState : neotree.State, neotree.sources.filesystem.State
+---@class (partial) neotree.command.execute.StateConfigOverride : neotree.Config.Filesystem, neotree.Config.Buffers, neotree.Config.GitStatus, neotree.Config.DocumentSymbols
 
----Executes a Neo-tree action from outside of a Neo-tree window,
----such as show, hide, navigate, etc.
+---Executes a Neo-tree command, like focus/show/close.
 ---@param args neotree.command.execute.Args
----@param state_override neotree.PartialState?
-M.execute = function(args, state_override)
+---@param state_config_override neotree.command.execute.StateConfigOverride?
+M.execute = function(args, state_config_override)
   local nt = require("neo-tree")
   nt.ensure_config()
 
@@ -96,13 +95,13 @@ M.execute = function(args, state_override)
   if requested_position == "current" then
     local winid = vim.api.nvim_get_current_win()
     state = manager.get_state(args.source, nil, winid)
-    if state_override then
-      state = manager.change_state(args.source, nil, winid, state_override)
+    if state_config_override then
+      state = manager._change_state(args.source, nil, winid, state_config_override)
     end
   else
     state = manager.get_state(args.source, nil, nil)
-    if state_override then
-      state = manager.change_state(args.source, nil, nil, state_override)
+    if state_config_override then
+      state = manager._change_state(args.source, nil, nil, state_config_override)
     end
   end
 
