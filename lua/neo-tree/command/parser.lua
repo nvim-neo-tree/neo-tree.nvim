@@ -184,7 +184,7 @@ end
 
 ---@param args string|string[]
 ---@param strict_checking boolean
----@return neotree.command.Parser.Parsed parsed_args
+---@return neotree.command.execute.Args parsed_args
 M.parse = function(args, strict_checking)
   require("neo-tree").ensure_config()
   local result = {}

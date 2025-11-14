@@ -17,33 +17,29 @@ M._last = {
   position = nil,
 }
 
+---@class neotree.command.execute.Args
+---The action to execute
+---@field action string|"focus"|"show"|"close"?
+---The source to use for this action. This will default to the default_source specified in the user's config.
+---@field source string|"filesystem"|"buffers"|"git_status"|"migrations"|"last"?
+---The position this action will affect. This will default to the the last used position or the position specified in
+---the user's config for the given source.
+---@field position string|"left"|"right"|"float"|"current"?
+---@field toggle boolean? Whether to toggle the visibility of the Neo-tree window.
+---@field selector boolean? Whether to toggle the visibility of the Neo-tree window.
+---@field reveal boolean? Whether to reveal the current file in the Neo-tree window.
+---@field reveal_file string? The specific file to reveal.
+---@field reveal_force_cwd boolean? Whether to always change directories when a reveal file is outside the cwd.
+---@field dir string? The root directory to set.
+---@field git_base string? The git base used for diff
+
+---@class (partial) neotree.PartialState : neotree.State, neotree.sources.filesystem.State
+
 ---Executes a Neo-tree action from outside of a Neo-tree window,
 ---such as show, hide, navigate, etc.
----@param args table The action to execute. The table can have the following keys:
----  action = string   The action to execute, can be one of:
----                    "close",
----                    "focus", <-- default value
----                    "show",
----  source = string   The source to use for this action. This will default
----                    to the default_source specified in the user's config.
----                    Can be one of:
----                    "filesystem",
----                    "buffers",
----                    "git_status",
---                     "migrations"
----  position = string The position this action will affect. This will default
----                    to the the last used position or the position specified
----                    in the user's config for the given source. Can be one of:
----                    "left",
----                    "right",
----                    "float",
----                    "current"
----  toggle = boolean  Whether to toggle the visibility of the Neo-tree window.
----  reveal = boolean  Whether to reveal the current file in the Neo-tree window.
----  reveal_file = string The specific file to reveal.
----  dir = string      The root directory to set.
----  git_base = string The git base used for diff
-M.execute = function(args)
+---@param args neotree.command.execute.Args
+---@param state_override neotree.PartialState?
+M.execute = function(args, state_override)
   local nt = require("neo-tree")
   nt.ensure_config()
 
@@ -100,8 +96,14 @@ M.execute = function(args)
   if requested_position == "current" then
     local winid = vim.api.nvim_get_current_win()
     state = manager.get_state(args.source, nil, winid)
+    if state_override then
+      state = manager.change_state(args.source, nil, winid, state_override)
+    end
   else
     state = manager.get_state(args.source, nil, nil)
+    if state_override then
+      state = manager.change_state(args.source, nil, nil, state_override)
+    end
   end
 
   -- Next handle toggle, the rest is irrelevant if there is a window to toggle
@@ -113,12 +115,8 @@ M.execute = function(args)
   end
 
   -- Handle position override
-  local default_position = nt.config[args.source].window.position
-  local current_position = state.current_position or default_position
-  local position_changed = false
   if args.position then
     state.current_position = args.position
-    position_changed = args.position ~= current_position
   end
 
   -- Handle setting directory if requested
