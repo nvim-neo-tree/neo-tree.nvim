@@ -214,6 +214,29 @@ M.get_state = function(source_name, tabid, winid)
   return tab_state
 end
 
+---Modifies an existing state. Does not currently create a new one if one does not exist.
+---@param source_name string
+---@param tabid integer?
+---@param winid integer?
+---@param override table
+---@return neotree.State new_state
+M._change_state = function(source_name, tabid, winid, override)
+  assert(source_name, "get_state: source_name cannot be nil")
+  tabid = tabid or vim.api.nvim_get_current_tabpage()
+  local sd = get_source_data(source_name)
+  if type(winid) == "number" then
+    local cur_state = assert(sd.state_by_win[winid], "no state for winid " .. winid)
+    local new_state = vim.tbl_deep_extend("force", cur_state, override)
+    sd.state_by_win[winid] = new_state
+    return new_state
+  end
+
+  local cur_state = assert(sd.state_by_tab[tabid], "no state for tabid " .. tabid)
+  local new_state = vim.tbl_deep_extend("force", cur_state, override)
+  sd.state_by_tab[tabid] = new_state
+  return new_state
+end
+
 ---Returns the state for the current buffer, assuming it is a neo-tree buffer.
 ---@param winid number? The window id to use, if nil, the current window is used.
 ---@return neotree.State? state The state for the current buffer, if it's a neo-tree buffer.

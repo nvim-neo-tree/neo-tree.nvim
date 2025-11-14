@@ -91,6 +91,24 @@ describe("Manager", function()
     }
   end
 
+  it("can retrieve/create states at startup", function()
+    local fs_state = manager.get_state("filesystem")
+    local buffers_state = manager.get_state("buffers")
+    assert.are_equal(type(fs_state), "table")
+    assert.are_equal(type(buffers_state), "table")
+  end)
+  it("can change states", function()
+    local old_state = manager.get_state("filesystem")
+    local new_bind_to_cwd = old_state.bind_to_cwd
+
+    local overridden_state = manager._change_state("filesystem", nil, nil, {
+      bind_to_cwd = new_bind_to_cwd,
+    })
+    local new_stored_state = manager.get_state("filesystem")
+    assert.are_equal(overridden_state, new_stored_state)
+    assert(new_stored_state.bind_to_cwd == new_bind_to_cwd)
+  end)
+
   it("should respect changed tab cwd", function()
     local ctx = setup_2_tabs()
 
