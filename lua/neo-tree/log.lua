@@ -100,6 +100,7 @@ log_maker.new = function(config)
     or table.concat({ config.plugin_short, prefix }, " ")
 
   local title_opts = { title = config.plugin_short }
+
   ---@param message string
   ---@param level vim.log.levels
   local notify = vim.schedule_wrap(function(message, level)
@@ -205,9 +206,7 @@ log_maker.new = function(config)
 
       -- Output to console
       if config.use_console and can_log_to_console then
-        vim.schedule(function()
-          notify(msg, log_level)
-        end)
+        notify(msg, log_level)
       end
     end
   end
@@ -262,6 +261,9 @@ log_maker.new = function(config)
     log.error = logfunc(Levels.ERROR, make_string)
     ---Unused, kept around for compatibility at the moment. Remove in v4.0.
     log.fatal = logfunc(Levels.FATAL, make_string)
+
+    log.notify = notify
+    log.levels = Levels
     -- tree-sitter queries recognize any .format and highlight it w/ string.format highlights
     ---@type table<string, { format: fun(fmt: string?, ...: any) }>
     log.at = {
@@ -374,8 +376,11 @@ log_maker.new = function(config)
     else
       errmsg = "assertion failed!"
     end
+    local old = config.use_console
+    config.use_console = false
     log.error(errmsg)
-    return assert(v, errmsg)
+    config.use_console = old
+    error(errmsg, 2)
   end
 
   ---@param context string

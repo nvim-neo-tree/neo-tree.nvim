@@ -191,12 +191,22 @@ M.tbl_equals = function(table1, table2)
   return true
 end
 
+---@generic P : string
+---@param path P
+---@return P? path_if_executable
+M.executable = function(path)
+  return vim.fn.executable(path) == 1 and path or nil
+end
+
+---@param cmd string|string[]
+---@return boolean success
+---@return string[] result
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 
   -- An empty result is ok
   if vim.v.shell_error ~= 0 or (#result > 0 and vim.startswith(result[1], "fatal:")) then
-    return false, {}
+    return false, result or {}
   else
     return true, result
   end
