@@ -204,12 +204,14 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   local show_gitignored = filtered_items and filtered_items.hide_gitignored == false
   local show_ignored = filtered_items and filtered_items.hide_ignored == false
+  local check_ignore_status = show_gitignored or show_gitignored
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
     if not fby or item.contains_reveal_target then
       visible[#visible + 1] = item
     else
       while fby do
+        -- items that should always be hidden/perma-hidden/visible
         if fby.never_show then
           -- pretend it doesn't exist
           break
@@ -219,20 +221,24 @@ local remove_filtered = function(source_items, filtered_items)
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
           hidden[#hidden + 1] = item
           break
-        elseif show_gitignored and fby.gitignored then
-          visible[#visible + 1] = item
-          break
-        elseif show_ignored and fby.ignored then
-          visible[#visible + 1] = item
-          break
-        elseif fby.parent then
-          fby = fby.parent
-          -- continue to next iteration
-        else
+        end
+
+        if check_ignore_status and fby.ignored or fby.gitignored then
+          local hidden_by_gitignore = fby.gitignored and not show_gitignored
+          local hidden_by_ignore = fby.ignored and not show_ignored
+          if not hidden_by_gitignore and not hidden_by_ignore then
+            visible[#visible + 1] = item
+            break
+          end
+        end
+
+        if not fby.parent then
           -- filtered by some other reason
           hidden[#hidden + 1] = item
           break
         end
+
+        fby = fby.parent
       end
     end
   end
