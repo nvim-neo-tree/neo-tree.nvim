@@ -210,6 +210,7 @@ local remove_filtered = function(source_items, filtered_items)
       visible[#visible + 1] = item
     else
       while fby do
+        -- items that should always be hidden/perma-hidden/visible
         if fby.never_show then
           -- pretend it doesn't exist
           break
@@ -219,20 +220,28 @@ local remove_filtered = function(source_items, filtered_items)
         elseif fby.name or fby.pattern or fby.dotfiles or fby.hidden then
           hidden[#hidden + 1] = item
           break
+        end
+
+        -- prioritize ignore over gitignore
+        if fby.ignored then
+          if show_ignored then
+            visible[#visible + 1] = item
+          else
+            hidden[#hidden + 1] = item
+          end
+          break
         elseif show_gitignored and fby.gitignored then
           visible[#visible + 1] = item
           break
-        elseif show_ignored and fby.ignored then
-          visible[#visible + 1] = item
-          break
-        elseif fby.parent then
-          fby = fby.parent
-          -- continue to next iteration
-        else
+        end
+
+        if not fby.parent then
           -- filtered by some other reason
           hidden[#hidden + 1] = item
           break
         end
+
+        fby = fby.parent
       end
     end
   end
