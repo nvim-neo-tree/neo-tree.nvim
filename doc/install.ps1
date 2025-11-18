@@ -1,5 +1,4 @@
 # An example install script for people using `:h packages`
-asdf
 $NVIM_APPNAME = if ($env:NVIM_APPNAME) { $env:NVIM_APPNAME } else { "nvim" }
 
 $NEOTREE_DATA_HOME = if ($env:XDG_DATA_HOME) {
