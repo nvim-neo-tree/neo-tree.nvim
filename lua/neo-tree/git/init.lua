@@ -6,6 +6,7 @@ local uv = vim.uv or vim.loop
 local co = coroutine
 
 local M = {}
+local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
@@ -26,7 +27,7 @@ M.status_cache = setmetatable({}, {
 
 ---@param git_root string
 ---@param status_iter fun():string?
----@param batch_size integer? This will use coroutine.yield if provided.
+---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status
 local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_bubbling)
@@ -34,7 +35,7 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
   local prev_line = ""
   local num_in_batch = 0
   local git_status = {}
-  if batch_size == 0 then
+  if not batch_size or batch_size <= 0 then
     batch_size = nil
   end
   local yield_if_batch_completed
@@ -43,8 +44,8 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
     yield_if_batch_completed = function()
       num_in_batch = num_in_batch + 1
       if num_in_batch > batch_size then
-        num_in_batch = 0
         coroutine.yield(git_status)
+        num_in_batch = 0
       end
     end
   end
@@ -238,7 +239,8 @@ M.status = function(base, skip_bubbling, path)
 
   if status_ok then
     -- system() replaces \000 with \001
-    local status_iter = vim.gsplit(status_result, "\001", { plain = true })
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
     local gs = parse_porcelain_output(git_root, status_iter, nil, skip_bubbling)
 
     context.git_status = gs
@@ -282,6 +284,7 @@ M.status_async = function(path, base, opts)
       }
       local stdin = log.assert(uv.new_pipe())
       local stdout = log.assert(uv.new_pipe())
+      stdout:send_buffer_size(10)
       local stderr = log.assert(uv.new_pipe())
 
       local output_chunks = {}
@@ -313,7 +316,8 @@ M.status_async = function(path, base, opts)
         if #output_chunks > 1 then
           str = table.concat(output_chunks, "")
         end
-        local status_iter = vim.gsplit(str, "\000", { plain = true })
+        ---@diagnostic disable-next-line: param-type-mismatch
+        local status_iter = vim.gsplit(str, "\000", gsplit_plain)
         local parsing_task = co.create(parse_porcelain_output)
         local _, git_status =
           log.assert(co.resume(parsing_task, git_root, status_iter, context.batch_size))
@@ -325,12 +329,16 @@ M.status_async = function(path, base, opts)
         stdout:close()
         stderr:close()
 
+        local processed_lines = 0
         local do_next_batch_later
         do_next_batch_later = function()
           if co.status(parsing_task) ~= "dead" then
-            _, git_status = log.assert(co.resume(parsing_task))
-            vim.defer_fn(do_next_batch_later, context.batch_delay)
-            return
+            processed_lines = processed_lines + context.batch_size
+            if processed_lines < context.max_lines then
+              _, git_status = log.assert(co.resume(parsing_task))
+              vim.defer_fn(do_next_batch_later, context.batch_delay)
+              return
+            end
           end
           context.git_status = git_status
           M.status_cache[git_root] = git_status
@@ -348,6 +356,7 @@ M.status_async = function(path, base, opts)
         log.assert(not err, err)
         -- for some reason data can be a table here?
         if type(data) == "string" then
+          vim.print("new data", data)
           table.insert(output_chunks, data)
         end
       end)
@@ -395,7 +404,7 @@ do
   ---@param callback fun(git_root: string?)?
   ---@return string?
   M.get_repository_root = function(path, callback)
-    path = path or log.assert(vim.uv.cwd())
+    path = path or log.assert(uv.cwd())
 
     local cached_rootdir = git_rootdir_cache[path]
     if cached_rootdir ~= nil then
