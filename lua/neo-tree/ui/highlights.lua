@@ -69,7 +69,7 @@ end
 ---@param name string
 local get_hl_by_name = function(name)
   if vim.api.nvim_get_hl then
-    local hl = vim.api.nvim_get_hl(0, { name = name })
+    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
     ---@diagnostic disable-next-line: inject-field
     hl.foreground = hl.fg
     ---@diagnostic disable-next-line: inject-field
@@ -88,10 +88,10 @@ end
 ---@param gui string? The gui to use, if the highlight group is not defined and it is not linked to another group.
 ---@return table hlgroups The highlight group values.
 M.create_highlight_group = function(hl_group_name, link_to_if_exists, background, foreground, gui)
-  local success, hl_group = pcall(get_hl_by_name, hl_group_name, true)
+  local success, hl_group = pcall(get_hl_by_name, hl_group_name)
   if not success or not hl_group.foreground or not hl_group.background then
     for _, link_to in ipairs(link_to_if_exists) do
-      success, hl_group = pcall(get_hl_by_name, link_to, true)
+      success, hl_group = pcall(get_hl_by_name, link_to)
       if success then
         local new_group_has_settings = background or foreground or gui
         local link_to_has_settings = hl_group.foreground or hl_group.background
