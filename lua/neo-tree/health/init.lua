@@ -1,4 +1,5 @@
 local typecheck = require("neo-tree.health.typecheck")
+local utils = require("neo-tree.utils")
 local health = vim.health
 
 local M = {}
@@ -21,8 +22,24 @@ local check_dependency = function(modname, repo, optional)
   health.ok(repo .. " is installed")
 end
 
+---@param path string
+---@param desc string?
+---@return boolean success
+local check_executable = function(path, desc)
+  if utils.executable(path) then
+    health.ok(("`%s` is executable"):format(path))
+    return true
+  end
+  local warning = ("`%s` not found"):format(path)
+  if desc then
+    warning = table.concat({ warning, desc }, " ")
+  end
+  health.warn(warning)
+  return false
+end
+
 function M.check()
-  health.start("Dependencies")
+  health.start("Required dependencies")
   check_dependency("plenary", "nvim-lua/plenary.nvim")
   check_dependency("nui.tree", "MunifTanjim/nui.nvim")
 
@@ -42,6 +59,27 @@ function M.check()
   health.start("Configuration")
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
+
+  health.start("Trash executables (prioritized in descending order)")
+  if utils.is_windows then
+    check_executable("trash", "(from https://github.com/sindresorhus/trash#cli or similar)")
+    if not check_executable("pwsh", "(https://github.com/PowerShell/PowerShell)") then
+      check_executable("powershell", "(builtin Windows PowerShell)")
+    end
+  elseif utils.is_macos then
+    check_executable("trash", "(builtin)")
+    check_executable("osascript", "(builtin)")
+  else
+    if check_executable("gio", "(from glib2)") then
+      if not utils.execute_command({ "gio", "trash", "--list" }) then
+        health.warn("`gio trash` --list failed, maybe you need `gvfs` installed?")
+      end
+    end
+    check_executable("trash", "(from https://github.com/andreafrancia/trash-cli or similar)")
+    if not check_executable("kioclient") then
+      check_executable("kioclient5")
+    end
+  end
 end
 
 local validate = typecheck.validate
@@ -59,6 +97,9 @@ function M.check_config(config)
     function(cfg)
       ---@class neotree.health.Validator.Generators
       local v = {
+        ---@generic T
+        ---@param validator neotree.health.Validator<T>
+        ---@return fun(arr: T[])
         array = function(validator)
           ---@generic T
           ---@param arr T[]
@@ -177,6 +218,15 @@ function M.check_config(config)
       validate("sort_function", cfg.sort_function, "function", true)
       validate("use_popups_for_input", cfg.use_popups_for_input, "boolean")
       validate("use_default_mappings", cfg.use_default_mappings, "boolean")
+      validate("trash", cfg.trash, function(trash)
+        validate("cmd", trash.cmd, function(cmd)
+          if type(cmd) == "function" then
+            return true -- TODO: maybe better validation here
+          elseif type(cmd) == "table" then
+            v.array("string")(cmd)
+          end
+        end, true)
+      end)
       validate("source_selector", cfg.source_selector, function(ss)
         validate("winbar", ss.winbar, "boolean")
         validate("statusline", ss.statusline, "boolean")
