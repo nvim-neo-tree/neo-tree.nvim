@@ -202,6 +202,25 @@ local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_
   M.status_cache[git_root] = git_status
   return git_status
 end
+---@param git_root string
+---@param untracked_files "all"|"no"|"normal"?
+---@param ignored "traditional"|"no"|"matching"?
+---@return string[] args
+local make_git_args = function(git_root, untracked_files, ignored)
+  untracked_files = untracked_files or "normal"
+  ignored = ignored or "traditional"
+  local opts = {
+    "--no-optional-locks",
+    "-C",
+    git_root,
+    "status",
+    "--porcelain=v2",
+    "--untracked-files=" .. untracked_files,
+    "--ignored=" .. ignored,
+    "-z",
+  }
+  return opts
+end
 ---@alias neotree.git.Status table<string, string>
 
 ---Parse "git status" output for the current working directory.
@@ -218,14 +237,7 @@ M.status = function(base, skip_bubbling, path)
 
   local status_cmd = {
     "git",
-    "--no-optional-locks",
-    "-C",
-    git_root,
-    "status",
-    "--porcelain=v2",
-    "--untracked-files=normal",
-    "--ignored=traditional",
-    "-z",
+    unpack(make_git_args(git_root)),
   }
   local status_result = vim.fn.system(status_cmd)
 
@@ -292,16 +304,7 @@ M.status_async = function(path, base, opts)
       ---@diagnostic disable-next-line: missing-fields
       uv.spawn("git", {
         hide = true,
-        args = {
-          "--no-optional-locks",
-          "-C",
-          git_root,
-          "status",
-          "--porcelain=v2",
-          "--untracked-files=normal",
-          "--ignored=traditional",
-          "-z",
-        },
+        args = make_git_args(git_root),
         stdio = { stdin, stdout, stderr },
       }, function(code, signal)
         if code ~= 0 then
@@ -356,7 +359,6 @@ M.status_async = function(path, base, opts)
         log.assert(not err, err)
         -- for some reason data can be a table here?
         if type(data) == "string" then
-          vim.print("new data", data)
           table.insert(output_chunks, data)
         end
       end)
