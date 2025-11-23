@@ -11,30 +11,51 @@ local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
   __mode = "v",
-  __newindex = function(_, root_dir, status)
+  __newindex = function(self, root_dir, status)
     require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(root_dir, function()
-      rawset(M.status_cache, root_dir, nil)
+      rawset(self, root_dir, nil)
       events.fire_event(events.GIT_STATUS_CHANGED, { git_root = root_dir, status = status })
     end)
-    rawset(M.status_cache, root_dir, status)
+    rawset(self, root_dir, status)
   end,
 })
 
 ---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
 ---@field git_status neotree.git.Status?
 ---@field git_root string
----@field lines_parsed integer
+
+---@alias neotree.git.Status table<string, string>
+
+---@param ctx neotree.git.Context
+---@param git_status neotree.git.Status
+local update_git_status = function(ctx, git_status)
+  ctx.git_status = git_status
+  M.status_cache[ctx.git_root] = git_status
+  vim.schedule(function()
+    events.fire_event(events.GIT_STATUS_CHANGED, {
+      git_root = ctx.git_root,
+      git_status = ctx.git_status,
+    })
+  end)
+end
 
 ---@param git_root string
 ---@param status_iter fun():string?
+---@param git_status neotree.git.Status? Whether to override a given git_status
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status
-local parse_porcelain_output = function(git_root, status_iter, batch_size, skip_bubbling)
+local parse_porcelain_output = function(
+  git_root,
+  status_iter,
+  git_status,
+  batch_size,
+  skip_bubbling
+)
   local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
   local prev_line = ""
   local num_in_batch = 0
-  local git_status = {}
+  git_status = git_status or {}
   if not batch_size or batch_size <= 0 then
     batch_size = nil
   end
@@ -205,8 +226,9 @@ end
 ---@param git_root string
 ---@param untracked_files "all"|"no"|"normal"?
 ---@param ignored "traditional"|"no"|"matching"?
+---@param paths string[]?
 ---@return string[] args
-local make_git_args = function(git_root, untracked_files, ignored)
+local make_git_status_args = function(git_root, untracked_files, ignored, paths)
   untracked_files = untracked_files or "normal"
   ignored = ignored or "traditional"
   local opts = {
@@ -218,10 +240,15 @@ local make_git_args = function(git_root, untracked_files, ignored)
     "--untracked-files=" .. untracked_files,
     "--ignored=" .. ignored,
     "-z",
+    "--",
   }
+  if paths then
+    for _, path in ipairs(paths) do
+      opts[#opts + 1] = path
+    end
+  end
   return opts
 end
----@alias neotree.git.Status table<string, string>
 
 ---Parse "git status" output for the current working directory.
 ---@param base string git ref base
@@ -237,7 +264,7 @@ M.status = function(base, skip_bubbling, path)
 
   local status_cmd = {
     "git",
-    unpack(make_git_args(git_root)),
+    unpack(make_git_status_args(git_root)),
   }
   local status_result = vim.fn.system(status_cmd)
 
@@ -253,20 +280,95 @@ M.status = function(base, skip_bubbling, path)
     -- system() replaces \000 with \001
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
-    local gs = parse_porcelain_output(git_root, status_iter, nil, skip_bubbling)
+    local git_status = parse_porcelain_output(git_root, status_iter, nil, nil, skip_bubbling)
 
-    context.git_status = gs
-    vim.schedule(function()
-      events.fire_event(events.GIT_STATUS_CHANGED, {
-        git_root = context.git_root,
-        git_status = context.git_status,
-      })
-    end)
-    M.status_cache[git_root] = {}
+    update_git_status(context, git_status)
   end
 
   return context.git_status, git_root
 end
+
+---@param context neotree.git.Context
+---@param git_args string[]? nil to use default of make_git_status_args, which includes all files
+---@param callback fun(gs: neotree.git.Status)
+local async_git_status_job = function(context, git_args, callback)
+  local stdin = log.assert(uv.new_pipe())
+  local stdout = log.assert(uv.new_pipe())
+  local stderr = log.assert(uv.new_pipe())
+
+  local output_chunks = {}
+  ---@diagnostic disable-next-line: missing-fields
+  uv.spawn("git", {
+    hide = true,
+    args = git_args or make_git_status_args(context.git_root),
+    stdio = { stdin, stdout, stderr },
+  }, function(code, signal)
+    if code ~= 0 then
+      log.at.warn.format(
+        "git status async process exited abnormally, code: %s, signal: %s",
+        code,
+        signal
+      )
+      return
+    end
+
+    stdin:shutdown(function()
+      stdin:close()
+    end)
+    stdout:shutdown(function()
+      stdout:close()
+    end)
+    stderr:shutdown(function()
+      stderr:close()
+    end)
+
+    if #output_chunks == 0 then
+      return
+    end
+    local output = output_chunks[1]
+    if #output_chunks > 1 then
+      output = table.concat(output_chunks, "")
+    end
+
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local status_iter = vim.gsplit(output, "\000", gsplit_plain)
+    local parsing_task = co.create(parse_porcelain_output)
+    log.assert(
+      co.resume(parsing_task, context.git_root, status_iter, context.git_status, context.batch_size)
+    )
+
+    local processed_lines = 0
+    local function do_next_batch_later()
+      if co.status(parsing_task) ~= "dead" then
+        processed_lines = processed_lines + context.batch_size
+        if processed_lines < context.max_lines then
+          log.assert(co.resume(parsing_task))
+          vim.defer_fn(do_next_batch_later, context.batch_delay)
+          return
+        end
+      end
+      callback(context.git_status)
+    end
+    do_next_batch_later()
+  end)
+  stdout:read_start(function(err, data)
+    log.assert(not err, err)
+    -- for some reason data can be a table here?
+    if type(data) == "string" then
+      table.insert(output_chunks, data)
+    end
+  end)
+
+  stderr:read_start(function(err, data)
+    log.assert(not err, err)
+    if err then
+      local errfmt = (err or "") .. "%s"
+      log.at.error.format(errfmt, data)
+    end
+  end)
+end
+
+local status_jobs = {}
 
 ---@param path string path to run commands in
 ---@param base string git ref base
@@ -277,98 +379,43 @@ M.status_async = function(path, base, opts)
       log.trace("status_async: not a git folder:", path)
       return
     end
-    ---@cast git_root -false
 
     log.trace("git.status.status_async called")
 
     local event_id = "git_status_" .. git_root
 
     utils.debounce(event_id, function()
+      if status_jobs[event_id] then
+        return
+      end
       ---@type neotree.git.Context
-      local context = {
+      local ctx = {
         git_root = git_root,
         git_status = {},
-        lines = {},
-        lines_parsed = 0,
         batch_size = opts.batch_size or 1000,
         batch_delay = opts.batch_delay or 10,
         max_lines = opts.max_lines or 100000,
       }
-      local stdin = log.assert(uv.new_pipe())
-      local stdout = log.assert(uv.new_pipe())
-      stdout:send_buffer_size(10)
-      local stderr = log.assert(uv.new_pipe())
-
-      local output_chunks = {}
-      log.trace("spawning git")
-      ---@diagnostic disable-next-line: missing-fields
-      uv.spawn("git", {
-        hide = true,
-        args = make_git_args(git_root),
-        stdio = { stdin, stdout, stderr },
-      }, function(code, signal)
-        if code ~= 0 then
-          log.at.debug.format(
-            "git status async process exited abnormally, code: %s, signal: %s",
-            code,
-            signal
-          )
-          return
-        end
-        local str = output_chunks[1]
-        if #output_chunks > 1 then
-          str = table.concat(output_chunks, "")
-        end
-        ---@diagnostic disable-next-line: param-type-mismatch
-        local status_iter = vim.gsplit(str, "\000", gsplit_plain)
-        local parsing_task = co.create(parse_porcelain_output)
-        local _, git_status =
-          log.assert(co.resume(parsing_task, git_root, status_iter, context.batch_size))
-
-        stdin:shutdown()
-        stdout:shutdown()
-        stderr:shutdown()
-        stdin:close()
-        stdout:close()
-        stderr:close()
-
-        local processed_lines = 0
-        local do_next_batch_later
-        do_next_batch_later = function()
-          if co.status(parsing_task) ~= "dead" then
-            processed_lines = processed_lines + context.batch_size
-            if processed_lines < context.max_lines then
-              _, git_status = log.assert(co.resume(parsing_task))
-              vim.defer_fn(do_next_batch_later, context.batch_delay)
-              return
-            end
+      status_jobs[event_id] = true
+      if not M.status_cache[ctx.git_root] then
+        -- we do a fast scan first to get basic things in, then a full scan with ignore/untracked files
+        async_git_status_job(
+          ctx,
+          make_git_status_args(git_root, "no", "no", { path }),
+          function(fast_status)
+            update_git_status(ctx, fast_status)
+            async_git_status_job(ctx, nil, function(full_status)
+              status_jobs[event_id] = nil
+              update_git_status(ctx, full_status)
+            end)
           end
-          context.git_status = git_status
-          M.status_cache[git_root] = git_status
-          vim.schedule(function()
-            events.fire_event(events.GIT_STATUS_CHANGED, {
-              git_root = context.git_root,
-              git_status = context.git_status,
-            })
-          end)
-        end
-        do_next_batch_later()
-      end)
-
-      stdout:read_start(function(err, data)
-        log.assert(not err, err)
-        -- for some reason data can be a table here?
-        if type(data) == "string" then
-          table.insert(output_chunks, data)
-        end
-      end)
-
-      stderr:read_start(function(err, data)
-        if err then
-          local errfmt = (err or "") .. "%s"
-          log.at.error.format(errfmt, data)
-        end
-      end)
+        )
+      else
+        async_git_status_job(ctx, nil, function(full_status)
+          status_jobs[event_id] = nil
+          update_git_status(ctx, full_status)
+        end)
+      end
     end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
   end)
 end
@@ -389,86 +436,52 @@ M.mark_ignored = function(state, items)
   end
 end
 
----@type table<string, string|false>
-do
-  local git_rootdir_cache = setmetatable({}, { __mode = "kv" })
-  local finalize = function(path, git_root)
-    if utils.is_windows then
-      git_root = utils.windowize_path(git_root)
-    end
-
-    log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
-    git_rootdir_cache[path] = git_root
-    git_rootdir_cache[git_root] = git_root
+local finalize = function(path, git_root)
+  if utils.is_windows then
+    git_root = utils.windowize_path(git_root)
   end
 
-  ---@param path string? Defaults to cwd
-  ---@param callback fun(git_root: string?)?
-  ---@return string?
-  M.get_repository_root = function(path, callback)
-    path = path or log.assert(uv.cwd())
-
-    local cached_rootdir = git_rootdir_cache[path]
-    if cached_rootdir ~= nil then
-      log.trace("git.get_repository_root: cache hit for", path, "was", cached_rootdir)
-      if callback then
-        callback(cached_rootdir)
-        return
-      end
-      return cached_rootdir
-    end
-
-    for parent in utils.path_parents(path, true) do
-      local cached_parent_entry = git_rootdir_cache[parent]
-      if cached_parent_entry ~= nil then
-        log.trace(
-          "git.get_repository_root: cache hit for parent of",
-          path,
-          ",",
-          parent,
-          "was",
-          cached_parent_entry
-        )
-        git_rootdir_cache[path] = cached_parent_entry
-        return cached_parent_entry
-      end
-    end
-
-    log.trace("git.get_repository_root: cache miss for", path)
-    local args = { "-C", path, "rev-parse", "--show-toplevel" }
-
-    if type(callback) == "function" then
-      ---@diagnostic disable-next-line: missing-fields
-      Job:new({
-        command = "git",
-        args = args,
-        enabled_recording = true,
-        on_exit = function(self, code, _)
-          if code ~= 0 then
-            log.trace("GIT ROOT ERROR", self:stderr_result())
-            git_rootdir_cache[path] = false
-            callback(nil)
-            return
-          end
-          local git_root = self:result()[1]
-
-          finalize(path, git_root)
-          callback(git_root)
-        end,
-      }):start()
-      return
-    end
-
-    local ok, git_output = utils.execute_command({ "git", unpack(args) })
-    if not ok then
-      log.trace("GIT ROOT NOT FOUND", git_output)
-      git_rootdir_cache[path] = false
-      return nil
-    end
-    local git_root = git_output[1]
-
-    finalize(path, git_root)
-    return git_root
-  end
+  log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
 end
+---@param path string? Defaults to cwd
+---@param callback fun(git_root: string?)?
+---@return string?
+M.get_repository_root = function(path, callback)
+  path = path or log.assert(uv.cwd())
+
+  log.trace("git.get_repository_root: cache miss for", path)
+  local args = { "-C", path, "rev-parse", "--show-toplevel" }
+
+  if type(callback) == "function" then
+    ---@diagnostic disable-next-line: missing-fields
+    Job:new({
+      command = "git",
+      args = args,
+      enabled_recording = true,
+      on_exit = function(self, code, _)
+        if code ~= 0 then
+          log.trace("GIT ROOT ERROR", self:stderr_result())
+          callback(nil)
+          return
+        end
+        local git_root = self:result()[1]
+
+        finalize(path, git_root)
+        callback(git_root)
+      end,
+    }):start()
+    return
+  end
+
+  local ok, git_output = utils.execute_command({ "git", unpack(args) })
+  if not ok then
+    log.trace("GIT ROOT NOT FOUND", git_output)
+    return nil
+  end
+  local git_root = git_output[1]
+
+  finalize(path, git_root)
+  return git_root
+end
+
 return M
