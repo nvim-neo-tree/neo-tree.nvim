@@ -40,18 +40,12 @@ local update_git_status = function(ctx, git_status)
 end
 
 ---@param git_root string
----@param status_iter fun():string?
----@param git_status neotree.git.Status? Whether to override a given git_status
+---@param status_iter fun():string? A function that will override each var of the git status
+---@param git_status neotree.git.Status? The git status table to override, if any
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status
-local parse_porcelain_output = function(
-  git_root,
-  status_iter,
-  git_status,
-  batch_size,
-  skip_bubbling
-)
+M.parse_porcelain_output = function(git_root, status_iter, git_status, batch_size, skip_bubbling)
   local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
   local prev_line = ""
   local num_in_batch = 0
@@ -176,11 +170,12 @@ local parse_porcelain_output = function(
 
   if not skip_bubbling then
     -- bubble up every status besides ignored
-    local status_prio = { "U", "?", "M", "A" }
+    local status_prio = { "U", "?", "M", "A", "D", "T", "R", "C" }
 
     for dir, status in pairs(git_status) do
       if status ~= "!" then
-        local s = status:sub(1, 1)
+        local s1 = status:sub(1, 1)
+        local s2 = status:sub(2, 2)
         for parent in utils.path_parents(dir, true) do
           if parent == git_root then
             -- bubble only up to the children of the git root
@@ -197,7 +192,7 @@ local parse_porcelain_output = function(
               if p == c then
                 break
               end
-              if s == c then
+              if s1 == c or s2 == c then
                 git_status[parent] = c
               end
             end
@@ -280,7 +275,7 @@ M.status = function(base, skip_bubbling, path)
     -- system() replaces \000 with \001
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
-    local git_status = parse_porcelain_output(git_root, status_iter, nil, nil, skip_bubbling)
+    local git_status = M.parse_porcelain_output(git_root, status_iter, nil, nil, skip_bubbling)
 
     update_git_status(context, git_status)
   end
@@ -312,15 +307,12 @@ local async_git_status_job = function(context, git_args, callback)
       return
     end
 
-    stdin:shutdown(function()
-      stdin:close()
-    end)
-    stdout:shutdown(function()
-      stdout:close()
-    end)
-    stderr:shutdown(function()
-      stderr:close()
-    end)
+    stdin:shutdown()
+    stdin:close()
+    stdout:shutdown()
+    stdout:close()
+    stderr:shutdown()
+    stderr:close()
 
     if #output_chunks == 0 then
       return
@@ -332,7 +324,7 @@ local async_git_status_job = function(context, git_args, callback)
 
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(output, "\000", gsplit_plain)
-    local parsing_task = co.create(parse_porcelain_output)
+    local parsing_task = co.create(M.parse_porcelain_output)
     log.assert(
       co.resume(parsing_task, context.git_root, status_iter, context.git_status, context.batch_size)
     )
@@ -380,14 +372,11 @@ M.status_async = function(path, base, opts)
       return
     end
 
-    log.trace("git.status.status_async called")
+    log.trace("git.status_async called")
 
     local event_id = "git_status_" .. git_root
 
     utils.debounce(event_id, function()
-      if status_jobs[event_id] then
-        return
-      end
       ---@type neotree.git.Context
       local ctx = {
         git_root = git_root,
@@ -396,23 +385,20 @@ M.status_async = function(path, base, opts)
         batch_delay = opts.batch_delay or 10,
         max_lines = opts.max_lines or 100000,
       }
-      status_jobs[event_id] = true
       if not M.status_cache[ctx.git_root] then
-        -- we do a fast scan first to get basic things in, then a full scan with ignore/untracked files
+        -- do a fast scan first to get basic things in, then a full scan with ignore/untracked files
         async_git_status_job(
           ctx,
           make_git_status_args(git_root, "no", "no", { path }),
           function(fast_status)
             update_git_status(ctx, fast_status)
             async_git_status_job(ctx, nil, function(full_status)
-              status_jobs[event_id] = nil
               update_git_status(ctx, full_status)
             end)
           end
         )
       else
         async_git_status_job(ctx, nil, function(full_status)
-          status_jobs[event_id] = nil
           update_git_status(ctx, full_status)
         end)
       end
@@ -443,6 +429,7 @@ local finalize = function(path, git_root)
 
   log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
 end
+
 ---@param path string? Defaults to cwd
 ---@param callback fun(git_root: string?)?
 ---@return string?
@@ -456,7 +443,7 @@ M.get_repository_root = function(path, callback)
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
       command = "git",
-      args = args,
+      args = { "-C", path, "rev-parse", "--show-toplevel" },
       enabled_recording = true,
       on_exit = function(self, code, _)
         if code ~= 0 then

@@ -1162,6 +1162,7 @@ the following properties:
             ignored   = "",
             unstaged  = "󰄱",
             staged    = "",
+            partial   = "󱖫",
             conflict  = "",
           }
         }
@@ -1196,6 +1197,7 @@ The following config will remove those change type symbols:
             untracked = "",
             ignored   = "",
             unstaged  = "󰄱",
+            partially_staged = "󰆖",
             staged    = "",
             conflict  = "",
           }
@@ -1487,8 +1489,9 @@ NeoTreeGitDeleted         File name when the git status is deleted.
 NeoTreeGitIgnored         File name when the git status is ignored.
 NeoTreeGitModified        File name when the git status is modified.
 NeoTreeGitUnstaged        Used for git unstaged symbol.
-NeoTreeGitUntracked       File name when the git status is untracked.
+NeoTreeGitPartialStaged   Used for git partially staged symbol.
 NeoTreeGitStaged          Used for git staged symbol.
+NeoTreeGitUntracked       File name when the git status is untracked.
 NeoTreeHiddenByName       Used for icons and names when `hide_by_name` is used.
 NeoTreeIgnored            File name when the file is ignored by a
                           `.neotreeignore` or similar

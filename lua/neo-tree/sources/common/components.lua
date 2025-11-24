@@ -42,7 +42,7 @@ local M = {}
 
 ---@param symbol string
 ---@return string left_padded_symbol
-local make_two_char = function(symbol)
+local to2char = function(symbol)
   if vim.fn.strchars(symbol) == 1 then
     return symbol .. " "
   else
@@ -215,7 +215,7 @@ M.diagnostics = function(config, node, state)
 
   if sign.text and sign.texthl then
     return {
-      text = make_two_char(sign.text),
+      text = to2char(sign.text),
       highlight = sign.texthl,
     }
   else
@@ -247,122 +247,141 @@ M.git_status = function(config, node, state)
   end
 
   local symbols = config.symbols or {}
-  local change_symbol
-  local change_highlt = highlights.FILE_NAME
-  ---@type string?
-  local status_symbol = not node_is_dir and symbols.staged or nil
-  local status_highlt = highlights.GIT_STAGED
+  -- whether the item is staged, partially staged, unstaged, or ignored/untracked
+  local stage_sb
+  local stage_hl
+
+  -- What changed are in staging/working tree respectively
+  local staged_change_sb
+  local staged_change_hl
+  local worktree_change_sb
+  local worktree_change_hl
 
   -- https://git-scm.com/docs/git-status#_output
   -------------------------------------------------
   -- ?           ?    untracked
   -- !           !    ignored
   if git_status == "?" then
-    status_symbol = nil
-    status_highlt = highlights.GIT_UNTRACKED
-    change_symbol = symbols.untracked
-    change_highlt = highlights.GIT_UNTRACKED
-  elseif git_status == "!" then
-    status_symbol = nil
-    change_symbol = symbols.ignored
-    change_highlt = highlights.GIT_IGNORED
-  else
-    -- 1 == staging area status
-    -- 2 == working area status
-    if git_status:sub(1, 1) == "." then
-      status_symbol = symbols.unstaged
-      status_highlt = highlights.GIT_UNSTAGED
-    end
-    repeat
-      -- all variations of merge conflicts
-      -- ----------------------------------------------
-      -- D           D    unmerged, both deleted
-      -- A           U    unmerged, added by us
-      -- U           D    unmerged, deleted by them
-      -- U           A    unmerged, added by them
-      -- D           U    unmerged, deleted by us
-      -- A           A    unmerged, both added
-      -- U           U    unmerged, both modified
-      if git_status == "DD" then
-        status_symbol = symbols.conflict
-        status_highlt = highlights.GIT_CONFLICT
-        change_symbol = symbols.deleted
-        change_highlt = highlights.GIT_CONFLICT
-        break
-      elseif git_status == "UU" then
-        status_symbol = symbols.conflict
-        status_highlt = highlights.GIT_CONFLICT
-        change_symbol = symbols.modified
-        change_highlt = highlights.GIT_CONFLICT
-        break
-      elseif git_status == "AA" then
-        status_symbol = symbols.conflict
-        status_highlt = highlights.GIT_CONFLICT
-        change_symbol = symbols.added
-        change_highlt = highlights.GIT_CONFLICT
-        break
-      elseif git_status:match("U") then
-        status_symbol = symbols.conflict
-        status_highlt = highlights.GIT_CONFLICT
-        if git_status:match("A") then
-          change_symbol = symbols.added
-        elseif git_status:match("D") then
-          change_symbol = symbols.deleted
-        end
-        change_highlt = highlights.GIT_CONFLICT
-        break
-      end
-      -------------------------------------------------
-      --          [AMD]   not updated
-      -- M        [ MTD]  updated in index
-      -- T        [ MTD]  type changed in index
-      -- A        [ MTD]  added to index
-      -- D                deleted from index
-      -- R        [ MTD]  renamed in index
-      -- C        [ MTD]  copied in index
-      -- [MTARC]          index and work tree matches
-      -- [ MTARC]    M    work tree changed since index
-      -- [ MTARC]    T    type changed in work tree since index
-      -- [ MTARC]    D    deleted in work tree
-      --             R    renamed in work tree
-      --             C    copied in work tree
-      if git_status:find("M", 1, true) then
-        change_symbol = symbols.modified
-        change_highlt = highlights.GIT_MODIFIED
-        break
-      elseif git_status:find("R", 1, true) then
-        change_symbol = symbols.renamed
-        change_highlt = highlights.GIT_RENAMED
-        break
-      elseif git_status:find("D", 1, true) then
-        change_symbol = symbols.deleted
-        change_highlt = highlights.GIT_DELETED
-        break
-      elseif git_status:match("[ACT]") then
-        change_symbol = symbols.added
-        change_highlt = highlights.GIT_ADDED
-        break
-      end
-    until true
+    stage_sb = symbols.untracked
+    stage_hl = highlights.GIT_UNTRACKED
+    return {
+      text = to2char(stage_sb),
+      highlight = stage_hl,
+    }
   end
-  if not change_symbol and not status_symbol then
+
+  if git_status == "!" then
+    stage_sb = symbols.ignored
+    stage_hl = highlights.GIT_IGNORED
+    return {
+      text = to2char(stage_sb),
+      highlight = stage_hl,
+    }
+  end
+
+  -- x == staging area status
+  -- y == working area status
+  local x, y = git_status:sub(1, 1), git_status:sub(2, 2)
+  if y == "." then
+    stage_sb = symbols.staged
+    stage_hl = highlights.GIT_STAGED
+  elseif x == "." then
+    stage_sb = symbols.unstaged
+    stage_hl = highlights.GIT_UNSTAGED
+  elseif #x > 0 and #y > 0 then
+    stage_sb = symbols.partially_staged
+    stage_hl = highlights.GIT_PARTIALLY_STAGED
+  end
+
+  repeat
+    -- all variations of merge conflicts
+    -- ----------------------------------------------
+    -- D           D    unmerged, both deleted
+    -- A           A    unmerged, both added
+    -- U           U    unmerged, both modified
+    -- A           U    unmerged, added by us
+    -- U           D    unmerged, deleted by them
+    -- U           A    unmerged, added by them
+    -- D           U    unmerged, deleted by us
+
+    local both_deleted_or_added = x == y and (x == "A" or x == "D")
+    local is_conflict = both_deleted_or_added or (x == "U" or y == "U")
+    if is_conflict then
+      stage_sb = symbols.conflict
+      stage_hl = highlights.GIT_CONFLICT
+    end
+    -------------------------------------------------
+    --          [AMD]   not updated
+    -- M        [ MTD]  updated in index
+    -- T        [ MTD]  type changed in index
+    -- A        [ MTD]  added to index
+    -- D                deleted from index
+    -- R        [ MTD]  renamed in index
+    -- C        [ MTD]  copied in index
+    -- [MTARC]          index and work tree matches
+    -- [ MTARC]    M    work tree changed since index
+    -- [ MTARC]    T    type changed in work tree since index
+    -- [ MTARC]    D    deleted in work tree
+    --             R    renamed in work tree
+    --             C    copied in work tree
+    if #x > 0 and x ~= "." then
+      if x == "M" or x == "U" then
+        staged_change_sb = symbols.modified
+        staged_change_hl = highlights.GIT_MODIFIED
+      elseif x == "R" then
+        staged_change_sb = symbols.renamed
+        staged_change_hl = highlights.GIT_RENAMED
+      elseif x == "D" then
+        staged_change_sb = symbols.deleted
+        staged_change_hl = highlights.GIT_DELETED
+      else
+        staged_change_sb = symbols.added
+        staged_change_hl = highlights.GIT_ADDED
+      end
+    end
+
+    if #y > 0 and y ~= "." then
+      if y == "M" or y == "U" then
+        worktree_change_sb = symbols.modified
+        worktree_change_hl = highlights.GIT_MODIFIED
+      elseif y == "R" then
+        worktree_change_sb = symbols.renamed
+        worktree_change_hl = highlights.GIT_RENAMED
+      elseif y == "D" then
+        worktree_change_sb = symbols.deleted
+        worktree_change_hl = highlights.GIT_DELETED
+      else
+        worktree_change_sb = symbols.added
+        worktree_change_hl = highlights.GIT_ADDED
+      end
+    end
+
+  until true
+
+  if not staged_change_sb and not worktree_change_sb then
     return {
       text = "[" .. git_status .. "]",
-      highlight = config.highlight or change_highlt,
+      highlight = config.highlight or worktree_change_hl or staged_change_hl,
     }
   end
 
   local components = {}
-  if change_symbol and #change_symbol > 0 then
+  if staged_change_sb and #staged_change_sb > 0 then
     components[#components + 1] = {
-      text = make_two_char(change_symbol),
-      highlight = change_highlt,
+      text = to2char(staged_change_sb),
+      highlight = staged_change_hl,
     }
   end
-  if status_symbol and #status_symbol > 0 then
+  if worktree_change_sb and #worktree_change_sb > 0 then
     components[#components + 1] = {
-      text = make_two_char(status_symbol),
-      highlight = status_highlt,
+      text = to2char(worktree_change_sb),
+      highlight = worktree_change_hl,
+    }
+  end
+  if #components < 2 and stage_sb and #stage_sb > 0 then
+    components[#components + 1] = {
+      text = to2char(stage_sb),
+      highlight = stage_hl,
     }
   end
   return components
@@ -466,7 +485,7 @@ M.modified = function(config, node, state)
 
   if buf_info and buf_info.modified then
     return {
-      text = (make_two_char(config.symbol) or "[+]"),
+      text = (to2char(config.symbol) or "[+]"),
       highlight = config.highlight or highlights.MODIFIED,
     }
   else
