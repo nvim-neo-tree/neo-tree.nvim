@@ -7,6 +7,14 @@ local co = coroutine
 
 local M = {}
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
+local git_available, git_version_output = utils.execute_command({ "git", "--version" })
+local git_version_major, git_version_minor
+if git_available then
+  ---@diagnostic disable-next-line: param-type-mismatch
+  local version_numbers = vim.split(git_version_output[1], ".", gsplit_plain)
+  git_version_major = version_numbers[1]:sub(#"git version " + 1)
+  git_version_minor = version_numbers[2]
+end
 
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
