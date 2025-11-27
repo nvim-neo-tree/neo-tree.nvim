@@ -8,16 +8,19 @@ local co = coroutine
 local M = {}
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 local git_available, git_version_output = utils.execute_command({ "git", "--version" })
-local git_version_major, git_version_minor
+local git_version
 if git_available then
   ---@diagnostic disable-next-line: param-type-mismatch
   local version_numbers = vim.split(git_version_output[1], ".", gsplit_plain)
-  git_version_major = tonumber(version_numbers[1]:sub(#"git version " + 1))
-  git_version_minor = tonumber(version_numbers[2])
+  git_version = {
+    major = tonumber(version_numbers[1]:sub(#"git version " + 1)),
+    minor = tonumber(version_numbers[2]),
+    patch = tonumber(version_numbers[3] or 0),
+  }
 end
-local has_porcelain_v2 = git_version_major >= 2 and git_version_minor >= 12
--- local supported_porcelain_version = has_porcelain_v2 and 2 or 1
-local supported_porcelain_version = 1
+
+local has_porcelain_v2 = git_version and git_version.major >= 2 and git_version.minor >= 12
+M._supported_porcelain_version = has_porcelain_v2 and 2 or 1
 
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
@@ -61,7 +64,7 @@ end
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status
-M.parse_porcelain = function(
+M._parse_porcelain = function(
   porcelain_version,
   git_root,
   status_iter,
@@ -70,7 +73,6 @@ M.parse_porcelain = function(
   skip_bubbling
 )
   local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
-  local prev_line = ""
   local num_in_batch = 0
   git_status = git_status or {}
   if not batch_size or batch_size <= 0 then
@@ -88,8 +90,11 @@ M.parse_porcelain = function(
     end
   end
 
+  ---@type string?
+  local line = status_iter()
+
   if porcelain_version == 1 then
-    for line in status_iter do
+    while line do
       -- Example status:
       -- D  deleted_staged.txt
       --  D deleted_unstaged.txt
@@ -104,7 +109,6 @@ M.parse_porcelain = function(
       -- !! ignored.txt
       local XY = line:sub(1, 2)
       if XY == "??" or XY == "!!" then
-        prev_line = line
         break
       end
 
@@ -117,9 +121,10 @@ M.parse_porcelain = function(
         end
         git_status[git_root_dir .. path] = XY:gsub(" ", ".")
       end
+      line = status_iter()
     end
   elseif porcelain_version == 2 then
-    for line in status_iter do
+    while line do
       -- Example status:
       -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
       -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
@@ -182,12 +187,12 @@ M.parse_porcelain = function(
           t == "?" or t == "!" or t == "",
           "git status lines following tracked files are not ignored nor untracked"
         )
-        prev_line = line
         break
       end
       if batch_size then
         yield_if_batch_completed()
       end
+      line = status_iter()
     end
   end
 
@@ -197,20 +202,11 @@ M.parse_porcelain = function(
   -- ?           ?    untracked
   -- !           !    ignored
   -- -------------------------------------------------
-  if prev_line:sub(1, 1) == "?" then
-    ---@type string?
-    local line = prev_line
-    while line do
-      if line:sub(1, 1) ~= "?" then
-        prev_line = line
-        break
-      end
-
-      git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "?"
-      line = status_iter()
-      if batch_size then
-        yield_if_batch_completed()
-      end
+  while line and line:sub(1, 1) == "?" do
+    git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "?"
+    line = status_iter()
+    if batch_size then
+      yield_if_batch_completed()
     end
   end
 
@@ -250,16 +246,12 @@ M.parse_porcelain = function(
     end
   end
 
-  if prev_line:sub(1, 1) == "!" then
-    ---@type string?
-    local line = prev_line
-    while line do
-      git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "!"
-      line = status_iter()
+  while line and line:sub(1, 1) == "!" do
+    git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "!"
+    line = status_iter()
 
-      if batch_size then
-        yield_if_batch_completed()
-      end
+    if batch_size then
+      yield_if_batch_completed()
     end
   end
 
@@ -309,7 +301,7 @@ M.status = function(base, skip_bubbling, path)
 
   local status_cmd = {
     "git",
-    unpack(make_git_status_args(supported_porcelain_version, git_root)),
+    unpack(make_git_status_args(M._supported_porcelain_version, git_root)),
   }
   local status_result = vim.fn.system(status_cmd)
 
@@ -325,8 +317,14 @@ M.status = function(base, skip_bubbling, path)
     -- system() replaces \000 with \001
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
-    local git_status =
-      M.parse_porcelain(supported_porcelain_version, git_root, status_iter, nil, nil, skip_bubbling)
+    local git_status = M._parse_porcelain(
+      M._supported_porcelain_version,
+      git_root,
+      status_iter,
+      nil,
+      nil,
+      skip_bubbling
+    )
 
     update_git_status(context, git_status)
   end
@@ -346,7 +344,7 @@ local async_git_status_job = function(context, git_args, callback)
   ---@diagnostic disable-next-line: missing-fields
   uv.spawn("git", {
     hide = true,
-    args = git_args or make_git_status_args(supported_porcelain_version, context.git_root),
+    args = git_args or make_git_status_args(M._supported_porcelain_version, context.git_root),
     stdio = { stdin, stdout, stderr },
   }, function(code, signal)
     stdin:shutdown()
@@ -374,11 +372,11 @@ local async_git_status_job = function(context, git_args, callback)
 
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(output, "\000", gsplit_plain)
-    local parsing_task = co.create(M.parse_porcelain)
+    local parsing_task = co.create(M._parse_porcelain)
     log.assert(
       co.resume(
         parsing_task,
-        supported_porcelain_version,
+        M._supported_porcelain_version,
         context.git_root,
         status_iter,
         context.git_status,
@@ -444,7 +442,7 @@ M.status_async = function(path, base, opts)
         -- do a fast scan first to get basic things in, then a full scan with ignore/untracked files
         async_git_status_job(
           ctx,
-          make_git_status_args(supported_porcelain_version, git_root, "no", "no", { path }),
+          make_git_status_args(M._supported_porcelain_version, git_root, "no", "no", { path }),
           function(fast_status)
             update_git_status(ctx, fast_status)
             async_git_status_job(ctx, nil, function(full_status)
