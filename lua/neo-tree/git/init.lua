@@ -72,7 +72,11 @@ M._parse_porcelain = function(
   batch_size,
   skip_bubbling
 )
-  local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
+  local git_root_dir = utils.normalize_path(git_root)
+  if not vim.endswith(git_root_dir, utils.path_separator) then
+    git_root_dir = git_root_dir .. utils.path_separator
+  end
+
   local num_in_batch = 0
   git_status = git_status or {}
   if not batch_size or batch_size <= 0 then
@@ -218,7 +222,7 @@ M._parse_porcelain = function(
         local s1 = status:sub(1, 1)
         local s2 = status:sub(2, 2)
         for parent in utils.path_parents(dir, true) do
-          if parent == git_root then
+          if parent == git_root or #parent < #git_root then
             -- bubble only up to the children of the git root
             break
           end
