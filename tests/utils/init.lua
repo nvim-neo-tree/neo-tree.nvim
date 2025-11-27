@@ -214,4 +214,20 @@ function mod.buflines(bufnr)
   return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 end
 
+function mod.os_to_windows(is_windows)
+  local utils = require("neo-tree.utils")
+  local old = {
+    path_separator = utils.path_separator,
+    is_windows = utils.is_windows,
+  }
+  utils.is_windows = is_windows
+  utils.path_separator = is_windows and "\\" or "/"
+  local restore = function()
+    for k, v in pairs(old) do
+      utils[k] = v
+    end
+  end
+  return restore
+end
+
 return mod
