@@ -11,11 +11,11 @@ local git_available, git_version_output = utils.execute_command({ "git", "--vers
 local git_version
 if git_available then
   ---@diagnostic disable-next-line: param-type-mismatch
-  local version_numbers = vim.split(git_version_output[1], ".", gsplit_plain)
+  local version_output = vim.split(git_version_output[1], ".", gsplit_plain)
   git_version = {
-    major = tonumber(version_numbers[1]:sub(#"git version " + 1)),
-    minor = tonumber(version_numbers[2]),
-    patch = tonumber(version_numbers[3] or 0),
+    major = tonumber(version_output[1]:sub(#"git version " + 1)),
+    minor = tonumber(version_output[2]),
+    patch = tonumber(version_output[3] or 0),
   }
 end
 
@@ -24,12 +24,30 @@ M._supported_porcelain_version = has_porcelain_v2 and 2 or 1
 
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
-  __mode = "v",
+  __mode = "kv",
   __newindex = function(self, root_dir, status)
-    require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(root_dir, function()
-      rawset(self, root_dir, nil)
-      events.fire_event(events.GIT_STATUS_CHANGED, { git_root = root_dir, status = status })
-    end)
+    if status then
+      local clear_cache_entry_if_no_repo = function()
+        vim.schedule(function()
+          if M.get_repository_root(root_dir) == root_dir then
+            -- repo still exists at the same location, ignore
+            return
+          end
+
+          self[root_dir] = nil
+          events.fire_event(events.GIT_STATUS_CHANGED, { git_root = root_dir, status = nil })
+        end)
+      end
+      require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(
+        root_dir,
+        clear_cache_entry_if_no_repo
+      )
+      require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(
+        utils.path_join(root_dir, ".git"),
+        clear_cache_entry_if_no_repo
+      )
+    end
+
     rawset(self, root_dir, status)
   end,
 })
@@ -94,7 +112,6 @@ M._parse_porcelain = function(
     end
   end
 
-  ---@type string?
   local line = status_iter()
 
   if porcelain_version == 1 then
@@ -448,7 +465,7 @@ M.status_async = function(path, base, opts)
         max_lines = opts.max_lines or 100000,
       }
       if not M.status_cache[ctx.git_root] then
-        -- do a fast scan first to get basic things in, then a full scan with ignore/untracked files
+        -- do a fast scan first to get basic things in, then a full scan with untracked files
         async_git_status_job(
           ctx,
           make_git_status_args(
@@ -482,7 +499,7 @@ M.mark_ignored = function(state, items)
     return
   end
   for _, i in ipairs(items) do
-    local direct_lookup = gs[i.path] or gs[i.path .. utils.path_separator]
+    local direct_lookup = gs[i.path]
     if direct_lookup == "!" then
       i.filtered_by = i.filtered_by or {}
       i.filtered_by.gitignored = true
@@ -498,6 +515,15 @@ local finalize = function(path, git_root)
   log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
 end
 
+---@param path string
+local clear_cache_upwards = function(path)
+  M.status_cache[path] = nil
+  for _, parent in utils.path_parents(path) do
+    M.status_cache[parent] = nil
+  end
+end
+
+---Returns the repository root, already normalized.
 ---@param path string? Defaults to cwd
 ---@param callback fun(git_root: string?)?
 ---@return string?
@@ -516,10 +542,11 @@ M.get_repository_root = function(path, callback)
       on_exit = function(self, code, _)
         if code ~= 0 then
           log.trace("GIT ROOT ERROR", self:stderr_result())
+          clear_cache_upwards(path)
           callback(nil)
           return
         end
-        local git_root = self:result()[1]
+        local git_root = utils.normalize_path(self:result()[1])
 
         finalize(path, git_root)
         callback(git_root)
@@ -531,9 +558,10 @@ M.get_repository_root = function(path, callback)
   local ok, git_output = utils.execute_command({ "git", unpack(args) })
   if not ok then
     log.trace("GIT ROOT NOT FOUND", git_output)
+    clear_cache_upwards(path)
     return nil
   end
-  local git_root = git_output[1]
+  local git_root = utils.normalize_path(git_output[1])
 
   finalize(path, git_root)
   return git_root
