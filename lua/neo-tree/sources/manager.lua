@@ -415,10 +415,8 @@ M.git_status_changed = function(source_name, args)
     error("git_status_changed: args must be a table")
   end
   M._for_each_state(source_name, function(state)
-    if utils.is_subpath(args.git_root, state.path) then
-      state.git_status_lookup = args.git_status
-      renderer.redraw(state)
-    end
+    state.git_status_lookup = args.git_status
+    renderer.redraw(state)
   end)
 end
 

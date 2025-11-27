@@ -166,14 +166,18 @@ end
 
 ---@generic P : string
 ---@param path P
----@param callback fun(path: P)
+---@param callback fun(path: P, fname: string)
 M.on_destroyed = function(path, callback)
   local ev = log.assert(uv.new_fs_event())
-  ev:start(path, flags, function(err, path, events)
-    if events.change then
+  ev:start(path, flags, function(err, fname, event)
+    log.assert(not err, err)
+    if event.rename then
       if not uv.fs_stat(path) then
-        callback(path)
+        log.info(path, "destroyed")
+        callback(path, fname)
         ev:close()
+      else
+        log.info(path, "not yet destroyed")
       end
     end
   end)
