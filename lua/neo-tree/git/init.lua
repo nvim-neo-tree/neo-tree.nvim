@@ -12,9 +12,12 @@ local git_version_major, git_version_minor
 if git_available then
   ---@diagnostic disable-next-line: param-type-mismatch
   local version_numbers = vim.split(git_version_output[1], ".", gsplit_plain)
-  git_version_major = version_numbers[1]:sub(#"git version " + 1)
-  git_version_minor = version_numbers[2]
+  git_version_major = tonumber(version_numbers[1]:sub(#"git version " + 1))
+  git_version_minor = tonumber(version_numbers[2])
 end
+local has_porcelain_v2 = git_version_major >= 2 and git_version_minor >= 12
+-- local supported_porcelain_version = has_porcelain_v2 and 2 or 1
+local supported_porcelain_version = 1
 
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
@@ -47,13 +50,25 @@ local update_git_status = function(ctx, git_status)
   end)
 end
 
----@param git_root string
+---@param path string
+---@return string path_with_no_trailing_slash
+local trim_trailing_slash = function(path)
+  return path:sub(-1, -1) == "/" and path:sub(1, -2) or path
+end
+---@param porcelain_version 1|2
 ---@param status_iter fun():string? A function that will override each var of the git status
 ---@param git_status neotree.git.Status? The git status table to override, if any
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status
-M.parse_porcelain_output = function(git_root, status_iter, git_status, batch_size, skip_bubbling)
+M.parse_porcelain = function(
+  porcelain_version,
+  git_root,
+  status_iter,
+  git_status,
+  batch_size,
+  skip_bubbling
+)
   local git_root_dir = utils.normalize_path(git_root) .. utils.path_separator
   local prev_line = ""
   local num_in_batch = 0
@@ -72,114 +87,136 @@ M.parse_porcelain_output = function(git_root, status_iter, git_status, batch_siz
       end
     end
   end
-  for line in status_iter do
-    -- Example status:
-    -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
-    -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
-    -- 1 MM N... 100644 100644 100644 4417f3aca512ffdf247662e2c611ee03ff9255cc 29c0e9846cd6410a44c4ca3fdaf5623818bd2838 modified_mixed.txt
-    -- 1 M. N... 100644 100644 100644 f784736eecdd43cd8eb665615163cfc6506fca5f 8d6fad5bd11ac45c7c9e62d4db1c427889ed515b modified_staged.txt
-    -- 1 .M N... 100644 100644 100644 c9e1e027aa9430cb4ffccccf45844286d10285c1 c9e1e027aa9430cb4ffccccf45844286d10285c1 modified_unstaged.txt
-    -- 1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 89cae60d74c222609086441e29985f959b6ec546 new_staged_file.txt
-    -- 2 R. N... 100644 100644 100644 3454a7dc6b93d1098e3c3f3ec369589412abdf99 3454a7dc6b93d1098e3c3f3ec369589412abdf99 R100 renamed_staged_new.txt
-    -- renamed_staged_old.txt
-    -- 1 .T N... 100644 100644 120000 192f10ed8c11efb70155e8eb4cae6ec677347623 192f10ed8c11efb70155e8eb4cae6ec677347623 type_change.txt
-    -- ? .gitignore
-    -- ? untracked.txt
 
-    -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-    -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
-    local t = line:sub(1, 1)
-    if t == "1" then
-      local XY = line:sub(3, 4)
-      -- local submodule_state = line:sub(6, 9)
-      -- local mH = line:sub(11, 16)
-      -- local mI = line:sub(18, 23)
-      -- local mW = line:sub(25, 30)
-      -- local hH = line:sub(32, 71)
-      -- local hI = line:sub(73, 112)
-      local path = line:sub(114)
-      git_status[git_root_dir .. path] = XY
-    elseif t == "2" then
-      -- local XY = line:sub(3, 4)
-      -- local submodule_state = line:sub(6, 9)
-      -- local mH = line:sub(11, 16)
-      -- local mI = line:sub(18, 23)
-      -- local mW = line:sub(25, 30)
-      -- local hH = line:sub(32, 71)
-      -- local hI = line:sub(73, 112)
-      local rest = line:sub(114)
-      local first_space = rest:find(" ", 1, true)
-      local Xscore = rest:sub(1, first_space - 1)
-      local path = rest:sub(first_space + 1)
-      git_status[git_root_dir .. path] = Xscore
-      -- ignore the original path
-      status_iter()
-    elseif t == "u" then
-      local XY = line:sub(3, 4)
-      -- local submodule_state = line:sub(6, 9)
-      -- local m1 = line:sub(11, 16)
-      -- local m2 = line:sub(18, 23)
-      -- local m3 = line:sub(25, 30)
-      -- local mW = line:sub(32, 37)
-      -- local h1 = line:sub(39, 78)
-      -- local h2 = line:sub(80, 119)
-      -- local h3 = line:sub(121, 160)
-      local path = line:sub(162)
-      git_status[git_root_dir .. path] = XY
-    else
-      prev_line = line
-      break
+  if porcelain_version == 1 then
+    for line in status_iter do
+      -- Example status:
+      -- D  deleted_staged.txt
+      --  D deleted_unstaged.txt
+      -- MM modified_mixed.txt
+      -- M  modified_staged.txt
+      --  M modified_unstaged.txt
+      -- A  new_staged_file.txt
+      -- R  renamed_staged_old.txt -> renamed_staged_new.txt
+      --  T type_change.txt
+      -- ?? .gitignore
+      -- ?? untracked.txt
+      -- !! ignored.txt
+      local XY = line:sub(1, 2)
+      if XY == "??" or XY == "!!" then
+        prev_line = line
+        break
+      end
+
+      if XY ~= "# " then
+        local X = XY:sub(1, 1)
+        local Y = XY:sub(2, 2)
+        local path = line:sub(4)
+        if X == "R" or Y == "R" or X == "C" or Y == "C" then
+          status_iter() -- consume original path
+        end
+        git_status[git_root_dir .. path] = XY:gsub(" ", ".")
+      end
     end
-    -- X          Y     Meaning
-    -- -------------------------------------------------
-    -- 	        [AMD]   not updated
-    -- M        [ MTD]  updated in index
-    -- T        [ MTD]  type changed in index
-    -- A        [ MTD]  added to index
-    -- D                deleted from index
-    -- R        [ MTD]  renamed in index
-    -- C        [ MTD]  copied in index
-    -- [MTARC]          index and work tree matches
-    -- [ MTARC]    M    work tree changed since index
-    -- [ MTARC]    T    type changed in work tree since index
-    -- [ MTARC]    D    deleted in work tree
-    --             R    renamed in work tree
-    --             C    copied in work tree
-    -- -------------------------------------------------
-    -- D           D    unmerged, both deleted
-    -- A           U    unmerged, added by us
-    -- U           D    unmerged, deleted by them
-    -- U           A    unmerged, added by them
-    -- D           U    unmerged, deleted by us
-    -- A           A    unmerged, both added
-    -- U           U    unmerged, both modified
-    if batch_size then
-      yield_if_batch_completed()
+  elseif porcelain_version == 2 then
+    for line in status_iter do
+      -- Example status:
+      -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
+      -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
+      -- 1 MM N... 100644 100644 100644 4417f3aca512ffdf247662e2c611ee03ff9255cc 29c0e9846cd6410a44c4ca3fdaf5623818bd2838 modified_mixed.txt
+      -- 1 M. N... 100644 100644 100644 f784736eecdd43cd8eb665615163cfc6506fca5f 8d6fad5bd11ac45c7c9e62d4db1c427889ed515b modified_staged.txt
+      -- 1 .M N... 100644 100644 100644 c9e1e027aa9430cb4ffccccf45844286d10285c1 c9e1e027aa9430cb4ffccccf45844286d10285c1 modified_unstaged.txt
+      -- 1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 89cae60d74c222609086441e29985f959b6ec546 new_staged_file.txt
+      -- 2 R. N... 100644 100644 100644 3454a7dc6b93d1098e3c3f3ec369589412abdf99 3454a7dc6b93d1098e3c3f3ec369589412abdf99 R100 renamed_staged_new.txt
+      -- renamed_staged_old.txt
+      -- 1 .T N... 100644 100644 120000 192f10ed8c11efb70155e8eb4cae6ec677347623 192f10ed8c11efb70155e8eb4cae6ec677347623 type_change.txt
+      -- ? .gitignore
+      -- ? untracked.txt
+      -- ! ignored.txt
+
+      -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
+      -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
+      local t = line:sub(1, 1)
+      if t == "#" then
+      -- continue for now
+      elseif t == "1" then
+        local XY = line:sub(3, 4)
+        -- local submodule_state = line:sub(6, 9)
+        -- local mH = line:sub(11, 16)
+        -- local mI = line:sub(18, 23)
+        -- local mW = line:sub(25, 30)
+        -- local hH = line:sub(32, 71)
+        -- local hI = line:sub(73, 112)
+        local path = line:sub(114)
+        git_status[git_root_dir .. path] = XY
+      elseif t == "2" then
+        -- local XY = line:sub(3, 4)
+        -- local submodule_state = line:sub(6, 9)
+        -- local mH = line:sub(11, 16)
+        -- local mI = line:sub(18, 23)
+        -- local mW = line:sub(25, 30)
+        -- local hH = line:sub(32, 71)
+        -- local hI = line:sub(73, 112)
+        local rest = line:sub(114)
+        local first_space = rest:find(" ", 1, true)
+        local Xscore = rest:sub(1, first_space - 1)
+        local path = rest:sub(first_space + 1)
+        git_status[git_root_dir .. path] = Xscore
+        -- ignore the original path
+        status_iter()
+      elseif t == "u" then
+        local XY = line:sub(3, 4)
+        -- local submodule_state = line:sub(6, 9)
+        -- local m1 = line:sub(11, 16)
+        -- local m2 = line:sub(18, 23)
+        -- local m3 = line:sub(25, 30)
+        -- local mW = line:sub(32, 37)
+        -- local h1 = line:sub(39, 78)
+        -- local h2 = line:sub(80, 119)
+        -- local h3 = line:sub(121, 160)
+        local path = line:sub(162)
+        git_status[git_root_dir .. path] = XY
+      else
+        -- either untracked or ignored
+        assert(
+          t == "?" or t == "!" or t == "",
+          "git status lines following tracked files are not ignored nor untracked"
+        )
+        prev_line = line
+        break
+      end
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   end
+
+  local path_start = porcelain_version == 2 and 3 or 4
 
   -- -------------------------------------------------
   -- ?           ?    untracked
   -- !           !    ignored
   -- -------------------------------------------------
   if prev_line:sub(1, 1) == "?" then
-    git_status[git_root_dir .. prev_line:sub(3)] = "?"
-    for line in status_iter do
+    ---@type string?
+    local line = prev_line
+    while line do
       if line:sub(1, 1) ~= "?" then
         prev_line = line
         break
       end
-      git_status[git_root_dir .. line:sub(3)] = "?"
-    end
-    if batch_size then
-      yield_if_batch_completed()
+
+      git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "?"
+      line = status_iter()
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   end
 
   if not skip_bubbling then
     -- bubble up every status besides ignored
     local status_prio = { "U", "?", "M", "A", "D", "T", "R", "C" }
-
     for dir, status in pairs(git_status) do
       if status ~= "!" then
         local s1 = status:sub(1, 1)
@@ -214,24 +251,29 @@ M.parse_porcelain_output = function(git_root, status_iter, git_status, batch_siz
   end
 
   if prev_line:sub(1, 1) == "!" then
-    git_status[git_root_dir .. prev_line:sub(3)] = "!"
-    for line in status_iter do
-      git_status[git_root_dir .. line:sub(3)] = "!"
-    end
-    if batch_size then
-      yield_if_batch_completed()
+    ---@type string?
+    local line = prev_line
+    while line do
+      git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "!"
+      line = status_iter()
+
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   end
 
   M.status_cache[git_root] = git_status
   return git_status
 end
+
 ---@param git_root string
+---@param porcelain_version 1|2
 ---@param untracked_files "all"|"no"|"normal"?
 ---@param ignored "traditional"|"no"|"matching"?
 ---@param paths string[]?
 ---@return string[] args
-local make_git_status_args = function(git_root, untracked_files, ignored, paths)
+local make_git_status_args = function(porcelain_version, git_root, untracked_files, ignored, paths)
   untracked_files = untracked_files or "normal"
   ignored = ignored or "traditional"
   local opts = {
@@ -239,7 +281,7 @@ local make_git_status_args = function(git_root, untracked_files, ignored, paths)
     "-C",
     git_root,
     "status",
-    "--porcelain=v2",
+    "--porcelain=v" .. porcelain_version,
     "--untracked-files=" .. untracked_files,
     "--ignored=" .. ignored,
     "-z",
@@ -267,7 +309,7 @@ M.status = function(base, skip_bubbling, path)
 
   local status_cmd = {
     "git",
-    unpack(make_git_status_args(git_root)),
+    unpack(make_git_status_args(supported_porcelain_version, git_root)),
   }
   local status_result = vim.fn.system(status_cmd)
 
@@ -283,7 +325,8 @@ M.status = function(base, skip_bubbling, path)
     -- system() replaces \000 with \001
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
-    local git_status = M.parse_porcelain_output(git_root, status_iter, nil, nil, skip_bubbling)
+    local git_status =
+      M.parse_porcelain(supported_porcelain_version, git_root, status_iter, nil, nil, skip_bubbling)
 
     update_git_status(context, git_status)
   end
@@ -303,9 +346,15 @@ local async_git_status_job = function(context, git_args, callback)
   ---@diagnostic disable-next-line: missing-fields
   uv.spawn("git", {
     hide = true,
-    args = git_args or make_git_status_args(context.git_root),
+    args = git_args or make_git_status_args(supported_porcelain_version, context.git_root),
     stdio = { stdin, stdout, stderr },
   }, function(code, signal)
+    stdin:shutdown()
+    stdin:close()
+    stdout:shutdown()
+    stdout:close()
+    stderr:shutdown()
+    stderr:close()
     if code ~= 0 then
       log.at.warn.format(
         "git status async process exited abnormally, code: %s, signal: %s",
@@ -314,13 +363,6 @@ local async_git_status_job = function(context, git_args, callback)
       )
       return
     end
-
-    stdin:shutdown()
-    stdin:close()
-    stdout:shutdown()
-    stdout:close()
-    stderr:shutdown()
-    stderr:close()
 
     if #output_chunks == 0 then
       return
@@ -332,9 +374,16 @@ local async_git_status_job = function(context, git_args, callback)
 
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(output, "\000", gsplit_plain)
-    local parsing_task = co.create(M.parse_porcelain_output)
+    local parsing_task = co.create(M.parse_porcelain)
     log.assert(
-      co.resume(parsing_task, context.git_root, status_iter, context.git_status, context.batch_size)
+      co.resume(
+        parsing_task,
+        supported_porcelain_version,
+        context.git_root,
+        status_iter,
+        context.git_status,
+        context.batch_size
+      )
     )
 
     local processed_lines = 0
@@ -368,8 +417,6 @@ local async_git_status_job = function(context, git_args, callback)
   end)
 end
 
-local status_jobs = {}
-
 ---@param path string path to run commands in
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
@@ -397,7 +444,7 @@ M.status_async = function(path, base, opts)
         -- do a fast scan first to get basic things in, then a full scan with ignore/untracked files
         async_git_status_job(
           ctx,
-          make_git_status_args(git_root, "no", "no", { path }),
+          make_git_status_args(supported_porcelain_version, git_root, "no", "no", { path }),
           function(fast_status)
             update_git_status(ctx, fast_status)
             async_git_status_job(ctx, nil, function(full_status)
