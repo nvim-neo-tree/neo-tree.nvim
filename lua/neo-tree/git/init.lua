@@ -40,15 +40,15 @@ M.status_cache = setmetatable({}, {
 
 ---@alias neotree.git.Status table<string, string>
 
----@param ctx neotree.git.Context
+---@param context neotree.git.Context
 ---@param git_status neotree.git.Status
-local update_git_status = function(ctx, git_status)
-  ctx.git_status = git_status
-  M.status_cache[ctx.git_root] = git_status
+local update_git_status = function(context, git_status)
+  context.git_status = git_status
+  M.status_cache[context.git_root] = git_status
   vim.schedule(function()
     events.fire_event(events.GIT_STATUS_CHANGED, {
-      git_root = ctx.git_root,
-      git_status = ctx.git_status,
+      git_root = context.git_root,
+      git_status = context.git_status,
     })
   end)
 end
@@ -229,13 +229,18 @@ M._parse_porcelain = function(
           else
             -- Bubble up the most important status
             local p = parent_status:sub(1, 1)
+            local bubbled = false
             for _, c in ipairs(status_prio) do
               if p == c then
                 break
               end
               if s1 == c or s2 == c then
                 git_status[parent] = c
+                bubbled = true
               end
+            end
+            if not bubbled then
+              break
             end
           end
         end
@@ -362,12 +367,13 @@ local async_git_status_job = function(context, git_args, callback)
       return
     end
 
-    if #output_chunks == 0 then
-      return
-    end
     local output = output_chunks[1]
     if #output_chunks > 1 then
       output = table.concat(output_chunks, "")
+    end
+    if not output then
+      callback(context.git_status)
+      return
     end
 
     ---@diagnostic disable-next-line: param-type-mismatch
@@ -383,7 +389,6 @@ local async_git_status_job = function(context, git_args, callback)
         context.batch_size
       )
     )
-
     local processed_lines = 0
     local function do_next_batch_later()
       if co.status(parsing_task) ~= "dead" then
@@ -442,7 +447,13 @@ M.status_async = function(path, base, opts)
         -- do a fast scan first to get basic things in, then a full scan with ignore/untracked files
         async_git_status_job(
           ctx,
-          make_git_status_args(M._supported_porcelain_version, git_root, "no", "no", { path }),
+          make_git_status_args(
+            M._supported_porcelain_version,
+            git_root,
+            "no",
+            "traditional",
+            { path }
+          ),
           function(fast_status)
             update_git_status(ctx, fast_status)
             async_git_status_job(ctx, nil, function(full_status)
