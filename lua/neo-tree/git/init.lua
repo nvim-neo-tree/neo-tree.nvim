@@ -34,7 +34,7 @@ M.status_cache = setmetatable({}, {
 ---@alias neotree.git.Status table<string, string>
 
 ---@param context neotree.git.Context
----@param git_status neotree.git.Status
+---@param git_status neotree.git.Status?
 local update_git_status = function(context, git_status)
   context.git_status = git_status
   M.status_cache[context.git_root] = git_status
@@ -500,13 +500,7 @@ local invalidate_cache = function(path)
   while p do
     local cache_entry = M.status_cache[p]
     if cache_entry ~= nil then
-      M.status_cache[p] = nil
-      vim.schedule(function()
-        events.fire_event(events.GIT_STATUS_CHANGED, {
-          git_root = path,
-          git_status = nil,
-        })
-      end)
+      update_git_status({ git_root = p }, nil)
     end
     p = parent_iter()
   end
