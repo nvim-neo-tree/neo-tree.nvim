@@ -507,7 +507,7 @@ local invalidate_cache = function(path)
 end
 
 ---Returns the repository root, already normalized.
----@param path string Defaults to cwd
+---@param path string? Defaults to cwd
 ---@param callback fun(git_root: string?)?
 ---@return string?
 M.get_worktree_root = function(path, callback)
