@@ -23,17 +23,20 @@ M.show_watched = function()
   log.info("Watched Folders: ", vim.inspect(items))
 end
 
----@class neotree.sources.filesystem.Watcher
+---@class neotree.sources.filesystem.WatcherOpts
 ---@field handle uv.uv_fs_event_t?
 ---@field references integer
 ---@field active boolean
 ---@field callback fun(err: string?, name: string)
+
+---@class neotree.sources.filesystem.Watcher : neotree.sources.filesystem.WatcherOpts
 local Watcher = {}
 
----@param opts neotree.sources.filesystem.Watcher
+---@param opts neotree.sources.filesystem.WatcherOpts
 function Watcher:new(opts)
   setmetatable(opts, self)
   self.__index = self
+  ---@cast opts neotree.sources.filesystem.Watcher
   return opts
 end
 
