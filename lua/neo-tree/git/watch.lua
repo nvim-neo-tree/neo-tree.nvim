@@ -27,7 +27,10 @@ local function watch_git_dir(git_dir)
         if git_folder_stat and git_folder_stat.type == "directory" then
           return
         end
+
+        git.get_git_dir(git_dir)
       end, 1000, utils.debounce_strategy.CALL_LAST_ONLY)
+
       vim.schedule(function()
         events.fire_event(events.GIT_EVENT)
       end)
