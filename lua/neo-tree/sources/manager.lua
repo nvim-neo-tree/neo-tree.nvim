@@ -158,7 +158,7 @@ end
 ---For use in tests only, completely resets the state of all sources.
 ---This closes all windows as well since they would be broken by this action.
 M._clear_state = function()
-  fs_watch.unwatch_all()
+  fs_watch.stop_watching()
   renderer.close_all_floating_windows()
   for _, data in pairs(source_data) do
     for _, state in pairs(data.state_by_tab) do
