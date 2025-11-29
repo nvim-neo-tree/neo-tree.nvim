@@ -9,6 +9,7 @@ local file_nesting = require("neo-tree.sources.common.file-nesting")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
+local git_watcher = require("neo-tree.git.watch")
 local events = require("neo-tree.events")
 local async = require("plenary.async")
 local ignored = require("neo-tree.sources.filesystem.lib.ignored")
@@ -85,12 +86,16 @@ local render_context = function(context)
   local parent_id = context.parent_id
 
   if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
-    log.trace("Starting .git folder watcher")
     local path = root.path
     if root.is_link then
-      path = root.link_to
+      path = utils.path_join(path, root.link_to)
     end
-    fs_watch.watch_git_index(path, require("neo-tree").config.git_status_async)
+
+    if path then
+      log.trace("Looking for .git folder")
+      local async_opts = require("neo-tree").config.git_status_async
+      git_watcher.watch(path, async_opts)
+    end
   end
   fs_watch.updated_watched()
 
@@ -651,11 +656,11 @@ M.stop_watchers = function(state)
     local loaded_folders = renderer.select_nodes(state.tree, function(node)
       return node.type == "directory" and node.loaded
     end)
-    fs_watch.unwatch_git_index(state.path, require("neo-tree").config.git_status_async)
+    git_watcher.unwatch(state.path, require("neo-tree").config.git_status_async)
     for _, folder in ipairs(loaded_folders) do
       log.trace("Unwatching folder", folder.path)
       if folder.is_link then
-        fs_watch.unwatch_folder(folder.link_to)
+        fs_watch.unwatch_folder(utils.path_join(folder.path, folder.link_to))
       else
         fs_watch.unwatch_folder(folder:get_id())
       end
