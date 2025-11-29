@@ -158,7 +158,7 @@ end
 ---For use in tests only, completely resets the state of all sources.
 ---This closes all windows as well since they would be broken by this action.
 M._clear_state = function()
-  fs_watch.unwatch_all()
+  fs_watch.stop_watching()
   renderer.close_all_floating_windows()
   for _, data in pairs(source_data) do
     for _, state in pairs(data.state_by_tab) do
@@ -415,8 +415,8 @@ M.git_status_changed = function(source_name, args)
     error("git_status_changed: args must be a table")
   end
   M._for_each_state(source_name, function(state)
-    if utils.is_subpath(args.git_root, state.path) then
-      state.git_status_lookup = args.git_status
+    state.git_status_lookup = args.git_status
+    if utils.is_subpath(state.path, args.git_root) then
       renderer.redraw(state)
     end
   end)
@@ -545,7 +545,6 @@ M.dispose_invalid_tabs = function()
   -- Iterate in reverse because we are removing items during loop
   for i = #all_states, 1, -1 do
     local state = all_states[i]
-    -- if not valid_tabs[state.tabid] then
     if not vim.api.nvim_tabpage_is_valid(state.tabid) then
       log.trace(state.name, "disposing of tab:", state.tabid, state.name)
       dispose_state(state)

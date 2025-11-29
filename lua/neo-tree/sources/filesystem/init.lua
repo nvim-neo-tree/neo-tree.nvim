@@ -395,7 +395,7 @@ M.setup = function(config, global_config)
       handler = function(state)
         local this_state = get_state()
         if state == this_state then
-          state.git_status_lookup = git.status(state.git_base)
+          state.git_status_lookup = git.status(state.git_base, false, state.path)
         end
       end,
     })
@@ -418,7 +418,6 @@ M.setup = function(config, global_config)
       handler = wrap(manager.refresh),
     })
   else
-    require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()
     if global_config.enable_refresh_on_write then
       manager.subscribe(M.name, {
         event = events.VIM_BUFFER_CHANGED,
