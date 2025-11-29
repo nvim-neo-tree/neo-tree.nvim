@@ -543,10 +543,6 @@ end
 
 M.dispose_invalid_tabs = function()
   -- Iterate in reverse because we are removing items during loop
-  if vim.in_fast_event() then
-    vim.print(debug.traceback())
-    return
-  end
   for i = #all_states, 1, -1 do
     local state = all_states[i]
     if not vim.api.nvim_tabpage_is_valid(state.tabid) then
