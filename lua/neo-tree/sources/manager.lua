@@ -416,7 +416,9 @@ M.git_status_changed = function(source_name, args)
   end
   M._for_each_state(source_name, function(state)
     state.git_status_lookup = args.git_status
-    renderer.redraw(state)
+    if utils.is_subpath(state.path, args.git_root) then
+      renderer.redraw(state)
+    end
   end)
 end
 
@@ -541,9 +543,12 @@ end
 
 M.dispose_invalid_tabs = function()
   -- Iterate in reverse because we are removing items during loop
+  if vim.in_fast_event() then
+    vim.print(debug.traceback())
+    return
+  end
   for i = #all_states, 1, -1 do
     local state = all_states[i]
-    -- if not valid_tabs[state.tabid] then
     if not vim.api.nvim_tabpage_is_valid(state.tabid) then
       log.trace(state.name, "disposing of tab:", state.tabid, state.name)
       dispose_state(state)

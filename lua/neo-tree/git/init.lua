@@ -25,31 +25,6 @@ M._supported_porcelain_version = has_porcelain_v2 and 2 or 1
 ---@type table<string, neotree.git.Status>
 M.status_cache = setmetatable({}, {
   __mode = "kv",
-  __newindex = function(self, root_dir, status)
-    if status then
-      local clear_cache_entry_if_no_repo = function()
-        vim.schedule(function()
-          if M.get_repository_root(root_dir) == root_dir then
-            -- repo still exists at the same location, ignore
-            return
-          end
-
-          self[root_dir] = nil
-          events.fire_event(events.GIT_STATUS_CHANGED, { git_root = root_dir, status = nil })
-        end)
-      end
-      require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(
-        root_dir,
-        clear_cache_entry_if_no_repo
-      )
-      require("neo-tree.sources.filesystem.lib.fs_watch").on_destroyed(
-        utils.path_join(root_dir, ".git"),
-        clear_cache_entry_if_no_repo
-      )
-    end
-
-    rawset(self, root_dir, status)
-  end,
 })
 
 ---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
@@ -319,7 +294,7 @@ end
 ---@param path string? Path to run the git status command in, defaults to cwd.
 ---@return neotree.git.Status?, string? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 M.status = function(base, skip_bubbling, path)
-  local git_root = M.get_repository_root(path)
+  local git_root = M.get_worktree_root(path)
   if not utils.truthy(git_root) then
     return nil
   end
@@ -445,7 +420,7 @@ end
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
-  M.get_repository_root(path, function(git_root)
+  M.get_worktree_root(path, function(git_root)
     if not git_root then
       log.trace("status_async: not a git folder:", path)
       return
@@ -515,11 +490,25 @@ local finalize = function(path, git_root)
   log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
 end
 
+---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
-local clear_cache_upwards = function(path)
-  M.status_cache[path] = nil
-  for _, parent in utils.path_parents(path) do
-    M.status_cache[parent] = nil
+local invalidate_cache = function(path)
+  local parent_iter = utils.path_parents(path, true)
+  ---@type string?
+  local p = path
+
+  while p do
+    local cache_entry = M.status_cache[p]
+    if cache_entry ~= nil then
+      M.status_cache[p] = nil
+      vim.schedule(function()
+        events.fire_event(events.GIT_STATUS_CHANGED, {
+          git_root = path,
+          git_status = nil,
+        })
+      end)
+    end
+    p = parent_iter()
   end
 end
 
@@ -527,26 +516,28 @@ end
 ---@param path string? Defaults to cwd
 ---@param callback fun(git_root: string?)?
 ---@return string?
-M.get_repository_root = function(path, callback)
+M.get_worktree_root = function(path, callback)
   path = path or log.assert(uv.cwd())
 
-  log.trace("git.get_repository_root: cache miss for", path)
   local args = { "-C", path, "rev-parse", "--show-toplevel" }
 
   if type(callback) == "function" then
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
       command = "git",
-      args = { "-C", path, "rev-parse", "--show-toplevel" },
+      args = args,
       enabled_recording = true,
       on_exit = function(self, code, _)
         if code ~= 0 then
           log.trace("GIT ROOT ERROR", self:stderr_result())
-          clear_cache_upwards(path)
+          invalidate_cache(path)
           callback(nil)
           return
         end
-        local git_root = utils.normalize_path(self:result()[1])
+        local git_root = self:result()[1]
+        if git_root then
+          git_root = utils.normalize_path(git_root)
+        end
 
         finalize(path, git_root)
         callback(git_root)
@@ -558,10 +549,62 @@ M.get_repository_root = function(path, callback)
   local ok, git_output = utils.execute_command({ "git", unpack(args) })
   if not ok then
     log.trace("GIT ROOT NOT FOUND", git_output)
-    clear_cache_upwards(path)
+    invalidate_cache(path)
     return nil
   end
-  local git_root = utils.normalize_path(git_output[1])
+  local git_root = git_output[1]
+  if git_root then
+    git_root = utils.normalize_path(git_root)
+  end
+
+  finalize(path, git_root)
+  return git_root
+end
+
+---Returns the absolute git dir path
+---@param path string? Defaults to cwd
+---@param callback fun(git_root: string?)?
+---@return string?
+M.get_git_dir = function(path, callback)
+  path = path or log.assert(uv.cwd())
+
+  local args = { "-C", path, "rev-parse", "--absolute-git-dir" }
+
+  if type(callback) == "function" then
+    ---@diagnostic disable-next-line: missing-fields
+    Job:new({
+      command = "git",
+      args = args,
+      enabled_recording = true,
+      on_exit = function(self, code, _)
+        if code ~= 0 then
+          log.trace("GIT DIR ERROR", self:stderr_result())
+          invalidate_cache(path)
+          callback(nil)
+          return
+        end
+        local git_root = self:result()[1]
+        if git_root then
+          git_root = utils.normalize_path(git_root)
+        end
+
+        finalize(path, git_root)
+        callback(git_root)
+      end,
+    }):start()
+    return
+  end
+
+  local ok, git_output = utils.execute_command({ "git", unpack(args) })
+  if not ok then
+    log.trace("GIT ROOT NOT FOUND", git_output)
+    invalidate_cache(path)
+    return nil
+  end
+  local git_root = git_output[1]
+  if git_root then
+    git_root = utils.normalize_path(git_root)
+  end
 
   finalize(path, git_root)
   return git_root

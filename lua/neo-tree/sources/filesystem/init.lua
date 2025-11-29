@@ -418,7 +418,6 @@ M.setup = function(config, global_config)
       handler = wrap(manager.refresh),
     })
   else
-    require("neo-tree.sources.filesystem.lib.fs_watch").unwatch_all()
     if global_config.enable_refresh_on_write then
       manager.subscribe(M.name, {
         event = events.VIM_BUFFER_CHANGED,
