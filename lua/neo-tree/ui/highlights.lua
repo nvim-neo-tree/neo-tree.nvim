@@ -29,7 +29,6 @@ M.GIT_IGNORED = "NeoTreeGitIgnored"
 M.GIT_MODIFIED = "NeoTreeGitModified"
 M.GIT_RENAMED = "NeoTreeGitRenamed"
 M.GIT_STAGED = "NeoTreeGitStaged"
-M.GIT_PARTIALLY_STAGED = "NeoTreeGitPartiallyStaged"
 M.GIT_UNTRACKED = "NeoTreeGitUntracked"
 M.GIT_UNSTAGED = "NeoTreeGitUnstaged"
 M.HIDDEN_BY_NAME = "NeoTreeHiddenByName"
@@ -309,7 +308,6 @@ M.setup = function()
   M.create_highlight_group(M.IGNORED, { M.DOTFILE }, nil, nil)
   M.create_highlight_group(M.GIT_RENAMED, { M.GIT_MODIFIED }, nil, nil)
   M.create_highlight_group(M.GIT_STAGED, { M.GIT_ADDED }, nil, nil)
-  M.create_highlight_group(M.GIT_PARTIALLY_STAGED, { M.GIT_MODIFIED }, nil, nil)
   M.create_highlight_group(M.GIT_UNSTAGED, { M.GIT_CONFLICT }, nil, nil)
   M.create_highlight_group(M.GIT_UNTRACKED, {}, nil, conflict.foreground, "italic")
 

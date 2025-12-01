@@ -247,7 +247,7 @@ M.git_status = function(config, node, state)
   end
 
   local symbols = config.symbols or {}
-  -- whether the item is staged, partially staged, unstaged, or ignored/untracked
+  -- whether the item is staged, unstaged, or ignored/untracked
   local stage_sb
   local stage_hl
 
@@ -288,9 +288,6 @@ M.git_status = function(config, node, state)
   elseif x == "." then
     stage_sb = symbols.unstaged
     stage_hl = highlights.GIT_UNSTAGED
-  elseif #x > 0 and #y > 0 then
-    stage_sb = symbols.partially_staged
-    stage_hl = highlights.GIT_PARTIALLY_STAGED
   end
 
   repeat

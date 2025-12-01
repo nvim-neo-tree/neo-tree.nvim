@@ -258,7 +258,6 @@ local config = {
         ignored   = "",
         unstaged  = "󰄱",
         staged    = "",
-        partially_staged = "󰆖",
         conflict  = "",
       },
       align = "right",
