@@ -1017,31 +1017,51 @@ M.path_parents = function(path, fast)
   if not fast then
     path = M.normalize_path(path)
   end
-  local prefix = M.abspath_prefix(path)
+  -- if fast then
+  --   local parent = path
+  --   local seperator_indices = {}
+  --   do
+  --     local res
+  --     local i = 1
+  --     repeat
+  --       res = path:find(M.path_separator, i, true)
+  --       seperator_indices[#seperator_indices + 1] = res
+  --       if res then
+  --         i = res + 1
+  --       end
+  --     until not res
+  --   end
+  --   local i = #seperator_indices
+  --   return function()
+  --     local idx = seperator_indices[i]
+  --     i = i - 1
+  --     if not idx or #parent <= #prefix then
+  --       return nil
+  --     end
+  --
+  --     parent = parent:sub(1, idx - 1)
+  --     return parent, parent:sub(idx + 1)
+  --   end
+  -- end
   if fast then
-    local parent = path
-    local seperator_indices = {}
-    do
-      local res
-      local i = 1
-      repeat
-        res = path:find(M.path_separator, i, true)
-        seperator_indices[#seperator_indices + 1] = res
-        if res then
-          i = res + 1
-        end
-      until not res
-    end
-    local i = #seperator_indices
+    local right = #path
+    local sep = M.path_separator
+    local prefix = M.abspath_prefix(path) or ""
     return function()
-      local idx = seperator_indices[i]
-      i = i - 1
-      if not idx or #parent <= #prefix then
+      if right <= #prefix then
         return nil
       end
+      for left = right, 1, -1 do
+        if path:sub(left, left) == sep then
+          if left == #prefix then
+            right = left - 1
+            return prefix
+          end
 
-      parent = parent:sub(1, idx - 1)
-      return parent, parent:sub(idx + 1)
+          right = left - 1
+          return path:sub(1, right)
+        end
+      end
     end
   end
   ---@type string?
@@ -1241,7 +1261,7 @@ M.abspath_prefix = function(path)
     end
   end
 
-  return path:match("^/")
+  return path:sub(1, 1) == "/" and "/" or nil
 end
 
 local table_merge_internal

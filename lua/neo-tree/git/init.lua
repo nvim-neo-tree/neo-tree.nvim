@@ -89,6 +89,11 @@ M._parse_porcelain = function(
 
   local line = status_iter()
 
+  ---@type string[]
+  local statuses = {}
+  ---@type string[]
+  local paths = {}
+
   if porcelain_version == 1 then
     while line do
       -- Example status:
@@ -115,7 +120,11 @@ M._parse_porcelain = function(
         if X == "R" or Y == "R" or X == "C" or Y == "C" then
           status_iter() -- consume original path
         end
-        git_status[git_root_dir .. path] = XY:gsub(" ", ".")
+        local abspath = git_root_dir .. path
+        if utils.is_windows then
+          abspath = utils.windowize_path(abspath)
+        end
+        paths[#paths + 1] = abspath
       end
       line = status_iter()
     end
@@ -149,7 +158,10 @@ M._parse_porcelain = function(
         -- local hH = line:sub(32, 71)
         -- local hI = line:sub(73, 112)
         local path = line:sub(114)
-        git_status[git_root_dir .. path] = XY
+
+        local abspath = git_root_dir .. path
+        paths[#paths + 1] = abspath
+        statuses[#statuses + 1] = XY
       elseif t == "2" then
         -- local XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
@@ -162,7 +174,13 @@ M._parse_porcelain = function(
         local first_space = rest:find(" ", 1, true)
         local Xscore = rest:sub(1, first_space - 1)
         local path = rest:sub(first_space + 1)
-        git_status[git_root_dir .. path] = Xscore
+
+        local abspath = git_root_dir .. path
+        if utils.is_windows then
+          abspath = utils.windowize_path(abspath)
+        end
+        paths[#paths + 1] = abspath
+        statuses[#statuses + 1] = Xscore
         -- ignore the original path
         status_iter()
       elseif t == "u" then
@@ -176,7 +194,13 @@ M._parse_porcelain = function(
         -- local h2 = line:sub(80, 119)
         -- local h3 = line:sub(121, 160)
         local path = line:sub(162)
-        git_status[git_root_dir .. path] = XY
+
+        local abspath = git_root_dir .. path
+        if utils.is_windows then
+          abspath = utils.windowize_path(abspath)
+        end
+        paths[#paths + 1] = abspath
+        statuses[#statuses + 1] = XY
       else
         -- either untracked or ignored
         assert(
@@ -199,50 +223,73 @@ M._parse_porcelain = function(
   -- !           !    ignored
   -- -------------------------------------------------
   while line and line:sub(1, 1) == "?" do
-    git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "?"
+    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
+    if utils.is_windows then
+      abspath = utils.windowize_path(abspath)
+    end
+    git_status[abspath] = "?"
     line = status_iter()
     if batch_size then
       yield_if_batch_completed()
     end
   end
 
+  for i, p in ipairs(paths) do
+    git_status[p] = statuses[i]
+  end
+
   if not skip_bubbling then
-    -- bubble up every status besides ignored
-    local status_prio = { "U", "?", "M", "A", "D", "T", "R", "C" }
-    for dir, status in pairs(git_status) do
-      if status ~= "!" then
-        local s1 = status:sub(1, 1)
-        local s2 = status:sub(2, 2)
-        for parent in utils.path_parents(dir, true) do
-          if parent == git_root or #parent < #git_root then
-            -- bubble only up to the children of the git root
+    local parents2 = {}
+    local conflicts = {}
+    local untracked = {}
+    local modified = {}
+    local added = {}
+    local deleted = {}
+    local typechanged = {}
+    local renamed = {}
+    local copied = {}
+    for i, s in ipairs(statuses) do
+      if s:find("U", 1, true) then
+        conflicts[#conflicts + 1] = i
+      elseif s:find("?", 1, true) then
+        untracked[#untracked + 1] = i
+      elseif s:find("M", 1, true) then
+        modified[#modified + 1] = i
+      elseif s:find("A", 1, true) then
+        added[#added + 1] = i
+      elseif s:find("D", 1, true) then
+        deleted[#deleted + 1] = i
+      elseif s:find("T", 1, true) then
+        typechanged[#typechanged + 1] = i
+      elseif s:find("R", 1, true) then
+        renamed[#renamed + 1] = i
+      elseif s:find("C", 1, true) then
+        copied[#copied + 1] = i
+      end
+    end
+
+    for _, list in ipairs({
+      conflicts,
+      untracked,
+      modified,
+      added,
+      deleted,
+      typechanged,
+      renamed,
+      copied,
+    }) do
+      for _, i in ipairs(list) do
+        local path = paths[i]
+        local status = statuses[i]
+        for parent in utils.path_parents(path, true) do
+          if git_status[parent] then
             break
           end
-
-          local parent_status = git_status[parent]
-          if not parent_status then
-            git_status[parent] = status
-          else
-            -- Bubble up the most important status
-            local p = parent_status:sub(1, 1)
-            local bubbled = false
-            for _, c in ipairs(status_prio) do
-              if p == c then
-                break
-              end
-              if s1 == c or s2 == c then
-                git_status[parent] = c
-                bubbled = true
-              end
-            end
-            if not bubbled then
-              break
-            end
+          if parent == git_root or #git_root > #parent then
+            break
           end
+          git_status[parent] = status
         end
-      end
-      if batch_size then
-        yield_if_batch_completed()
       end
     end
   end
@@ -482,14 +529,6 @@ M.mark_ignored = function(state, items)
   end
 end
 
-local finalize = function(path, git_root)
-  if utils.is_windows then
-    git_root = utils.windowize_path(git_root)
-  end
-
-  log.trace("GIT ROOT for '", path, "' is '", git_root, "'")
-end
-
 ---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
 local invalidate_cache = function(path)
@@ -533,7 +572,6 @@ M.get_worktree_root = function(path, callback)
           git_root = utils.normalize_path(git_root)
         end
 
-        finalize(path, git_root)
         callback(git_root)
       end,
     }):start()
@@ -551,7 +589,6 @@ M.get_worktree_root = function(path, callback)
     git_root = utils.normalize_path(git_root)
   end
 
-  finalize(path, git_root)
   return git_root
 end
 
@@ -582,7 +619,6 @@ M.get_git_dir = function(path, callback)
           git_root = utils.normalize_path(git_root)
         end
 
-        finalize(path, git_root)
         callback(git_root)
       end,
     }):start()
@@ -600,7 +636,6 @@ M.get_git_dir = function(path, callback)
     git_root = utils.normalize_path(git_root)
   end
 
-  finalize(path, git_root)
   return git_root
 end
 

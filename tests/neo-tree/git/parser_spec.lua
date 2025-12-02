@@ -42,14 +42,12 @@ describe("git parser", function()
       }, status)
     end
 
-    local s = uv.hrtime()
     local old = utils.on_windows
     utils.on_windows = false
     it("on unix", test)
     utils.on_windows = true
     it("on windows", test)
     utils.on_windows = old
-    print("TIME: ", uv.hrtime() - s)
   end)
 
   describe("parses v1 output", function()
