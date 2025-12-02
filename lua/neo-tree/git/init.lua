@@ -127,6 +127,9 @@ M._parse_porcelain = function(
         paths[#paths + 1] = abspath
       end
       line = status_iter()
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   elseif porcelain_version == 2 then
     while line do
@@ -281,7 +284,7 @@ M._parse_porcelain = function(
       for _, i in ipairs(list) do
         local path = paths[i]
         local status = statuses[i]
-        for parent in utils.path_parents(path, true) do
+        for parent in utils.path_parents(path) do
           if git_status[parent] then
             break
           end
@@ -291,11 +294,18 @@ M._parse_porcelain = function(
           git_status[parent] = status
         end
       end
+      if batch_size then
+        yield_if_batch_completed()
+      end
     end
   end
 
   while line and line:sub(1, 1) == "!" do
-    git_status[git_root_dir .. trim_trailing_slash(line:sub(path_start))] = "!"
+    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
+    if utils.is_windows then
+      abspath = utils.windowize_path(abspath)
+    end
+    git_status[abspath] = "!"
     line = status_iter()
 
     if batch_size then
