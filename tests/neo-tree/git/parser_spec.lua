@@ -2,6 +2,7 @@ local git = require("neo-tree.git")
 local utils = require("neo-tree.utils")
 local test_utils = require("tests.utils")
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
+local uv = vim.uv or vim.loop
 describe("git parser", function()
   describe("parses v2 output", function()
     local porcelain_v2_status = {
@@ -41,12 +42,14 @@ describe("git parser", function()
       }, status)
     end
 
+    local s = uv.hrtime()
     local old = utils.on_windows
     utils.on_windows = false
     it("on unix", test)
     utils.on_windows = true
     it("on windows", test)
     utils.on_windows = old
+    print("TIME: ", uv.hrtime() - s)
   end)
 
   describe("parses v1 output", function()
