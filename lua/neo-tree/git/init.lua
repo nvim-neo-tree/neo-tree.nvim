@@ -542,7 +542,7 @@ end
 ---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
 local invalidate_cache = function(path)
-  local parent_iter = utils.path_parents(path, true)
+  local parent_iter = utils.path_parents(path)
   ---@type string?
   local p = path
 

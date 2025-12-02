@@ -154,7 +154,7 @@ describe("utils path functions", function()
   -- Helper function to collect iterator results into a table
   local function collect_parents(path)
     local parents = {}
-    for parent in utils.path_parents(path, true) do
+    for parent in utils.path_parents(path) do
       parents[#parents + 1] = parent
     end
     return parents
