@@ -234,41 +234,37 @@ local function create_item(context, path, _type, bufnr)
   local f = state.filtered_items
   local is_not_root = not utils.is_subpath(path, context.state.path)
   if f and is_not_root then
+    local fby = item.filtered_by or {}
     if f.never_show[name] then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.never_show = true
+      fby.never_show = true
     else
       if utils.is_filtered_by_pattern(f.never_show_by_pattern, path, name) then
-        item.filtered_by = item.filtered_by or {}
-        item.filtered_by.never_show = true
+        fby.never_show = true
       end
     end
     if f.always_show[name] then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.always_show = true
+      fby.always_show = true
     else
       if utils.is_filtered_by_pattern(f.always_show_by_pattern, path, name) then
-        item.filtered_by = item.filtered_by or {}
-        item.filtered_by.always_show = true
+        fby.always_show = true
       end
     end
     if f.hide_by_name[name] then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.name = true
+      fby.name = true
     end
     if utils.is_filtered_by_pattern(f.hide_by_pattern, path, name) then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.pattern = true
+      fby.pattern = true
     end
     if f.hide_dotfiles and string.sub(name, 1, 1) == "." then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.dotfiles = true
+      fby.dotfiles = true
     end
     if f.hide_hidden and utils.is_hidden(path) then
-      item.filtered_by = item.filtered_by or {}
-      item.filtered_by.hidden = true
+      fby.hidden = true
     end
-    -- NOTE: git_ignored logic moved to job_complete
+
+    if not vim.tbl_isempty(fby) then
+      item.filtered_by = fby
+    end
   end
 
   set_parents(context, item)

@@ -1,5 +1,7 @@
 pcall(require, "luacov")
 local utils = require("neo-tree.utils")
+local test_utils = require("tests.utils")
+local uv = vim.uv or vim.loop
 
 describe("utils path functions", function()
   describe("is_subpath", function()
@@ -10,12 +12,7 @@ describe("utils path functions", function()
       assert.are.same(false, utils.is_subpath("a", "b"))
     end
     it("should work with unix paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = false
-      utils.path_separator = "/"
+      local restore = test_utils.os_to_windows(false)
       common_tests()
       assert.are.same(true, utils.is_subpath("/a", "/a/subpath"))
       assert.are.same(false, utils.is_subpath("/a", "/b/c"))
@@ -34,16 +31,10 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath("/TeSt", "/TeSt/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
     it("should work on windows paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = true
-      utils.path_separator = "\\"
+      local restore = test_utils.os_to_windows(true)
       common_tests()
       assert.are.same(true, utils.is_subpath("C:", "C:"))
       assert.are.same(false, utils.is_subpath("C:", "D:"))
@@ -71,8 +62,7 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath([[C:\Users\user\]], [[C:\Users\user\Documents]]))
       assert.are.same(true, utils.is_subpath("C:/Users/user/", "C:/Users/user/Documents"))
 
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
   end)
 
@@ -94,13 +84,8 @@ describe("utils path functions", function()
     end
 
     it("should work with unix paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = false
-      utils.path_separator = "/"
-      common_tests("/")
+      local restore = test_utils.os_to_windows(false)
+      common_tests(utils.path_separator)
 
       -- Absolute paths
       assert.are.same({ "/a", "b" }, { utils.split_path("/a/b") })
@@ -112,19 +97,12 @@ describe("utils path functions", function()
       assert.are.same({ "/a", "b" }, { utils.split_path("/a/b/") })
       assert.are.same({ "a", "b" }, { utils.split_path("a/b/") })
       assert.are.same({ "//a", "b" }, { utils.split_path("//a/b") })
-
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
 
     it("should work on windows paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = true
-      utils.path_separator = "\\"
-      common_tests("\\")
+      local restore = test_utils.os_to_windows(true)
+      common_tests(utils.path_separator)
 
       -- Paths with drive letters
       assert.are.same({ [[C:\Users]], "user" }, { utils.split_path([[C:\Users\user]]) })
@@ -144,8 +122,82 @@ describe("utils path functions", function()
         { utils.split_path([[\\server\share\folder\file]]) }
       )
 
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
+    end)
+  end)
+
+  -- Helper function to collect iterator results into a table
+  local function collect_parents(path)
+    local parents = {}
+    for parent in utils.path_parents(path) do
+      parents[#parents + 1] = parent
+    end
+    return parents
+  end
+
+  describe("utils.path_parents", function()
+    -- Test Case 1: Standard Unix path (from example)
+    describe("on Unix-like paths ('/')", function()
+      -- Temporarily set OS path behavior to Unix/non-Windows
+      local restore = test_utils.os_to_windows(false)
+
+      it(
+        "should return the correct parents for a deep path (longest-to-shortest, including root)",
+        function()
+          local path = "/some/path/here/file.txt"
+          -- Expected: /some/path/here, /some/path, /some, /
+          local expected_parents = { "/some/path/here", "/some/path", "/some", "/" }
+          assert.are.same(expected_parents, collect_parents(path))
+        end
+      )
+
+      it(
+        "should return correct parents for a relative path (longest-to-shortest, no root)",
+        function()
+          local path = "a/b/c/d.lua"
+          -- Expected: a/b/c, a/b, a
+          local expected_parents = { "a/b/c", "a/b", "a" }
+          assert.are.same(expected_parents, collect_parents(path))
+        end
+      )
+
+      it("should handle a path that is only one level deep (excluding root)", function()
+        local path = "/file.txt"
+        -- Expected: /
+        local expected_parents = { "/" }
+        assert.are.same(expected_parents, collect_parents(path))
+      end)
+
+      it("should return an empty list for the root path", function()
+        local path = "/"
+        local expected_parents = {}
+        assert.are.same(expected_parents, collect_parents(path))
+      end)
+
+      restore()
+    end)
+    describe("on Windows-like paths ('\\')", function()
+      -- Temporarily set OS path behavior to Windows
+      local restore = test_utils.os_to_windows(true)
+
+      it(
+        "should return the correct parents for a drive-rooted path (longest-to-shortest, including root)",
+        function()
+          local path = "C:\\projects\\app\\src\\main.lua"
+          -- Expected: C:\projects\app\src, C:\projects\app, C:\projects, C:\
+          local expected_parents =
+            { "C:\\projects\\app\\src", "C:\\projects\\app", "C:\\projects", "C:\\" }
+          assert.are.same(expected_parents, collect_parents(path))
+        end
+      )
+
+      it("should return an empty list for a drive root", function()
+        local path = "E:\\"
+        local expected_parents = {}
+        assert.are.same(expected_parents, collect_parents(path))
+      end)
+
+      restore()
     end)
   end)
 end)

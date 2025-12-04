@@ -214,4 +214,9 @@ function mod.buflines(bufnr)
   return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 end
 
+function mod.os_to_windows(is_windows)
+  local utils = require("neo-tree.utils")
+  return utils._set_is_windows(is_windows)
+end
+
 return mod
