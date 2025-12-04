@@ -135,6 +135,7 @@ M._parse_porcelain = function(
           abspath = utils.windowize_path(abspath)
         end
         paths[#paths + 1] = abspath
+        statuses[#statuses + 1] = XY:gsub(" ", ".")
       end
       line = status_iter()
       if batch_size then
@@ -159,6 +160,7 @@ M._parse_porcelain = function(
 
       -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
       -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
+
       local line_type_byte = line:byte(1, 1)
       if line_type_byte == COMMENT_BYTE then
       -- continue for now
