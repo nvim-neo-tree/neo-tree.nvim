@@ -292,11 +292,12 @@ M._parse_porcelain = function(
       renamed,
       copied,
     }) do
-      require("neo-tree.utils._compat").table_move(list, 1, #list, #flattened, flattened)
+      require("neo-tree.utils._compat").table_move(list, 1, #list, #flattened + 1, flattened)
     end
 
     local parent_statuses = {}
     do
+      local dot_byte = ("."):byte(1, 1)
       for _, i in ipairs(flattened) do
         local path = paths[i]
         local status = statuses[i]
@@ -321,7 +322,8 @@ M._parse_porcelain = function(
             break
           end
 
-          parent_statuses[parent] = status
+          parent_statuses[parent] = status:byte(1, 1) == dot_byte and status:sub(1, 1)
+            or status:sub(2, 2)
           path = parent
         until false
 
