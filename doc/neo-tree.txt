@@ -1162,7 +1162,6 @@ the following properties:
             ignored   = "",
             unstaged  = "󰄱",
             staged    = "",
-            partial   = "󱖫",
             conflict  = "",
           }
         }

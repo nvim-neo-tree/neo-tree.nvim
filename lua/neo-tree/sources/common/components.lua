@@ -282,12 +282,20 @@ M.git_status = function(config, node, state)
   -- x == staging area status
   -- y == working area status
   local x, y = git_status:sub(1, 1), git_status:sub(2, 2)
+  local is_conflict = false
   if y == "." then
     stage_sb = symbols.staged
     stage_hl = highlights.GIT_STAGED
   elseif x == "." then
     stage_sb = symbols.unstaged
     stage_hl = highlights.GIT_UNSTAGED
+  else
+    local both_deleted_or_added = x == y and (x == "A" or x == "D")
+    is_conflict = both_deleted_or_added or (x == "U" or y == "U")
+    if is_conflict then
+      stage_sb = symbols.conflict
+      stage_hl = highlights.GIT_CONFLICT
+    end
   end
 
   repeat
@@ -301,12 +309,6 @@ M.git_status = function(config, node, state)
     -- U           A    unmerged, added by them
     -- D           U    unmerged, deleted by us
 
-    local both_deleted_or_added = x == y and (x == "A" or x == "D")
-    local is_conflict = both_deleted_or_added or (x == "U" or y == "U")
-    if is_conflict then
-      stage_sb = symbols.conflict
-      stage_hl = highlights.GIT_CONFLICT
-    end
     -------------------------------------------------
     --          [AMD]   not updated
     -- M        [ MTD]  updated in index
@@ -375,7 +377,8 @@ M.git_status = function(config, node, state)
       highlight = worktree_change_hl,
     }
   end
-  if #components < 2 and stage_sb and #stage_sb > 0 then
+  local display_stage_sb = #components < 2 or is_conflict
+  if display_stage_sb and stage_sb and #stage_sb > 0 then
     components[#components + 1] = {
       text = to2char(stage_sb),
       highlight = stage_hl,
