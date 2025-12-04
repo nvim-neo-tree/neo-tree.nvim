@@ -173,6 +173,9 @@ M._parse_porcelain = function(
         local path = line:sub(114)
 
         local abspath = git_root_dir .. path
+        if utils.is_windows then
+          abspath = utils.windowize_path(abspath)
+        end
         paths[#paths + 1] = abspath
         statuses[#statuses + 1] = XY
       elseif line_type_byte == TYPE_TWO_BYTE then
