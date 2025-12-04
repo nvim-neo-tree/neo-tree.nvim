@@ -12,7 +12,9 @@ local async = require("plenary.async")
 local node_expander = require("neo-tree.sources.common.node_expander")
 
 ---@alias neotree.TreeCommandNormal fun(state: neotree.StateWithTree, ...: any)
+
 ---@alias neotree.TreeCommandVisual fun(state: neotree.StateWithTree, selected_nodes: NuiTree.Node[], ...: any)
+
 ---@alias neotree.TreeCommand neotree.TreeCommandNormal|neotree.TreeCommandVisual
 
 ---Gets the node parent folder
@@ -311,8 +313,33 @@ M.git_add_file = function(state)
     return
   end
   local path = node:get_id()
-  local cmd = { "git", "add", path }
-  vim.fn.system(cmd)
+  utils.execute_command({ "git", "add", "--", path })
+  events.fire_event(events.GIT_EVENT)
+end
+
+M.git_unstage_file = function(state)
+  local node = assert(state.tree:get_node())
+  if node.type == "message" then
+    return
+  end
+  local path = node:get_id()
+  utils.execute_command({ "git", "reset", "--", path })
+  events.fire_event(events.GIT_EVENT)
+end
+
+M.git_toggle_file_stage = function(state)
+  local node = assert(state.tree:get_node())
+  if node.type == "message" then
+    return
+  end
+  local path = node:get_id()
+  local gs = assert(state.git_status_lookup, "no git status found for this state")
+  local worktree_status = gs[path]:sub(2, 2)
+  if worktree_status ~= "." then
+    utils.execute_command({ "git", "add", "--", path })
+  else
+    utils.execute_command({ "git", "reset", "--", path })
+  end
   events.fire_event(events.GIT_EVENT)
 end
 
@@ -370,17 +397,6 @@ M.git_push = function(state)
       popups.alert("git push", result)
     end
   end)
-end
-
-M.git_unstage_file = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
-    return
-  end
-  local path = node:get_id()
-  local cmd = { "git", "reset", "--", path }
-  vim.fn.system(cmd)
-  events.fire_event(events.GIT_EVENT)
 end
 
 M.git_undo_last_commit = function(state)

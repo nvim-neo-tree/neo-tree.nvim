@@ -605,6 +605,7 @@ require("neo-tree").setup({
         ["gu"] = "git_unstage_file",
         ["gU"] = "git_undo_last_commit",
         ["ga"] = "git_add_file",
+        ["gt"] = "git_toggle_file_stage",
         ["gr"] = "git_revert_file",
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
