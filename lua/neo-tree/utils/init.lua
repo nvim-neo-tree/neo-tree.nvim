@@ -1145,23 +1145,6 @@ M.split = function(inputString, sep)
   return fields
 end
 
----@param str string
----@param target string
----@param init integer?
----@return integer?
-M.lastindex = function(str, target, init)
-  local last_separator_index
-  local i = init or 1
-  local j = str:find(target, i, true)
-  while j do
-    last_separator_index = j
-    i = j + 1
-    j = str:find(target, i, true)
-  end
-  return last_separator_index
-end
-
-local splits = {}
 ---Split a path into a parent path and a name.
 ---This differs from python's os.path.split in that root paths (like C:\ or /) return (nil, root_path_normalized)
 ---@param path string? The path to split.
