@@ -215,6 +215,9 @@ M.tbl_equals = function(table1, table2)
   return true
 end
 
+---@param cmd string|string[]
+---@return boolean success
+---@return string[] output_lines
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 

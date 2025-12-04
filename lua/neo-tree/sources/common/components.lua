@@ -298,64 +298,61 @@ M.git_status = function(config, node, state)
     end
   end
 
-  repeat
-    -- all variations of merge conflicts
-    -- ----------------------------------------------
-    -- D           D    unmerged, both deleted
-    -- A           A    unmerged, both added
-    -- U           U    unmerged, both modified
-    -- A           U    unmerged, added by us
-    -- U           D    unmerged, deleted by them
-    -- U           A    unmerged, added by them
-    -- D           U    unmerged, deleted by us
+  -- all variations of merge conflicts
+  -- ----------------------------------------------
+  -- D           D    unmerged, both deleted
+  -- A           A    unmerged, both added
+  -- U           U    unmerged, both modified
+  -- A           U    unmerged, added by us
+  -- U           D    unmerged, deleted by them
+  -- U           A    unmerged, added by them
+  -- D           U    unmerged, deleted by us
 
-    -------------------------------------------------
-    --          [AMD]   not updated
-    -- M        [ MTD]  updated in index
-    -- T        [ MTD]  type changed in index
-    -- A        [ MTD]  added to index
-    -- D                deleted from index
-    -- R        [ MTD]  renamed in index
-    -- C        [ MTD]  copied in index
-    -- [MTARC]          index and work tree matches
-    -- [ MTARC]    M    work tree changed since index
-    -- [ MTARC]    T    type changed in work tree since index
-    -- [ MTARC]    D    deleted in work tree
-    --             R    renamed in work tree
-    --             C    copied in work tree
-    if #x > 0 and x ~= "." then
-      if x == "M" or x == "U" then
-        staged_change_sb = symbols.modified
-        staged_change_hl = highlights.GIT_MODIFIED
-      elseif x == "R" then
-        staged_change_sb = symbols.renamed
-        staged_change_hl = highlights.GIT_RENAMED
-      elseif x == "D" then
-        staged_change_sb = symbols.deleted
-        staged_change_hl = highlights.GIT_DELETED
-      else
-        staged_change_sb = symbols.added
-        staged_change_hl = highlights.GIT_ADDED
-      end
+  -------------------------------------------------
+  --          [AMD]   not updated
+  -- M        [ MTD]  updated in index
+  -- T        [ MTD]  type changed in index
+  -- A        [ MTD]  added to index
+  -- D                deleted from index
+  -- R        [ MTD]  renamed in index
+  -- C        [ MTD]  copied in index
+  -- [MTARC]          index and work tree matches
+  -- [ MTARC]    M    work tree changed since index
+  -- [ MTARC]    T    type changed in work tree since index
+  -- [ MTARC]    D    deleted in work tree
+  --             R    renamed in work tree
+  --             C    copied in work tree
+  if #x > 0 and x ~= "." then
+    if x == "M" or x == "U" then
+      staged_change_sb = symbols.modified
+      staged_change_hl = highlights.GIT_MODIFIED
+    elseif x == "R" then
+      staged_change_sb = symbols.renamed
+      staged_change_hl = highlights.GIT_RENAMED
+    elseif x == "D" then
+      staged_change_sb = symbols.deleted
+      staged_change_hl = highlights.GIT_DELETED
+    else
+      staged_change_sb = symbols.added
+      staged_change_hl = highlights.GIT_ADDED
     end
+  end
 
-    if #y > 0 and y ~= "." then
-      if y == "M" or y == "U" then
-        worktree_change_sb = symbols.modified
-        worktree_change_hl = highlights.GIT_MODIFIED
-      elseif y == "R" then
-        worktree_change_sb = symbols.renamed
-        worktree_change_hl = highlights.GIT_RENAMED
-      elseif y == "D" then
-        worktree_change_sb = symbols.deleted
-        worktree_change_hl = highlights.GIT_DELETED
-      else
-        worktree_change_sb = symbols.added
-        worktree_change_hl = highlights.GIT_ADDED
-      end
+  if #y > 0 and y ~= "." then
+    if y == "M" or y == "U" then
+      worktree_change_sb = symbols.modified
+      worktree_change_hl = highlights.GIT_MODIFIED
+    elseif y == "R" then
+      worktree_change_sb = symbols.renamed
+      worktree_change_hl = highlights.GIT_RENAMED
+    elseif y == "D" then
+      worktree_change_sb = symbols.deleted
+      worktree_change_hl = highlights.GIT_DELETED
+    else
+      worktree_change_sb = symbols.added
+      worktree_change_hl = highlights.GIT_ADDED
     end
-
-  until true
+  end
 
   if not staged_change_sb and not worktree_change_sb then
     return {
