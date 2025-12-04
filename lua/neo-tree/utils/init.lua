@@ -1054,11 +1054,13 @@ end
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
 ---@return string string The path without any trailing separator.
+---@return number count The number of separators removed.
 M.remove_trailing_slash = function(path)
-  if path:byte(-1, -1) == M.path_separator_byte then
-    return path:sub(1, -2)
+  if M.is_windows then
+    return path:gsub("\\$", "")
+  else
+    return path:gsub("/$", "")
   end
-  return path
 end
 
 ---Sorts a list of paths in the order they would appear in a tree.
