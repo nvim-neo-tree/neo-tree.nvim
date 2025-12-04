@@ -17,7 +17,26 @@ local M = {}
 ---The file system path separator for the current platform.
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 M.is_macos = vim.fn.has("mac") == 1
-M.path_separator = M.is_windows and "\\" or "/"
+
+---For testing
+---@param windows boolean
+---@return function restorer function that returns the old opts
+M._set_is_windows = function(windows)
+  local old_opts = {
+    is_windows = M.is_windows,
+    path_separator = M.path_separator,
+    path_separator_byte = M.path_separator_byte,
+  }
+  M.is_windows = windows
+  M.path_separator = M.is_windows and "\\" or "/"
+  M.path_separator_byte = M.path_separator:byte(1, 1)
+  return function()
+    for k, v in pairs(old_opts) do
+      M[k] = v
+    end
+  end
+end
+M._set_is_windows(M.is_windows)
 
 local diag_severity_to_string = function(severity)
   if severity == vim.diagnostic.severity.ERROR then
@@ -1014,22 +1033,19 @@ end
 ---@return fun():string?
 M.path_parents = function(path)
   -- tends to be about 4x faster than looping through split_path results
-  local right = #path
-  local sep = M.path_separator
+  local i = #path
+  local sep_byte = M.path_separator_byte
   local prefix = M.abspath_prefix(path) or ""
   return function()
-    if right <= #prefix then
-      return nil
-    end
-    for left = right, 1, -1 do
-      if path:sub(left, left) == sep then
-        if left == #prefix then
-          right = left - 1
+    while i >= #prefix do
+      i = i - 1
+      if path:byte(i, i) == sep_byte then
+        -- either return the prefix, or the stuff to the left of the last path separator
+        if i == #prefix then
           return prefix
         end
-
-        right = left - 1
-        return path:sub(1, right)
+        local parent = path:sub(1, i - 1)
+        return parent
       end
     end
   end
@@ -1038,13 +1054,11 @@ end
 ---Remove the path separator from the end of a path in a cross-platform way.
 ---@param path string The path to remove the separator from.
 ---@return string string The path without any trailing separator.
----@return number count The number of separators removed.
 M.remove_trailing_slash = function(path)
-  if M.is_windows then
-    return path:gsub("\\$", "")
-  else
-    return path:gsub("/$", "")
+  if path:byte(-1, -1) == M.path_separator_byte then
+    return path:sub(1, -2)
   end
+  return path
 end
 
 ---Sorts a list of paths in the order they would appear in a tree.
@@ -1131,6 +1145,23 @@ M.split = function(inputString, sep)
   return fields
 end
 
+---@param str string
+---@param target string
+---@param init integer?
+---@return integer?
+M.lastindex = function(str, target, init)
+  local last_separator_index
+  local i = init or 1
+  local j = str:find(target, i, true)
+  while j do
+    last_separator_index = j
+    i = j + 1
+    j = str:find(target, i, true)
+  end
+  return last_separator_index
+end
+
+local splits = {}
 ---Split a path into a parent path and a name.
 ---This differs from python's os.path.split in that root paths (like C:\ or /) return (nil, root_path_normalized)
 ---@param path string? The path to split.
@@ -1149,27 +1180,23 @@ M.split_path = function(path)
   end
 
   -- this is more than just a root path
-  if path:sub(-1) == M.path_separator then
-    -- trim it off
+  local sep_byte = M.path_separator_byte
+  if path:byte(-1, -1) == sep_byte then
+    -- normalizing, trim it off
     path = path:sub(1, -2)
   end
 
   local last_separator_index
-  local i = prefix and #prefix + 1 or 1
-  local j
-  repeat
-    j = path:find(M.path_separator, i, true)
-    if j then
-      last_separator_index = j
-      i = j + 1
+  for idx = #path, prefix and #prefix + 1 or 1, -1 do
+    if path:byte(idx, idx) == sep_byte then
+      last_separator_index = idx
+      break
     end
-  until not j
+  end
 
   if not last_separator_index then
-    if not prefix then
-      return nil, path
-    end
-    return prefix, path:sub(#prefix + 1)
+    local rest = prefix and path:sub(#prefix + 1) or path
+    return prefix, rest
   end
 
   local parent_path = path:sub(1, last_separator_index - 1)

@@ -12,12 +12,7 @@ describe("utils path functions", function()
       assert.are.same(false, utils.is_subpath("a", "b"))
     end
     it("should work with unix paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = false
-      utils.path_separator = "/"
+      local restore = test_utils.os_to_windows(false)
       common_tests()
       assert.are.same(true, utils.is_subpath("/a", "/a/subpath"))
       assert.are.same(false, utils.is_subpath("/a", "/b/c"))
@@ -36,16 +31,10 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath("/TeSt", "/TeSt/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
     it("should work on windows paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = true
-      utils.path_separator = "\\"
+      local restore = test_utils.os_to_windows(true)
       common_tests()
       assert.are.same(true, utils.is_subpath("C:", "C:"))
       assert.are.same(false, utils.is_subpath("C:", "D:"))
@@ -73,8 +62,7 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath([[C:\Users\user\]], [[C:\Users\user\Documents]]))
       assert.are.same(true, utils.is_subpath("C:/Users/user/", "C:/Users/user/Documents"))
 
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
   end)
 
@@ -96,13 +84,8 @@ describe("utils path functions", function()
     end
 
     it("should work with unix paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = false
-      utils.path_separator = "/"
-      common_tests("/")
+      local restore = test_utils.os_to_windows(false)
+      common_tests(utils.path_separator)
 
       -- Absolute paths
       assert.are.same({ "/a", "b" }, { utils.split_path("/a/b") })
@@ -114,19 +97,12 @@ describe("utils path functions", function()
       assert.are.same({ "/a", "b" }, { utils.split_path("/a/b/") })
       assert.are.same({ "a", "b" }, { utils.split_path("a/b/") })
       assert.are.same({ "//a", "b" }, { utils.split_path("//a/b") })
-
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
 
     it("should work on windows paths", function()
-      local old = {
-        is_windows = utils.is_windows,
-        path_separator = utils.path_separator,
-      }
-      utils.is_windows = true
-      utils.path_separator = "\\"
-      common_tests("\\")
+      local restore = test_utils.os_to_windows(true)
+      common_tests(utils.path_separator)
 
       -- Paths with drive letters
       assert.are.same({ [[C:\Users]], "user" }, { utils.split_path([[C:\Users\user]]) })
@@ -146,8 +122,7 @@ describe("utils path functions", function()
         { utils.split_path([[\\server\share\folder\file]]) }
       )
 
-      utils.is_windows = old.is_windows
-      utils.path_separator = old.path_separator
+      restore()
     end)
   end)
 

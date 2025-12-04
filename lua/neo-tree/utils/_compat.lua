@@ -18,10 +18,9 @@ end
 ---@returns a2
 local table_move = function(a1, f, e, t, a2)
   a2 = a2 or a1
-  t = t + e
 
-  for i = e, f, -1 do
-    t = t - 1
+  for i = f, e do
+    t = t + 1
     a2[t] = a1[i]
   end
 

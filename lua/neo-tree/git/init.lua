@@ -51,6 +51,16 @@ end
 local trim_trailing_slash = function(path)
   return path:sub(-1, -1) == "/" and path:sub(1, -2) or path
 end
+
+local COMMENT_BYTE = ("#"):byte()
+local TYPE_ONE_BYTE = ("1"):byte()
+local TYPE_TWO_BYTE = ("2"):byte()
+local UNMERGED_BYTE = ("u"):byte()
+local UNTRACKED_BYTE = ("?"):byte()
+local IGNORED_BYTE = ("!"):byte()
+local parent_cache = setmetatable({}, {
+  __mode = "kv",
+})
 ---@param porcelain_version 1|2
 ---@param status_iter fun():string? A function that will override each var of the git status
 ---@param git_status neotree.git.Status? The git status table to override, if any
@@ -149,10 +159,10 @@ M._parse_porcelain = function(
 
       -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
       -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
-      local t = line:sub(1, 1)
-      if t == "#" then
+      local line_type_byte = line:byte(1, 1)
+      if line_type_byte == COMMENT_BYTE then
       -- continue for now
-      elseif t == "1" then
+      elseif line_type_byte == TYPE_ONE_BYTE then
         local XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local mH = line:sub(11, 16)
@@ -165,28 +175,28 @@ M._parse_porcelain = function(
         local abspath = git_root_dir .. path
         paths[#paths + 1] = abspath
         statuses[#statuses + 1] = XY
-      elseif t == "2" then
-        -- local XY = line:sub(3, 4)
+      elseif line_type_byte == TYPE_TWO_BYTE then
+        local XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local mH = line:sub(11, 16)
         -- local mI = line:sub(18, 23)
         -- local mW = line:sub(25, 30)
         -- local hH = line:sub(32, 71)
         -- local hI = line:sub(73, 112)
-        local rest = line:sub(114)
-        local first_space = rest:find(" ", 1, true)
-        local Xscore = rest:sub(1, first_space - 1)
-        local path = rest:sub(first_space + 1)
+        -- local rest = line:sub(114)
+        -- local Xscore = rest:sub(1, first_space - 1)
+        local first_space = line:find(" ", 114, true)
+        local path = line:sub(first_space + 1)
 
         local abspath = git_root_dir .. path
         if utils.is_windows then
           abspath = utils.windowize_path(abspath)
         end
         paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = Xscore
+        statuses[#statuses + 1] = XY
         -- ignore the original path
         status_iter()
-      elseif t == "u" then
+      elseif line_type_byte == UNMERGED_BYTE then
         local XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local m1 = line:sub(11, 16)
@@ -206,10 +216,6 @@ M._parse_porcelain = function(
         statuses[#statuses + 1] = XY
       else
         -- either untracked or ignored
-        assert(
-          t == "?" or t == "!" or t == "",
-          "git status lines following tracked files are not ignored nor untracked"
-        )
         break
       end
       if batch_size then
@@ -225,7 +231,7 @@ M._parse_porcelain = function(
   -- ?           ?    untracked
   -- !           !    ignored
   -- -------------------------------------------------
-  while line and line:sub(1, 1) == "?" do
+  while line and line:byte(1, 1) == UNTRACKED_BYTE do
     local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)
@@ -242,7 +248,6 @@ M._parse_porcelain = function(
   end
 
   if not skip_bubbling then
-    local parents2 = {}
     local conflicts = {}
     local untracked = {}
     local modified = {}
@@ -270,6 +275,7 @@ M._parse_porcelain = function(
         copied[#copied + 1] = i
       end
     end
+    local flattened = {}
 
     for _, list in ipairs({
       conflicts,
@@ -281,26 +287,50 @@ M._parse_porcelain = function(
       renamed,
       copied,
     }) do
-      for _, i in ipairs(list) do
+      require("neo-tree.utils._compat").table_move(list, 1, #list, #flattened, flattened)
+    end
+
+    local parent_statuses = {}
+    do
+      for _, i in ipairs(flattened) do
         local path = paths[i]
         local status = statuses[i]
-        for parent in utils.path_parents(path) do
-          if git_status[parent] then
+        local parent
+        repeat
+          local cached = parent_cache[path]
+          if cached then
+            parent = cached
+          else
+            parent = utils.split_path(path)
+            if parent then
+              parent_cache[path] = parent
+            else
+              break
+            end
+          end
+
+          if #git_root >= #parent then
             break
           end
-          if parent == git_root or #git_root > #parent then
+          if parent_statuses[parent] ~= nil then
             break
           end
-          git_status[parent] = status
+
+          parent_statuses[parent] = status
+          path = parent
+        until false
+
+        if batch_size then
+          yield_if_batch_completed()
         end
       end
-      if batch_size then
-        yield_if_batch_completed()
+      for parent, status in pairs(parent_statuses) do
+        git_status[parent] = status
       end
     end
   end
 
-  while line and line:sub(1, 1) == "!" do
+  while line and line:sub(1, 1) == IGNORED_BYTE do
     local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)
@@ -393,7 +423,8 @@ end
 ---@param context neotree.git.Context
 ---@param git_args string[]? nil to use default of make_git_status_args, which includes all files
 ---@param callback fun(gs: neotree.git.Status)
-local async_git_status_job = function(context, git_args, callback)
+---@param skip_bubbling boolean?
+local async_git_status_job = function(context, git_args, callback, skip_bubbling)
   local stdin = log.assert(uv.new_pipe())
   local stdout = log.assert(uv.new_pipe())
   local stderr = log.assert(uv.new_pipe())
@@ -439,7 +470,8 @@ local async_git_status_job = function(context, git_args, callback)
         context.git_root,
         status_iter,
         context.git_status,
-        context.batch_size
+        context.batch_size,
+        skip_bubbling
       )
     )
     local processed_lines = 0
@@ -511,7 +543,7 @@ M.status_async = function(path, base, opts)
             update_git_status(ctx, fast_status)
             async_git_status_job(ctx, nil, function(full_status)
               update_git_status(ctx, full_status)
-            end)
+            end, true)
           end
         )
       else
@@ -539,19 +571,19 @@ M.mark_ignored = function(state, items)
   end
 end
 
+local sp = utils.split_path
 ---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
 local invalidate_cache = function(path)
-  local parent_iter = utils.path_parents(path)
   ---@type string?
-  local p = path
+  local parent = sp(path)
 
-  while p do
-    local cache_entry = M.status_cache[p]
+  while parent do
+    local cache_entry = M.status_cache[parent]
     if cache_entry ~= nil then
-      update_git_status({ git_root = p }, nil)
+      update_git_status({ git_root = parent }, nil)
     end
-    p = parent_iter()
+    parent = sp(parent)
   end
 end
 

@@ -36,7 +36,7 @@ describe("git parser", function()
         [utils.path_join(git_root, "modified_staged.txt")] = "M.",
         [utils.path_join(git_root, "modified_unstaged.txt")] = ".M",
         [utils.path_join(git_root, "new_staged_file.txt")] = "A.",
-        [utils.path_join(git_root, "renamed_staged_new.txt")] = "R100",
+        [utils.path_join(git_root, "renamed_staged_new.txt")] = "R.",
         [utils.path_join(git_root, "type_change.txt")] = ".T",
         [utils.path_join(git_root, "untracked.txt")] = "?",
       }, status)
@@ -80,7 +80,7 @@ describe("git parser", function()
         [utils.path_join(git_root, "modified_staged.txt")] = "M.",
         [utils.path_join(git_root, "modified_unstaged.txt")] = ".M",
         [utils.path_join(git_root, "new_staged_file.txt")] = "A.",
-        [utils.path_join(git_root, "renamed_staged_new.txt")] = "R100",
+        [utils.path_join(git_root, "renamed_staged_new.txt")] = "R.",
         [utils.path_join(git_root, "type_change.txt")] = ".T",
         [utils.path_join(git_root, "untracked.txt")] = "?",
       }, status)
