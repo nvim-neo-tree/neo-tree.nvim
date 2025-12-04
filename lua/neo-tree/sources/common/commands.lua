@@ -333,8 +333,14 @@ M.git_toggle_file_stage = function(state)
     return
   end
   local path = node:get_id()
-  local gs = assert(state.git_status_lookup, "no git status found for this state")
-  local worktree_status = gs[path]:sub(2, 2)
+  local gs = log.assert(state.git_status_lookup, "No git status found for this state")
+  local status = gs[path]
+  if not status then
+    log.warn("No status found for path", path)
+    return
+  end
+
+  local worktree_status = status:sub(2, 2)
   if worktree_status ~= "." then
     utils.execute_command({ "git", "add", "--", path })
   else
