@@ -951,10 +951,11 @@ M.is_subpath = function(base, path, fast)
     return true
   end
 
-  if #path < #base or path:sub(1, #base) ~= base then
+  if #path < #base or path:find(base, 1, true) ~= 1 then
     return false
   end
 
+  -- check that the next char is a path separator
   return path:byte(#base + 1, #base + 1) == M.path_separator_byte
 end
 
