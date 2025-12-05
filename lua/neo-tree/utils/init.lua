@@ -1246,7 +1246,7 @@ M.abspath_prefix = function(path)
     end
 
     local start_byte = path:byte(1, 1)
-    if start_byte ~= forward_slash_byte and start_byte == backslash_byte then
+    if start_byte ~= forward_slash_byte and start_byte ~= backslash_byte then
       return nil
     end
     return path:match([[^\\[%.%?]\]])

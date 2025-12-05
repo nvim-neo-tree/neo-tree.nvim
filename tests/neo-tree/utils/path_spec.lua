@@ -69,7 +69,6 @@ describe("utils path functions", function()
 
       -- Test root paths
       assert.are.same(false, utils.is_subpath([[\]], [[\\]]))
-      assert.are.same(false, utils.is_subpath([[\]], [[\\]]))
 
       restore()
     end)
