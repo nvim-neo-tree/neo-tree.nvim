@@ -955,7 +955,13 @@ M.is_subpath = function(base, path, fast)
     return false
   end
 
-  -- check that the next char is a path separator
+  -- edge case: if base is only a root path, check whether the other root path is the same
+  local base_prefix = M.abspath_prefix(base)
+  if base_prefix and #base_prefix >= #base then
+    return base_prefix == M.abspath_prefix(path)
+  end
+
+  -- normal happy path
   return path:byte(#base + 1, #base + 1) == M.path_separator_byte
 end
 
@@ -1223,6 +1229,8 @@ M.path_join = function(...)
   return root .. relpath
 end
 
+local forward_slash_byte = ("/"):byte(1, 1)
+local backslash_byte = ("/"):byte(1, 1)
 ---@param path string Any path.
 ---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)
@@ -1231,14 +1239,22 @@ M.abspath_prefix = function(path)
     if only_drive_letter_match then
       return only_drive_letter_match .. "\\"
     end
-    local match = path:match("^[A-Za-z]:[/\\]")
-      or path:match([[^\\]])
-      or path:match([[^\]])
-      or path:match([[^//]])
-      or path:match([[^/]])
-    if match then
-      return M.windowize_path(match)
+
+    local drive_letter_match = path:match("^[A-Za-z]:[/\\]")
+    if drive_letter_match then
+      return drive_letter_match
     end
+
+    local start_byte = path:byte(1, 1)
+    if start_byte ~= forward_slash_byte and start_byte == backslash_byte then
+      return nil
+    end
+    return path:match([[^\\[%.%?]\]])
+      or path:match("^//[%.%?]/")
+      or path:match([[^\\]])
+      or path:match([[^//]])
+      or path:match([[^\]])
+      or path:match([[^/]])
   end
 
   return path:sub(1, 1) == "/" and "/" or nil
