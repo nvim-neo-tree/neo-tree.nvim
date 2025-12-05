@@ -357,7 +357,7 @@ M._parse_porcelain = function(
     end
   end
 
-  while line and line:sub(1, 1) == IGNORED_BYTE do
+  while line and line:byte(1, 1) == IGNORED_BYTE do
     local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)

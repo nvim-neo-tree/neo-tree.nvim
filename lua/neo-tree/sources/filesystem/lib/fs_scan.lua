@@ -128,14 +128,15 @@ local should_check_gitignore = function(state)
   end
 end
 ---@param context neotree.sources.filesystem.Context
-local job_complete = function(context, async)
+---@param skip_render_context boolean?
+local job_complete = function(context, skip_render_context)
   local state = context.state
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
   if should_check_gitignore(state) then
     git.mark_gitignored(state, context.all_items)
   end
-  if not async then
+  if not skip_render_context then
     vim.schedule(function()
       render_context(context)
     end)
