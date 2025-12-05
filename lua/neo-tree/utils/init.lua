@@ -928,11 +928,12 @@ M.normalize_path = function(path)
   return path
 end
 
----Check if a path is a subpath of another. In other words, whether the path starts with the base path.
+---Check if a path is a subpath of (i.e. starts with) `base`.
 ---@param base string The base path.
----@param path string The path to check is a subpath.
----@return boolean path_is_subpath True if it is a subpath, false otherwise.
-M.is_subpath = function(base, path)
+---@param path string The path that might be a subpath.
+---@param fast boolean? Whether to normalize both paths
+---@return boolean path_is_subpath True if `path` is a subpath of `base`.
+M.is_subpath = function(base, path, fast)
   if not M.truthy(base) or not M.truthy(path) then
     return false
   end
@@ -941,19 +942,20 @@ M.is_subpath = function(base, path)
     return true
   end
 
-  base = M.normalize_path(base)
-  path = M.normalize_path(path)
-  if path:sub(1, #base) == base then
-    local base_parts = M.split(base:sub(#base), M.path_separator)
-    local path_parts = M.split(path:sub(#base), M.path_separator)
-    for i, remaining_parts in ipairs(base_parts) do
-      if path_parts[i] ~= remaining_parts then
-        return false
-      end
-    end
+  if not fast then
+    base = M.normalize_path(base)
+    path = M.normalize_path(path)
+  end
+
+  if base == path then
     return true
   end
-  return false
+
+  if #path < #base or path:sub(1, #base) ~= base then
+    return false
+  end
+
+  return path:byte(#base + 1, #base + 1) == M.path_separator_byte
 end
 
 ---Checks whether the parent file has the child path as a true descendant (i.e. not through a link).
