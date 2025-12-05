@@ -81,6 +81,9 @@ end
 
 ---@param context neotree.sources.filesystem.Context
 local render_context = function(context)
+  if not context.state then
+    return
+  end
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
@@ -91,11 +94,9 @@ local render_context = function(context)
       path = utils.path_join(path, root.link_to)
     end
 
-    if path then
-      log.trace("Looking for .git folder")
-      local async_opts = require("neo-tree").config.git_status_async
-      git_watcher.watch(path, async_opts)
-    end
+    log.trace("Looking for .git folder")
+    local async_opts = require("neo-tree").config.git_status_async
+    git_watcher.watch(path, async_opts)
   end
   fs_watch.updated_watched()
 
@@ -115,8 +116,6 @@ local render_context = function(context)
   context.all_items = nil
   context.root = nil
   context.parent_id = nil
-  ---@diagnostic disable-next-line: cast-local-type
-  context = nil
 end
 
 ---@param context neotree.sources.filesystem.Context
