@@ -125,7 +125,9 @@ local job_complete = function(context)
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
   git.mark_ignored(state, context.all_items)
-  render_context(context)
+  vim.schedule(function()
+    render_context(context)
+  end)
   return context
 end
 
