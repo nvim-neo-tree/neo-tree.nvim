@@ -81,9 +81,6 @@ end
 
 ---@param context neotree.sources.filesystem.Context
 local render_context = function(context)
-  if not context.state then
-    return
-  end
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
@@ -118,15 +115,31 @@ local render_context = function(context)
   context.parent_id = nil
 end
 
+---@param state neotree.sources.filesystem.State
+local should_check_gitignore = function(state)
+  if state.search_pattern and state.check_gitignore_in_search == false then
+    return false
+  end
+  if state.filtered_items.hide_gitignored then
+    return true
+  end
+  if state.enable_git_status == false then
+    return false
+  end
+end
 ---@param context neotree.sources.filesystem.Context
-local job_complete = function(context)
+local job_complete = function(context, async)
   local state = context.state
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
-  git.mark_ignored(state, context.all_items)
-  vim.schedule(function()
-    render_context(context)
-  end)
+  if should_check_gitignore(state) then
+    git.mark_gitignored(state, context.all_items)
+  end
+  if not async then
+    vim.schedule(function()
+      render_context(context)
+    end)
+  end
   return context
 end
 
@@ -638,7 +651,7 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  job_complete(context)
+  job_complete(context, true)
 
   local finalize = async.wrap(function(_context, _callback)
     vim.schedule(function()

@@ -584,11 +584,17 @@ end
 
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
-M.mark_ignored = function(state, items)
+M.mark_gitignored = function(state, items)
+  local statuses = {}
+  for git_root, git_status in pairs(M.statuses) do
+    if utils.is_subpath(git_root, state.path) or utils.is_subpath(state.path, git_root) then
+      statuses[#statuses + 1] = git_status
+    end
+  end
   for _, i in ipairs(items) do
-    for git_root, statuses in pairs(M.statuses) do
-      local direct_lookup = statuses[i.path]
-      if direct_lookup == "!" then
+    for _, git_status in ipairs(statuses) do
+      local status = git_status[i.path]
+      if status == "!" then
         i.filtered_by = i.filtered_by or {}
         i.filtered_by.gitignored = true
         break
