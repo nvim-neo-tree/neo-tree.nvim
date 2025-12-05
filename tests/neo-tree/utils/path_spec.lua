@@ -31,6 +31,10 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath("/TeSt", "/TeSt/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
       assert.are.same(false, utils.is_subpath("/A", "/a/subpath"))
+
+      -- Root path edge case
+      assert.are.same(true, utils.is_subpath("/", "/b/c"))
+      assert.are.same(true, utils.is_subpath("/", "/b"))
       restore()
     end)
     it("should work on windows paths", function()
@@ -52,6 +56,7 @@ describe("utils path functions", function()
 
       -- Test Windows paths with drive letters
       assert.are.same(true, utils.is_subpath("C:", "C:/Users/user"))
+      assert.are.same(true, utils.is_subpath("C:\\", [[c:\A]]))
       assert.are.same(false, utils.is_subpath("C:", "D:/Users/user"))
 
       -- Test Windows paths with UNC paths
@@ -61,6 +66,10 @@ describe("utils path functions", function()
       -- Test Windows paths with trailing backslashes
       assert.are.same(true, utils.is_subpath([[C:\Users\user\]], [[C:\Users\user\Documents]]))
       assert.are.same(true, utils.is_subpath("C:/Users/user/", "C:/Users/user/Documents"))
+
+      -- Test root paths
+      print("asdf")
+      assert.are.same(false, utils.is_subpath([[\]], [[\\]]))
 
       restore()
     end)
