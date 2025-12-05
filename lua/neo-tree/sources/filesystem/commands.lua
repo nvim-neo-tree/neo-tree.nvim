@@ -144,16 +144,17 @@ M.navigate_up = function(state)
 end
 
 ---@param state neotree.StateWithTree
+---@param reverse boolean?
 local focus_next_git_modified = function(state, reverse)
   local node = assert(state.tree:get_node())
   local current_path = node:get_id()
-  local g = state.git_status_lookup
-  if not utils.truthy(g) then
+  local _, git_status = require("neo-tree.git").find_existing_status(current_path)
+  if not utils.truthy(git_status) then
     return
   end
-  ---@cast g -nil
+  assert(git_status)
   local paths = { current_path }
-  for path, status in pairs(g) do
+  for path, status in pairs(git_status) do
     if path ~= current_path and not vim.tbl_contains({ "!", "?" }, status) then
       --don't include files not in the current working directory
       if utils.is_subpath(state.path, path) then
@@ -162,18 +163,22 @@ local focus_next_git_modified = function(state, reverse)
     end
   end
   local sorted_paths = utils.sort_by_tree_display(paths)
-  if reverse then
-    sorted_paths = utils.reverse_list(sorted_paths)
-  end
 
+  ---@param path string
+  ---@return boolean is_file
   local is_file = function(path)
     local success, stats = pcall(uv.fs_stat, path)
-    return (success and stats and stats.type ~= "directory")
+    return (success and stats and stats.type ~= "directory" or false)
   end
 
   local passed = false
   local target = nil
-  for _, path in ipairs(sorted_paths) do
+  local from, to, increment = 1, #sorted_paths, 1
+  if reverse then
+    from, to, increment = #sorted_paths, 1, -1
+  end
+  for i = from, to, increment do
+    local path = sorted_paths[i]
     if target == nil and is_file(path) then
       target = path
     end

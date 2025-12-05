@@ -5,7 +5,7 @@ local git = require("neo-tree.git")
 
 local M = {}
 
----Get a table of all open buffers, along with all parent paths of those buffers.
+---Get a table of all git statuses in the current repo, along with all parent paths.
 ---The paths are the keys of the table, and all the values are 'true'.
 ---@param state neotree.StateWithTree
 M.get_git_status = function(state)
@@ -38,7 +38,6 @@ M.get_git_status = function(state)
         end
       end
     end
-    state.git_status_lookup = status_lookup
   end
 
   state.default_expanded_nodes = {}

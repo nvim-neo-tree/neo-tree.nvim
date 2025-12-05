@@ -1270,6 +1270,7 @@ M.window_exists = function(state)
       and vim.api.nvim_win_get_buf(winid) == bufnr
   end
 
+  vim.print(debug.traceback())
   window_exists = M.is_window_valid(winid) and (vim.api.nvim_win_get_number(winid) > 0)
   if not window_exists then
     return false

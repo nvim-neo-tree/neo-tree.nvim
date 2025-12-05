@@ -384,21 +384,23 @@ M.setup = function(config, global_config)
         end
       end,
     })
-  elseif global_config.enable_git_status and global_config.git_status_async then
-    manager.subscribe(M.name, {
-      event = events.GIT_STATUS_CHANGED,
-      handler = wrap(manager.git_status_changed),
-    })
   elseif global_config.enable_git_status then
-    manager.subscribe(M.name, {
-      event = events.BEFORE_RENDER,
-      handler = function(state)
-        local this_state = get_state()
-        if state == this_state then
-          state.git_status_lookup = git.status(state.git_base, false, state.path)
-        end
-      end,
-    })
+    if global_config.git_status_async then
+      manager.subscribe(M.name, {
+        event = events.GIT_STATUS_CHANGED,
+        handler = wrap(manager.git_status_changed),
+      })
+    else
+      manager.subscribe(M.name, {
+        event = events.BEFORE_RENDER,
+        handler = function(state)
+          local this_state = get_state()
+          if state == this_state then
+            git.status(state.git_base, false, state.path)
+          end
+        end,
+      })
+    end
   end
 
   -- Respond to git events from git_status source or Fugitive

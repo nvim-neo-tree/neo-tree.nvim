@@ -88,8 +88,6 @@ end
 ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
 ---@field skip_marker_at_level table<integer, boolean?>?
 ---@field group_empty_dirs boolean?
----git
----@field git_status_lookup neotree.git.Status?
 ---optional mapping args
 ---@field fallback string?
 ---@field config table?
