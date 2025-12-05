@@ -234,6 +234,10 @@ end
 ---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local node_is_dir = node.type == "directory"
+  if node.type == "message" then
+    return {}
+  end
+
   if node_is_dir and config.hide_when_expanded and node:is_expanded() then
     return {}
   end
