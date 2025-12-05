@@ -14,7 +14,7 @@ local highlights = require("neo-tree.ui.highlights")
 local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
-local nt = require("neo-tree")
+local git = require("neo-tree.git")
 
 ---@alias neotree.Component.Common._Key
 ---|"bufnr"
@@ -233,15 +233,17 @@ end
 
 ---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
-  local git_status_lookup = state.git_status_lookup
   local node_is_dir = node.type == "directory"
   if node_is_dir and config.hide_when_expanded and node:is_expanded() then
     return {}
   end
-  if not git_status_lookup then
+
+  local root_dir, git_status = git.find_existing_status(node.path)
+  if not git_status then
     return {}
   end
-  local git_status = git_status_lookup[node.path]
+
+  local git_status = git_status[node.path]
   if not git_status then
     return {}
   end

@@ -88,8 +88,6 @@ end
 ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
 ---@field skip_marker_at_level table<integer, boolean?>?
 ---@field group_empty_dirs boolean?
----git
----@field git_status_lookup neotree.git.Status?
 ---optional mapping args
 ---@field fallback string?
 ---@field config table?
@@ -415,8 +413,9 @@ M.git_status_changed = function(source_name, args)
     error("git_status_changed: args must be a table")
   end
   M._for_each_state(source_name, function(state)
-    if utils.is_subpath(args.git_root, state.path) then
-      state.git_status_lookup = args.git_status
+    local root_is_visible = state.tree and state.tree.nodes.by_id[args.git_root] ~= nil
+    local state_in_git_root = utils.is_subpath(args.git_root, state.path)
+    if state_in_git_root or root_is_visible then
       renderer.redraw(state)
     end
   end)

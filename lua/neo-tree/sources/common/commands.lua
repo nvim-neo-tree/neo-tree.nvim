@@ -9,6 +9,7 @@ local log = require("neo-tree.log")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
 local async = require("plenary.async")
+local git = require("neo-tree.git")
 local node_expander = require("neo-tree.sources.common.node_expander")
 
 ---@alias neotree.TreeCommandNormal fun(state: neotree.StateWithTree, ...: any)
@@ -333,8 +334,9 @@ M.git_toggle_file_stage = function(state)
     return
   end
   local path = node:get_id()
-  local gs = log.assert(state.git_status_lookup, "No git status found for this state")
-  local status = gs[path]
+  local root_dir, git_status = git.find_existing_status(path)
+  git_status = log.assert(git_status, "No git status found for this state")
+  local status = git_status[path]
   if not status then
     log.warn("No status found for path", path)
     return
@@ -553,10 +555,14 @@ M.order_by_git_status = function(state)
   set_sort(state, "Git Status")
 
   state.sort_field_provider = function(node)
-    local git_status_lookup = state.git_status_lookup or {}
-    local git_status = git_status_lookup[node.path]
-    if git_status then
-      return git_status
+    local root_dir, git_status = git.find_existing_status(node.path)
+    if not git_status then
+      return ""
+    end
+
+    local status = git_status[node.path]
+    if status then
+      return status
     end
 
     return ""
@@ -614,9 +620,10 @@ M.show_file_details = function(state)
     table.insert(right, utils.date(modified_format, stat.mtime.sec))
   end
 
-  if state.git_status_lookup and state.git_status_lookup[node.path] then
+  local root_dir, git_status = git.find_existing_status(node.path)
+  if git_status and git_status[node.path] then
     table.insert(left, "Git code")
-    table.insert(right, state.git_status_lookup[node.path])
+    table.insert(right, git_status[node.path])
   end
 
   local lines = {}

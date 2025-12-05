@@ -3,7 +3,10 @@ local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local Job = require("plenary.job")
 local uv = vim.uv or vim.loop
+local can_create_presized_table, new_table = pcall(require, "table.new")
 local co = coroutine
+---@type metatable
+local weak_kv = { __mode = "kv" }
 
 local M = {}
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
@@ -23,9 +26,7 @@ local has_porcelain_v2 = git_version and git_version.major >= 2 and git_version.
 M._supported_porcelain_version = has_porcelain_v2 and 2 or 1
 
 ---@type table<string, neotree.git.Status>
-M.status_cache = setmetatable({}, {
-  __mode = "kv",
-})
+M.statuses = setmetatable({}, weak_kv)
 
 ---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
 ---@field git_status neotree.git.Status?
@@ -37,7 +38,8 @@ M.status_cache = setmetatable({}, {
 ---@param git_status neotree.git.Status?
 local update_git_status = function(context, git_status)
   context.git_status = git_status
-  M.status_cache[context.git_root] = git_status
+  M._root_dir_cache = setmetatable({}, { __mode = "kv" })
+  M.statuses[context.git_root] = git_status
   vim.schedule(function()
     events.fire_event(events.GIT_STATUS_CHANGED, {
       git_root = context.git_root,
@@ -261,26 +263,39 @@ M._parse_porcelain = function(
     local typechanged = {}
     local renamed = {}
     local copied = {}
+    local flattened_len = #statuses
     for i, s in ipairs(statuses) do
+      -- simplify statuses to the highest priority ones
       if s:find("U", 1, true) then
+        statuses[i] = "U"
         conflicts[#conflicts + 1] = i
       elseif s:find("?", 1, true) then
+        statuses[i] = "?"
         untracked[#untracked + 1] = i
       elseif s:find("M", 1, true) then
+        statuses[i] = "M"
         modified[#modified + 1] = i
       elseif s:find("A", 1, true) then
+        statuses[i] = "A"
         added[#added + 1] = i
       elseif s:find("D", 1, true) then
+        statuses[i] = "D"
         deleted[#deleted + 1] = i
       elseif s:find("T", 1, true) then
+        statuses[i] = "T"
         typechanged[#typechanged + 1] = i
       elseif s:find("R", 1, true) then
+        statuses[i] = "R"
         renamed[#renamed + 1] = i
       elseif s:find("C", 1, true) then
+        statuses[i] = "C"
         copied[#copied + 1] = i
+      else
+        flattened_len = flattened_len - 1
       end
     end
-    local flattened = {}
+    local bubbleable_statuses_by_prio = can_create_presized_table and new_table(flattened_len, 0)
+      or {}
 
     for _, list in ipairs({
       conflicts,
@@ -292,13 +307,19 @@ M._parse_porcelain = function(
       renamed,
       copied,
     }) do
-      require("neo-tree.utils._compat").table_move(list, 1, #list, #flattened + 1, flattened)
+      require("neo-tree.utils._compat").table_move(
+        list,
+        1,
+        #list,
+        #bubbleable_statuses_by_prio + 1,
+        bubbleable_statuses_by_prio
+      )
     end
 
+    -- bubble them up
     local parent_statuses = {}
     do
-      local dot_byte = ("."):byte(1, 1)
-      for _, i in ipairs(flattened) do
+      for _, i in ipairs(bubbleable_statuses_by_prio) do
         local path = paths[i]
         local status = statuses[i]
         local parent
@@ -322,8 +343,7 @@ M._parse_porcelain = function(
             break
           end
 
-          parent_statuses[parent] = status:byte(1, 1) == dot_byte and status:sub(1, 1)
-            or status:sub(2, 2)
+          parent_statuses[parent] = status
           path = parent
         until false
 
@@ -350,7 +370,7 @@ M._parse_porcelain = function(
     end
   end
 
-  M.status_cache[git_root] = git_status
+  M.statuses[git_root] = git_status
   return git_status
 end
 
@@ -535,7 +555,7 @@ M.status_async = function(path, base, opts)
         batch_delay = opts.batch_delay or 10,
         max_lines = opts.max_lines or 100000,
       }
-      if not M.status_cache[ctx.git_root] then
+      if not M.statuses[ctx.git_root] then
         -- do a fast scan first to get basic things in, then a full scan with untracked files
         async_git_status_job(
           ctx,
@@ -564,33 +584,37 @@ end
 
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
-M.mark_ignored = function(state, items)
-  local gs = state.git_status_lookup
-  if not gs then
-    return
+M.mark_gitignored = function(state, items)
+  local statuses = {}
+  for git_root, git_status in pairs(M.statuses) do
+    if utils.is_subpath(git_root, state.path) or utils.is_subpath(state.path, git_root) then
+      statuses[#statuses + 1] = git_status
+    end
   end
   for _, i in ipairs(items) do
-    local direct_lookup = gs[i.path]
-    if direct_lookup == "!" then
-      i.filtered_by = i.filtered_by or {}
-      i.filtered_by.gitignored = true
+    for _, git_status in ipairs(statuses) do
+      local status = git_status[i.path]
+      if status == "!" then
+        i.filtered_by = i.filtered_by or {}
+        i.filtered_by.gitignored = true
+        break
+      end
     end
   end
 end
 
-local sp = utils.split_path
 ---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
 local invalidate_cache = function(path)
   ---@type string?
-  local parent = sp(path)
+  local parent = utils.split_path(path)
 
   while parent do
-    local cache_entry = M.status_cache[parent]
+    local cache_entry = M.statuses[parent]
     if cache_entry ~= nil then
       update_git_status({ git_root = parent }, nil)
     end
-    parent = sp(parent)
+    parent = utils.split_path(parent)
   end
 end
 
@@ -686,6 +710,29 @@ M.get_git_dir = function(path, callback)
   end
 
   return git_root
+end
+
+---@type table<string, string|false>
+M._root_dir_cache = setmetatable({}, weak_kv)
+---Given a path, find whether a git status exists for it.
+---@param path string
+---@return string|false? worktree_root
+---@return neotree.git.Status? status
+M.find_existing_status = function(path)
+  local cached = M._root_dir_cache[path]
+  if cached == false then
+    return cached, nil
+  end
+  if cached ~= nil then
+    return cached, M.statuses[cached]
+  end
+  for root_dir, status in pairs(M.statuses) do
+    if utils.is_subpath(root_dir, path, true) then
+      M._root_dir_cache[path] = root_dir
+      return root_dir, status
+    end
+  end
+  M._root_dir_cache[path] = false
 end
 
 return M

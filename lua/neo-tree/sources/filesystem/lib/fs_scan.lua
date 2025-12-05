@@ -91,11 +91,9 @@ local render_context = function(context)
       path = utils.path_join(path, root.link_to)
     end
 
-    if path then
-      log.trace("Looking for .git folder")
-      local async_opts = require("neo-tree").config.git_status_async
-      git_watcher.watch(path, async_opts)
-    end
+    log.trace("Looking for .git folder")
+    local async_opts = require("neo-tree").config.git_status_async
+    git_watcher.watch(path, async_opts)
   end
   fs_watch.updated_watched()
 
@@ -115,17 +113,33 @@ local render_context = function(context)
   context.all_items = nil
   context.root = nil
   context.parent_id = nil
-  ---@diagnostic disable-next-line: cast-local-type
-  context = nil
 end
 
+---@param state neotree.sources.filesystem.State
+local should_check_gitignore = function(state)
+  if state.search_pattern and state.check_gitignore_in_search == false then
+    return false
+  end
+  if state.filtered_items.hide_gitignored then
+    return true
+  end
+  if state.enable_git_status == false then
+    return false
+  end
+end
 ---@param context neotree.sources.filesystem.Context
-local job_complete = function(context)
+local job_complete = function(context, async)
   local state = context.state
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
-  git.mark_ignored(state, context.all_items)
-  render_context(context)
+  if should_check_gitignore(state) then
+    git.mark_gitignored(state, context.all_items)
+  end
+  if not async then
+    vim.schedule(function()
+      render_context(context)
+    end)
+  end
   return context
 end
 
@@ -637,7 +651,7 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  job_complete(context)
+  job_complete(context, true)
 
   local finalize = async.wrap(function(_context, _callback)
     vim.schedule(function()
