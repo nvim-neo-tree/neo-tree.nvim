@@ -955,10 +955,11 @@ M.is_subpath = function(base, path, fast)
     return false
   end
 
-  -- edge case: if base is only a root path, check whether the other root path is the same
+  -- edge case: if base is only a root path, check whether the other path's prefix is the same
   local base_prefix = M.abspath_prefix(base)
   if base_prefix and #base_prefix >= #base then
-    return base_prefix == M.abspath_prefix(path)
+    local path_prefix = M.abspath_prefix(path)
+    return base_prefix == path_prefix
   end
 
   -- normal happy path
@@ -1230,7 +1231,7 @@ M.path_join = function(...)
 end
 
 local forward_slash_byte = ("/"):byte(1, 1)
-local backslash_byte = ("/"):byte(1, 1)
+local backslash_byte = ("\\"):byte(1, 1)
 ---@param path string Any path.
 ---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)

@@ -68,6 +68,7 @@ describe("utils path functions", function()
       assert.are.same(true, utils.is_subpath("C:/Users/user/", "C:/Users/user/Documents"))
 
       -- Test root paths
+      print("asdf")
       assert.are.same(false, utils.is_subpath([[\]], [[\\]]))
 
       restore()
