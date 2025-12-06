@@ -29,7 +29,7 @@ deps_dir = '.dependencies/pack/vendor/start'
 [tasks.update-dependencies]
 alias = 'deps'
 run = """
-#!/usr/bin/env bash
+#!bash
 update() {
   local git_url="$1"
   local repo_name="$2"
@@ -70,7 +70,7 @@ update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
 
 [tasks.luals-check]
 run = """
-#!/usr/bin/env bash
+#!bash
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
@@ -78,7 +78,7 @@ depends = ['deps']
 
 [tasks.emmylua-check]
 run = """
-#!/usr/bin/env bash
+#!bash
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """

@@ -3,6 +3,14 @@
 Contributions are welcome! To keep everything clean and tidy, please follow the
 guidelines below.
 
+# Development setup
+
+View [mise.toml](./mise.toml) for tasks and their implementation.
+```bash
+
+
+```
+
 ## Code Style
 
 This is open for debate, but here is the current style choices being observed:
@@ -11,9 +19,6 @@ This is open for debate, but here is the current style choices being observed:
 - unless it is a class, then use PascalCase
 - other OOP things, like method names should use camelCase
 - BUT we don't currently have any OOP parts and I don't think we want any
-
-I prefer `local name = function()` over `local function name()`, just to be
-consistent with the `M.name = function()` exports.
 
 ### StyLua
 
@@ -50,10 +55,10 @@ current strategy is to maintain:
   in comments. This is the bare minimum documentation for an option.
 - The README contains "back of the box" high level overview of features. It is
   meant for people trying to decide if they want to install this plugin or not.
-  It should include references to the help file for more information: 
+  It should include references to the help file for more information:
   `:h neo-tree-setup`
 - Whether something should be mentioned in the README or just in the help file
-  is a completely subjective judement call that is made on a case by case basis 
+  is a completely subjective judgement call that is made on a case by case basis
   based on how many people are likely to be interested in that information.
 - The vim help file [doc/neo-tree.txt](doc/neo-tree.txt) is the definitive
   reference and should contain all information needed to configure and use the
