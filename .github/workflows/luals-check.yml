@@ -12,11 +12,8 @@ jobs:
   luals-check:
     strategy:
       matrix:
-        include:
-          - neovim: "0.11"
-            lua: "5.1"
-          - neovim: "nightly"
-            lua: "luajit-master"
+        neovim: ["nightly"]
+        lua: ["luajit-master", "5.1"]
     runs-on: ubuntu-latest
 
     steps:
