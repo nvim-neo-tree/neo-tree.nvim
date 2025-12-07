@@ -6,8 +6,26 @@ guidelines below.
 # Development setup
 
 View [mise.toml](./mise.toml) for tasks and their implementation.
-```bash
 
+```bash
+# Install/update dependencies
+mise deps
+# Or `mise update-dependencies`
+
+# Run stylua
+mise format
+
+# Do a lua-language-server pass
+mise luals-check
+
+# Do a emmylua-analyzer-rust pass (not important for now)
+mise luals-check
+
+# Tests
+mise test
+
+# Tests in Docker (for better sandboxing)
+mise test-docker
 
 ```
 
