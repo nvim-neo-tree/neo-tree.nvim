@@ -12,8 +12,13 @@ jobs:
   luals-check:
     strategy:
       matrix:
-        neovim: ["0.11"]
-        lua: ["5.1", "luajit-master"]
+        neovim: ["nightly"]
+        lua: ["luajit-master"]
+        include:
+          - neovim: "0.11"
+            lua: "luajit-master"
+          - neovim: "nightly"
+            lua: ""
     runs-on: ubuntu-latest
 
     steps:
@@ -27,9 +32,9 @@ jobs:
     - name: Install tools
       uses: jdx/mise-action@v2
       with:
-        install_args: "github:neovim/neovim@nightly"
+        install_args: "github:neovim/neovim@${{matrix.neovim}}"
 
     - name: Run lua-language-server check
       run: |
-        mise use github:neovim/neovim@nightly
+        mise use github:neovim/neovim@${{matrix.neovim}}
         NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check

@@ -52,10 +52,7 @@ local diag_severity_to_string = function(severity)
   end
 end
 
--- Backwards compatibility
-M.pack = table.pack or function(...)
-  return { n = select("#", ...), ... }
-end
+M.pack = compat.luajit.table_pack
 
 local tracked_functions = {}
 ---@enum neotree.utils.DebounceStrategy

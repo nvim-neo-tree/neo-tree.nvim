@@ -307,7 +307,7 @@ M._parse_porcelain = function(
       renamed,
       copied,
     }) do
-      require("neo-tree.utils._compat").table_move(
+      require("neo-tree.utils._compat").luajit.table_move(
         list,
         1,
         #list,
