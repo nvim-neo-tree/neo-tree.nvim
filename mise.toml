@@ -12,7 +12,6 @@ cargo-binstall = "latest"
 
 [tasks.test]
 run = """
-#!/usr/bin/env bash
 nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
 """
 
