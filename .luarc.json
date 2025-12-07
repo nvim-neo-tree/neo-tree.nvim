@@ -14,14 +14,13 @@
     "checkThirdParty": "Disable",
     "library": [
       "$VIMRUNTIME/lua",
-      "$PWD/.dependencies/pack/vendor/start/plenary.nvim/lua",
-      "$PWD/.dependencies/pack/vendor/start/nui.nvim/lua",
-      "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons/lua",
-      "$PWD/.dependencies/pack/vendor/start/image.nvim/lua",
-      "$PWD/.dependencies/pack/vendor/start/snacks.nvim/lua",
-      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker/lua",
-      "${3rd}/luassert/library",
-      "${3rd}/busted/library"
+      "lua",
+      ".dependencies/pack/vendor/start/plenary.nvim/lua",
+      ".dependencies/pack/vendor/start/nui.nvim/lua",
+      ".dependencies/pack/vendor/start/nvim-web-devicons/lua",
+      ".dependencies/pack/vendor/start/image.nvim/lua",
+      ".dependencies/pack/vendor/start/snacks.nvim/lua",
+      ".dependencies/pack/vendor/start/nvim-window-picker/lua"
     ],
     "ignoreDir": [
       ".dependencies",
