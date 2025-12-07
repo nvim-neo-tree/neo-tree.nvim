@@ -4,7 +4,7 @@ windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
 NEOTREE_LUARC = ".luarc.json"
 
 [tools]
-lua-language-server = "latest"
+lua-language-server = "3.15"
 cargo-binstall = "latest"
 "cargo:emmylua_ls" = "latest"
 "cargo:emmylua_check" = "latest"
