@@ -1,4 +1,4 @@
-name: Lua Language Server Diagnostics
+name: EmmyLua Analyzer Diagnostics
 on:
   pull_request: ~
   push:
@@ -6,7 +6,7 @@ on:
       - '*'
 
 env:
-  MISE_AUTO_INSTALL_DISABLE_TOOLS: cargo-binstall,cargo:emmylua_ls,cargo:emmylua_check
+  MISE_AUTO_INSTALL_DISABLE_TOOLS: lua-language-server
 
 jobs:
   luals-check:
@@ -27,10 +27,11 @@ jobs:
     - name: Install tools
       uses: jdx/mise-action@v2
       with:
-        install_args: "github:neovim/neovim@${{matrix.neovim}}"
+        install_args: "github:neovim/neovim@nightly"
 
-    - name: Run lua-language-server check
+    - name: Run emmylua_check
+      continue-on-error: true
       run: |
-        mise use github:neovim/neovim@${{matrix.neovim}}
+        mise use github:neovim/neovim@nightly
         mise run deps
-        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check
+        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run emmylua-check

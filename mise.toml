@@ -1,5 +1,140 @@
+[settings]
+windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
+[env]
+NEOTREE_LUARC = ".luarc.json"
+
 [tools]
+lua-language-server = "3.15"
 cargo-binstall = "latest"
-"cargo:emmylua_check" = "latest"
 "cargo:emmylua_ls" = "latest"
-lua-language-server = "latest"
+"cargo:emmylua_check" = "latest"
+"github:EmmyLuaLs/emmylua-analyzer-rust" = "latest"
+
+[tasks.test]
+run = """
+nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
+"""
+
+[tasks.test-docker]
+run = [
+	"docker build -t neo-tree .",
+	"docker run --rm neo-tree mise test"
+]
+
+[tasks.format]
+run = "stylua --glob '*.lua' --glob '!defaults.lua' ."
+
+[vars]
+deps_dir = '.dependencies/pack/vendor/start'
+
+[tasks.update-dependencies]
+alias = 'deps'
+run = """
+#!/usr/bin/env bash
+update() {
+  local git_url="$1"
+  local repo_name="$2"
+
+  mkdir -p "{{vars.deps_dir}}"
+
+  local target_dir="{{vars.deps_dir}}/$repo_name"
+  if [ -d "$target_dir" ]; then
+    echo "==> Directory '$target_dir' exists. Updating $repo_name..."
+    git -C $target_dir fetch --tags -f
+    git -C $target_dir pull
+
+    # Check the exit code of the subshell command
+    if [ $? -ne 0 ]; then
+      echo "Error: Failed to pull updates for '$repo_name'." >&2
+      return 1
+    fi
+    echo "==> Successfully updated '$repo_name'."
+
+  else
+    echo "==> Directory '$target_dir' not found. Cloning repository..."
+    git clone "$git_url" "$target_dir"
+
+    if [ $? -ne 0 ]; then
+      echo "Error: Failed to clone '$git_url'." >&2
+      return 1
+    fi
+    echo "==> Successfully cloned '$repo_name'."
+  fi
+}
+update https://github.com/3rd/image.nvim image.nvim
+update https://github.com/folke/snacks.nvim snacks.nvim
+update https://github.com/MunifTanjim/nui.nvim nui.nvim
+update https://github.com/nvim-tree/nvim-web-devicons nvim-web-devicons
+update https://github.com/nvim-lua/plenary.nvim plenary.nvim
+update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
+"""
+run_windows = """
+function Update-Repository {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$GitUrl,
+        [Parameter(Mandatory=$true)]
+        [string]$RepoName
+    )
+
+    # Ensure the parent directory exists
+    $DepsDir = "{{vars.deps_dir}}"
+    if (-not (Test-Path -Path $DepsDir -PathType Container)) {
+        Write-Host "==> Creating dependency directory '$DepsDir'..."
+        New-Item -Path $DepsDir -ItemType Directory | Out-Null
+    }
+
+    $TargetDir = Join-Path -Path $DepsDir -ChildPath $RepoName
+
+    if (Test-Path -Path $TargetDir -PathType Container) {
+        Write-Host "==> Directory '$TargetDir' exists. Updating $RepoName..."
+        git -C $TargetDir fetch --tags -f
+        git -C $TargetDir pull | Out-Null 2>&1
+    } else {
+        Write-Host "==> Directory '$TargetDir' not found. Cloning repository '$GitUrl'..."
+        git clone $GitUrl $TargetDir
+        $cloneExitCode = $LASTEXITCODE
+        Write-Host "==> Successfully cloned '$RepoName'."
+    }
+}
+
+## 🛠️ Repository Update Calls
+
+# Call the function for each repository
+Update-Repository -GitUrl "https://github.com/3rd/image.nvim" -RepoName "image.nvim"
+Update-Repository -GitUrl "https://github.com/folke/snacks.nvim" -RepoName "snacks.nvim"
+Update-Repository -GitUrl "https://github.com/MunifTanjim/nui.nvim" -RepoName "nui.nvim"
+Update-Repository -GitUrl "https://github.com/nvim-tree/nvim-web-devicons" -RepoName "nvim-web-devicons"
+Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
+Update-Repository -GitUrl "https://github.com/s1n7ax/nvim-window-picker" -RepoName "nvim-window-picker"
+"""
+
+[tasks.luals-check]
+run = """
+#!/usr/bin/env bash
+VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
+VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
+"""
+run_windows = """
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
+lua-language-server --configpath=$env:NEOTREE_LUARC --check .
+"""
+wait_for = ['deps']
+
+[tasks.emmylua-check]
+run = """
+#!/usr/bin/env bash
+VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
+VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
+"""
+run_windows = """
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
+$env:PWD = Get-Location
+emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
+"""
+wait_for = ['deps']
+
+[tasks.clean]
+run = [
+  "rm {{vars.deps_dir}} -rf"
+]

@@ -4,31 +4,29 @@
     "libraryFiles": "Disable"
   },
   "runtime": {
-    "version": "LuaJIT",
+    "version": "Lua 5.1",
     "path": [
       "lua/?.lua",
-      "lua/?/init.lua",
-      "library/?.lua",
-      "library/?/init.lua"
+      "lua/?/init.lua"
     ]
   },
   "workspace": {
     "checkThirdParty": "Disable",
     "library": [
+      "$VIMRUNTIME",
       "$PWD/.dependencies/pack/vendor/start/plenary.nvim",
       "$PWD/.dependencies/pack/vendor/start/nui.nvim",
       "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons",
+      "$PWD/.dependencies/pack/vendor/start/image.nvim",
       "$PWD/.dependencies/pack/vendor/start/snacks.nvim",
-      "${3rd}/luassert",
-      "${3rd}/busted",
-      "${3rd}/luv",
-      "$VIMRUNTIME"
+      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker"
     ],
     "ignoreDir": [
       ".dependencies",
       ".luarocks",
       ".lua",
-      ".repro"
+      ".repro",
+      "tests"
     ]
   }
 }

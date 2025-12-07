@@ -26,8 +26,10 @@ local table_move = function(a1, f, e, t, a2)
 
   return a2
 end
----source:
-compat.table_move = table.move or table_move
+
+compat.luajit = {}
+---@diagnostic disable-next-line: deprecated
+compat.luajit.table_move = table.move or table_move
 
 ---@vararg any
 local table_pack = function(...)
@@ -37,7 +39,11 @@ local table_pack = function(...)
   t.n = #t
   return t
 end
-compat.table_pack = table.pack or table_pack
+
+---@diagnostic disable-next-line: deprecated
+compat.luajit.table_pack = table.pack or function(...)
+  return { n = select("#", ...), ... }
+end
 
 --- Split a Windows path into a prefix and a body, such that the body can be processed like a POSIX
 --- path. The path must use forward slashes as path separator.

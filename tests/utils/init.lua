@@ -174,7 +174,7 @@ function mod.assert_highlight(bufnr, ns_id, linenr, text, hl_group)
   mod.assert_extmark(extmarks[1], linenr, text, hl_group)
 end
 
----@param callback fun(): boolean
+---@param callback fun():boolean
 ---@param options? { interval?: integer, timeout?: integer }
 function mod.wait_for(callback, options)
   options = options or {}
