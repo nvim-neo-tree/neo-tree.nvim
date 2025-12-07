@@ -33,4 +33,5 @@ jobs:
       continue-on-error: true
       run: |
         mise use github:neovim/neovim@nightly
+        mise run deps
         NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run emmylua-check

@@ -32,4 +32,5 @@ jobs:
     - name: Run lua-language-server check
       run: |
         mise use github:neovim/neovim@${{matrix.neovim}}
+        mise run deps
         NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check
