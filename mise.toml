@@ -1,3 +1,5 @@
+[settings]
+windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
 [env]
 NEOTREE_LUARC = ".luarc.json"
 
@@ -29,7 +31,7 @@ deps_dir = '.dependencies/pack/vendor/start'
 [tasks.update-dependencies]
 alias = 'deps'
 run = """
-#!bash
+#!/usr/bin/env bash
 update() {
   local git_url="$1"
   local repo_name="$2"
@@ -67,22 +69,71 @@ update https://github.com/nvim-tree/nvim-web-devicons nvim-web-devicons
 update https://github.com/nvim-lua/plenary.nvim plenary.nvim
 update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
 """
+run_windows = """
+function Update-Repository {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$GitUrl,
+        [Parameter(Mandatory=$true)]
+        [string]$RepoName
+    )
+
+    # Ensure the parent directory exists
+    $DepsDir = "{{vars.deps_dir}}"
+    if (-not (Test-Path -Path $DepsDir -PathType Container)) {
+        Write-Host "==> Creating dependency directory '$DepsDir'..."
+        New-Item -Path $DepsDir -ItemType Directory | Out-Null
+    }
+
+    $TargetDir = Join-Path -Path $DepsDir -ChildPath $RepoName
+
+    if (Test-Path -Path $TargetDir -PathType Container) {
+        Write-Host "==> Directory '$TargetDir' exists. Updating $RepoName..."
+        git -C $TargetDir fetch --tags -f
+        git -C $TargetDir pull | Out-Null 2>&1
+    } else {
+        Write-Host "==> Directory '$TargetDir' not found. Cloning repository '$GitUrl'..."
+        git clone $GitUrl $TargetDir
+        $cloneExitCode = $LASTEXITCODE
+        Write-Host "==> Successfully cloned '$RepoName'."
+    }
+}
+
+## 🛠️ Repository Update Calls
+
+# Call the function for each repository
+Update-Repository -GitUrl "https://github.com/3rd/image.nvim" -RepoName "image.nvim"
+Update-Repository -GitUrl "https://github.com/folke/snacks.nvim" -RepoName "snacks.nvim"
+Update-Repository -GitUrl "https://github.com/MunifTanjim/nui.nvim" -RepoName "nui.nvim"
+Update-Repository -GitUrl "https://github.com/nvim-tree/nvim-web-devicons" -RepoName "nvim-web-devicons"
+Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
+Update-Repository -GitUrl "https://github.com/s1n7ax/nvim-window-picker" -RepoName "nvim-window-picker"
+"""
 
 [tasks.luals-check]
 run = """
-#!bash
-VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
+#!/usr/bin/env bash
+VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
-depends = ['deps']
+run_windows = """
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
+lua-language-server --configpath=$env:NEOTREE_LUARC --check .
+"""
+wait_for = ['deps']
 
 [tasks.emmylua-check]
 run = """
-#!bash
+#!/usr/bin/env bash
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
-depends = ['deps']
+run_windows = """
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
+$env:PWD = Get-Location
+emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
+"""
+wait_for = ['deps']
 
 [tasks.clean]
 run = [
