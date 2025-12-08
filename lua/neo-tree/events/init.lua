@@ -10,6 +10,7 @@ local M = {
   BEFORE_FILE_DELETE = "before_file_delete",
   BEFORE_FILE_MOVE = "before_file_move",
   BEFORE_FILE_RENAME = "before_file_rename",
+  BEFORE_GIT_STATUS = "before_git_status",
   BEFORE_RENDER = "before_render",
   FILE_ADDED = "file_added",
   FILE_DELETED = "file_deleted",

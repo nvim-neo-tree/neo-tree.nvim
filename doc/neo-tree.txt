@@ -1536,6 +1536,16 @@ nodes of the tree. This is the best place to gather additional data to be used
 by components. The argument passed is the state of the source, which is also
 passed to components and commands down the line.
 
+"before_git_status" ~
+Fired before executing any git status commands.
+
+Arg table fields:
+
+- `status_args`: `string[]`, the list of args being passed to the `git status`
+  command, before any paths are appended to trim the results that `git` returns.
+  Modifying this table will modify the final `git status` command accordingly.
+- `git_root`: `string`, the path of the root folder of the git worktree root.
+
 "after_render" ~
 Fired after the tree has been rendered. The argument passed is the state of the
 source, which is also passed to components and commands down the line.
@@ -1569,13 +1579,26 @@ or clear the filter. The arg is the path of the file opened.
 Fired after a file (or folder) has been renamed. The arg is an table containing
 `source` and `destination` properties.
 
+"git_event" ~
+Mostly for internal use. Fired when a Neo-tree command is known to modify the working or
+staging area, or on `fugitive.vim`'s `FugitiveChanged` User autocmd event.
+
+"git_status_changed" ~
+Fired when a new `git status` output for a tracked worktree has been processed. Does not currently check whether
+the status actually changed from the previous status.
+
+Arg table fields:
+
+- `git_status`: `table<string, string>`, A map of absolute file paths to 1-2 letter git status codes.
+- `git_root`: `string`, the path of the root folder of the git worktree root.
+
 "neo_tree_buffer_enter" ~
-Fired after entering a neo-tree buffer. It is also right after neo-tree applies
+Fired after entering a Neo-tree buffer. It is also right after Neo-tree applies
 it's own settings, so it's the ideal place to apply any local settings you would
 like to have.
 
 "neo_tree_buffer_leave" ~
-Fired after a neo-tree buffer was exited. Technically it fires when entering a
+Fired after a Neo-tree buffer was exited. Technically it fires when entering a
 buffer that is not neo-tree, when the last buffer enter event was neo-tree.
 
 "neo_tree_clipboard_changed" ~
