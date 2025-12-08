@@ -383,7 +383,7 @@ end
 local make_git_status_args = function(porcelain_version, git_root, untracked_files, ignored, paths)
   untracked_files = untracked_files or "normal"
   ignored = ignored or "traditional"
-  local opts = {
+  local args = {
     "--no-optional-locks",
     "-C",
     git_root,
@@ -392,14 +392,18 @@ local make_git_status_args = function(porcelain_version, git_root, untracked_fil
     "--untracked-files=" .. untracked_files,
     "--ignored=" .. ignored,
     "-z",
-    "--",
   }
+  events.fire_event(events.BEFORE_GIT_STATUS, {
+    status_args = args,
+    git_root = git_root,
+  })
   if paths then
+    args[#args + 1] = "--"
     for _, path in ipairs(paths) do
-      opts[#opts + 1] = path
+      args[#args + 1] = path
     end
   end
-  return opts
+  return args
 end
 
 ---Parse "git status" output for the current working directory.
