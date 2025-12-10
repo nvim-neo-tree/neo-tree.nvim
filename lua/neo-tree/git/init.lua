@@ -374,6 +374,10 @@ M._parse_porcelain = function(
   return git_status
 end
 
+local porcelain_flag = {
+  "--porcelain=v1",
+  "--porcelain=v2",
+}
 ---@param git_root string
 ---@param porcelain_version 1|2
 ---@param untracked_files "all"|"no"|"normal"?
@@ -381,18 +385,19 @@ end
 ---@param paths string[]?
 ---@return string[] args
 local make_git_status_args = function(porcelain_version, git_root, untracked_files, ignored, paths)
-  untracked_files = untracked_files or "normal"
   ignored = ignored or "traditional"
   local args = {
     "--no-optional-locks",
     "-C",
     git_root,
     "status",
-    "--porcelain=v" .. porcelain_version,
-    "--untracked-files=" .. untracked_files,
-    "--ignored=" .. ignored,
+    porcelain_flag[porcelain_version],
     "-z",
+    "--ignored=" .. ignored,
   }
+  if untracked_files then
+    args[#args + 1] = "--untracked-files=" .. untracked_files
+  end
   events.fire_event(events.BEFORE_GIT_STATUS, {
     status_args = args,
     git_root = git_root,
@@ -407,12 +412,12 @@ local make_git_status_args = function(porcelain_version, git_root, untracked_fil
 end
 
 ---Parse "git status" output for the current working directory.
----@param base string git ref base
+---@param base string? git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
 ---@param path string? Path to run the git status command in, defaults to cwd.
 ---@return neotree.git.Status?, string? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 M.status = function(base, skip_bubbling, path)
-  local git_root = M.get_worktree_root(path)
+  local git_root = M.get_worktree_info(path)
   if not utils.truthy(git_root) then
     return nil
   end
@@ -540,7 +545,7 @@ end
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
-  M.get_worktree_root(path, function(git_root)
+  M.get_worktree_info(path, function(git_root)
     if not git_root then
       log.trace("status_async: not a git folder:", path)
       return
@@ -595,6 +600,10 @@ M.mark_gitignored = function(state, items)
       statuses[#statuses + 1] = git_status
     end
   end
+  -- local local_status = M.status(nil, true, state.path)
+  -- if local_status then
+  --   statuses[#statuses + 1] = local_status
+  -- end
   for _, i in ipairs(items) do
     for _, git_status in ipairs(statuses) do
       local status = git_status[i.path]
@@ -622,14 +631,23 @@ local invalidate_cache = function(path)
   end
 end
 
----Returns the repository root, already normalized.
----@param path string? Defaults to cwd
----@param callback fun(git_root: string?)?
----@return string?
-M.get_worktree_root = function(path, callback)
+---Finds the worktree root and the corresponding git directory, already normalized.
+---@param path string? Defaults to cwd.
+---@param callback fun(worktree_root: string?, git_dir: string?, superproject_worktree_root: string?)? Async if provided.
+---@return string? worktree_root
+---@return string? git_dir
+---@return string? superproject_worktree_root
+M.get_worktree_info = function(path, callback)
   path = path or log.assert(uv.cwd())
 
-  local args = { "-C", path, "rev-parse", "--show-toplevel" }
+  local args = {
+    "-C",
+    path,
+    "rev-parse",
+    "--show-toplevel",
+    "--absolute-git-dir",
+    "--show-superproject-working-tree",
+  }
 
   if type(callback) == "function" then
     ---@diagnostic disable-next-line: missing-fields
@@ -644,12 +662,16 @@ M.get_worktree_root = function(path, callback)
           callback(nil)
           return
         end
-        local git_root = self:result()[1]
-        if git_root then
-          git_root = utils.normalize_path(git_root)
+        local worktree_root, git_dir, superproject_worktree_root = unpack(self:result())
+        if worktree_root then
+          worktree_root = utils.normalize_path(worktree_root)
+          git_dir = utils.normalize_path(git_dir)
+          if superproject_worktree_root then
+            superproject_worktree_root = utils.normalize_path(superproject_worktree_root)
+          end
         end
 
-        callback(git_root)
+        callback(worktree_root, git_dir, superproject_worktree_root)
       end,
     }):start()
     return
@@ -661,59 +683,17 @@ M.get_worktree_root = function(path, callback)
     invalidate_cache(path)
     return nil
   end
-  local git_root = git_output[1]
-  if git_root then
-    git_root = utils.normalize_path(git_root)
+  local worktree_root, git_dir, superproject_worktree_root = unpack(git_output)
+  if worktree_root then
+    worktree_root = utils.normalize_path(worktree_root)
+    assert(git_dir)
+    git_dir = utils.normalize_path(git_dir)
+    if superproject_worktree_root then
+      superproject_worktree_root = utils.normalize_path(superproject_worktree_root)
+    end
   end
 
-  return git_root
-end
-
----Returns the absolute git dir path
----@param path string? Defaults to cwd
----@param callback fun(git_root: string?)?
----@return string?
-M.get_git_dir = function(path, callback)
-  path = path or log.assert(uv.cwd())
-
-  local args = { "-C", path, "rev-parse", "--absolute-git-dir" }
-
-  if type(callback) == "function" then
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-      command = "git",
-      args = args,
-      enabled_recording = true,
-      on_exit = function(self, code, _)
-        if code ~= 0 then
-          log.trace("GIT DIR ERROR", self:stderr_result())
-          invalidate_cache(path)
-          callback(nil)
-          return
-        end
-        local git_root = self:result()[1]
-        if git_root then
-          git_root = utils.normalize_path(git_root)
-        end
-
-        callback(git_root)
-      end,
-    }):start()
-    return
-  end
-
-  local ok, git_output = utils.execute_command({ "git", unpack(args) })
-  if not ok then
-    log.trace("GIT ROOT NOT FOUND", git_output)
-    invalidate_cache(path)
-    return nil
-  end
-  local git_root = git_output[1]
-  if git_root then
-    git_root = utils.normalize_path(git_root)
-  end
-
-  return git_root
+  return worktree_root, git_dir, superproject_worktree_root
 end
 
 ---@type table<string, string|false>
