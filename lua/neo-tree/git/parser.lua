@@ -1,5 +1,4 @@
 local utils = require("neo-tree.utils")
-local can_create_presized_table, new_table = pcall(require, "table.new")
 
 local M = {}
 ---@param path string
@@ -60,6 +59,9 @@ M._parse_porcelain = function(
   ---@type string[]
   local paths = {}
 
+  ---@type integer[]
+  local unmerged = {}
+
   if porcelain_version == 1 then
     while line do
       -- Example status:
@@ -87,9 +89,6 @@ M._parse_porcelain = function(
           status_iter() -- consume original path
         end
         local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
         paths[#paths + 1] = abspath
         statuses[#statuses + 1] = XY:gsub(" ", ".")
       end
@@ -118,10 +117,11 @@ M._parse_porcelain = function(
       -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
 
       local line_type_byte = line:byte(1, 1)
+      local abspath, XY
       if line_type_byte == COMMENT_BYTE then
-      -- continue for now
+        -- continue for now
       elseif line_type_byte == TYPE_ONE_BYTE then
-        local XY = line:sub(3, 4)
+        XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local mH = line:sub(11, 16)
         -- local mI = line:sub(18, 23)
@@ -129,15 +129,9 @@ M._parse_porcelain = function(
         -- local hH = line:sub(32, 71)
         -- local hI = line:sub(73, 112)
         local path = line:sub(114)
-
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
+        abspath = git_root_dir .. path
       elseif line_type_byte == TYPE_TWO_BYTE then
-        local XY = line:sub(3, 4)
+        XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local mH = line:sub(11, 16)
         -- local mI = line:sub(18, 23)
@@ -148,17 +142,11 @@ M._parse_porcelain = function(
         -- local Xscore = rest:sub(1, first_space - 1)
         local first_space = line:find(" ", 114, true)
         local path = line:sub(first_space + 1)
-
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
+        abspath = git_root_dir .. path
         -- ignore the original path
         status_iter()
       elseif line_type_byte == UNMERGED_BYTE then
-        local XY = line:sub(3, 4)
+        XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local m1 = line:sub(11, 16)
         -- local m2 = line:sub(18, 23)
@@ -168,17 +156,15 @@ M._parse_porcelain = function(
         -- local h2 = line:sub(80, 119)
         -- local h3 = line:sub(121, 160)
         local path = line:sub(162)
+        abspath = git_root_dir .. path
 
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
+        unmerged[#unmerged + 1] = #paths + 1
       else
         -- either untracked or ignored
         break
       end
+      paths[#paths + 1] = abspath
+      statuses[#statuses + 1] = XY
       if batch_size then
         yield_if_batch_completed()
       end
@@ -198,6 +184,8 @@ M._parse_porcelain = function(
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)
     end
+    paths[#paths + 1] = abspath
+    statuses[#statuses + 1] = "?"
     line = status_iter()
     if batch_size then
       yield_if_batch_completed()
@@ -205,77 +193,67 @@ M._parse_porcelain = function(
   end
 
   for i, p in ipairs(paths) do
+    if utils.is_windows then
+      p = utils.windowize_path(p)
+    end
     git_status[p] = statuses[i]
   end
 
   if not skip_bubbling then
-    local conflicts = {}
+    ---@type integer[]
     local untracked = {}
+    ---@type integer[]
     local modified = {}
+    ---@type integer[]
     local added = {}
+    ---@type integer[]
     local deleted = {}
+    ---@type integer[]
     local typechanged = {}
+    ---@type integer[]
     local renamed = {}
+    ---@type integer[]
     local copied = {}
-    local flattened_len = #statuses
+    local flattened_len = #statuses - #unmerged
     for i, s in ipairs(statuses) do
       -- simplify statuses to the highest priority ones
-      if s:find("U", 1, true) then
-        statuses[i] = "U"
-        conflicts[#conflicts + 1] = i
-      elseif s:find("?", 1, true) then
-        statuses[i] = "?"
+      if s:find("?", 1, true) then
         untracked[#untracked + 1] = i
       elseif s:find("M", 1, true) then
-        statuses[i] = "M"
         modified[#modified + 1] = i
       elseif s:find("A", 1, true) then
-        statuses[i] = "A"
         added[#added + 1] = i
       elseif s:find("D", 1, true) then
-        statuses[i] = "D"
         deleted[#deleted + 1] = i
       elseif s:find("T", 1, true) then
-        statuses[i] = "T"
         typechanged[#typechanged + 1] = i
       elseif s:find("R", 1, true) then
-        statuses[i] = "R"
         renamed[#renamed + 1] = i
       elseif s:find("C", 1, true) then
-        statuses[i] = "C"
         copied[#copied + 1] = i
       else
         flattened_len = flattened_len - 1
       end
     end
-    local bubbleable_statuses_by_prio = can_create_presized_table and new_table(flattened_len, 0)
-      or {}
 
-    for _, list in ipairs({
-      conflicts,
-      untracked,
-      modified,
-      added,
-      deleted,
-      typechanged,
-      renamed,
-      copied,
-    }) do
-      require("neo-tree.utils._compat").luajit.table_move(
-        list,
-        1,
-        #list,
-        #bubbleable_statuses_by_prio + 1,
-        bubbleable_statuses_by_prio
-      )
-    end
-
-    -- bubble them up
+    ---@type [integer[], string][]
+    local bubble_info = {
+      { unmerged, "U" },
+      { untracked, "?" },
+      { modified, "M" },
+      { added, "A" },
+      { deleted, "D" },
+      { typechanged, "T" },
+      { renamed, "R" },
+      { copied, "C" },
+    }
     local parent_statuses = {}
-    do
-      for _, i in ipairs(bubbleable_statuses_by_prio) do
+
+    for _, tuple in ipairs(bubble_info) do
+      local list, status = tuple[1], tuple[2]
+      -- bubble them up
+      for _, i in ipairs(list) do
         local path = paths[i]
-        local status = statuses[i]
         local parent
         repeat
           local cached = parent_cache[path]
@@ -304,9 +282,10 @@ M._parse_porcelain = function(
           yield_if_batch_completed()
         end
       end
-      for parent, status in pairs(parent_statuses) do
-        git_status[parent] = status
-      end
+    end
+
+    for parent, status in pairs(parent_statuses) do
+      git_status[parent] = status
     end
   end
 
