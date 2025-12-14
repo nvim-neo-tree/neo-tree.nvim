@@ -23,7 +23,6 @@ local parent_cache = setmetatable({}, { __mode = "kv" })
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status status
----@return string[] ignored
 M._parse_porcelain = function(
   porcelain_version,
   git_root,
@@ -311,14 +310,12 @@ M._parse_porcelain = function(
     end
   end
 
-  local ignored = {}
   while line and line:byte(1, 1) == IGNORED_BYTE do
     local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)
     end
     git_status[abspath] = "!"
-    ignored[#ignored + 1] = abspath
     line = status_iter()
 
     if batch_size then
@@ -326,7 +323,7 @@ M._parse_porcelain = function(
     end
   end
 
-  return git_status, ignored
+  return git_status
 end
 
 return M

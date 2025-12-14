@@ -45,8 +45,7 @@ M._supported_porcelain_version = nil
 
 ---@param git_root string
 ---@param git_status neotree.git.Status?
----@param ignored string[]?
-local change_git_status = function(git_root, git_status, ignored)
+local change_git_status = function(git_root, git_status)
   local last_git_status = M.statuses[git_root]
   if type(last_git_status) ~= type(git_status) then
     -- updating or deleting an existing root dir
@@ -58,7 +57,6 @@ local change_git_status = function(git_root, git_status, ignored)
     local args = {
       git_root = git_root,
       git_status = git_status,
-      git_ignored = ignored,
     }
     events.fire_event(events.GIT_STATUS_CHANGED, args)
   end)
@@ -198,8 +196,8 @@ end
 ---Creates a job (vim job) for `git status`
 ---@param context neotree.git.JobContext
 ---@param git_args string[]? nil to use default of make_git_status_args, which includes all files
----@param on_changed_status fun(gs: neotree.git.Status, ignored: string[])
-local git_status_job = function(context, git_args, on_changed_status, skip_bubbling)
+---@param on_parsed fun(gs: neotree.git.Status)
+local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
   local args = git_args or make_git_status_args(M._supported_porcelain_version, context.git_root)
   git_job(args, function(code, stdout_chunks, stderr_chunks)
     if code ~= 0 then
@@ -223,7 +221,7 @@ local git_status_job = function(context, git_args, on_changed_status, skip_bubbl
     ---@diagnostic disable-next-line: param-type-mismatch
     local status_iter = vim.gsplit(status_text, "\000", gsplit_plain)
     local parsing_task = co.create(parser._parse_porcelain)
-    local _, _, ignored = log.assert(
+    log.assert(
       co.resume(
         parsing_task,
         M._supported_porcelain_version,
@@ -238,13 +236,13 @@ local git_status_job = function(context, git_args, on_changed_status, skip_bubbl
     local function do_next_batch_later()
       if co.status(parsing_task) == "dead" then
         -- Completed
-        on_changed_status(context.git_status, ignored)
+        on_parsed(context.git_status)
         return
       end
 
       if processed_lines > context.max_lines then
         -- Reached max line count
-        on_changed_status(context.git_status, ignored)
+        on_parsed(context.git_status)
         return
       end
 
@@ -293,8 +291,8 @@ M.status_async = function(path, base, opts)
             "traditional",
             { path }
           )
-          git_status_job(ctx, fast_args, function(fast_status, ignored)
-            change_git_status(worktree_root, fast_status, ignored)
+          git_status_job(ctx, fast_args, function(fast_status)
+            change_git_status(worktree_root, fast_status)
             git_job(
               { "-C", worktree_root, "config", "--get", "status.showUntrackedFiles" },
               function(code, stdout_chunks, _)
@@ -318,15 +316,15 @@ M.status_async = function(path, base, opts)
                   )
                   return
                 end
-                git_status_job(ctx, nil, function(full_status, full_ignored)
-                  change_git_status(worktree_root, full_status, full_ignored)
+                git_status_job(ctx, nil, function(full_status)
+                  change_git_status(worktree_root, full_status)
                 end, true)
               end
             )
           end)
         else
-          git_status_job(ctx, nil, function(full_status, ignored)
-            change_git_status(worktree_root, full_status, ignored)
+          git_status_job(ctx, nil, function(full_status)
+            change_git_status(worktree_root, full_status)
           end)
         end
       end)
