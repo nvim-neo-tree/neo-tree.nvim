@@ -1,32 +1,45 @@
 local utils = require("neo-tree.utils")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local Job = require("plenary.job")
+local parser = require("neo-tree.git.parser")
 local uv = vim.uv or vim.loop
-local can_create_presized_table, new_table = pcall(require, "table.new")
 local co = coroutine
 ---@type metatable
 local weak_kv = { __mode = "kv" }
 
 local M = {}
+
+---@type table<string, neotree.git.Status>
+M.statuses = setmetatable({}, weak_kv)
+---@type table<boolean, table<string, string>>
+M._raw_status_text_cache = setmetatable({}, weak_kv)
+
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
-local git_available, git_version_output = utils.execute_command({ "git", "--version" })
-local git_version
-if git_available then
+local git_available = vim.fn.executable("git") == 1
+
+---@return 1|2? highest_supported_porcelain_version_if_git
+local get_git_porcelain_version = function()
+  if not git_available then
+    return nil
+  end
+  local git_version_success, git_version_output = utils.execute_command({ "git", "--version" })
+  if not git_version_success then
+    log.warn("`git --version` failed")
+  end
   ---@diagnostic disable-next-line: param-type-mismatch
   local version_output = vim.split(git_version_output[1], ".", gsplit_plain)
-  git_version = {
+  local git_version = {
     major = tonumber(version_output[1]:sub(#"git version " + 1)),
     minor = tonumber(version_output[2]),
     patch = tonumber(version_output[3] or 0),
   }
+
+  local has_porcelain_v2 = git_version and git_version.major >= 2 and git_version.minor >= 12
+  return has_porcelain_v2 and 2 or 1
 end
 
-local has_porcelain_v2 = git_version and git_version.major >= 2 and git_version.minor >= 12
-M._supported_porcelain_version = has_porcelain_v2 and 2 or 1
-
----@type table<string, neotree.git.Status>
-M.statuses = setmetatable({}, weak_kv)
+---@type 1|2?
+M._supported_porcelain_version = nil
 
 ---@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
 ---@field git_status neotree.git.Status?
@@ -34,362 +47,49 @@ M.statuses = setmetatable({}, weak_kv)
 
 ---@alias neotree.git.Status table<string, string>
 
----@param context neotree.git.Context
+---@param git_root string
 ---@param git_status neotree.git.Status?
-local update_git_status = function(context, git_status)
-  context.git_status = git_status
-  M._root_dir_cache = setmetatable({}, { __mode = "kv" })
-  M.statuses[context.git_root] = git_status
-  vim.schedule(function()
-    events.fire_event(events.GIT_STATUS_CHANGED, {
-      git_root = context.git_root,
-      git_status = context.git_status,
-    })
-  end)
-end
-
----@param path string
----@return string path_with_no_trailing_slash
-local trim_trailing_slash = function(path)
-  return path:sub(-1, -1) == "/" and path:sub(1, -2) or path
-end
-
-local COMMENT_BYTE = ("#"):byte()
-local TYPE_ONE_BYTE = ("1"):byte()
-local TYPE_TWO_BYTE = ("2"):byte()
-local UNMERGED_BYTE = ("u"):byte()
-local UNTRACKED_BYTE = ("?"):byte()
-local IGNORED_BYTE = ("!"):byte()
-local parent_cache = setmetatable({}, {
-  __mode = "kv",
-})
----@param porcelain_version 1|2
----@param status_iter fun():string? A function that will override each var of the git status
----@param git_status neotree.git.Status? The git status table to override, if any
----@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
----@param skip_bubbling boolean?
----@return neotree.git.Status
-M._parse_porcelain = function(
-  porcelain_version,
-  git_root,
-  status_iter,
-  git_status,
-  batch_size,
-  skip_bubbling
-)
-  local git_root_dir = utils.normalize_path(git_root)
-  if not vim.endswith(git_root_dir, utils.path_separator) then
-    git_root_dir = git_root_dir .. utils.path_separator
+---@param ignored string[]?
+local change_git_status = function(git_root, git_status, ignored)
+  local last_git_status = M.statuses[git_root]
+  if type(last_git_status) ~= type(git_status) then
+    -- updating or deleting an existing root dir
+    M._root_dir_cache = setmetatable({}, weak_kv)
   end
-
-  local num_in_batch = 0
-  git_status = git_status or {}
-  if not batch_size or batch_size <= 0 then
-    batch_size = nil
-  end
-  local yield_if_batch_completed
-
-  if batch_size then
-    yield_if_batch_completed = function()
-      num_in_batch = num_in_batch + 1
-      if num_in_batch > batch_size then
-        coroutine.yield(git_status)
-        num_in_batch = 0
-      end
-    end
-  end
-
-  local line = status_iter()
-
-  ---@type string[]
-  local statuses = {}
-  ---@type string[]
-  local paths = {}
-
-  if porcelain_version == 1 then
-    while line do
-      -- Example status:
-      -- D  deleted_staged.txt
-      --  D deleted_unstaged.txt
-      -- MM modified_mixed.txt
-      -- M  modified_staged.txt
-      --  M modified_unstaged.txt
-      -- A  new_staged_file.txt
-      -- R  renamed_staged_old.txt -> renamed_staged_new.txt
-      --  T type_change.txt
-      -- ?? .gitignore
-      -- ?? untracked.txt
-      -- !! ignored.txt
-      local XY = line:sub(1, 2)
-      if XY == "??" or XY == "!!" then
-        break
-      end
-
-      if XY ~= "# " then
-        local X = XY:sub(1, 1)
-        local Y = XY:sub(2, 2)
-        local path = line:sub(4)
-        if X == "R" or Y == "R" or X == "C" or Y == "C" then
-          status_iter() -- consume original path
-        end
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY:gsub(" ", ".")
-      end
-      line = status_iter()
-      if batch_size then
-        yield_if_batch_completed()
-      end
-    end
-  elseif porcelain_version == 2 then
-    while line do
-      -- Example status:
-      -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
-      -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
-      -- 1 MM N... 100644 100644 100644 4417f3aca512ffdf247662e2c611ee03ff9255cc 29c0e9846cd6410a44c4ca3fdaf5623818bd2838 modified_mixed.txt
-      -- 1 M. N... 100644 100644 100644 f784736eecdd43cd8eb665615163cfc6506fca5f 8d6fad5bd11ac45c7c9e62d4db1c427889ed515b modified_staged.txt
-      -- 1 .M N... 100644 100644 100644 c9e1e027aa9430cb4ffccccf45844286d10285c1 c9e1e027aa9430cb4ffccccf45844286d10285c1 modified_unstaged.txt
-      -- 1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 89cae60d74c222609086441e29985f959b6ec546 new_staged_file.txt
-      -- 2 R. N... 100644 100644 100644 3454a7dc6b93d1098e3c3f3ec369589412abdf99 3454a7dc6b93d1098e3c3f3ec369589412abdf99 R100 renamed_staged_new.txt
-      -- renamed_staged_old.txt
-      -- 1 .T N... 100644 100644 120000 192f10ed8c11efb70155e8eb4cae6ec677347623 192f10ed8c11efb70155e8eb4cae6ec677347623 type_change.txt
-      -- ? .gitignore
-      -- ? untracked.txt
-      -- ! ignored.txt
-
-      -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-      -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
-
-      local line_type_byte = line:byte(1, 1)
-      if line_type_byte == COMMENT_BYTE then
-      -- continue for now
-      elseif line_type_byte == TYPE_ONE_BYTE then
-        local XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local mH = line:sub(11, 16)
-        -- local mI = line:sub(18, 23)
-        -- local mW = line:sub(25, 30)
-        -- local hH = line:sub(32, 71)
-        -- local hI = line:sub(73, 112)
-        local path = line:sub(114)
-
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
-      elseif line_type_byte == TYPE_TWO_BYTE then
-        local XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local mH = line:sub(11, 16)
-        -- local mI = line:sub(18, 23)
-        -- local mW = line:sub(25, 30)
-        -- local hH = line:sub(32, 71)
-        -- local hI = line:sub(73, 112)
-        -- local rest = line:sub(114)
-        -- local Xscore = rest:sub(1, first_space - 1)
-        local first_space = line:find(" ", 114, true)
-        local path = line:sub(first_space + 1)
-
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
-        -- ignore the original path
-        status_iter()
-      elseif line_type_byte == UNMERGED_BYTE then
-        local XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local m1 = line:sub(11, 16)
-        -- local m2 = line:sub(18, 23)
-        -- local m3 = line:sub(25, 30)
-        -- local mW = line:sub(32, 37)
-        -- local h1 = line:sub(39, 78)
-        -- local h2 = line:sub(80, 119)
-        -- local h3 = line:sub(121, 160)
-        local path = line:sub(162)
-
-        local abspath = git_root_dir .. path
-        if utils.is_windows then
-          abspath = utils.windowize_path(abspath)
-        end
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY
-      else
-        -- either untracked or ignored
-        break
-      end
-      if batch_size then
-        yield_if_batch_completed()
-      end
-      line = status_iter()
-    end
-  end
-
-  local path_start = porcelain_version == 2 and 3 or 4
-
-  -- -------------------------------------------------
-  -- ?           ?    untracked
-  -- !           !    ignored
-  -- -------------------------------------------------
-  while line and line:byte(1, 1) == UNTRACKED_BYTE do
-    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
-    if utils.is_windows then
-      abspath = utils.windowize_path(abspath)
-    end
-    git_status[abspath] = "?"
-    line = status_iter()
-    if batch_size then
-      yield_if_batch_completed()
-    end
-  end
-
-  for i, p in ipairs(paths) do
-    git_status[p] = statuses[i]
-  end
-
-  if not skip_bubbling then
-    local conflicts = {}
-    local untracked = {}
-    local modified = {}
-    local added = {}
-    local deleted = {}
-    local typechanged = {}
-    local renamed = {}
-    local copied = {}
-    local flattened_len = #statuses
-    for i, s in ipairs(statuses) do
-      -- simplify statuses to the highest priority ones
-      if s:find("U", 1, true) then
-        statuses[i] = "U"
-        conflicts[#conflicts + 1] = i
-      elseif s:find("?", 1, true) then
-        statuses[i] = "?"
-        untracked[#untracked + 1] = i
-      elseif s:find("M", 1, true) then
-        statuses[i] = "M"
-        modified[#modified + 1] = i
-      elseif s:find("A", 1, true) then
-        statuses[i] = "A"
-        added[#added + 1] = i
-      elseif s:find("D", 1, true) then
-        statuses[i] = "D"
-        deleted[#deleted + 1] = i
-      elseif s:find("T", 1, true) then
-        statuses[i] = "T"
-        typechanged[#typechanged + 1] = i
-      elseif s:find("R", 1, true) then
-        statuses[i] = "R"
-        renamed[#renamed + 1] = i
-      elseif s:find("C", 1, true) then
-        statuses[i] = "C"
-        copied[#copied + 1] = i
-      else
-        flattened_len = flattened_len - 1
-      end
-    end
-    local bubbleable_statuses_by_prio = can_create_presized_table and new_table(flattened_len, 0)
-      or {}
-
-    for _, list in ipairs({
-      conflicts,
-      untracked,
-      modified,
-      added,
-      deleted,
-      typechanged,
-      renamed,
-      copied,
-    }) do
-      require("neo-tree.utils._compat").luajit.table_move(
-        list,
-        1,
-        #list,
-        #bubbleable_statuses_by_prio + 1,
-        bubbleable_statuses_by_prio
-      )
-    end
-
-    -- bubble them up
-    local parent_statuses = {}
-    do
-      for _, i in ipairs(bubbleable_statuses_by_prio) do
-        local path = paths[i]
-        local status = statuses[i]
-        local parent
-        repeat
-          local cached = parent_cache[path]
-          if cached then
-            parent = cached
-          else
-            parent = utils.split_path(path)
-            if parent then
-              parent_cache[path] = parent
-            else
-              break
-            end
-          end
-
-          if #git_root >= #parent then
-            break
-          end
-          if parent_statuses[parent] ~= nil then
-            break
-          end
-
-          parent_statuses[parent] = status
-          path = parent
-        until false
-
-        if batch_size then
-          yield_if_batch_completed()
-        end
-      end
-      for parent, status in pairs(parent_statuses) do
-        git_status[parent] = status
-      end
-    end
-  end
-
-  while line and line:byte(1, 1) == IGNORED_BYTE do
-    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
-    if utils.is_windows then
-      abspath = utils.windowize_path(abspath)
-    end
-    git_status[abspath] = "!"
-    line = status_iter()
-
-    if batch_size then
-      yield_if_batch_completed()
-    end
-  end
-
   M.statuses[git_root] = git_status
-  return git_status
+  vim.schedule(function()
+    ---@class neotree.event.args.GIT_STATUS_CHANGED
+    local args = {
+      git_root = git_root,
+      git_status = git_status,
+      git_ignored = ignored,
+    }
+    events.fire_event(events.GIT_STATUS_CHANGED, args)
+  end)
 end
 
 local porcelain_flag = {
   "--porcelain=v1",
   "--porcelain=v2",
 }
----@param git_root string
+---@param worktree_root string
 ---@param porcelain_version 1|2
 ---@param untracked_files "all"|"no"|"normal"?
 ---@param ignored "traditional"|"no"|"matching"?
 ---@param paths string[]?
 ---@return string[] args
-local make_git_status_args = function(porcelain_version, git_root, untracked_files, ignored, paths)
+local make_git_status_args = function(
+  porcelain_version,
+  worktree_root,
+  untracked_files,
+  ignored,
+  paths
+)
   ignored = ignored or "traditional"
   local args = {
     "--no-optional-locks",
     "-C",
-    git_root,
+    worktree_root,
     "status",
     porcelain_flag[porcelain_version],
     "-z",
@@ -400,7 +100,7 @@ local make_git_status_args = function(porcelain_version, git_root, untracked_fil
   end
   events.fire_event(events.BEFORE_GIT_STATUS, {
     status_args = args,
-    git_root = git_root,
+    git_root = worktree_root,
   })
   if paths then
     args[#args + 1] = "--"
@@ -415,91 +115,119 @@ end
 ---@param base string? git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
 ---@param path string? Path to run the git status command in, defaults to cwd.
----@return neotree.git.Status?, string? git_status the neotree.Git.Status of the given root, if there's a valid git status there
+---@return neotree.git.Status? git_status the neotree.Git.Status of the given root, if there's a valid git status there
+---@return string? git_root
 M.status = function(base, skip_bubbling, path)
-  local git_root = M.get_worktree_info(path)
-  if not utils.truthy(git_root) then
+  local worktree_root = M.get_worktree_info(path)
+  if not utils.truthy(worktree_root) then
     return nil
   end
-  ---@cast git_root -nil
+  ---@cast worktree_root -nil
 
+  M._supported_porcelain_version = M._supported_porcelain_version or get_git_porcelain_version()
+  if not M._supported_porcelain_version then
+    log.debug("Can't run git status")
+    return
+  end
   local status_cmd = {
     "git",
-    unpack(make_git_status_args(M._supported_porcelain_version, git_root)),
-  }
-  local status_result = vim.fn.system(status_cmd)
-
-  local status_ok = vim.v.shell_error == 0
-  ---@type neotree.git.Context
-  local context = {
-    git_root = git_root,
-    git_status = nil,
-    lines_parsed = 0,
+    unpack(make_git_status_args(M._supported_porcelain_version, worktree_root)),
   }
 
-  if status_ok then
-    -- system() replaces \000 with \001
-    ---@diagnostic disable-next-line: param-type-mismatch
-    local status_iter = vim.gsplit(status_result, "\001", gsplit_plain)
-    local git_status = M._parse_porcelain(
-      M._supported_porcelain_version,
-      git_root,
-      status_iter,
-      nil,
-      nil,
-      skip_bubbling
-    )
+  local raw_status_text = vim.fn.system(status_cmd)
+  assert(vim.v.shell_error == 0)
+  local status_text = raw_status_text:gsub("\001", "\000")
 
-    update_git_status(context, git_status)
+  local last_status_text = M._raw_status_text_cache[worktree_root]
+  if status_text == last_status_text then
+    -- return the current status
+    return M.statuses[worktree_root], worktree_root
   end
+  M._raw_status_text_cache[worktree_root] = status_text
 
-  return context.git_status, git_root
+  skip_bubbling = not not skip_bubbling
+  ---@diagnostic disable-next-line: param-type-mismatch
+  local status_iter = vim.gsplit(status_text, "\000", gsplit_plain)
+  local git_status = parser._parse_porcelain(
+    M._supported_porcelain_version,
+    worktree_root,
+    status_iter,
+    nil,
+    nil,
+    skip_bubbling
+  )
+
+  change_git_status(worktree_root, git_status)
+  return git_status, worktree_root
 end
 
----@param context neotree.git.Context
----@param git_args string[]? nil to use default of make_git_status_args, which includes all files
----@param callback fun(gs: neotree.git.Status)
----@param skip_bubbling boolean?
-local async_git_status_job = function(context, git_args, callback, skip_bubbling)
-  local stdin = log.assert(uv.new_pipe())
-  local stdout = log.assert(uv.new_pipe())
-  local stderr = log.assert(uv.new_pipe())
+---@param git_args string[]
+---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])
+local git_job = function(git_args, on_exit)
+  local stdout_chunks = {}
+  local stderr_chunks = {}
 
-  local output_chunks = {}
-  ---@diagnostic disable-next-line: missing-fields
+  --- uv.spawn blocks for 2x longer than jobstart but jobstart replaces \001 with \n which isn't ideal for path
+  --- correctness (since paths can technically have newlines).
+  ---
+  --- Switch to vim.system in v4.0
+  local stdout = log.assert(uv.new_pipe(true))
+  local stderr = log.assert(uv.new_pipe(true))
   uv.spawn("git", {
+    args = git_args,
     hide = true,
-    args = git_args or make_git_status_args(M._supported_porcelain_version, context.git_root),
-    stdio = { stdin, stdout, stderr },
-  }, function(code, signal)
-    stdin:shutdown()
-    stdin:close()
-    stdout:shutdown()
+    stdio = { nil, stdout, stderr },
+  }, function(code, _)
     stdout:close()
-    stderr:shutdown()
+    stdout:shutdown()
     stderr:close()
+    stdout:shutdown()
+    on_exit(code, stdout_chunks, stderr_chunks)
+  end)
+
+  stdout:read_start(function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stdout_chunks[#stdout_chunks + 1] = data
+    end
+  end)
+  stdout:read_start(function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stdout_chunks[#stdout_chunks + 1] = data
+    end
+  end)
+end
+
+---Creates a job (vim job) for `git status`
+---@param context neotree.git.JobContext
+---@param git_args string[]? nil to use default of make_git_status_args, which includes all files
+---@param on_changed_status fun(gs: neotree.git.Status, ignored: string[])
+local git_status_job = function(context, git_args, on_changed_status, skip_bubbling)
+  local args = git_args or make_git_status_args(M._supported_porcelain_version, context.git_root)
+  git_job(args, function(code, stdout_chunks, stderr_chunks)
     if code ~= 0 then
       log.at.warn.format(
-        "git status async process exited abnormally, code: %s, signal: %s",
+        "git status async process exited abnormally, code: %s, %s, %s",
         code,
-        signal
+        table.concat(stdout_chunks),
+        table.concat(stderr_chunks)
       )
       return
     end
 
-    local output = output_chunks[1]
-    if #output_chunks > 1 then
-      output = table.concat(output_chunks, "")
-    end
-    if not output then
-      callback(context.git_status)
+    local status_text = table.concat(stdout_chunks)
+    local past_raw_status_text = M._raw_status_text_cache[context.git_root]
+    if status_text == past_raw_status_text then
+      -- stdout text did not change.
       return
     end
+    M._raw_status_text_cache[context.git_root] = status_text
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    local status_iter = vim.gsplit(output, "\000", gsplit_plain)
-    local parsing_task = co.create(M._parse_porcelain)
-    log.assert(
+    local status_iter = vim.gsplit(status_text, "\000", gsplit_plain)
+    local parsing_task = co.create(parser._parse_porcelain)
+    local _, _, ignored = log.assert(
       co.resume(
         parsing_task,
         M._supported_porcelain_version,
@@ -512,100 +240,134 @@ local async_git_status_job = function(context, git_args, callback, skip_bubbling
     )
     local processed_lines = 0
     local function do_next_batch_later()
-      if co.status(parsing_task) ~= "dead" then
-        processed_lines = processed_lines + context.batch_size
-        if processed_lines < context.max_lines then
-          log.assert(co.resume(parsing_task))
-          vim.defer_fn(do_next_batch_later, context.batch_delay)
-          return
-        end
+      if co.status(parsing_task) == "dead" then
+        -- Completed
+        on_changed_status(context.git_status, ignored)
+        return
       end
-      callback(context.git_status)
+
+      if processed_lines > context.max_lines then
+        -- Reached max line count
+        on_changed_status(context.git_status, ignored)
+        return
+      end
+
+      log.assert(co.resume(parsing_task))
+      processed_lines = processed_lines + context.batch_size
+      vim.defer_fn(do_next_batch_later, context.batch_delay)
     end
     do_next_batch_later()
   end)
-  stdout:read_start(function(err, data)
-    log.assert(not err, err)
-    -- for some reason data can be a table here?
-    if type(data) == "string" then
-      table.insert(output_chunks, data)
-    end
-  end)
-
-  stderr:read_start(function(err, data)
-    log.assert(not err, err)
-    if err then
-      local errfmt = (err or "") .. "%s"
-      log.at.error.format(errfmt, data)
-    end
-  end)
+  ---@diagnostic disable-next-line: missing-fields
 end
 
+---Runs `git status` asynchronously, will update neo-tree once finished.
 ---@param path string path to run commands in
 ---@param base string git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
-  M.get_worktree_info(path, function(git_root)
-    if not git_root then
+  M.get_worktree_info(path, function(worktree_root)
+    if not worktree_root then
       log.trace("status_async: not a git folder:", path)
       return
     end
 
     log.trace("git.status_async called")
 
-    local event_id = "git_status_" .. git_root
+    local event_id = "git_status_" .. worktree_root
 
     utils.debounce(event_id, function()
-      ---@type neotree.git.Context
-      local ctx = {
-        git_root = git_root,
-        git_status = {},
-        batch_size = opts.batch_size or 1000,
-        batch_delay = opts.batch_delay or 10,
-        max_lines = opts.max_lines or 100000,
-      }
-      if not M.statuses[ctx.git_root] then
-        -- do a fast scan first to get basic things in, then a full scan with untracked files
-        async_git_status_job(
-          ctx,
-          make_git_status_args(
+      vim.schedule(function()
+        M._supported_porcelain_version = M._supported_porcelain_version
+          or get_git_porcelain_version()
+        ---@class neotree.git.JobContext
+        local ctx = {
+          git_root = worktree_root,
+          git_status = {},
+          batch_size = opts.batch_size or 1000,
+          batch_delay = opts.batch_delay or 10,
+          max_lines = opts.max_lines or 100000,
+        }
+        if not M.statuses[ctx.git_root] then
+          -- do a fast scan first to get basic things in, then a full scan with (potentially) untracked files
+          local fast_args = make_git_status_args(
             M._supported_porcelain_version,
-            git_root,
+            worktree_root,
             "no",
             "traditional",
             { path }
-          ),
-          function(fast_status)
-            update_git_status(ctx, fast_status)
-            async_git_status_job(ctx, nil, function(full_status)
-              update_git_status(ctx, full_status)
-            end, true)
-          end
-        )
-      else
-        async_git_status_job(ctx, nil, function(full_status)
-          update_git_status(ctx, full_status)
-        end)
-      end
+          )
+          git_status_job(ctx, fast_args, function(fast_status, ignored)
+            change_git_status(worktree_root, fast_status, ignored)
+            git_job(
+              { "-C", worktree_root, "config", "--get", "status.showUntrackedFiles" },
+              function(code, stdout_chunks, _)
+                -- https://git-scm.com/docs/git-config
+                -- This command will fail with non-zero status upon error. Some exit codes are:
+                -- The section or key is invalid (ret=1),
+                -- no section or name was provided (ret=2),
+                -- the config file is invalid (ret=3),
+                -- the config file cannot be written (ret=4),
+                -- you try to unset an option which does not exist (ret=5),
+                -- you try to unset/set an option for which multiple lines match (ret=5), or
+                -- you try to use an invalid regexp (ret=6).
+                if code < 0 or 1 < code then
+                  log.warn("git.status_async: status.showUntrackedFiles check failed, code", code)
+                  return
+                end
+                local untracked_setting = table.concat(stdout_chunks)
+                if untracked_setting:find("no", 1, true) then
+                  log.debug(
+                    "git.status_async: status.showUntrackedFiles == 'no', skipping full check"
+                  )
+                  return
+                end
+                git_status_job(ctx, nil, function(full_status, full_ignored)
+                  change_git_status(worktree_root, full_status, full_ignored)
+                end, true)
+              end
+            )
+          end)
+        else
+          git_status_job(ctx, nil, function(full_status, ignored)
+            change_git_status(worktree_root, full_status, ignored)
+          end)
+        end
+      end)
     end, 1000, utils.debounce_strategy.CALL_FIRST_AND_LAST, utils.debounce_action.START_ASYNC_JOB)
   end)
+end
+
+---A fast check for whether we might be in a git repo. Likely has both false positives and negatives.
+local might_be_in_git_repo = function()
+  local git_dir_from_env = vim.env.GIT_DIR or vim.env.GIT_COMMON_DIR
+  if git_dir_from_env then
+    local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
+    if stat then
+      return stat
+    end
+  end
+  return vim.fs.find(".git", { limit = 1, upward = true })
 end
 
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
 M.mark_gitignored = function(state, items)
-  local statuses = {}
-  for git_root, git_status in pairs(M.statuses) do
-    if utils.is_subpath(git_root, state.path) or utils.is_subpath(state.path, git_root) then
-      statuses[#statuses + 1] = git_status
+  -- upward and downward are relative to state.path
+  local upward_statuses = {}
+  local downward_statuses = {}
+  for worktree_root, git_status in pairs(M.statuses) do
+    if utils.is_subpath(worktree_root, state.path, true) then
+      upward_statuses[#upward_statuses + 1] = git_status
+    elseif utils.is_subpath(state.path, worktree_root, true) then
+      downward_statuses[#downward_statuses + 1] = git_status
     end
   end
-  -- local local_status = M.status(nil, true, state.path)
-  -- if local_status then
-  --   statuses[#statuses + 1] = local_status
-  -- end
+  if #upward_statuses == 0 and might_be_in_git_repo() then
+    upward_statuses[#upward_statuses + 1] = M.status(nil, false, state.path)
+  end
   for _, i in ipairs(items) do
-    for _, git_status in ipairs(statuses) do
+    for _, git_status in ipairs({ unpack(upward_statuses), unpack(downward_statuses) }) do
       local status = git_status[i.path]
       if status == "!" then
         i.filtered_by = i.filtered_by or {}
@@ -625,10 +387,87 @@ local invalidate_cache = function(path)
   while parent do
     local cache_entry = M.statuses[parent]
     if cache_entry ~= nil then
-      update_git_status({ git_root = parent }, nil)
+      change_git_status(parent, nil)
     end
     parent = utils.split_path(parent)
   end
+end
+
+---@param ok boolean
+---@param path string
+---@param stdout_lines string[]
+---@param stderr_lines string[]?
+---@return string[] normalized_stdout_paths
+local process_output = function(ok, path, stdout_lines, stderr_lines)
+  if not ok then
+    log.trace("GIT ROOT ERROR", stderr_lines or {})
+    invalidate_cache(path)
+    return {}
+  end
+
+  local lines = stdout_lines
+  for i, p in ipairs(stdout_lines) do
+    if #p == 0 then
+      break
+    elseif utils.is_windows then
+      lines[i] = utils.windowize_path(p)
+    end
+  end
+  return lines
+end
+
+---Finds the worktree root, git root, and superproject worktree root by running 3 separate commands. Only necessary in
+---the edge case that a path contains a newline.
+---@param path string
+---@param callback fun(worktree_root: string?, git_dir: string?, superproject_worktree_root: string?)? Async if provided.
+---@return string? worktree_root
+---@return string? git_dir
+---@return string? superproject_worktree_root
+local get_worktree_info_slow = function(path, callback)
+  local base_args = {
+    "-C",
+    path,
+    "rev-parse",
+  }
+  ---@type string[][]
+  local argument_lists = {}
+  for _, arg in ipairs({
+    "--show-toplevel",
+    "--absolute-git-dir",
+    "--show-superproject_worktree_root",
+  }) do
+    local args = { unpack(base_args) }
+    args[#args + 1] = arg
+    argument_lists[#argument_lists + 1] = args
+  end
+
+  local worktree_root = vim.fn.system({ "git", unpack(argument_lists[1]) })
+  if vim.v.shell_error ~= 0 then
+    return
+  end
+  local git_dir = vim.fn.system({ "git", unpack(argument_lists[2]) })
+  if vim.v.shell_error ~= 0 then
+    return
+  end
+  local superproject_worktree_root = vim.fn.system({ "git", unpack(argument_lists[3]) })
+  if vim.v.shell_error ~= 0 then
+    return
+  end
+  local paths = { worktree_root, git_dir, superproject_worktree_root }
+  for i, p in ipairs(paths) do
+    if #p == 0 then
+      paths[i] = nil
+    elseif utils.is_windows then
+      paths[i] = utils.windowize_path(p)
+    end
+  end
+  if type(callback) == "function" then
+    vim.schedule(function()
+      callback(paths[1], paths[2], paths[3])
+    end)
+    return
+  end
+  return paths[1], paths[2], paths[3]
 end
 
 ---Finds the worktree root and the corresponding git directory, already normalized.
@@ -640,7 +479,11 @@ end
 M.get_worktree_info = function(path, callback)
   path = path or log.assert(uv.cwd())
 
-  local args = {
+  if path:find("\n", 1, true) then
+    return get_worktree_info_slow(path, callback)
+  end
+
+  local rev_parse_args = {
     "-C",
     path,
     "rev-parse",
@@ -649,66 +492,38 @@ M.get_worktree_info = function(path, callback)
     "--show-superproject-working-tree",
   }
 
-  if type(callback) == "function" then
+  if callback then
+    assert(type(callback) == "function", "callback for git status should be a function")
     ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-      command = "git",
-      args = args,
-      enabled_recording = true,
-      on_exit = function(self, code, _)
-        if code ~= 0 then
-          log.trace("GIT ROOT ERROR", self:stderr_result())
-          invalidate_cache(path)
-          callback(nil)
-          return
-        end
-        local worktree_root, git_dir, superproject_worktree_root = unpack(self:result())
-        if worktree_root then
-          worktree_root = utils.normalize_path(worktree_root)
-          git_dir = utils.normalize_path(git_dir)
-          if superproject_worktree_root then
-            superproject_worktree_root = utils.normalize_path(superproject_worktree_root)
-          end
-        end
-
-        callback(worktree_root, git_dir, superproject_worktree_root)
-      end,
-    }):start()
+    git_job(rev_parse_args, function(code, stdout_chunks, stderr_chunks)
+      local full_stdout = table.concat(stdout_chunks, "")
+      ---@diagnostic disable-next-line: param-type-mismatch
+      local stdout_lines = vim.split(full_stdout, "\n", gsplit_plain)
+      local info = process_output(code == 0, path, stdout_lines, stderr_chunks)
+      local worktree_root, git_dir, superproject_worktree_root = unpack(info)
+      callback(worktree_root, git_dir, superproject_worktree_root)
+    end)
     return
   end
 
-  local ok, git_output = utils.execute_command({ "git", unpack(args) })
-  if not ok then
-    log.trace("GIT ROOT NOT FOUND", git_output)
-    invalidate_cache(path)
-    return nil
-  end
-  local worktree_root, git_dir, superproject_worktree_root = unpack(git_output)
-  if worktree_root then
-    worktree_root = utils.normalize_path(worktree_root)
-    assert(git_dir)
-    git_dir = utils.normalize_path(git_dir)
-    if superproject_worktree_root then
-      superproject_worktree_root = utils.normalize_path(superproject_worktree_root)
-    end
-  end
-
+  M._supported_porcelain_version = M._supported_porcelain_version or get_git_porcelain_version()
+  local ok, rev_parse_lines = utils.execute_command({ "git", unpack(rev_parse_args) })
+  local info = process_output(ok, path, rev_parse_lines, rev_parse_lines)
+  local worktree_root, git_dir, superproject_worktree_root = unpack(info)
   return worktree_root, git_dir, superproject_worktree_root
 end
 
 ---@type table<string, string|false>
 M._root_dir_cache = setmetatable({}, weak_kv)
----Given a path, find whether a git status exists for it.
----@param path string
+
+---Given a normalized path, find whether a git status exists for it.
+---@param path string A normalized path.
 ---@return string|false? worktree_root
 ---@return neotree.git.Status? status
 M.find_existing_status = function(path)
   local cached = M._root_dir_cache[path]
-  if cached == false then
-    return cached, nil
-  end
   if cached ~= nil then
-    return cached, M.statuses[cached]
+    return cached, cached and M.statuses[cached]
   end
   for root_dir, status in pairs(M.statuses) do
     if utils.is_subpath(root_dir, path, true) then

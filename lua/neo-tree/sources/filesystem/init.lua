@@ -181,8 +181,12 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     manager.set_cwd(state)
   end
   local config = require("neo-tree").config
-  if config.enable_git_status and not is_search and config.git_status_async then
-    git.status_async(state.path, state.git_base, config.git_status_async_options)
+  if config.enable_git_status and not is_search then
+    if config.git_status_async_options then
+      git.status_async(state.path, state.git_base, config.git_status_async_options)
+    else
+      git.status(state.git_base, nil, state.path)
+    end
   end
 end
 
@@ -385,22 +389,18 @@ M.setup = function(config, global_config)
       end,
     })
   elseif global_config.enable_git_status then
-    if global_config.git_status_async then
-      manager.subscribe(M.name, {
-        event = events.GIT_STATUS_CHANGED,
-        handler = wrap(manager.git_status_changed),
-      })
-    else
+    if not global_config.git_status_async then
       manager.subscribe(M.name, {
         event = events.BEFORE_RENDER,
         handler = function(state)
-          local this_state = get_state()
-          if state == this_state then
-            git.status(state.git_base, false, state.path)
-          end
+          git.status(nil, false, state.path)
         end,
       })
     end
+    manager.subscribe(M.name, {
+      event = events.GIT_STATUS_CHANGED,
+      handler = wrap(manager.git_status_changed),
+    })
   end
 
   -- Respond to git events from git_status source or Fugitive
