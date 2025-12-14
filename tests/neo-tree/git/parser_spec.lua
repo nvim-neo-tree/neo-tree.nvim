@@ -1,4 +1,4 @@
-local git = require("neo-tree.git")
+local git_parser = require("neo-tree.git.parser")
 local utils = require("neo-tree.utils")
 local test_utils = require("tests.utils")
 local gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
@@ -26,7 +26,7 @@ describe("git parser", function()
         end
       end)
       local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git._parse_porcelain(2, git_root, iter, {})
+      local status = git_parser._parse_porcelain(2, git_root, iter, {})
       ---@param path string
       local from_git_root = function(path)
         return utils.path_join(git_root, path)
@@ -78,7 +78,7 @@ describe("git parser", function()
         end
       end)
       local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git._parse_porcelain(1, git_root, iter, {})
+      local status = git_parser._parse_porcelain(1, git_root, iter, {})
       local from_git_root = function(path)
         return utils.path_join(git_root, path)
       end
