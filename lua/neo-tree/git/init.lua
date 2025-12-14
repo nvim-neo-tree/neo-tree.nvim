@@ -41,10 +41,6 @@ end
 ---@type 1|2?
 M._supported_porcelain_version = nil
 
----@class (exact) neotree.git.Context : neotree.Config.GitStatusAsync
----@field git_status neotree.git.Status?
----@field git_root string
-
 ---@alias neotree.git.Status table<string, string>
 
 ---@param git_root string
@@ -369,9 +365,11 @@ M.mark_gitignored = function(state, items)
   for _, i in ipairs(items) do
     for _, git_status in ipairs({ unpack(upward_statuses), unpack(downward_statuses) }) do
       local status = git_status[i.path]
-      if status == "!" then
-        i.filtered_by = i.filtered_by or {}
-        i.filtered_by.gitignored = true
+      if status then
+        if status == "!" then
+          i.filtered_by = i.filtered_by or {}
+          i.filtered_by.gitignored = true
+        end
         break
       end
     end
