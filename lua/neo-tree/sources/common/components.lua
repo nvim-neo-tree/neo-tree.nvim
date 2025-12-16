@@ -231,6 +231,7 @@ end
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 
+local git_parser = require("neo-tree.git.status_parser")
 ---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local node_is_dir = node.type == "directory"
@@ -242,7 +243,7 @@ M.git_status = function(config, node, state)
     return {}
   end
 
-  local root_dir, git_status = git.find_existing_status(node.path)
+  local _, git_status = git.find_existing_status(node.path)
   if not git_status then
     return {}
   end
@@ -295,13 +296,9 @@ M.git_status = function(config, node, state)
   elseif x == "." then
     stage_sb = symbols.unstaged
     stage_hl = highlights.GIT_UNSTAGED
-  else
-    local both_deleted_or_added = x == y and (x == "A" or x == "D")
-    is_conflict = both_deleted_or_added or (x == "U" or y == "U")
-    if is_conflict then
-      stage_sb = symbols.conflict
-      stage_hl = highlights.GIT_CONFLICT
-    end
+  elseif git_parser.status_code_is_conflict(x, y) then
+    stage_sb = symbols.conflict
+    stage_hl = highlights.GIT_CONFLICT
   end
 
   -- all variations of merge conflicts

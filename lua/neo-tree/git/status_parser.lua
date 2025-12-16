@@ -79,17 +79,20 @@ M._parse_porcelain = function(
       -- ?? untracked.txt
       -- !! ignored.txt
       local XY = line:sub(1, 2)
-      if XY == "??" or XY == "!!" then
+      if #XY == 0 or XY == "??" or XY == "!!" then
         break
       end
 
       if XY ~= "# " then
         local X = XY:sub(1, 1)
         local Y = XY:sub(2, 2)
-        local path = line:sub(4)
-        if X == "R" or Y == "R" or X == "C" or Y == "C" then
+        if M.status_code_is_conflict(X, Y) then
+          unmerged[#unmerged + 1] = #paths + 1
+        elseif X == "R" or Y == "R" or X == "C" or Y == "C" then
           status_iter() -- consume original path
         end
+
+        local path = line:sub(4)
         local abspath = git_root_dir .. path
         paths[#paths + 1] = abspath
         statuses[#statuses + 1] = XY:gsub(" ", ".")
@@ -304,6 +307,13 @@ M._parse_porcelain = function(
   end
 
   return git_status
+end
+
+---@param x string
+---@param y string
+M.status_code_is_conflict = function(x, y)
+  local both_deleted_or_added = x == y and (x == "A" or x == "D")
+  return both_deleted_or_added or (x == "U" or y == "U")
 end
 
 return M

@@ -39,4 +39,5 @@ M.git_job = function(git_args, on_exit)
     end
   end)
 end
+
 return M

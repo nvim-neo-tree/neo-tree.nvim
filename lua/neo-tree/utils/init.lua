@@ -1157,7 +1157,6 @@ M.split = function(inputString, sep)
   return fields
 end
 
-local gsplit_plain_arg = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 ---@param s string
 ---@param sep string
 M.gsplit_plain = function(s, sep)

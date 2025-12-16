@@ -5,7 +5,7 @@ compat.noref = function()
   return vim.fn.has("nvim-0.10") == 1 and true or {} --[[@as boolean]]
 end
 
-compat.gsplit_plain = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
+compat.gsplit_plain_arg = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 
 ---source: https://github.com/Validark/Lua-table-functions/blob/master/table.lua
 ---Moves elements [f, e] from array a1 into a2 starting at index t

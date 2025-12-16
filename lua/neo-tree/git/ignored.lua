@@ -33,21 +33,23 @@ local parse_ls_files_ignored_output = function(
 
   local ignored_status = git_status or {}
   for relpath in filepaths_iter do
-    relpath = trim_trailing_slash(relpath)
-    if utils.is_windows then
-      relpath = utils.windowize_path(relpath)
-    end
+    if #relpath > 0 then
+      relpath = trim_trailing_slash(relpath)
+      if utils.is_windows then
+        relpath = utils.windowize_path(relpath)
+      end
 
-    local abspath = worktree_root_dir .. relpath
-    ignored_status[abspath] = "!"
-    if batch_size then
-      num_in_batch = num_in_batch + 1
-      if num_in_batch >= batch_size then
-        num_in_batch = 0
-        if coroutine.running() then
-          coroutine.yield(git_status)
-        else
-          break
+      local abspath = worktree_root_dir .. relpath
+      ignored_status[abspath] = "!"
+      if batch_size then
+        num_in_batch = num_in_batch + 1
+        if num_in_batch >= batch_size then
+          num_in_batch = 0
+          if coroutine.running() then
+            coroutine.yield(git_status)
+          else
+            break
+          end
         end
       end
     end

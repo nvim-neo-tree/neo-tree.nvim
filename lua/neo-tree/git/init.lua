@@ -20,7 +20,6 @@ M._raw_status_text_cache = setmetatable({}, { __mode = "k" })
 ---|1
 ---|2
 ---|false
----|nil
 
 ---@type neotree.git._StatusPorcelainVersion
 M._supported_status_porcelain_version = nil
@@ -48,7 +47,7 @@ end
 
 ---@return neotree.git._StatusPorcelainVersion highest_supported_porcelain_version_if_git
 local get_status_porcelain_version = function()
-  if M._supported_status_porcelain_version then
+  if M._supported_status_porcelain_version ~= nil then
     return M._supported_status_porcelain_version
   end
 
@@ -205,7 +204,7 @@ local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
         skip_bubbling
       )
     )
-    local processed_lines = context.batch_size
+    local processed_lines = 0
     local function do_next_batch_later()
       if co.status(parsing_task) == "dead" then
         -- Completed
@@ -213,6 +212,7 @@ local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
         return
       end
 
+      processed_lines = 0 + context.batch_size
       if processed_lines > context.max_lines then
         -- Reached max line count
         on_parsed(context.git_status)
@@ -252,7 +252,6 @@ M.status_async = function(path, base, opts)
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,
           git_status = {},
-          num_in_batch = 0,
           batch_size = opts.batch_size or 1000,
           batch_delay = opts.batch_delay or 10,
           max_lines = opts.max_lines or 100000,
@@ -296,7 +295,7 @@ M.status_async = function(path, base, opts)
 
                 git_status_job(ctx, nil, function(full_status)
                   change_git_status(worktree_root, full_status)
-                end, true)
+                end)
               end
             )
           end)
