@@ -122,6 +122,10 @@ M.show_filter = function(
           return
         end
         state.search_pattern = value
+        if not search_as_you_type then
+          -- if we're doing filter_on_submit, the tree needs to refresh
+          manager.refresh("filesystem")
+        end
       end
     end,
     --this can be bad in a deep folder structure
