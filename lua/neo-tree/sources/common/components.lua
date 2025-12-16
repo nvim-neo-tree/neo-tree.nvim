@@ -247,8 +247,8 @@ M.git_status = function(config, node, state)
     return {}
   end
 
-  local git_status = git_status[node.path]
-  if not git_status then
+  local status = git_status[node.path]
+  if not status then
     return {}
   end
 
@@ -267,7 +267,7 @@ M.git_status = function(config, node, state)
   -------------------------------------------------
   -- ?           ?    untracked
   -- !           !    ignored
-  if git_status == "?" then
+  if status == "?" then
     stage_sb = symbols.untracked
     stage_hl = highlights.GIT_UNTRACKED
     return {
@@ -276,7 +276,7 @@ M.git_status = function(config, node, state)
     }
   end
 
-  if git_status == "!" then
+  if status == "!" then
     stage_sb = symbols.ignored
     stage_hl = highlights.GIT_IGNORED
     return {
@@ -287,7 +287,7 @@ M.git_status = function(config, node, state)
 
   -- x == staging area status
   -- y == working area status
-  local x, y = git_status:sub(1, 1), git_status:sub(2, 2)
+  local x, y = status:sub(1, 1), status:sub(2, 2)
   local is_conflict = false
   if y == "." then
     stage_sb = symbols.staged
@@ -362,7 +362,7 @@ M.git_status = function(config, node, state)
 
   if not staged_change_sb and not worktree_change_sb then
     return {
-      text = "[" .. git_status .. "]",
+      text = "[" .. status .. "]",
       highlight = config.highlight or worktree_change_hl or staged_change_hl,
     }
   end

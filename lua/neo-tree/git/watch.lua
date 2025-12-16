@@ -30,7 +30,7 @@ local function watch_git_dir(_, git_dir)
         return
       end
 
-      git.get_worktree_info(git_dir)
+      git.find_worktree_info(git_dir)
     end, 1000, utils.debounce_strategy.CALL_LAST_ONLY)
 
     vim.schedule(function()
@@ -44,9 +44,9 @@ end
 ---@param async any
 M.watch = function(path, async)
   if async then
-    git.get_worktree_info(path, watch_git_dir)
+    git.find_worktree_info(path, watch_git_dir)
   else
-    local _, git_dir = git.get_worktree_info(path)
+    local _, git_dir = git.find_worktree_info(path)
     watch_git_dir(git_dir)
   end
 end
@@ -63,9 +63,9 @@ end
 ---@param async any
 M.unwatch = function(path, async)
   if async then
-    git.get_worktree_info(path, unwatch_git_dir)
+    git.find_worktree_info(path, unwatch_git_dir)
   else
-    local _, git_dir = git.get_worktree_info(path)
+    local _, git_dir = git.find_worktree_info(path)
     unwatch_git_dir(git_dir)
   end
 end

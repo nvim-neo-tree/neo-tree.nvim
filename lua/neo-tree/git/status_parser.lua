@@ -17,35 +17,37 @@ local parent_cache = setmetatable({}, { __mode = "kv" })
 
 ---Exposed only for testing, parses a porcelain version into
 ---@param porcelain_version 1|2
+---@param worktree_root string The git status table to override, if any.
 ---@param status_iter fun():string? An iterator that returns each line of the status.
 ---@param git_status neotree.git.Status? The git status table to override, if any.
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status status
-M._parse_porcelain = function(
+M._parse_status_porcelain = function(
   porcelain_version,
-  git_root,
+  worktree_root,
   status_iter,
   git_status,
   batch_size,
   skip_bubbling
 )
-  local git_root_dir = utils.normalize_path(git_root)
+  local git_root_dir = utils.normalize_path(worktree_root)
   if not vim.endswith(git_root_dir, utils.path_separator) then
     git_root_dir = git_root_dir .. utils.path_separator
   end
 
   local num_in_batch = 0
   git_status = git_status or {}
-  if not batch_size or batch_size <= 0 then
-    batch_size = nil
-  end
   local yield_if_batch_completed
 
   if batch_size then
+    assert(
+      coroutine.running(),
+      "batch_size shouldn't be provided if not being invoked as a coroutine"
+    )
     yield_if_batch_completed = function()
       num_in_batch = num_in_batch + 1
-      if num_in_batch > batch_size then
+      if num_in_batch >= batch_size then
         coroutine.yield(git_status)
         num_in_batch = 0
       end
@@ -181,9 +183,6 @@ M._parse_porcelain = function(
 
   while line and line:byte(1, 1) == UNTRACKED_BYTE do
     local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
-    if utils.is_windows then
-      abspath = utils.windowize_path(abspath)
-    end
     paths[#paths + 1] = abspath
     statuses[#statuses + 1] = "?"
     line = status_iter()
@@ -214,10 +213,14 @@ M._parse_porcelain = function(
     local renamed = {}
     ---@type integer[]
     local copied = {}
-    local flattened_len = #statuses - #unmerged
+
+    local unmerged_idx = #unmerged > 0 and 1 or nil
     for i, s in ipairs(statuses) do
       -- simplify statuses to the highest priority ones
-      if s:find("?", 1, true) then
+      if i == unmerged_idx then
+        unmerged_idx = unmerged_idx < #unmerged and unmerged_idx + 1 or nil
+        -- skip
+      elseif s:find("?", 1, true) then
         untracked[#untracked + 1] = i
       elseif s:find("M", 1, true) then
         modified[#modified + 1] = i
@@ -231,8 +234,6 @@ M._parse_porcelain = function(
         renamed[#renamed + 1] = i
       elseif s:find("C", 1, true) then
         copied[#copied + 1] = i
-      else
-        flattened_len = flattened_len - 1
       end
     end
 
@@ -267,7 +268,7 @@ M._parse_porcelain = function(
             parent_cache[path] = parent
           end
 
-          if #git_root >= #parent then
+          if #worktree_root >= #parent then
             break
           end
           if parent_statuses[parent] ~= nil then

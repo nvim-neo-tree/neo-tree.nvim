@@ -1157,6 +1157,14 @@ M.split = function(inputString, sep)
   return fields
 end
 
+local gsplit_plain_arg = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
+---@param s string
+---@param sep string
+M.gsplit_plain = function(s, sep)
+  ---@diagnostic disable-next-line: param-type-mismatch
+  return vim.gsplit(s, sep, compat.gsplit_plain_arg)
+end
+
 ---Split a path into a parent path and a name.
 ---This differs from python's os.path.split in that root paths (like C:\ or /) return (nil, root_path_normalized)
 ---@param path string? The path to split.
