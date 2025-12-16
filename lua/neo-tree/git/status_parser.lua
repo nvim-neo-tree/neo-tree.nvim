@@ -23,7 +23,7 @@ local parent_cache = setmetatable({}, { __mode = "kv" })
 ---@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status status
-M._parse_status_porcelain = function(
+M._parse_porcelain = function(
   porcelain_version,
   worktree_root,
   status_iter,

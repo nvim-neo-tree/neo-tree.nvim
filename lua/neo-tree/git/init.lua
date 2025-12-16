@@ -154,7 +154,7 @@ M.status = function(base, skip_bubbling, path)
 
   skip_bubbling = not not skip_bubbling
   local status_iter = utils.gsplit_plain(status_text, "\000")
-  local git_status = parser._parse_status_porcelain(
+  local git_status = parser._parse_porcelain(
     status_porcelain_version,
     worktree_root,
     status_iter,
@@ -193,7 +193,7 @@ local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
     M._raw_status_text_cache[context.worktree_root] = status_text
 
     local status_iter = utils.gsplit_plain(status_text, "\000")
-    local parsing_task = co.create(parser._parse_status_porcelain)
+    local parsing_task = co.create(parser._parse_porcelain)
     log.assert(
       co.resume(
         parsing_task,
