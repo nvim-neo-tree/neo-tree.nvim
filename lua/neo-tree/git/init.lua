@@ -2,7 +2,7 @@ local utils = require("neo-tree.utils")
 local git_utils = require("neo-tree.git.utils")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local parser = require("neo-tree.git.status_parser")
+local parser = require("neo-tree.git.parser")
 local uv = vim.uv or vim.loop
 local co = coroutine
 ---@type metatable
@@ -59,7 +59,7 @@ end
 
 ---@param worktree_root string
 ---@param git_status neotree.git.Status?
-local change_git_status = function(worktree_root, git_status, opts)
+local change_git_status = function(worktree_root, git_status)
   local last_git_status = M.statuses[worktree_root]
   if type(last_git_status) ~= type(git_status) then
     -- updating or deleting an existing root dir
@@ -86,6 +86,7 @@ local porcelain_flag = {
 ---@field ignored "traditional"|"no"|"matching"?
 ---@field paths string[]?
 
+---Defaults to arguements that list all untracked/ignored files individually.
 ---@param worktree_root string
 ---@param porcelain_version 1|2
 ---@param opts neotree.git._StatusCommandArgs?
@@ -93,6 +94,7 @@ local porcelain_flag = {
 local make_git_status_args = function(porcelain_version, worktree_root, opts)
   opts = opts or {}
   opts.ignored = opts.ignored or "traditional"
+  opts.untracked_files = opts.untracked_files or "all"
   local args = {
     "--no-optional-locks",
     "-C",
@@ -102,9 +104,6 @@ local make_git_status_args = function(porcelain_version, worktree_root, opts)
     "-z",
     "--ignored=" .. opts.ignored,
   }
-  if opts.untracked_files then
-    args[#args + 1] = "--untracked-files=" .. opts.untracked_files
-  end
   events.fire_event(events.BEFORE_GIT_STATUS, {
     status_args = args,
     git_root = worktree_root,
@@ -121,7 +120,7 @@ end
 ---Get "git status" output for the given path
 ---@param base string? git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
----@param path string Path to run the git status command in, defaults to cwd.
+---@param path string? Path to run the git status command in, defaults to cwd.
 ---@return neotree.git.Status? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 ---@return string? worktree_root
 M.status = function(base, skip_bubbling, path)
@@ -153,12 +152,10 @@ M.status = function(base, skip_bubbling, path)
 
   skip_bubbling = not not skip_bubbling
   local status_iter = utils.gsplit_plain(status_text, "\000")
-  local git_status = parser._parse_porcelain(
+  local git_status = parser._parse_status_porcelain(
     status_porcelain_version,
     worktree_root,
     status_iter,
-    nil,
-    nil,
     skip_bubbling
   )
 
@@ -192,29 +189,20 @@ local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
     M._raw_status_text_cache[context.worktree_root] = status_text
 
     local status_iter = utils.gsplit_plain(status_text, "\000")
-    local parsing_task = co.create(parser._parse_porcelain)
+    local parsing_task = co.create(parser._parse_status_porcelain)
     log.assert(
       co.resume(
         parsing_task,
-        get_status_porcelain_version(),
+        context.porcelain_version,
         context.worktree_root,
         status_iter,
-        context.git_status,
-        context.batch_size,
-        skip_bubbling
+        skip_bubbling,
+        context
       )
     )
-    local processed_lines = 0
     local function do_next_batch_later()
       if co.status(parsing_task) == "dead" then
         -- Completed
-        on_parsed(context.git_status)
-        return
-      end
-
-      processed_lines = 0 + context.batch_size
-      if processed_lines > context.max_lines then
-        -- Reached max line count
         on_parsed(context.git_status)
         return
       end
@@ -252,6 +240,8 @@ M.status_async = function(path, base, opts)
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,
           git_status = {},
+          num_in_batch = 0,
+          lines_parsed = 0,
           batch_size = opts.batch_size or 1000,
           batch_delay = opts.batch_delay or 10,
           max_lines = opts.max_lines or 100000,
@@ -264,10 +254,13 @@ M.status_async = function(path, base, opts)
           git_status_job(ctx, fast_args, function(fast_status)
             change_git_status(worktree_root, fast_status)
             -- Get ignored statuses
-            require("neo-tree.git.ignored").add_ignored_status_job(ctx, function(new_status)
-              change_git_status(worktree_root, new_status)
+            require("neo-tree.git.ls-files").add_ignored_status_job(ctx, function(ignored_paths)
+              for _, ignored_path in ipairs(ignored_paths) do
+                ctx.git_status[ignored_path] = "!"
+              end
+              change_git_status(worktree_root, ctx.git_status)
             end)
-            -- Get the full status
+            -- Rescan for the full status
             git_utils.git_job(
               { "-C", worktree_root, "config", "--get", "status.showUntrackedFiles" },
               function(code, stdout_chunks, _)
@@ -341,12 +334,12 @@ do
       if not worktree_root then
         return
       end
-      local status_porcelain_version = get_status_porcelain_version()
-      if not status_porcelain_version then
-        return
+      local ignored_list = require("neo-tree.git.ls-files").ignored(worktree_root)
+      local status = {}
+      for i, path in ipairs(ignored_list) do
+        status[path] = "!"
       end
-      upward_statuses[#upward_statuses + 1] =
-        require("neo-tree.git.ignored").ignored_status(worktree_root)
+      upward_statuses[#upward_statuses + 1] = status
     end
 
     for _, i in ipairs(items) do

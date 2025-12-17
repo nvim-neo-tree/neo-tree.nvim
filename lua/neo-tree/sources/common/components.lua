@@ -231,7 +231,7 @@ end
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 
-local git_parser = require("neo-tree.git.status_parser")
+local git_parser = require("neo-tree.git.parser")
 ---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local node_is_dir = node.type == "directory"

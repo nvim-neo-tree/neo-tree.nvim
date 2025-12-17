@@ -15,41 +15,42 @@ local UNTRACKED_BYTE = ("?"):byte()
 local IGNORED_BYTE = ("!"):byte()
 local parent_cache = setmetatable({}, { __mode = "kv" })
 
+---@class neotree.git.parser.BatchOpts
+---@field batch_size integer
+---@field max_lines integer
+
 ---Exposed only for testing, parses a porcelain version into
 ---@param porcelain_version 1|2
 ---@param worktree_root string The git status table to override, if any.
 ---@param status_iter fun():string? An iterator that returns each line of the status.
----@param git_status neotree.git.Status? The git status table to override, if any.
----@param batch_size integer? This will use coroutine.yield if non-nil and > 0.
 ---@param skip_bubbling boolean?
+---@param context neotree.git.JobContext?
 ---@return neotree.git.Status status
-M._parse_porcelain = function(
+M._parse_status_porcelain = function(
   porcelain_version,
   worktree_root,
   status_iter,
-  git_status,
-  batch_size,
-  skip_bubbling
+  skip_bubbling,
+  context
 )
   local git_root_dir = utils.normalize_path(worktree_root)
   if not vim.endswith(git_root_dir, utils.path_separator) then
     git_root_dir = git_root_dir .. utils.path_separator
   end
 
-  local num_in_batch = 0
-  git_status = git_status or {}
+  local git_status = context and context.git_status or {}
   local yield_if_batch_completed
 
-  if batch_size then
+  if context then
     assert(
       coroutine.running(),
-      "batch_size shouldn't be provided if not being invoked as a coroutine"
+      "job context shouldn't be provided if not being invoked as a coroutine"
     )
     yield_if_batch_completed = function()
-      num_in_batch = num_in_batch + 1
-      if num_in_batch >= batch_size then
+      context.num_in_batch = context.num_in_batch + 1
+      if context.num_in_batch >= context.batch_size then
         coroutine.yield(git_status)
-        num_in_batch = 0
+        context.num_in_batch = 0
       end
     end
   end
@@ -98,7 +99,7 @@ M._parse_porcelain = function(
         statuses[#statuses + 1] = XY:gsub(" ", ".")
       end
       line = status_iter()
-      if batch_size then
+      if context then
         yield_if_batch_completed()
       end
     end
@@ -170,7 +171,7 @@ M._parse_porcelain = function(
       end
       paths[#paths + 1] = abspath
       statuses[#statuses + 1] = XY
-      if batch_size then
+      if context then
         yield_if_batch_completed()
       end
       line = status_iter()
@@ -189,7 +190,7 @@ M._parse_porcelain = function(
     paths[#paths + 1] = abspath
     statuses[#statuses + 1] = "?"
     line = status_iter()
-    if batch_size then
+    if context then
       yield_if_batch_completed()
     end
   end
@@ -282,7 +283,7 @@ M._parse_porcelain = function(
           path = parent
         until false
 
-        if batch_size then
+        if context then
           yield_if_batch_completed()
         end
       end
@@ -301,7 +302,7 @@ M._parse_porcelain = function(
     git_status[abspath] = "!"
     line = status_iter()
 
-    if batch_size then
+    if context then
       yield_if_batch_completed()
     end
   end
@@ -314,6 +315,51 @@ end
 M.status_code_is_conflict = function(x, y)
   local both_deleted_or_added = x == y and (x == "A" or x == "D")
   return both_deleted_or_added or (x == "U" or y == "U")
+end
+
+---@param worktree_root string The git status table to override, if any.
+---@param filepaths_iter fun():string? An iterator that returns each line of the status.
+---@param context neotree.git.JobContext?
+---@return string[]
+M.parse_ls_files_output = function(worktree_root, filepaths_iter, context)
+  local worktree_root_dir = worktree_root
+  if not vim.endswith(worktree_root_dir, utils.path_separator) then
+    worktree_root_dir = worktree_root_dir .. utils.path_separator
+  end
+
+  if context then
+    assert(coroutine.running(), "async_opts shouldn't be provided if not in non-main coroutine")
+  end
+
+  local paths = {}
+  for relpath in filepaths_iter do
+    if #relpath > 0 then
+      relpath = trim_trailing_slash(relpath)
+      if utils.is_windows then
+        relpath = utils.windowize_path(relpath)
+      end
+
+      local abspath = worktree_root_dir .. relpath
+      paths[#paths + 1] = abspath
+
+      if context then
+        context.lines_parsed = context.lines_parsed + 1
+        if context.lines_parsed == context.max_lines then
+          return paths
+        end
+        context.num_in_batch = context.num_in_batch + 1
+        if context.num_in_batch >= context.batch_size then
+          context.num_in_batch = 0
+          if coroutine.running() then
+            coroutine.yield(paths)
+          else
+            break
+          end
+        end
+      end
+    end
+  end
+  return paths
 end
 
 return M

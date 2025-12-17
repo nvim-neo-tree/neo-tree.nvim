@@ -1,4 +1,4 @@
-local git_status_parser = require("neo-tree.git.status_parser")
+local git_parser = require("neo-tree.git.parser")
 local utils = require("neo-tree.utils")
 local test_utils = require("tests.utils")
 describe("git parser", function()
@@ -24,7 +24,7 @@ describe("git parser", function()
         end
       end)
       local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git_status_parser._parse_porcelain(2, git_root, iter)
+      local status = git_parser._parse_status_porcelain(2, git_root, iter)
       ---@param path string
       local from_git_root = function(path)
         return utils.path_join(git_root, path)
@@ -76,7 +76,7 @@ describe("git parser", function()
         end
       end)
       local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git_status_parser._parse_porcelain(1, git_root, iter)
+      local status = git_parser._parse_status_porcelain(1, git_root, iter)
       local from_git_root = function(path)
         return utils.path_join(git_root, path)
       end
