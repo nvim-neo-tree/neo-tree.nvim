@@ -236,6 +236,7 @@ M.status_async = function(path, base, opts)
           return
         end
         ---@class neotree.git.JobContext
+        ---@field git_status table<string, string>
         local ctx = {
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,

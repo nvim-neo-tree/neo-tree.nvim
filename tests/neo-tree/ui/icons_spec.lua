@@ -99,7 +99,7 @@ describe("ui/icons", function()
         "    1.md",
       })
 
-      local wait = u.changedtick_waiter(bufnr, 4)
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
@@ -160,7 +160,7 @@ describe("ui/icons", function()
         "   f 1.md",
       })
 
-      local wait = u.changedtick_waiter(bufnr, 4)
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 
@@ -197,7 +197,7 @@ describe("ui/icons", function()
         "    1.md",
       })
 
-      local wait = u.changedtick_waiter(bufnr, 4)
+      local wait = u.changedtick_waiter(bufnr, 2)
       vim.api.nvim_win_set_cursor(winid, { 2, 0 })
       u.feedkeys("<CR>")
 

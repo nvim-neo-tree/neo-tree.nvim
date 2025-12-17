@@ -193,17 +193,18 @@ function mod.changedtick_waiter(bufnr, offset_goal, timeout)
   bufnr = bufnr or 0
   timeout = timeout or 4000
   offset_goal = offset_goal or 1
-  local changedtick = vim.b[bufnr].changedtick
+  local original_changedtick = vim.b[bufnr].changedtick
   return function()
     assert(
       vim.wait(timeout, function()
-        local offset = vim.b[bufnr].changedtick - changedtick
+        local current_changedtick = vim.b[bufnr].changedtick
+        local offset = current_changedtick - original_changedtick
         return offset >= offset_goal
       end),
       ("expected changedtick offset of %s or more, got %s - %s. lines: %s"):format(
         offset_goal,
         vim.b[bufnr].changedtick,
-        changedtick,
+        original_changedtick,
         table.concat(mod.buflines(bufnr), "\n")
       )
     )
