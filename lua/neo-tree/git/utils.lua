@@ -12,8 +12,8 @@ M.git_job = function(git_args, on_exit)
   --- correctness (since paths can technically have newlines).
   ---
   --- Switch to vim.system in v4.0
-  local stdout = log.assert(uv.new_pipe(true))
-  local stderr = log.assert(uv.new_pipe(true))
+  local stdout = log.assert(uv.new_pipe())
+  local stderr = log.assert(uv.new_pipe())
   uv.spawn("git", {
     args = git_args,
     hide = true,
