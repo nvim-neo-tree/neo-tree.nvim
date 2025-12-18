@@ -15,6 +15,7 @@ local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local git = require("neo-tree.git")
+local git_parser = require("neo-tree.git.parser")
 
 ---@alias neotree.Component.Common._Key
 ---|"bufnr"
@@ -231,7 +232,6 @@ end
 ---@field hide_when_expanded boolean?
 ---@field symbols table<string, string>?
 
-local git_parser = require("neo-tree.git.parser")
 ---@param config neotree.Component.Common.GitStatus
 M.git_status = function(config, node, state)
   local node_is_dir = node.type == "directory"
@@ -253,8 +253,12 @@ M.git_status = function(config, node, state)
     return {}
   end
 
+  if type(status) == "table" then
+    status = status[1]
+  end
+
   local symbols = config.symbols or {}
-  -- whether the item is staged, unstaged, or ignored/untracked
+  -- Whether the item is staged, unstaged, or ignored/untracked
   local stage_sb
   local stage_hl
 

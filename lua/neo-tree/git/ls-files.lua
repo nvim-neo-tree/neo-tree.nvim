@@ -15,6 +15,7 @@ local make_ls_untracked_args = function(worktree_root)
     "ls-files",
     "-z",
     "--full-name",
+    "--directory",
 
     "--exclude-standard",
     "--others",
@@ -82,14 +83,14 @@ end
 
 ---@param context neotree.git.JobContext
 ---@param on_parsed fun(new_status: string[])
-M.add_ignored_status_job = function(context, on_parsed)
+M.ignored_job = function(context, on_parsed)
   local ls_ignored_args = make_ls_ignored_args(context.worktree_root)
   ls_files_job(ls_ignored_args, context, on_parsed)
 end
 
 -- ---@param context neotree.git.JobContext
 -- ---@param on_parsed fun(new_status: string[])
--- M.add_untracked_status_job = function(context, on_parsed)
+-- M.untracked_job = function(context, on_parsed)
 --   local ls_untracked_args = make_ls_untracked_args(context.worktree_root)
 --   ls_files_job(ls_untracked_args, context, on_parsed)
 -- end

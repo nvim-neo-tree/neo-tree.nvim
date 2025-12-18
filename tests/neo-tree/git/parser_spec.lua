@@ -42,9 +42,9 @@ describe("git parser", function()
         [from_git_root("dir1/dir2/dir3/untracked.txt")] = "?",
 
         ---parent bubbling
-        [from_git_root("dir1")] = "?",
-        [from_git_root("dir1/dir2")] = "?",
-        [from_git_root("dir1/dir2/dir3")] = "?",
+        [from_git_root("dir1")] = { "?" },
+        [from_git_root("dir1/dir2")] = { "?" },
+        [from_git_root("dir1/dir2/dir3")] = { "?" },
       }, status)
     end
 
@@ -93,9 +93,9 @@ describe("git parser", function()
         [from_git_root("dir1/dir2/dir3/untracked.txt")] = "?",
 
         ---parent bubbling
-        [from_git_root("dir1")] = "?",
-        [from_git_root("dir1/dir2")] = "?",
-        [from_git_root("dir1/dir2/dir3")] = "?",
+        [from_git_root("dir1")] = { "?" },
+        [from_git_root("dir1/dir2")] = { "?" },
+        [from_git_root("dir1/dir2/dir3")] = { "?" },
       }, status)
     end
     local restore = test_utils.os_to_windows(false)

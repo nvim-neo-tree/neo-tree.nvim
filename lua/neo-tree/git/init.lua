@@ -1,5 +1,6 @@
 local utils = require("neo-tree.utils")
 local git_utils = require("neo-tree.git.utils")
+local git_ls_files = require("neo-tree.git.ls-files")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local parser = require("neo-tree.git.parser")
@@ -55,7 +56,7 @@ local get_status_porcelain_version = function()
   return M._supported_status_porcelain_version
 end
 
----@alias neotree.git.Status table<string, string>
+---@alias neotree.git.Status table<string, string|[string]>
 
 ---@param worktree_root string
 ---@param git_status neotree.git.Status?
@@ -255,7 +256,7 @@ M.status_async = function(path, base, opts)
           git_status_job(ctx, fast_args, function(fast_status)
             change_git_status(worktree_root, fast_status)
             -- Get ignored statuses
-            require("neo-tree.git.ls-files").add_ignored_status_job(ctx, function(ignored_paths)
+            git_ls_files.ignored_job(ctx, function(ignored_paths)
               for _, ignored_path in ipairs(ignored_paths) do
                 ctx.git_status[ignored_path] = "!"
               end
@@ -320,39 +321,57 @@ do
   ---@param items neotree.FileItem[]
   M.mark_gitignored = function(state, items)
     -- upward and downward are relative to state.path
-    local upward_statuses = {}
-    local downward_statuses = {}
+
+    local upward_status = false
+    local statuses = {}
     for worktree_root, git_status in pairs(M.statuses) do
+      statuses[worktree_root] = git_status
       if utils.is_subpath(worktree_root, state.path, true) then
-        upward_statuses[#upward_statuses + 1] = git_status
-      elseif utils.is_subpath(state.path, worktree_root, true) then
-        downward_statuses[#downward_statuses + 1] = git_status
+        upward_status = true
       end
     end
 
-    if #upward_statuses == 0 and might_be_in_git_repo(state.path) then
+    if not upward_status and might_be_in_git_repo(state.path) then
       local worktree_root = M.find_worktree_info(state.path)
       if not worktree_root then
         return
       end
-      local ignored_list = require("neo-tree.git.ls-files").ignored(worktree_root)
+
+      local ignored_list = git_ls_files.ignored(worktree_root)
       local status = {}
-      for i, path in ipairs(ignored_list) do
+      for _, path in ipairs(ignored_list) do
         status[path] = "!"
       end
-      upward_statuses[#upward_statuses + 1] = status
+      statuses[worktree_root] = status
     end
 
     for _, i in ipairs(items) do
-      local git_statuses = { unpack(upward_statuses), unpack(downward_statuses) }
-      for _, git_status in ipairs(git_statuses) do
-        local status = git_status[i.path]
-        if status then
-          if status == "!" then
-            i.filtered_by = i.filtered_by or {}
-            i.filtered_by.gitignored = true
+      for worktree_root, git_status in pairs(statuses) do
+        local path = i.path
+        if utils.is_subpath(worktree_root, path, true) then
+          local status = git_status[path]
+          if status ~= nil then
+            if status == "!" then
+              i.filtered_by = i.filtered_by or {}
+              i.filtered_by.gitignored = true
+            end
+            break
+          else
+            for parent in utils.path_parents(path) do
+              if #parent >= #worktree_root then
+                break
+              end
+
+              local parent_status = git_status[parent]
+              if parent_status ~= nil then
+                if parent_status == "!" then
+                  i.filtered_by = i.filtered_by or {}
+                  i.filtered_by.gitignored = true
+                end
+                break
+              end
+            end
           end
-          break
         end
       end
     end

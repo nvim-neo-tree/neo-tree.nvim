@@ -255,7 +255,7 @@ M._parse_status_porcelain = function(
     local parent_statuses = {}
 
     for _, tuple in ipairs(bubble_info) do
-      local list, status = tuple[1], tuple[2]
+      local list, status = tuple[1], { tuple[2] }
       -- bubble them up
       for _, i in ipairs(list) do
         local path = paths[i]
