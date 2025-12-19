@@ -294,7 +294,13 @@ M.subscribe = function(source_name, event)
     sd.subscriptions = {}
   end
   if not utils.truthy(event.id) then
-    event.id = sd.name .. "." .. event.event
+    local subscriber_info = debug.getinfo(2, "Sl")
+    event.id = ("%s.%s@%s:%s"):format(
+      sd.name,
+      event.event,
+      subscriber_info.short_src,
+      subscriber_info.currentline
+    )
   end
   log.trace("subscribing to event:" .. event.id)
   sd.subscriptions[event] = true
@@ -408,10 +414,12 @@ end
 --
 ---Redraws the tree with updated git_status without scanning the filesystem again.
 ---@param source_name string
+---@param args neotree.event.args.GIT_STATUS_CHANGED
 M.git_status_changed = function(source_name, args)
   if not type(args) == "table" then
     error("git_status_changed: args must be a table")
   end
+  -- M.refresh(source_name)
   M._for_each_state(source_name, function(state)
     local root_is_visible = state.tree and state.tree.nodes.by_id[args.git_root] ~= nil
     local state_in_git_root = utils.is_subpath(args.git_root, state.path)

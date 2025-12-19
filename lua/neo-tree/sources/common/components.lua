@@ -15,6 +15,7 @@ local utils = require("neo-tree.utils")
 local file_nesting = require("neo-tree.sources.common.file-nesting")
 local container = require("neo-tree.sources.common.container")
 local git = require("neo-tree.git")
+local git_parser = require("neo-tree.git.parser")
 
 ---@alias neotree.Component.Common._Key
 ---|"bufnr"
@@ -242,18 +243,22 @@ M.git_status = function(config, node, state)
     return {}
   end
 
-  local root_dir, git_status = git.find_existing_status(node.path)
+  local _, git_status = git.find_existing_status(node.path)
   if not git_status then
     return {}
   end
 
-  local git_status = git_status[node.path]
-  if not git_status then
+  local status = git_status[node.path]
+  if not status then
     return {}
+  end
+
+  if type(status) == "table" then
+    status = status[1]
   end
 
   local symbols = config.symbols or {}
-  -- whether the item is staged, unstaged, or ignored/untracked
+  -- Whether the item is staged, unstaged, or ignored/untracked
   local stage_sb
   local stage_hl
 
@@ -267,7 +272,7 @@ M.git_status = function(config, node, state)
   -------------------------------------------------
   -- ?           ?    untracked
   -- !           !    ignored
-  if git_status == "?" then
+  if status == "?" then
     stage_sb = symbols.untracked
     stage_hl = highlights.GIT_UNTRACKED
     return {
@@ -276,7 +281,7 @@ M.git_status = function(config, node, state)
     }
   end
 
-  if git_status == "!" then
+  if status == "!" then
     stage_sb = symbols.ignored
     stage_hl = highlights.GIT_IGNORED
     return {
@@ -287,7 +292,7 @@ M.git_status = function(config, node, state)
 
   -- x == staging area status
   -- y == working area status
-  local x, y = git_status:sub(1, 1), git_status:sub(2, 2)
+  local x, y = status:sub(1, 1), status:sub(2, 2)
   local is_conflict = false
   if y == "." then
     stage_sb = symbols.staged
@@ -295,13 +300,9 @@ M.git_status = function(config, node, state)
   elseif x == "." then
     stage_sb = symbols.unstaged
     stage_hl = highlights.GIT_UNSTAGED
-  else
-    local both_deleted_or_added = x == y and (x == "A" or x == "D")
-    is_conflict = both_deleted_or_added or (x == "U" or y == "U")
-    if is_conflict then
-      stage_sb = symbols.conflict
-      stage_hl = highlights.GIT_CONFLICT
-    end
+  elseif git_parser.status_code_is_conflict(x, y) then
+    stage_sb = symbols.conflict
+    stage_hl = highlights.GIT_CONFLICT
   end
 
   -- all variations of merge conflicts
@@ -362,7 +363,7 @@ M.git_status = function(config, node, state)
 
   if not staged_change_sb and not worktree_change_sb then
     return {
-      text = "[" .. git_status .. "]",
+      text = "[" .. status .. "]",
       highlight = config.highlight or worktree_change_hl or staged_change_hl,
     }
   end

@@ -358,7 +358,7 @@ log_maker.new = function(config)
   ---@generic T
   ---@generic F
   ---@generic A
-  ---@param v? T
+  ---@param v T?
   ---@param errmsg F?
   ---@param ... A
   ---@return T

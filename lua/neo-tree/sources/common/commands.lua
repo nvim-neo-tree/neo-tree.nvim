@@ -342,6 +342,10 @@ M.git_toggle_file_stage = function(state)
     return
   end
 
+  if type(status) == "table" then
+    status = status[1]
+  end
+
   local worktree_status = status:sub(2, 2)
   if worktree_status ~= "." then
     utils.execute_command({ "git", "add", "--", path })

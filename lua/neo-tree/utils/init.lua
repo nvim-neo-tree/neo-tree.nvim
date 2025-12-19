@@ -931,7 +931,7 @@ end
 ---@param fast boolean? Whether to normalize both paths
 ---@return boolean path_is_subpath True if `path` is a subpath of `base`.
 M.is_subpath = function(base, path, fast)
-  if not M.truthy(base) or not M.truthy(path) then
+  if #base == 0 or #path == 0 then
     return false
   end
 
@@ -942,10 +942,9 @@ M.is_subpath = function(base, path, fast)
   if not fast then
     base = M.normalize_path(base)
     path = M.normalize_path(path)
-  end
-
-  if base == path then
-    return true
+    if base == path then
+      return true
+    end
   end
 
   if #path < #base or path:find(base, 1, true) ~= 1 then
@@ -1155,6 +1154,13 @@ M.split = function(inputString, sep)
   end)
 
   return fields
+end
+
+---@param s string
+---@param sep string
+M.gsplit_plain = function(s, sep)
+  ---@diagnostic disable-next-line: param-type-mismatch
+  return vim.gsplit(s, sep, compat.gsplit_plain_arg)
 end
 
 ---Split a path into a parent path and a name.
