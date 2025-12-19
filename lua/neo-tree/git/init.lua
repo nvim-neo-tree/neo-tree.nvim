@@ -493,7 +493,7 @@ M.find_worktree_info = function(path, callback)
   }
 
   if callback then
-    assert(type(callback) == "function", "callback for git status should be a function")
+    assert(type(callback) == "function", "callback for find_worktree_info should be a function")
     git_utils.git_job(rev_parse_args, function(code, stdout_chunks, stderr_chunks)
       local full_stdout = table.concat(stdout_chunks, "")
       local stdout_lines = {}
