@@ -244,7 +244,7 @@ M.git_status = function(config, node, state)
   end
 
   local path = node.path
-  local worktree_root, git_status = git.find_existing_status(node.path)
+  local worktree_root, git_status = git.find_existing_status(path)
   if not git_status then
     return {}
   end
@@ -261,9 +261,6 @@ M.git_status = function(config, node, state)
       status = git_status[path]
     end
     if status then
-      if type(status) == "table" then
-        status = status[1]
-      end
       if status ~= "!" and status ~= "?" then
         return {}
       end
