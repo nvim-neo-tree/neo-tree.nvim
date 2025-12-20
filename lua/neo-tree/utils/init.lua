@@ -931,7 +931,7 @@ end
 ---@param fast boolean? Whether to normalize both paths
 ---@return boolean path_is_subpath True if `path` is a subpath of `base`.
 M.is_subpath = function(base, path, fast)
-  if #base == 0 or #path == 0 then
+  if not M.truthy(base) or not M.truthy(path) then
     return false
   end
 

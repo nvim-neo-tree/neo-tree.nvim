@@ -12,12 +12,14 @@ local function watch_git_dir(_, git_dir)
     return
   end
   fs_watch.watch_folder(git_dir, function(err, fname)
-    if fname and fname:match("^.+%.lock$") then
-      return
-    end
-    if fname and fname:match("^%._null-ls_.+") then
-      -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
-      return
+    if fname then
+      if fname:match("^.+%.lock$") then
+        return
+      end
+      if fname:match("^%._null-ls_.+") then
+        -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
+        return
+      end
     end
 
     if err then
@@ -37,6 +39,7 @@ local function watch_git_dir(_, git_dir)
       events.fire_event(events.GIT_EVENT)
     end)
   end, true)
+  fs_watch.updated_watched()
 end
 
 ---If a folder contains a .git index, watches it

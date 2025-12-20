@@ -11,6 +11,10 @@ local weak_kv = { __mode = "kv" }
 
 local M = {}
 
+---@alias neotree.git.StatusCode string|[string]
+
+---@alias neotree.git.Status table<string, neotree.git.StatusCode>
+
 ---@type table<string, neotree.git.Status>
 M.statuses = setmetatable({}, weak_kv)
 
@@ -55,8 +59,6 @@ local get_status_porcelain_version = function()
   M._supported_status_porcelain_version = find_status_porcelain_version()
   return M._supported_status_porcelain_version
 end
-
----@alias neotree.git.Status table<string, string|[string]>
 
 ---@param worktree_root string
 ---@param git_status neotree.git.Status?
@@ -408,8 +410,10 @@ local process_output = function(ok, path, stdout_lines, stderr_lines)
   local lines = stdout_lines
   for i, p in ipairs(stdout_lines) do
     if #p == 0 then
-      break
-    elseif utils.is_windows then
+      lines[i] = nil
+    end
+
+    if utils.is_windows then
       lines[i] = utils.windowize_path(p)
     end
   end
@@ -532,6 +536,44 @@ M.find_existing_status = function(path)
     end
   end
   M._root_dir_cache[path] = false
+end
+
+---Given a normalized path, find the existing status code for it.
+---@param path string A normalized path.
+---@return neotree.git.StatusCode? status_code
+---@return string|false? worktree_root
+M.find_existing_status_code = function(path)
+  local worktree_root, git_status = M.find_existing_status(path)
+  if not git_status then
+    return
+  end
+
+  local status = git_status[path]
+  if status then
+    return status, worktree_root
+  end
+
+  ---Check parents to see if the path is in a dir marked as untracked/ignored
+  ---@type string?
+  local parent = path
+  while not status do
+    parent = utils.split_path(parent)
+    if #parent < #worktree_root then
+      break
+    end
+    status = git_status[parent]
+  end
+
+  if not status then
+    return nil, nil
+  end
+
+  if status ~= "!" and status ~= "?" then
+    return nil, nil
+  end
+
+  -- in dir marked as untracked or ignored
+  return status, worktree_root
 end
 
 return M

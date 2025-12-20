@@ -244,34 +244,14 @@ M.git_status = function(config, node, state)
   end
 
   local path = node.path
-  local worktree_root, git_status = git.find_existing_status(node.path)
-  if not git_status then
-    return {}
-  end
-
-  local status = git_status[path]
-  if type(status) == "table" then
-    status = status[1]
-  else
-    while not status do
-      path = utils.split_path(path)
-      if #path < #worktree_root then
-        break
-      end
-      status = git_status[path]
-    end
-    if status then
-      if type(status) == "table" then
-        status = status[1]
-      end
-      if status ~= "!" and status ~= "?" then
-        return {}
-      end
-    end
-  end
+  local status = git.find_existing_status_code(path)
 
   if not status then
     return {}
+  end
+
+  if type(status) == "table" then
+    status = status[1]
   end
 
   local symbols = config.symbols or {}
