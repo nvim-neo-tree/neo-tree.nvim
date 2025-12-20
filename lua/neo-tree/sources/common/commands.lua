@@ -334,7 +334,7 @@ M.git_toggle_file_stage = function(state)
     return
   end
   local path = node:get_id()
-  local root_dir, git_status = git.find_existing_status(path)
+  local _, git_status = git.find_existing_status(path)
   git_status = log.assert(git_status, "No git status found for this state")
   local status = git_status[path]
   if not status then
@@ -559,17 +559,12 @@ M.order_by_git_status = function(state)
   set_sort(state, "Git Status")
 
   state.sort_field_provider = function(node)
-    local root_dir, git_status = git.find_existing_status(node.path)
-    if not git_status then
+    local status_code = git.find_existing_status_code(node.path)
+    if not status_code then
       return ""
     end
 
-    local status = git_status[node.path]
-    if status then
-      return status
-    end
-
-    return ""
+    return type(status_code) == "table" and status_code[1] or status_code
   end
 
   require("neo-tree.sources.manager").refresh(state.name)
@@ -624,10 +619,10 @@ M.show_file_details = function(state)
     table.insert(right, utils.date(modified_format, stat.mtime.sec))
   end
 
-  local root_dir, git_status = git.find_existing_status(node.path)
-  if git_status and git_status[node.path] then
+  local status_code = git.find_existing_status_code(node.path)
+  if status_code then
     table.insert(left, "Git code")
-    table.insert(right, git_status[node.path])
+    table.insert(right, type(status_code) == "table" and status_code[1] or status_code)
   end
 
   local lines = {}

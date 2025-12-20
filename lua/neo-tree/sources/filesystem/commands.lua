@@ -152,7 +152,7 @@ local focus_next_git_modified = function(state, reverse)
   if not utils.truthy(git_status) then
     return
   end
-  assert(git_status)
+  ---@cast git_status -nil
   local paths = { current_path }
   for path, status in pairs(git_status) do
     if path ~= current_path and not vim.tbl_contains({ "!", "?" }, status) then
