@@ -298,11 +298,21 @@ function set_parents(context, item)
     local success
     success, parent = pcall(create_item, context, item.parent_path)
     if not success then
-      log.error("Error creating item for ", item.parent_path, ":", parent)
+      local err = parent
+      log.error("Error creating parent for ", item.parent_path, ":", err)
     end
     ---@cast parent neotree.FileItem.Directory
+    if parent.type == "unknown" then
+      -- making a virtual parent for a virtual item (i.e. deleted git_status item)
+      parent.type = "directory"
+      parent.children = {}
+    end
     context.folders[parent.id] = parent
     set_parents(context, parent)
+  end
+  if not parent or not parent.children then
+    log.error("Parent is invalid or missing children table for item ", item.id)
+    return
   end
   table.insert(parent.children, item)
   context.item_exists[item.id] = item
