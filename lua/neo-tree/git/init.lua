@@ -106,6 +106,7 @@ local make_git_status_args = function(porcelain_version, worktree_root, opts)
     porcelain_flag[porcelain_version],
     "-z",
     "--ignored=" .. opts.ignored,
+    "--untracked-files=" .. opts.untracked_files,
   }
   events.fire_event(events.BEFORE_GIT_STATUS, {
     status_args = args,
@@ -124,9 +125,10 @@ end
 ---@param base string? git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
 ---@param path string? Path to run the git status command in, defaults to cwd.
+---@param status_opts neotree.git._StatusCommandArgs? Path to run the git status command in, defaults to cwd.
 ---@return neotree.git.Status? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 ---@return string? worktree_root
-M.status = function(base, skip_bubbling, path)
+M.status = function(base, skip_bubbling, path, status_opts)
   local worktree_root = M.find_worktree_info(path)
   if not utils.truthy(worktree_root) then
     return nil, nil
@@ -139,7 +141,7 @@ M.status = function(base, skip_bubbling, path)
   end
   local status_cmd = {
     "git",
-    unpack(make_git_status_args(status_porcelain_version, worktree_root)),
+    unpack(make_git_status_args(status_porcelain_version, worktree_root, status_opts)),
   }
 
   local raw_status_text = vim.fn.system(status_cmd)
