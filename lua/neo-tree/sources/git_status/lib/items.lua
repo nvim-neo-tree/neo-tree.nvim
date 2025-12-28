@@ -28,21 +28,18 @@ M.get_git_status = function(state)
     for path, status in pairs(status_lookup) do
       ---@type string
       local normalized_status
-      if type(status) == "table" then
-        normalized_status = status[1]
-      else
-        ---@cast status -table
-        normalized_status = status
-      end
-      if status ~= "!" then
-        local success, item = pcall(file_items.create_item, context, path, "file") --[[@as neotree.FileItem.File]]
-        if success then
+      if type(status) ~= "table" and status ~= "!" then
+        local success, item = pcall(file_items.create_item, context, path)
+        if not success then
+          log.error("Error creating git_status item for " .. path .. ": " .. item)
+        else
+          if item.type == "unknown" then
+            item.type = "file"
+          end
           item.status = normalized_status
           item.extra = {
             git_status = status,
           }
-        else
-          log.error("Error creating item for " .. path .. ": " .. item)
         end
       end
     end
