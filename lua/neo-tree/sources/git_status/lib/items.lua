@@ -13,12 +13,14 @@ M.get_git_status = function(state)
     return
   end
   state.loading = true
-  local status_lookup, project_root = git.status(state.git_base, true, state.path)
+  local status_lookup, project_root = git.status(state.git_base, false, state.path, {
+    untracked_files = "all",
+  })
   state.path = project_root or state.path or vim.fn.getcwd()
   local context = file_items.create_context()
   context.state = state
   -- Create root folder
-  local root = file_items.create_item(context, state.path, "directory") --[[@as neotree.FileItem.Directory]]
+  local root = file_items.create_item(context, state.path) --[[@as neotree.FileItem.Directory]]
   root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
