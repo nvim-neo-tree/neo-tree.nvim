@@ -172,11 +172,6 @@ local function create_item(context, path, _type, bufnr)
     -- avoid creating duplicate items
     local cached_item = context.folders[id] or context.nesting[id] or context.item_exists[id]
     if cached_item then
-      -- If requesting as directory but cached item lacks children, initialize it
-      if _type == "directory" and not cached_item.children then
-        cached_item.children = {}
-        cached_item.type = "directory"
-      end
       return cached_item
     end
   end
@@ -301,12 +296,17 @@ function set_parents(context, item)
   end
   if parent == nil then
     local success
-    success, parent = pcall(create_item, context, item.parent_path, "directory")
+    success, parent = pcall(create_item, context, item.parent_path)
     if not success then
-      log.error("Error creating item for ", item.parent_path, ":", parent)
-      return
+      local err = parent
+      log.error("Error creating parent for ", item.parent_path, ":", err)
     end
     ---@cast parent neotree.FileItem.Directory
+    if parent.type == "unknown" then
+      -- making a virtual parent for a virtual item (i.e. deleted git_status item)
+      parent.type = "directory"
+      parent.children = {}
+    end
     context.folders[parent.id] = parent
     set_parents(context, parent)
   end
