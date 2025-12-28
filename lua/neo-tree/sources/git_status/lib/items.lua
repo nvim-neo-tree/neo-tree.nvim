@@ -20,7 +20,7 @@ M.get_git_status = function(state)
   local context = file_items.create_context()
   context.state = state
   -- Create root folder
-  local root = file_items.create_item(context, state.path) --[[@as neotree.FileItem.Directory]]
+  local root = file_items.create_item(context, state.path, "directory") --[[@as neotree.FileItem.Directory]]
   root.name = vim.fn.fnamemodify(root.path, ":~")
   root.loaded = true
   root.search_pattern = state.search_pattern
