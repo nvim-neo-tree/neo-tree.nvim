@@ -702,7 +702,7 @@ M.stop_watchers = function(state)
 
     for worktree_root, worktree in pairs(git.worktrees) do
       if utils.is_subpath(worktree_root, state.path) then
-        git_watcher.unwatch(worktree.git_dir)
+        fs_watch.unwatch_folder(worktree.git_dir)
       end
     end
 
