@@ -158,7 +158,7 @@ M.status = function(base, skip_bubbling, path, status_opts)
   local last_status_text = raw_status_text_cache[worktree_root]
   if status_text == last_status_text then
     -- return the current status
-    return M.worktrees[worktree_root], worktree_root
+    return M.worktrees[worktree_root].status, worktree_root
   end
   raw_status_text_cache[worktree_root] = status_text
 
