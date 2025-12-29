@@ -44,8 +44,8 @@ local on_directory_loaded = function(context, dir_path)
 
       -- NOTE: might need better checks for this in the future?
       if
-        target_path:find("\\.git\\", 1, true)
-        or target_path:find("/.git/", 1, true)
+        target_path:find(".git\\", 1, true)
+        or target_path:find(".git/", 1, true)
         or vim.endswith(target_path, ".git")
       then
         log.debug("watch_folder(path): Skipping git folder:", target_path)
