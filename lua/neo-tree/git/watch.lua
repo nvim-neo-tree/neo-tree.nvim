@@ -6,17 +6,18 @@ local log = require("neo-tree.log")
 local uv = vim.uv or vim.loop
 local M = {}
 
+---@param worktree_root string?
 ---@param git_dir string?
-local function watch_git_dir(_, git_dir)
-  if not git_dir then
+M.watch = function(worktree_root, git_dir)
+  if not git_dir or not worktree_root then
     return
   end
-  fs_watch.watch_folder(git_dir, function(err, fname)
+  local watcher = fs_watch.watch_folder(git_dir, function(err, fname)
     if fname then
-      if fname:match("^.+%.lock$") then
+      if vim.endswith(fname, ".lock") then
         return
       end
-      if fname:match("^%._null-ls_.+") then
+      if fname:find("_null-ls_", 1, true) then
         -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
         return
       end
@@ -33,44 +34,14 @@ local function watch_git_dir(_, git_dir)
       end
 
       git.find_worktree_info(git_dir)
-    end, 1000, utils.debounce_strategy.CALL_LAST_ONLY)
+    end, 5000, utils.debounce_strategy.CALL_LAST_ONLY)
 
     vim.schedule(function()
       events.fire_event(events.GIT_EVENT)
     end)
-  end, true)
+  end)
   fs_watch.updated_watched()
-end
-
----If a folder contains a .git index, watches it
----@param path string
----@param async any
-M.watch = function(path, async)
-  if async then
-    git.find_worktree_info(path, watch_git_dir)
-  else
-    local _, git_dir = git.find_worktree_info(path)
-    watch_git_dir(git_dir)
-  end
-end
-
----@param git_dir string?
-local function unwatch_git_dir(_, git_dir)
-  if not git_dir then
-    return
-  end
-  fs_watch.unwatch_folder(git_dir)
-end
-
----@param path string
----@param async any
-M.unwatch = function(path, async)
-  if async then
-    git.find_worktree_info(path, unwatch_git_dir)
-  else
-    local _, git_dir = git.find_worktree_info(path)
-    unwatch_git_dir(git_dir)
-  end
+  return watcher
 end
 
 return M

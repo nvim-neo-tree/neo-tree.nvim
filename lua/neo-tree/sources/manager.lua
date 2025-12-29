@@ -421,8 +421,8 @@ M.git_status_changed = function(source_name, args)
   end
   -- M.refresh(source_name)
   M._for_each_state(source_name, function(state)
-    local root_is_visible = state.tree and state.tree.nodes.by_id[args.git_root] ~= nil
     local state_in_git_root = utils.is_subpath(args.git_root, state.path)
+    local root_is_visible = state.tree and state.tree.nodes.by_id[args.git_root] ~= nil
     if state_in_git_root or root_is_visible then
       renderer.redraw(state)
     end

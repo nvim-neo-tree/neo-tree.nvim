@@ -11,6 +11,7 @@ local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
 local git_watcher = require("neo-tree.git.watch")
 local events = require("neo-tree.events")
+local nt = require("neo-tree")
 local async = require("plenary.async")
 local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
@@ -23,30 +24,61 @@ local ENTRIES_BATCH_SIZE = 1000
 ---@param dir_path string
 local on_directory_loaded = function(context, dir_path)
   local state = context.state
-  local scanned_folder = context.folders[dir_path]
-  if scanned_folder then
-    scanned_folder.loaded = true
+  local folder = context.folders[dir_path]
+  if not folder then
+    return
   end
-  if state.use_libuv_file_watcher then
-    local root = context.folders[dir_path]
-    if root then
-      local target_path = root.is_link and root.link_to or root.path
-      local fs_watch_callback = vim.schedule_wrap(function(err, fname)
-        if err then
-          log.error("file_event_callback: ", err)
-          return
-        end
-        if context.is_a_never_show_file(fname) then
-          -- don't fire events for nodes that are designated as "never show"
-          return
-        else
-          events.fire_event(events.FS_EVENT, { afile = target_path })
-        end
-      end)
 
-      log.trace("Adding fs watcher for", target_path)
-      fs_watch.watch_folder(target_path, fs_watch_callback)
+  folder.loaded = true
+
+  if state.use_libuv_file_watcher then
+    local target_path = folder.is_link and utils.path_join(folder.path, folder.link_to)
+      or folder.path
+    -- git folders seem to throw off fs events constantly, ignore them this time.
+    if target_path:find(".git", 1, true) then
+      -- https://git-scm.com/docs/gitrepository-layout
+      -- Git repository comes in two different flavours:
+      -- a .git directory at the root of the working tree;
+      -- a <project>.git directory that is a bare repository (i.e. without its own working tree), that is typically used for exchanging histories with others by pushing into it and fetching from it.
+      -- Also you can have a plain text file .git at the root of your working tree
+
+      -- NOTE: might need better checks for this in the future?
+      if
+        target_path:find(".git\\", 1, true)
+        or target_path:find(".git/", 1, true)
+        or vim.endswith(target_path, ".git")
+      then
+        log.debug("watch_folder(path): Skipping git folder:", target_path)
+        return
+      end
     end
+    if nt.config.enable_git_status and nt.config.git_status_async then
+      for i, child in ipairs(folder.children) do
+        if vim.endswith(child.path, ".git") and not git.find_existing_worktree(child.path) then
+          -- try running a status (and potentially start tracking)
+          git.status_async(target_path, nil, nt.config.git_status_async_options)
+          break
+        end
+      end
+    end
+
+    local fs_watch_callback = vim.schedule_wrap(function(err, fname)
+      if err then
+        log.error("file_event_callback: ", err)
+        return
+      end
+
+      if context.is_a_never_show_file(fname) then
+        -- don't fire events for nodes that are designated as "never show"
+        return
+      end
+
+      events.fire_event(events.FS_EVENT, { afile = target_path })
+    end)
+
+    log.trace("Adding fs watcher for", target_path)
+
+    fs_watch.watch_folder(target_path, fs_watch_callback)
   end
 end
 
@@ -63,9 +95,9 @@ local dir_complete = function(context, dir_path)
   while #paths_to_load > 0 and not next_path do
     next_path = table.remove(paths_to_load)
     -- ensure that the path is still valid
-    local success, result = pcall(uv.fs_stat, next_path)
+    local result = uv.fs_stat(next_path)
     -- ensure that the result is a directory
-    if success and result and result.type == "directory" then
+    if result and result.type == "directory" then
       -- ensure that it is not already loaded
       local existing = folders[next_path]
       if existing and existing.loaded then
@@ -84,17 +116,6 @@ local render_context = function(context)
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
-
-  if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
-    local path = root.path
-    if root.is_link then
-      path = utils.path_join(path, root.link_to)
-    end
-
-    log.trace("Looking for .git folder")
-    local async_opts = require("neo-tree").config.git_status_async
-    git_watcher.watch(path, async_opts)
-  end
   fs_watch.updated_watched()
 
   if root and root.children then
@@ -127,6 +148,7 @@ local should_check_gitignore = function(state)
     return false
   end
 end
+
 ---@param context neotree.sources.filesystem.Context
 ---@param skip_render_context boolean?
 local job_complete = function(context, skip_render_context)
@@ -146,10 +168,6 @@ end
 
 local function create_node(context, node)
   pcall(file_items.create_item, context, node.path, node.type)
-end
-
-local function process_node(context, path)
-  on_directory_loaded(context, path)
 end
 
 ---@param err string libuv error
@@ -222,7 +240,6 @@ local function get_children_async(path, callback)
 end
 
 local function scan_dir_sync(context, path)
-  process_node(context, path)
   local children = get_children_sync(path)
   for _, child in ipairs(children) do
     create_node(context, child)
@@ -238,6 +255,7 @@ local function scan_dir_sync(context, path)
       end
     end
   end
+  on_directory_loaded(context, path)
 end
 
 --- async method
@@ -264,7 +282,7 @@ local function scan_dir_async(context, path)
     end
   end
 
-  process_node(context, path)
+  on_directory_loaded(context, path)
   log.debug("scan_dir_async - finish", path)
   return path
 end
@@ -661,6 +679,7 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   finalize(context)
 end
 
+---Stop watchers for the current state
 ---@param state neotree.sources.filesystem.State
 M.stop_watchers = function(state)
   if state.use_libuv_file_watcher and state.tree then
@@ -669,7 +688,13 @@ M.stop_watchers = function(state)
     local loaded_folders = renderer.select_nodes(state.tree, function(node)
       return node.type == "directory" and node.loaded
     end)
-    git_watcher.unwatch(state.path, require("neo-tree").config.git_status_async)
+
+    for worktree_root, worktree in pairs(git.worktrees) do
+      if utils.is_subpath(worktree_root, state.path) then
+        fs_watch.unwatch_folder(worktree.git_dir)
+      end
+    end
+
     for _, folder in ipairs(loaded_folders) do
       log.trace("Unwatching folder", folder.path)
       if folder.is_link then
