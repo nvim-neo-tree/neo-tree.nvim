@@ -4,7 +4,8 @@ local M = {}
 
 ---@param git_args string[]
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])
-M.git_job = function(git_args, on_exit)
+---@param cwd string?
+M.git_job = function(git_args, on_exit, cwd)
   local stdout_chunks = {}
   local stderr_chunks = {}
 
@@ -18,6 +19,7 @@ M.git_job = function(git_args, on_exit)
     args = git_args,
     hide = true,
     stdio = { nil, stdout, stderr },
+    cwd = cwd,
   }, function(code, _)
     stdout:close()
     stdout:shutdown()

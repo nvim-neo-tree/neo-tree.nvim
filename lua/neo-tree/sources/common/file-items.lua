@@ -138,7 +138,7 @@ local set_parents
 ---@field is_nested boolean?
 
 ---@class (exact) neotree.FileItem.File : neotree.FileItem
----@field children table<string, neotree.FileItem?>?
+---@field children table<integer, neotree.FileItem?>?
 ---@field nesting_callback neotree.filenesting.Callback
 ---@field base string
 ---@field ext string
@@ -150,7 +150,7 @@ local set_parents
 ---@field link_to string?
 
 ---@class (exact) neotree.FileItem.Directory : neotree.FileItem
----@field children table<string, neotree.FileItem?>
+---@field children table<integer, neotree.FileItem?>
 ---@field loaded boolean
 ---@field search_pattern string?
 

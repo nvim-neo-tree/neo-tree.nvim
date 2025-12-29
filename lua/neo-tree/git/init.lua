@@ -6,20 +6,30 @@ local log = require("neo-tree.log")
 local parser = require("neo-tree.git.parser")
 local uv = vim.uv or vim.loop
 local co = coroutine
+
 ---@type metatable
 local weak_kv = { __mode = "kv" }
+
+---@type metatable
+local weak_k = { __mode = "kv" }
 
 local M = {}
 
 ---@alias neotree.git.StatusCode string|[string]
 
----@alias neotree.git.Status table<string, neotree.git.StatusCode>
+---@alias neotree.git.Status table<string, neotree.git.StatusCode?>
 
----@type table<string, neotree.git.Status>
-M.statuses = setmetatable({}, weak_kv)
+---@class neotree.git.WorktreeInfo
+---@field git_dir string
+---@field watcher neotree.sources.filesystem.Watcher?
+---@field superproject_worktree_root string?
+---@field status neotree.git.Status?
+
+---@type table<string, neotree.git.WorktreeInfo?>
+M.worktrees = {}
 
 ---@type table<string, string>
-M._raw_status_text_cache = setmetatable({}, { __mode = "k" })
+local raw_status_text_cache = setmetatable({}, weak_k)
 
 ---@alias (private) neotree.git._StatusPorcelainVersion
 ---|1
@@ -61,14 +71,11 @@ local get_status_porcelain_version = function()
 end
 
 ---@param worktree_root string
----@param git_status neotree.git.Status?
-local change_git_status = function(worktree_root, git_status)
-  local last_git_status = M.statuses[worktree_root]
-  if type(last_git_status) ~= type(git_status) then
-    -- updating or deleting an existing root dir
-    M._root_dir_cache = setmetatable({}, weak_kv)
-  end
-  M.statuses[worktree_root] = git_status
+---@param git_status neotree.git.Status
+local change_worktree_git_status = function(worktree_root, git_status)
+  local existing_worktree =
+    assert(M.worktrees[worktree_root], "Could not find worktree for " .. worktree_root)
+  existing_worktree.status = git_status
   vim.schedule(function()
     ---@class neotree.event.args.GIT_STATUS_CHANGED
     local args = {
@@ -148,12 +155,12 @@ M.status = function(base, skip_bubbling, path, status_opts)
   assert(vim.v.shell_error == 0)
 
   local status_text = raw_status_text:gsub("\001", "\000")
-  local last_status_text = M._raw_status_text_cache[worktree_root]
+  local last_status_text = raw_status_text_cache[worktree_root]
   if status_text == last_status_text then
     -- return the current status
-    return M.statuses[worktree_root], worktree_root
+    return M.worktrees[worktree_root], worktree_root
   end
-  M._raw_status_text_cache[worktree_root] = status_text
+  raw_status_text_cache[worktree_root] = status_text
 
   skip_bubbling = not not skip_bubbling
   local status_iter = utils.gsplit_plain(status_text, "\000")
@@ -164,11 +171,11 @@ M.status = function(base, skip_bubbling, path, status_opts)
     skip_bubbling
   )
 
-  change_git_status(worktree_root, git_status)
+  change_worktree_git_status(worktree_root, git_status)
   return git_status, worktree_root
 end
 
----Creates a job (vim job) for `git status`
+---Creates a job for `git status`
 ---@param context neotree.git.JobContext
 ---@param git_args string[]? nil to use default of make_git_status_args, which includes all files
 ---@param on_parsed fun(gs: neotree.git.Status)
@@ -186,12 +193,12 @@ local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
     end
 
     local status_text = table.concat(stdout_chunks)
-    local past_raw_status_text = M._raw_status_text_cache[context.worktree_root]
+    local past_raw_status_text = raw_status_text_cache[context.worktree_root]
     if status_text == past_raw_status_text then
       -- stdout text did not change.
       return
     end
-    M._raw_status_text_cache[context.worktree_root] = status_text
+    raw_status_text_cache[context.worktree_root] = status_text
 
     local status_iter = utils.gsplit_plain(status_text, "\000")
     local parsing_task = co.create(parser._parse_status_porcelain)
@@ -221,7 +228,7 @@ end
 
 ---Runs `git status` asynchronously, will update neo-tree once finished.
 ---@param path string path to run commands in
----@param base string git ref base
+---@param base string? git ref base
 ---@param opts neotree.Config.GitStatusAsync
 M.status_async = function(path, base, opts)
   M.find_worktree_info(path, function(worktree_root)
@@ -241,7 +248,7 @@ M.status_async = function(path, base, opts)
           return
         end
         ---@class neotree.git.JobContext
-        ---@field git_status table<string, string>
+        ---@field git_status neotree.git.Status
         local ctx = {
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,
@@ -252,19 +259,19 @@ M.status_async = function(path, base, opts)
           batch_delay = opts.batch_delay or 10,
           max_lines = opts.max_lines or 100000,
         }
-        if not M.statuses[ctx.worktree_root] then
+        if not M.worktrees[ctx.worktree_root] then
           -- do a fast scan first to get basic things in
           local fast_args = make_git_status_args(git_status_porcelain_version, worktree_root, {
             untracked_files = "no",
           })
           git_status_job(ctx, fast_args, function(fast_status)
-            change_git_status(worktree_root, fast_status)
+            change_worktree_git_status(worktree_root, fast_status)
             -- Get ignored statuses
             git_ls_files.ignored_job(ctx, function(ignored_paths)
               for _, ignored_path in ipairs(ignored_paths) do
                 ctx.git_status[ignored_path] = "!"
               end
-              change_git_status(worktree_root, ctx.git_status)
+              change_worktree_git_status(worktree_root, ctx.git_status)
             end)
             -- Rescan for the full status
             git_utils.git_job(
@@ -293,14 +300,14 @@ M.status_async = function(path, base, opts)
                 end
 
                 git_status_job(ctx, nil, function(full_status)
-                  change_git_status(worktree_root, full_status)
+                  change_worktree_git_status(worktree_root, full_status)
                 end)
               end
             )
           end)
         else
           git_status_job(ctx, nil, function(full_status)
-            change_git_status(worktree_root, full_status)
+            change_worktree_git_status(worktree_root, full_status)
           end)
         end
       end)
@@ -313,7 +320,7 @@ do
   ---@param path string
   ---@return boolean
   local might_be_in_git_repo = function(path)
-    local git_dir_from_env = vim.env.GIT_DIR or vim.env.GIT_COMMON_DIR
+    local git_dir_from_env = uv.os_getenv("GIT_DIR") or uv.os_getenv("GIT_COMMON_DIR")
     if git_dir_from_env then
       local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
       return not not stat
@@ -328,7 +335,7 @@ do
 
     local upward_status = false
     local statuses = {}
-    for worktree_root, git_status in pairs(M.statuses) do
+    for worktree_root, git_status in pairs(M.worktrees) do
       statuses[worktree_root] = git_status
       if utils.is_subpath(worktree_root, state.path, true) then
         upward_status = true
@@ -382,33 +389,65 @@ do
   end
 end
 
+---@param worktree_root string?
+---@param git_dir string
+---@return boolean registered_new_worktree
+M.try_register_worktree = function(worktree_root, git_dir)
+  if not worktree_root or M.worktrees[worktree_root] then
+    return false
+  end
+
+  -- new root dir, invalidate root dir lookups
+  M._upward_worktree_cache = setmetatable({}, weak_kv)
+
+  local new_worktree = {
+    git_dir = log.assert(git_dir, "Git dir should exist before registering"),
+  }
+  local config = require("neo-tree").config
+  if config.git_status_async and config.filesystem.use_libuv_file_watcher then
+    new_worktree.watcher = require("neo-tree.git.watch").watch(worktree_root, git_dir)
+  end
+  M.worktrees[worktree_root] = new_worktree
+  return true
+end
+
+---@param worktree_root string
+local delete_worktree = function(worktree_root)
+  local existing_worktree = log.assert(
+    M.worktrees[worktree_root],
+    "Could not find worktree to delete for " .. worktree_root
+  )
+  M.worktrees[existing_worktree] = nil
+  -- deleting worktree, invalidate root dir lookups
+  M._upward_worktree_cache = setmetatable({}, weak_kv)
+  vim.schedule(function()
+    ---@class neotree.event.args.GIT_STATUS_CHANGED
+    local args = {
+      git_root = worktree_root,
+    }
+    events.fire_event(events.GIT_STATUS_CHANGED, args)
+  end)
+end
+
 ---Invalidate cache for path and parents, updating trees as needed
 ---@param path string
-local invalidate_cache = function(path)
+local invalidate_upward_worktrees = function(path)
   ---@type string?
-  local parent = utils.split_path(path)
+  local parent = path
 
   while parent do
-    local cache_entry = M.statuses[parent]
-    if cache_entry ~= nil then
-      change_git_status(parent, nil)
+    local worktree = M.worktrees[parent]
+    if worktree ~= nil then
+      delete_worktree(parent)
     end
     parent = utils.split_path(parent)
   end
 end
 
----@param ok boolean
 ---@param path string
 ---@param stdout_lines string[]
----@param stderr_lines string[]?
 ---@return string[] normalized_stdout_paths
-local process_output = function(ok, path, stdout_lines, stderr_lines)
-  if not ok then
-    log.trace("GIT ROOT ERROR", stderr_lines or {})
-    invalidate_cache(path)
-    return {}
-  end
-
+local process_output = function(path, stdout_lines)
   local lines = stdout_lines
   for i, p in ipairs(stdout_lines) do
     if #p == 0 then
@@ -429,7 +468,7 @@ end
 ---@return string? worktree_root
 ---@return string? git_dir
 ---@return string? superproject_worktree_root
-local get_worktree_info_slow = function(path, callback)
+local find_worktree_info_slow = function(path, callback)
   local base_args = {
     "-C",
     path,
@@ -438,8 +477,8 @@ local get_worktree_info_slow = function(path, callback)
   ---@type string[][]
   local argument_lists = {}
   for _, arg in ipairs({
-    "--show-toplevel",
     "--absolute-git-dir",
+    "--show-toplevel",
     "--show-superproject_worktree_root",
   }) do
     local args = { unpack(base_args) }
@@ -447,21 +486,12 @@ local get_worktree_info_slow = function(path, callback)
     argument_lists[#argument_lists + 1] = args
   end
 
-  local worktree_root = vim.fn.system({ "git", unpack(argument_lists[1]) })
-  if vim.v.shell_error ~= 0 then
-    return
-  end
-  local git_dir = vim.fn.system({ "git", unpack(argument_lists[2]) })
-  if vim.v.shell_error ~= 0 then
-    return
-  end
+  local git_dir = vim.fn.system({ "git", unpack(argument_lists[1]) })
+  local worktree_root = vim.fn.system({ "git", unpack(argument_lists[2]) })
   local superproject_worktree_root = vim.fn.system({ "git", unpack(argument_lists[3]) })
-  if vim.v.shell_error ~= 0 then
-    return
-  end
   local paths = { worktree_root, git_dir, superproject_worktree_root }
   for i, p in ipairs(paths) do
-    if #p == 0 then
+    if #p == 0 or vim.startswith(p, "fatal:") then
       paths[i] = nil
     elseif utils.is_windows then
       paths[i] = utils.windowize_path(p)
@@ -476,68 +506,79 @@ local get_worktree_info_slow = function(path, callback)
   return paths[1], paths[2], paths[3]
 end
 
----Finds the worktree root and the corresponding git directory, already normalized.
+---Finds the worktree root and the corresponding git directory, already normalized. If a new worktree is found, will
+---cause neo-tree to start tracking it.
 ---@param path string? Defaults to cwd.
 ---@param callback fun(worktree_root: string?, git_dir: string?, superproject_worktree_root: string?)? Async if provided.
----@return string? worktree_root
 ---@return string? git_dir
+---@return string? worktree_root
 ---@return string? superproject_worktree_root
 M.find_worktree_info = function(path, callback)
   path = path or log.assert(uv.cwd())
 
   if path:find("\n", 1, true) then
-    return get_worktree_info_slow(path, callback)
+    return find_worktree_info_slow(path, callback)
   end
 
   local rev_parse_args = {
     "-C",
     path,
     "rev-parse",
-    "--show-toplevel",
-    "--absolute-git-dir",
-    "--show-superproject-working-tree",
+
+    "--absolute-git-dir", -- the order is this because absolute-git-dir won't fail in the git dir, but show-toplevel will.
+    "--show-toplevel", -- stdout if in worktree, stderr if in git dir, nothing if neither
+    "--show-superproject-working-tree", -- stdout if in submodule, nothing if neither
   }
 
   if callback then
-    assert(type(callback) == "function", "callback for find_worktree_info should be a function")
+    log.assert(type(callback) == "function", "callback for find_worktree_info should be a function")
     git_utils.git_job(rev_parse_args, function(code, stdout_chunks, stderr_chunks)
       local full_stdout = table.concat(stdout_chunks, "")
       local stdout_lines = {}
       for line in utils.gsplit_plain(full_stdout, "\n") do
         stdout_lines[#stdout_lines + 1] = line
       end
-      local info = process_output(code == 0, path, stdout_lines, stderr_chunks)
-      local worktree_root, git_dir, superproject_worktree_root = unpack(info)
+      local info = process_output(path, stdout_lines)
+      local git_dir, worktree_root, superproject_worktree_root = unpack(info)
+      if not git_dir then
+        invalidate_upward_worktrees(path)
+      end
+      M.try_register_worktree(worktree_root, git_dir)
       callback(worktree_root, git_dir, superproject_worktree_root)
     end)
     return
   end
 
   local ok, rev_parse_lines = utils.execute_command({ "git", unpack(rev_parse_args) })
-  local info = process_output(ok, path, rev_parse_lines, rev_parse_lines)
-  local worktree_root, git_dir, superproject_worktree_root = unpack(info)
+  local info = process_output(path, rev_parse_lines)
+  local git_dir, worktree_root, superproject_worktree_root = unpack(info)
+  if not git_dir then
+    invalidate_upward_worktrees(path)
+  end
+  M.try_register_worktree(worktree_root, git_dir)
   return worktree_root, git_dir, superproject_worktree_root
 end
 
 ---@type table<string, string|false>
-M._root_dir_cache = setmetatable({}, weak_kv)
+M._upward_worktree_cache = setmetatable({}, weak_kv)
 
 ---Given a normalized path, find whether a git status exists for it.
 ---@param path string A normalized path.
----@return string|false? worktree_root
+---@return string? worktree_root
 ---@return neotree.git.Status? status
 M.find_existing_status = function(path)
-  local cached = M._root_dir_cache[path]
+  local cached = M._upward_worktree_cache[path]
   if cached ~= nil then
-    return cached, cached and M.statuses[cached]
+    local worktree = cached and M.worktrees[cached]
+    return cached or nil, worktree and worktree.status
   end
-  for root_dir, status in pairs(M.statuses) do
-    if utils.is_subpath(root_dir, path, true) then
-      M._root_dir_cache[path] = root_dir
-      return root_dir, status
+  for worktree_root, worktree in pairs(M.worktrees) do
+    if utils.is_subpath(worktree_root, path, true) then
+      M._upward_worktree_cache[path] = worktree_root
+      return worktree_root, worktree.status
     end
   end
-  M._root_dir_cache[path] = false
+  M._upward_worktree_cache[path] = false
 end
 
 ---Given a normalized path, find the existing status code for it.
@@ -564,10 +605,6 @@ M.find_existing_status_code = function(path)
       break
     end
     status = git_status[parent]
-  end
-
-  if not status then
-    return nil, nil
   end
 
   if status ~= "!" and status ~= "?" then

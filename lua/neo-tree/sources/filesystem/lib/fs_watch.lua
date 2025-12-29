@@ -1,7 +1,5 @@
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local git = require("neo-tree.git")
-local utils = require("neo-tree.utils")
 local uv = vim.uv or vim.loop
 
 local M = {}
@@ -59,28 +57,19 @@ end
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
 ---@param custom_callback fun(err: string?, fname: string)? The callback to call when a change is detected.
----@param allow_git_watch boolean? Allow watching of git folders.
-M.watch_folder = function(path, custom_callback, allow_git_watch)
-  if not allow_git_watch then
-    local unix_path = path:gsub("\\", "/")
-    if unix_path:find("/.git/", 1, true) or vim.endswith(".git", "/.git") then
-      -- git folders seem to throw off fs events constantly.
-      log.debug("watch_folder(path): Skipping git folder:", path)
-      return
-    end
-  end
-
+---@return neotree.sources.filesystem.Watcher?
+M.watch_folder = function(path, custom_callback)
   local w = watchers[path]
   if w then
     log.trace("Incrementing references for fs watch on:", path)
     w.references = w.references + 1
-    return
+    return w
   end
   log.trace("Creating new fs watch on:", path)
   local handle, err = uv.new_fs_event()
   if not handle then
     log.debug("Can't make fs event:", err)
-    return
+    return nil
   end
   w = Watcher:new({
     handle = handle,
@@ -102,6 +91,7 @@ M.watch_folder = function(path, custom_callback, allow_git_watch)
   })
   log.trace("Incrementing references for fs watch on:", path)
   watchers[path] = w
+  return w
 end
 
 M.updated_watched = function()
