@@ -14,10 +14,10 @@ M.watch = function(worktree_root, git_dir)
   end
   local watcher = fs_watch.watch_folder(git_dir, function(err, fname)
     if fname then
-      if fname:match("^.+%.lock$") then
+      if vim.endswith(fname, ".lock") then
         return
       end
-      if fname:match("^%._null-ls_.+") then
+      if fname:find("_null-ls_", 1, true) then
         -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
         return
       end

@@ -52,11 +52,10 @@ local on_directory_loaded = function(context, dir_path)
         return
       end
     end
-
-    if nt.config.git_status_async then
+    if nt.config.enable_git_status and nt.config.git_status_async then
       for i, child in ipairs(folder.children) do
-        if vim.endswith(child.path, ".git") and not git.find_existing_status(child.path) then
-          -- try running a status
+        if vim.endswith(child.path, ".git") and not git.find_existing_worktree(child.path) then
+          -- try running a status (and potentially start tracking)
           git.status_async(target_path, nil, nt.config.git_status_async_options)
           break
         end
@@ -68,12 +67,13 @@ local on_directory_loaded = function(context, dir_path)
         log.error("file_event_callback: ", err)
         return
       end
+
       if context.is_a_never_show_file(fname) then
         -- don't fire events for nodes that are designated as "never show"
         return
-      else
-        events.fire_event(events.FS_EVENT, { afile = target_path })
       end
+
+      events.fire_event(events.FS_EVENT, { afile = target_path })
     end)
 
     log.trace("Adding fs watcher for", target_path)

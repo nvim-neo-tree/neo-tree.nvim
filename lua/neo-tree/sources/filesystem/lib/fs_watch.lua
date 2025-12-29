@@ -56,9 +56,9 @@ end
 
 ---Watch a directory for changes to it's children. Not recursive.
 ---@param path string The directory to watch.
----@param custom_callback fun(err: string?, fname: string)? The callback to call when a change is detected.
+---@param callback fun(err: string?, fname: string) The callback to call when a change is detected.
 ---@return neotree.sources.filesystem.Watcher?
-M.watch_folder = function(path, custom_callback)
+M.watch_folder = function(path, callback)
   local w = watchers[path]
   if w then
     log.trace("Incrementing references for fs watch on:", path)
@@ -75,19 +75,7 @@ M.watch_folder = function(path, custom_callback)
     handle = handle,
     references = 1,
     active = false,
-    callback = custom_callback or function(err, fname)
-      if fname and fname:match("^%.null[-]ls_.+") then
-        -- null-ls temp file: https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1075
-        return
-      end
-      if err then
-        log.error("file_event_callback: ", err)
-        return
-      end
-      vim.schedule(function()
-        events.fire_event(events.FS_EVENT, { afile = path })
-      end)
-    end,
+    callback = callback,
   })
   log.trace("Incrementing references for fs watch on:", path)
   watchers[path] = w

@@ -334,11 +334,9 @@ M.git_toggle_file_stage = function(state)
     return
   end
   local path = node:get_id()
-  local _, git_status = git.find_existing_status(path)
-  git_status = log.assert(git_status, "No git status found for this state")
-  local status = git_status[path]
+  local status = git.find_existing_status_code(path)
+
   if not status then
-    log.warn("No status found for path", path)
     return
   end
 
