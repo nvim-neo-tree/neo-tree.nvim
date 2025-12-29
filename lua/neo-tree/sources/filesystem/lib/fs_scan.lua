@@ -116,20 +116,6 @@ local render_context = function(context)
   local state = context.state
   local root = context.root
   local parent_id = context.parent_id
-
-  if not parent_id and state.use_libuv_file_watcher and state.enable_git_status then
-    local path = root.path
-    if root.is_link then
-      path = utils.path_join(path, root.link_to)
-    end
-
-    log.trace("Looking for .git folder")
-    if nt.config.enable_git_status then
-      git.status_async(path, state.git_base, nt.config.git_status_async_options)
-    else
-      git.status(state.git_base, false, path)
-    end
-  end
   fs_watch.updated_watched()
 
   if root and root.children then
