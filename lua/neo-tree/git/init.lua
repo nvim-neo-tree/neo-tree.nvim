@@ -307,7 +307,8 @@ M.status_async = function(path, base, opts)
 
     log.trace("git.status_async called for", worktree_root)
 
-    utils.debounce("git_status_async@" .. worktree_root, function()
+    local event_id = "git_status_async@" .. worktree_root
+    utils.debounce(event_id, function()
       vim.schedule(function()
         local git_status_porcelain_version = get_status_porcelain_version()
         if not git_status_porcelain_version then

@@ -124,8 +124,11 @@ local render_context = function(context)
     end
 
     log.trace("Looking for .git folder")
-    local gs_async = require("neo-tree").config.git_status_async
-    git.find_worktree_info(path, gs_async and function() end or nil)
+    if nt.config.enable_git_status then
+      git.status_async(path, state.git_base, nt.config.git_status_async_options)
+    else
+      git.status(state.git_base, false, path)
+    end
   end
   fs_watch.updated_watched()
 
