@@ -598,7 +598,7 @@ M.find_existing_status_code = function(path)
 
   ---Check parents to see if the path is in a dir marked as untracked/ignored
   ---@type string?
-  local parent = path
+  local parent = utils.split_path(path)
   while not status do
     parent = utils.split_path(parent)
     if #parent < #worktree_root then
