@@ -185,7 +185,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     if config.git_status_async_options then
       git.status_async(state.path, state.git_base, config.git_status_async_options)
     else
-      git.status(state.git_base, nil, state.path)
+      git.status(state.git_base, false, state.path)
     end
   end
 end

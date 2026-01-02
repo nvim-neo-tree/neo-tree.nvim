@@ -23,11 +23,11 @@ describe("git parser", function()
           coroutine.yield(s)
         end
       end)
-      local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git_parser._parse_status_porcelain(2, git_root, iter)
+      local worktree_root = utils.is_windows and "C:\\" or "/asdf"
+      local status = git_parser.parse_status_porcelain(2, worktree_root, iter)
       ---@param path string
       local from_git_root = function(path)
-        return utils.path_join(git_root, path)
+        return utils.path_join(worktree_root, path)
       end
       assert.are.same({
         [from_git_root(".gitignore")] = "?",
@@ -76,7 +76,7 @@ describe("git parser", function()
         end
       end)
       local git_root = utils.is_windows and "C:\\" or "/asdf"
-      local status = git_parser._parse_status_porcelain(1, git_root, iter)
+      local status = git_parser.parse_status_porcelain(1, git_root, iter)
       local from_git_root = function(path)
         return utils.path_join(git_root, path)
       end
@@ -96,6 +96,45 @@ describe("git parser", function()
         [from_git_root("dir1")] = { "?" },
         [from_git_root("dir1/dir2")] = { "?" },
         [from_git_root("dir1/dir2/dir3")] = { "?" },
+      }, status)
+    end
+    local restore = test_utils.os_to_windows(false)
+    it("on unix", test)
+    test_utils.os_to_windows(true)
+    it("on windows", test)
+    restore()
+  end)
+
+  describe("parses git diff --name-status", function()
+    local diff_name_status_output = {
+      "M",
+      "lua/neo-tree/git/init.lua",
+      "M",
+      "lua/neo-tree/git/ls-files.lua",
+      "M",
+      "lua/neo-tree/git/parser.lua",
+      "M",
+      "lua/neo-tree/git/utils.lua",
+      "M",
+      "tests/neo-tree/git/parser_spec.lua",
+    }
+    local test = function()
+      local iter = coroutine.wrap(function()
+        for i, s in ipairs(diff_name_status_output) do
+          coroutine.yield(s)
+        end
+      end)
+      local worktree_root = utils.is_windows and "C:\\" or "/asdf"
+      local status = git_parser.parse_diff_name_status_output(worktree_root, false, iter)
+      local from_git_root = function(path)
+        return utils.path_join(worktree_root, path)
+      end
+      assert.are.same({
+        [from_git_root("lua/neo-tree/git/init.lua")] = "M.",
+        [from_git_root("lua/neo-tree/git/ls-files.lua")] = "M.",
+        [from_git_root("lua/neo-tree/git/parser.lua")] = "M.",
+        [from_git_root("lua/neo-tree/git/utils.lua")] = "M.",
+        [from_git_root("tests/neo-tree/git/parser_spec.lua")] = "M.",
       }, status)
     end
     local restore = test_utils.os_to_windows(false)

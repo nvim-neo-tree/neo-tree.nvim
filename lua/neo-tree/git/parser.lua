@@ -1,9 +1,10 @@
 local utils = require("neo-tree.utils")
 
 local M = {}
+
 ---@param path string
 ---@return string path_with_no_trailing_slash
-local trim_trailing_slash = function(path)
+local remove_trailing_unix_slash = function(path)
   return path:sub(-1, -1) == "/" and path:sub(1, -2) or path
 end
 
@@ -15,18 +16,81 @@ local UNTRACKED_BYTE = ("?"):byte()
 local IGNORED_BYTE = ("!"):byte()
 local parent_cache = setmetatable({}, { __mode = "kv" })
 
+---@param context neotree.git.JobContext
+---@vararg any
+---@return boolean
+local increment_batch_or_yield = function(context, ...)
+  context.lines_parsed = context.lines_parsed + 1
+  if context.lines_parsed >= context.max_lines then
+    return false
+  end
+  context.num_in_batch = context.num_in_batch + 1
+  if context.num_in_batch >= context.batch_size then
+    context.num_in_batch = 0
+    if coroutine.running() then
+      coroutine.yield(...)
+    end
+  end
+  return true
+end
+
 ---@class neotree.git.parser.BatchOpts
 ---@field batch_size integer
 ---@field max_lines integer
 
----Exposed only for testing, parses a porcelain version into
+local STATUS_PRIORITY_STRING = "U?MADTRC."
+---@param bubble_info string[][]
+---@param paths string[]
+---@param worktree_root string
+---@return neotree.git.Status parent_statuses
+local function create_parent_statuses(bubble_info, paths, worktree_root)
+  local parent_statuses = {}
+
+  local worktree_root_len = #worktree_root
+  for i = 1, #STATUS_PRIORITY_STRING do
+    local status = { STATUS_PRIORITY_STRING:sub(i, i) }
+    local list = bubble_info[i]
+    if not list then
+      break
+    end
+    -- bubble them up
+    for _, index in ipairs(list) do
+      local path = paths[index]
+      local parent
+      repeat
+        local cached = parent_cache[path]
+        if cached then
+          parent = cached
+        else
+          parent = utils.split_path(path)
+          if not parent then
+            break
+          end
+          parent_cache[path] = parent
+        end
+
+        if worktree_root_len >= #parent then
+          break
+        end
+        if parent_statuses[parent] ~= nil then
+          break
+        end
+
+        parent_statuses[parent] = status
+        path = parent
+      until false
+    end
+  end
+  return parent_statuses
+end
+
 ---@param porcelain_version 1|2
 ---@param worktree_root string The git status table to override, if any.
 ---@param status_iter fun():string? An iterator that returns each line of the status.
 ---@param skip_bubbling boolean?
 ---@param context neotree.git.JobContext?
 ---@return neotree.git.Status status
-M._parse_status_porcelain = function(
+M.parse_status_porcelain = function(
   porcelain_version,
   worktree_root,
   status_iter,
@@ -39,21 +103,6 @@ M._parse_status_porcelain = function(
   end
 
   local git_status = context and context.git_status or {}
-  local yield_if_batch_completed
-
-  if context then
-    assert(
-      coroutine.running(),
-      "job context shouldn't be provided if not being invoked as a coroutine"
-    )
-    yield_if_batch_completed = function()
-      context.num_in_batch = context.num_in_batch + 1
-      if context.num_in_batch >= context.batch_size then
-        coroutine.yield(git_status)
-        context.num_in_batch = 0
-      end
-    end
-  end
 
   local line = status_iter()
 
@@ -100,7 +149,9 @@ M._parse_status_porcelain = function(
       end
       line = status_iter()
       if context then
-        yield_if_batch_completed()
+        if not increment_batch_or_yield(context, git_status) then
+          break
+        end
       end
     end
   elseif porcelain_version == 2 then
@@ -172,7 +223,9 @@ M._parse_status_porcelain = function(
       paths[#paths + 1] = abspath
       statuses[#statuses + 1] = XY
       if context then
-        yield_if_batch_completed()
+        if not increment_batch_or_yield(context, git_status) then
+          break
+        end
       end
       line = status_iter()
     end
@@ -186,12 +239,14 @@ M._parse_status_porcelain = function(
   local path_start = porcelain_version == 2 and 3 or 4
 
   while line and line:byte(1, 1) == UNTRACKED_BYTE do
-    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
+    local abspath = git_root_dir .. remove_trailing_unix_slash(line:sub(path_start))
     paths[#paths + 1] = abspath
     statuses[#statuses + 1] = "?"
     line = status_iter()
     if context then
-      yield_if_batch_completed()
+      if not increment_batch_or_yield(context, git_status) then
+        break
+      end
     end
   end
 
@@ -241,61 +296,55 @@ M._parse_status_porcelain = function(
       end
     end
 
-    ---@type [integer[], string][]
-    local bubble_info = {
-      { unmerged, "U" },
-      { untracked, "?" },
-      { modified, "M" },
-      { added, "A" },
-      { deleted, "D" },
-      { typechanged, "T" },
-      { renamed, "R" },
-      { copied, "C" },
+    local prio_matrix = {
+      unmerged,
+      untracked,
+      modified,
+      added,
+      deleted,
+      typechanged,
+      renamed,
+      copied,
+      {},
     }
-    local parent_statuses = {}
-
-    for _, tuple in ipairs(bubble_info) do
-      local list, status = tuple[1], { tuple[2] }
-      -- bubble them up
-      for _, i in ipairs(list) do
-        local path = paths[i]
-        local parent
-        repeat
-          local cached = parent_cache[path]
-          if cached then
-            parent = cached
-          else
-            parent = utils.split_path(path)
-            if not parent then
-              break
-            end
-            parent_cache[path] = parent
+    for i, s in ipairs(statuses) do
+      -- simplify statuses to the highest priority ones
+      local a, b = string.byte(s, 1, 2)
+      if a then
+        local a_char = string.char(a)
+        local a_prio = assert(STATUS_PRIORITY_STRING:find(a_char, 1, true))
+        if b then
+          local b_char = string.char(b)
+          local b_prio = STATUS_PRIORITY_STRING:find(b_char, 1, true)
+          local list = prio_matrix[math.min(a_prio, b_prio)]
+          if list then
+            list[#list + 1] = i
           end
-
-          if #worktree_root >= #parent then
-            break
+        else
+          local list = prio_matrix[a_prio]
+          if list then
+            list[#list + 1] = i
           end
-          if parent_statuses[parent] ~= nil then
-            break
-          end
-
-          parent_statuses[parent] = status
-          path = parent
-        until false
-
-        if context then
-          yield_if_batch_completed()
         end
       end
     end
-
+    local parent_statuses = create_parent_statuses({
+      unmerged,
+      untracked,
+      modified,
+      added,
+      deleted,
+      typechanged,
+      renamed,
+      copied,
+    }, paths, worktree_root)
     for parent, status in pairs(parent_statuses) do
       git_status[parent] = status
     end
   end
 
   while line and line:byte(1, 1) == IGNORED_BYTE do
-    local abspath = git_root_dir .. trim_trailing_slash(line:sub(path_start))
+    local abspath = git_root_dir .. remove_trailing_unix_slash(line:sub(path_start))
     if utils.is_windows then
       abspath = utils.windowize_path(abspath)
     end
@@ -303,7 +352,9 @@ M._parse_status_porcelain = function(
     line = status_iter()
 
     if context then
-      yield_if_batch_completed()
+      if not increment_batch_or_yield(context, git_status) then
+        break
+      end
     end
   end
 
@@ -311,7 +362,7 @@ M._parse_status_porcelain = function(
 end
 
 ---@param x string
----@param y string
+---@param y string?
 M.status_code_is_conflict = function(x, y)
   local both_deleted_or_added = x == y and (x == "A" or x == "D")
   return both_deleted_or_added or (x == "U" or y == "U")
@@ -334,7 +385,7 @@ M.parse_ls_files_output = function(worktree_root, filepaths_iter, context)
   local paths = {}
   for relpath in filepaths_iter do
     if #relpath > 0 then
-      relpath = trim_trailing_slash(relpath)
+      relpath = remove_trailing_unix_slash(relpath)
       if utils.is_windows then
         relpath = utils.windowize_path(relpath)
       end
@@ -343,23 +394,135 @@ M.parse_ls_files_output = function(worktree_root, filepaths_iter, context)
       paths[#paths + 1] = abspath
 
       if context then
-        context.lines_parsed = context.lines_parsed + 1
-        if context.lines_parsed == context.max_lines then
-          return paths
-        end
-        context.num_in_batch = context.num_in_batch + 1
-        if context.num_in_batch >= context.batch_size then
-          context.num_in_batch = 0
-          if coroutine.running() then
-            coroutine.yield(paths)
-          else
-            break
-          end
+        if not increment_batch_or_yield(context) then
+          break
         end
       end
     end
   end
   return paths
+end
+
+---@param worktree_root string The git status table to override, if any.
+---@param diff_name_status_iter fun():string? An iterator that returns each line of the status.
+---@param skip_bubbling boolean?
+---@param context neotree.git.JobContext?
+---@return string[]
+M.parse_diff_name_status_output = function(
+  worktree_root,
+  skip_bubbling,
+  diff_name_status_iter,
+  context
+)
+  local worktree_root_dir = worktree_root
+  if not vim.endswith(worktree_root_dir, utils.path_separator) then
+    worktree_root_dir = worktree_root_dir .. utils.path_separator
+  end
+
+  if context then
+    assert(coroutine.running(), "context shouldn't be provided if not in non-main coroutine")
+  end
+
+  local diff_status = {}
+  -- output order is:
+  -- M
+  -- .github/workflows/.luarc-5.1.json
+  -- M
+  -- .github/workflows/.luarc-luajit-master.json
+  -- M
+  -- .github/workflows/ci.yml
+  -- A
+  -- .github/workflows/emmylua-check.yml
+  -- M
+  -- .github/workflows/luals-check.ymL
+  ---@type string[]
+  local paths = {}
+  ---@type string[]
+  local statuses = {}
+  for status_code in diff_name_status_iter do
+    status_code = status_code .. "."
+    statuses[#statuses + 1] = status_code
+    local path = diff_name_status_iter()
+    if #status_code > 0 and path then
+      path = remove_trailing_unix_slash(path)
+      if utils.is_windows then
+        path = utils.windowize_path(path)
+      end
+
+      local abspath = worktree_root_dir .. path
+      paths[#paths + 1] = abspath
+      diff_status[abspath] = status_code
+    end
+    if context then
+      if not increment_batch_or_yield(context, diff_status) then
+        break
+      end
+    end
+  end
+
+  if not skip_bubbling then
+    ---@type integer[]
+    local unmerged = {}
+    ---@type integer[]
+    local untracked = {}
+    ---@type integer[]
+    local modified = {}
+    ---@type integer[]
+    local added = {}
+    ---@type integer[]
+    local deleted = {}
+    ---@type integer[]
+    local typechanged = {}
+    ---@type integer[]
+    local renamed = {}
+    ---@type integer[]
+    local copied = {}
+
+    local prio_matrix = {
+      unmerged,
+      untracked,
+      modified,
+      added,
+      deleted,
+      typechanged,
+      renamed,
+      copied,
+      {},
+    }
+    for i, s in ipairs(statuses) do
+      -- simplify statuses to the highest priority ones
+      local a, b = string.byte(s, 1, 2)
+      if a then
+        local a_char = string.char(a)
+        local a_prio = assert(STATUS_PRIORITY_STRING:find(a_char, 1, true))
+        if b then
+          local b_char = string.char(b)
+          local b_prio = STATUS_PRIORITY_STRING:find(b_char, 1, true)
+          local list = prio_matrix[math.min(a_prio, b_prio)]
+          if list then
+            list[#list + 1] = i
+          end
+        else
+          local list = prio_matrix[a_prio]
+          if list then
+            list[#list + 1] = i
+          end
+        end
+      end
+    end
+
+    create_parent_statuses({
+      unmerged,
+      untracked,
+      modified,
+      added,
+      deleted,
+      typechanged,
+      renamed,
+      copied,
+    }, paths, worktree_root)
+  end
+  return diff_status
 end
 
 return M

@@ -244,7 +244,7 @@ M.git_status = function(config, node, state)
   end
 
   local path = node.path
-  local status = git.find_existing_status_code(path)
+  local status, status_from_diff = git.find_existing_status_code(path, state.git_base)
 
   if not status then
     return {}
@@ -255,7 +255,7 @@ M.git_status = function(config, node, state)
   end
 
   local symbols = config.symbols or {}
-  -- Whether the item is staged, unstaged, or ignored/untracked
+  -- Whether the item is staged, unstaged, ignored/untracked, or from a base
   local stage_sb
   local stage_hl
 

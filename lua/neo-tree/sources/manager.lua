@@ -60,7 +60,7 @@ end
 ---@field bufnr integer?
 ---@field dirty boolean
 ---@field position neotree.State.Position
----@field git_base string
+---@field git_base string?
 ---@field sort table
 ---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.CurrentPosition?
@@ -115,8 +115,6 @@ end
 ---@field tree NuiTree
 ---@field _in_pre_render boolean?
 
-local a = {}
-
 ---@param tabid integer
 ---@param sd table
 ---@param winid integer?
@@ -130,7 +128,6 @@ local function create_state(tabid, sd, winid)
   state.id = winid or tabid
   state.dirty = true
   state.position = {}
-  state.git_base = "HEAD"
   state.sort = { label = "Name", direction = 1 }
   state.clipboard = {}
   events.fire_event(events.STATE_CREATED, state)
