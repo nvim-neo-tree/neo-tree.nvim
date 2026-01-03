@@ -186,7 +186,7 @@ function compat.fs_normalize(path, opts)
 
   -- Expand environment variables if `opts.expand_env` isn't `false`
   if opts.expand_env == nil or opts.expand_env then
-    path = path:gsub("%$([%w_]+)", uv.os_getenv) --- @type string
+    path = path:gsub("%$([%w_]+)", os.getenv) --- @type string
   end
 
   if win then

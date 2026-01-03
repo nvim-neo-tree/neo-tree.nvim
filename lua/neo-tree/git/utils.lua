@@ -65,7 +65,7 @@ end
 ---@param path string
 ---@return boolean
 M.might_be_in_git_repo = function(path)
-  local git_dir_from_env = uv.os_getenv("GIT_DIR") or uv.os_getenv("GIT_COMMON_DIR")
+  local git_dir_from_env = os.getenv("GIT_DIR") or os.getenv("GIT_COMMON_DIR")
   if git_dir_from_env then
     local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
     return not not stat
