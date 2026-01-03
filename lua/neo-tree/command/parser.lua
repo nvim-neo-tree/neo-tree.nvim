@@ -159,7 +159,7 @@ local parse_arg = function(result, arg)
     if key == nil then
       -- maybe it's a git ref
       if M.verify_git_ref(value) then
-        result["git_base"] = value
+        result.git_base = value
         return
       end
       -- maybe it's a path

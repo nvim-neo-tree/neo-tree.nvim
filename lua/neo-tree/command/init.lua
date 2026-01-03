@@ -5,6 +5,7 @@ local utils = require("neo-tree.utils")
 local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
 local completion = require("neo-tree.command.completion")
+local git = require("neo-tree.git")
 local do_show_or_focus, handle_reveal
 
 local M = {
@@ -130,9 +131,16 @@ M.execute = function(args, state_config_override)
   end
 
   -- Handle setting git ref
-  local git_base_changed = state.git_base ~= args.git_base
+  local git_base_changed = false
   if utils.truthy(args.git_base) then
-    state.git_base = args.git_base
+    state.git_base_by_worktree = state.git_base_by_worktree or {}
+    local path = args.dir or state.path
+    local worktree_root = git.find_worktree_info(path)
+    if worktree_root then
+      local prev_git_base = state.git_base_by_worktree[worktree_root]
+      state.git_base_by_worktree[worktree_root] = args.git_base
+      git_base_changed = args.git_base ~= prev_git_base
+    end
   end
 
   -- Handle source selector option

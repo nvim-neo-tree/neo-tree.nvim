@@ -13,7 +13,7 @@ M.get_git_status = function(state)
     return
   end
   state.loading = true
-  local status_lookup, project_root = git.status(state.git_base, false, state.path, {
+  local status_lookup, project_root = git.status(state.path, state.git_base_by_worktree, false, {
     untracked_files = "all",
   })
   state.path = project_root or state.path or vim.fn.getcwd()

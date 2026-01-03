@@ -18,6 +18,7 @@ local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
+---@return neotree.State
 local get_state = function()
   return manager.get_state(M.name)
 end
@@ -140,10 +141,11 @@ M.setup = function(config, global_config)
   elseif global_config.enable_git_status then
     manager.subscribe(M.name, {
       event = events.BEFORE_RENDER,
+      ---@param state neotree.State
       handler = function(state)
         local this_state = get_state()
         if state == this_state then
-          git.status(state.git_base)
+          git.status(state.path, state.git_base_by_worktree)
         end
       end,
     })
