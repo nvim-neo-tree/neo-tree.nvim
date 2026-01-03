@@ -273,29 +273,6 @@ M.parse_status_porcelain = function(
     ---@type integer[]
     local copied = {}
 
-    local unmerged_idx = #unmerged > 0 and 1 or nil
-    for i, s in ipairs(statuses) do
-      -- simplify statuses to the highest priority ones
-      if i == unmerged_idx then
-        unmerged_idx = unmerged_idx < #unmerged and unmerged_idx + 1 or nil
-        -- skip
-      elseif s:find("?", 1, true) then
-        untracked[#untracked + 1] = i
-      elseif s:find("M", 1, true) then
-        modified[#modified + 1] = i
-      elseif s:find("A", 1, true) then
-        added[#added + 1] = i
-      elseif s:find("D", 1, true) then
-        deleted[#deleted + 1] = i
-      elseif s:find("T", 1, true) then
-        typechanged[#typechanged + 1] = i
-      elseif s:find("R", 1, true) then
-        renamed[#renamed + 1] = i
-      elseif s:find("C", 1, true) then
-        copied[#copied + 1] = i
-      end
-    end
-
     local prio_matrix = {
       unmerged,
       untracked,
@@ -511,7 +488,7 @@ M.parse_diff_name_status_output = function(
       end
     end
 
-    create_parent_statuses({
+    local parent_statuses = create_parent_statuses({
       unmerged,
       untracked,
       modified,
@@ -521,6 +498,9 @@ M.parse_diff_name_status_output = function(
       renamed,
       copied,
     }, paths, worktree_root)
+    for parent, status in pairs(parent_statuses) do
+      diff_status[parent] = status
+    end
   end
   return diff_status
 end
