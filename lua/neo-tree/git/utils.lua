@@ -70,6 +70,13 @@ M.might_be_in_git_repo = function(path)
     local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
     return not not stat
   end
+  local git_work_tree = os.getenv("GIT_WORK_TREE")
+  if git_work_tree then
+    git_work_tree = utils.normalize_path(git_work_tree)
+    if utils.is_subpath(git_work_tree, path) then
+      return true
+    end
+  end
   return #vim.fs.find({ ".git" }, { limit = 1, upward = true, path = path }) > 0
 end
 
