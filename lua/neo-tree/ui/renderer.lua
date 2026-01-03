@@ -1059,7 +1059,7 @@ local attach_position_autocmds = function(nt_bufnr, state)
     end,
   })
 
-  autocmd({ "CursorMoved", "ModeChanged" }, {
+  autocmd({ "CursorMoved", "ModeChanged", "WinScrolled" }, {
     buffer = nt_bufnr,
     callback = function(args)
       if state.bufnr ~= args.buf then
