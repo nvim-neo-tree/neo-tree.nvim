@@ -183,9 +183,9 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
   local config = require("neo-tree").config
   if config.enable_git_status and not is_search then
     if config.git_status_async_options then
-      git.status_async(state.path, state.git_base, config.git_status_async_options)
+      git.status_async(state.path, state.git_base_by_worktree, config.git_status_async_options)
     else
-      git.status(state.git_base, false, state.path)
+      git.status(state.path, state.git_base_by_worktree, false)
     end
   end
 end
@@ -393,8 +393,9 @@ M.setup = function(config, global_config)
   elseif global_config.enable_git_status and not global_config.git_status_async then
     manager.subscribe(M.name, {
       event = events.BEFORE_RENDER,
+      ---@param state neotree.State
       handler = function(state)
-        git.status(state.git_base, false, state.path)
+        git.status(state.path, state.git_base_by_worktree, false)
       end,
     })
   end

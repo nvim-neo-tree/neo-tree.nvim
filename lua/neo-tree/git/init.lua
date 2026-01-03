@@ -20,6 +20,8 @@ local M = {}
 
 ---@alias neotree.git.Status table<string, neotree.git.StatusCode?>
 
+---@alias neotree.git.BaseLookup table<string, string?>
+
 ---@class neotree.git.WorktreeInfo
 ---@field git_dir string
 ---@field status_diff table<string, neotree.git.Status?>
@@ -30,10 +32,11 @@ local M = {}
 ---@type table<string, neotree.git.WorktreeInfo?>
 M.worktrees = {}
 
----@param worktree_root string?
+---@param worktree_root string
 ---@param git_dir string
+---@param superproject_worktree_root string?
 ---@return boolean registered_new_worktree
-local try_register_worktree = function(worktree_root, git_dir)
+local try_register_worktree = function(worktree_root, git_dir, superproject_worktree_root)
   if not worktree_root or M.worktrees[worktree_root] then
     return false
   end
@@ -44,6 +47,7 @@ local try_register_worktree = function(worktree_root, git_dir)
   ---@type neotree.git.WorktreeInfo
   local new_worktree = {
     git_dir = log.assert(git_dir, "Git dir should exist before registering"),
+    superproject_worktree_root = superproject_worktree_root,
     status_diff = {},
   }
   local config = require("neo-tree").config
@@ -195,16 +199,17 @@ local make_git_status_args = function(porcelain_version, worktree_root, opts)
 end
 
 ---Get "git status" output for the given path
----@param base string? git ref base
+---@param path string? git ref base
+---@param base_lookup neotree.git.BaseLookup? git ref base
 ---@param skip_bubbling boolean? Whether to skip bubling up status to directories
 ---@param status_opts neotree.git._StatusCommandArgs? Path to run the git status command in, defaults to cwd.
 ---@return neotree.git.Status? git_status the neotree.Git.Status of the given root, if there's a valid git status there
 ---@return string? worktree_root
 ---@return neotree.git.Status? git_status_diff_vs_base
-M.status = function(base, skip_bubbling, path, status_opts)
+M.status = function(path, base_lookup, skip_bubbling, status_opts)
   path = path or assert(uv.cwd())
-  local worktree_root, git_dir = M.find_worktree_info(path)
-  if not utils.truthy(worktree_root) then
+  local worktree_root, git_dir, superproject_worktree_root = M.find_worktree_info(path)
+  if not worktree_root then
     if not git_dir then
       invalidate_upward_worktrees(path)
     end
@@ -218,7 +223,8 @@ M.status = function(base, skip_bubbling, path, status_opts)
   end
   try_register_worktree(
     worktree_root,
-    log.assert(git_dir, "git dir not found for worktree_root %s", worktree_root)
+    log.assert(git_dir, "git dir not found for worktree_root %s", worktree_root),
+    superproject_worktree_root
   )
   local status_cmd = {
     "git",
@@ -246,11 +252,19 @@ M.status = function(base, skip_bubbling, path, status_opts)
   )
 
   local git_status_over_base
-  if base then
-    git_status_over_base =
-      require("neo-tree.git.diff").diff_name_status(worktree_root, base, skip_bubbling)
+  if base_lookup and base_lookup[worktree_root] then
+    git_status_over_base = require("neo-tree.git.diff").diff_name_status(
+      worktree_root,
+      base_lookup[worktree_root],
+      skip_bubbling
+    )
   end
-  change_worktree_git_status(worktree_root, git_status, base, git_status_over_base)
+  change_worktree_git_status(
+    worktree_root,
+    git_status,
+    base_lookup and base_lookup[worktree_root],
+    git_status_over_base
+  )
   return git_status, worktree_root, git_status_over_base
 end
 
@@ -300,10 +314,10 @@ end
 
 ---Runs `git status` asynchronously, will update neo-tree once finished.
 ---@param path string path to run commands in
----@param base string? git ref base
+---@param base_lookup neotree.git.BaseLookup? git ref base
 ---@param opts neotree.Config.GitStatusAsync
-M.status_async = function(path, base, opts)
-  M.find_worktree_info(path, function(worktree_root, git_dir)
+M.status_async = function(path, base_lookup, opts)
+  M.find_worktree_info(path, function(worktree_root, git_dir, superproject_worktree_root)
     if not worktree_root then
       log.trace("status_async: not a git folder:", path)
       if not git_dir then
@@ -312,7 +326,7 @@ M.status_async = function(path, base, opts)
       return
     end
 
-    try_register_worktree(worktree_root, git_dir)
+    try_register_worktree(worktree_root, git_dir, superproject_worktree_root)
 
     log.trace("git.status_async called for", worktree_root)
 
@@ -336,6 +350,7 @@ M.status_async = function(path, base, opts)
           max_lines = opts.max_lines or 100000,
         }
         local existing_worktree = M.worktrees[ctx.worktree_root]
+        local base = base_lookup and base_lookup[worktree_root]
         if existing_worktree and existing_worktree.status then
           git_status_job(ctx, nil, function(full_status)
             change_worktree_git_status(worktree_root, full_status)
@@ -613,10 +628,10 @@ end
 
 ---Given a normalized path, find the existing status code for it.
 ---@param path string A normalized path.
----@param base string? Whether to also look up the status from a base
+---@param base_lookup neotree.git.BaseLookup? Whether to also look up the status from a base
 ---@return neotree.git.StatusCode? status_code
 ---@return boolean? status_from_base Whether the status was from a diff vs another commit.
-M.find_existing_status_code = function(path, base)
+M.find_existing_status_code = function(path, base_lookup)
   local worktree_root, worktree = M.find_existing_worktree(path)
   if not worktree or not worktree_root then
     return nil
@@ -632,8 +647,9 @@ M.find_existing_status_code = function(path, base)
     end
   end
 
-  if base then
-    local diff_status = worktree.status_diff[base]
+  if base_lookup then
+    local base = base_lookup[worktree_root]
+    local diff_status = base and worktree.status_diff[base]
     if diff_status then
       local diff_status_code = find_status_code_in_git_status(diff_status, worktree_root, path)
       if diff_status_code then

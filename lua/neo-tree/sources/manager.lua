@@ -60,7 +60,7 @@ end
 ---@field bufnr integer?
 ---@field dirty boolean
 ---@field position neotree.State.Position
----@field git_base string?
+---@field git_base_by_worktree table<string,string?>?
 ---@field sort table
 ---@field clipboard neotree.clipboard.Contents
 ---@field current_position neotree.State.CurrentPosition?
