@@ -43,7 +43,7 @@ local STATUS_PRIORITY_STRING = "U?MADTRC."
 ---@param paths string[]
 ---@param worktree_root string
 ---@return neotree.git.Status parent_statuses
-local function create_parent_statuses(bubble_info, paths, worktree_root)
+local function create_parent_status_map(bubble_info, paths, worktree_root)
   local parent_statuses = {}
 
   local worktree_root_len = #worktree_root
@@ -305,7 +305,7 @@ M.parse_status_porcelain = function(
         end
       end
     end
-    local parent_statuses = create_parent_statuses({
+    local parent_statuses = create_parent_status_map({
       unmerged,
       untracked,
       modified,
@@ -488,7 +488,7 @@ M.parse_diff_name_status_output = function(
       end
     end
 
-    local parent_statuses = create_parent_statuses({
+    local parent_statuses = create_parent_status_map({
       unmerged,
       untracked,
       modified,

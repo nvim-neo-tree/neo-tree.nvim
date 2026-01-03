@@ -135,6 +135,15 @@ describe("git parser", function()
         [from_git_root("lua/neo-tree/git/parser.lua")] = "M.",
         [from_git_root("lua/neo-tree/git/utils.lua")] = "M.",
         [from_git_root("tests/neo-tree/git/parser_spec.lua")] = "M.",
+
+        --parent bubbling
+        [from_git_root("lua/neo-tree/git")] = { "M" },
+        [from_git_root("lua/neo-tree")] = { "M" },
+        [from_git_root("lua")] = { "M" },
+
+        [from_git_root("tests/neo-tree/git")] = { "M" },
+        [from_git_root("tests/neo-tree")] = { "M" },
+        [from_git_root("tests")] = { "M" },
       }, status)
     end
     local restore = test_utils.os_to_windows(false)
