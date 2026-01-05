@@ -148,13 +148,13 @@ end
 local focus_next_git_modified = function(state, reverse)
   local node = assert(state.tree:get_node())
   local current_path = node:get_id()
-  local _, git_status = require("neo-tree.git").find_existing_worktree(current_path)
-  if not utils.truthy(git_status) then
+  local _, worktreeInfo = require("neo-tree.git").find_existing_worktree(current_path)
+  if not utils.truthy(worktreeInfo) then
     return
   end
-  ---@cast git_status -nil
+  ---@cast worktreeInfo -nil
   local paths = { current_path }
-  for path, status in pairs(git_status.status) do
+  for path, status in pairs(worktreeInfo.status) do
     if path ~= current_path and not vim.tbl_contains({ "!", "?" }, status) then
       --don't include files not in the current working directory
       if utils.is_subpath(state.path, path) then
