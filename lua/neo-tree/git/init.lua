@@ -553,8 +553,8 @@ end
 M.mark_gitignored = function(state, items)
   local upward_status = false
   local statuses = {}
-  for worktree_root, git_status in pairs(M.worktrees) do
-    statuses[worktree_root] = git_status
+  for worktree_root, worktree in pairs(M.worktrees) do
+    statuses[worktree_root] = worktree.status
     if utils.is_subpath(worktree_root, state.path, true) then
       upward_status = true
     end
