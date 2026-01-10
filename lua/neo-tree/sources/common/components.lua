@@ -746,18 +746,79 @@ M.created = function(config, node, state)
   return file_time(config, node, state, "birthtime")
 end
 
+-- Compute relative path between two absolute paths
+-- Workaround for https://github.com/nvim-lua/plenary.nvim/issues/411
+local relative_path = function(from, to)
+  if utils.abspath_prefix(from) ~= utils.abspath_prefix(to) then
+    return from
+  end
+
+  local f = from
+  local t = to
+  local steps_out_count = 0
+  while f ~= t do
+    if #f > #t then
+      steps_out_count = steps_out_count + 1
+      f = utils.split_path(f)
+    elseif #f < #t then
+      t = utils.split_path(t)
+    else
+      steps_out_count = steps_out_count + 1
+      f = utils.split_path(f)
+      t = utils.split_path(t)
+    end
+  end
+
+  local common_dir = assert(f)
+  local steps_out = string.rep(".." .. utils.path_separator, steps_out_count)
+  local relpath = steps_out .. to:sub(#common_dir + 2)
+  return relpath
+end
+
+---@param node neotree.FileNode
+local get_relative_link_target = function(node, state)
+  local cwd = state.path
+  local path = node.type == "directory" and node.path or utils.split_path(node.path)
+  local target = utils.normalize_path(utils.path_join(path, node.link_to))
+
+  -- If target is inside cwd, make it relative
+  if utils.is_subpath(cwd, target) then
+    return relative_path(node.path, target)
+  end
+
+  return node.link_to
+end
+
 ---@class (exact) neotree.Component.Common.SymlinkTarget : neotree.Component
 ---@field [1] "symlink_target"?
 ---@field text_format string?
+---@field target_display "auto"|"force_relative"|"force_absolute"?
 
 ---@param config neotree.Component.Common.SymlinkTarget
-M.symlink_target = function(config, node, _)
+M.symlink_target = function(config, node, state)
   if not node.is_link then
     return {}
   end
 
+  local target_display = config.target_display or "auto"
+  local target
+
+  if target_display == "force_absolute" then
+    if utils.abspath_prefix(node.link_to) then
+      target = node.link_to
+    else
+      local parent = utils.split_path(node.path)
+      target = utils.normalize_path(utils.path_join(parent, node.link_to))
+    end
+  elseif target_display == "force_relative" then
+    target = get_relative_link_target(node, state)
+  else -- "auto"
+    -- node.link_to already comes from uv.fs_readlink() in file-items.lua
+    target = node.link_to
+  end
+
   return {
-    text = (config.text_format or "-> %s"):format(node.link_to),
+    text = (config.text_format or "-> %s"):format(target),
     highlight = config.highlight or highlights.SYMBOLIC_LINK_TARGET,
   }
 end
