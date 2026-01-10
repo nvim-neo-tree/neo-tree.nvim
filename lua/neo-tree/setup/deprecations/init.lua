@@ -34,17 +34,18 @@ end
 ---@param new N
 ---@param converter (fun(old: O):N)?
 M.moved = function(old, new, converter)
-  if proxy.get(new) ~= nil then
-    -- new value already exists
+  local old_val = proxy.get(old)
+  if old_val == nil then
+    -- old value doesn't exist
+    return false
+  end
+  local new_val = proxy.get(new)
+  if new_val ~= nil then
+    -- new value and old value exist
     migrations[#migrations + 1] = ("New config field `%s` already exists, please remove the deprecated configuration at `%s`"):format(
       new,
       old
     )
-    return false
-  end
-  local old_val = proxy.get(old)
-  if old_val == nil then
-    -- old value doesn't exist
     return false
   end
   if type(converter) == "function" then
