@@ -43,7 +43,7 @@ end
 ---@param key_path neotree.utils.ProxyKeyPath[]
 ---@param parent any
 ---@return T t
-local function safe_table_recursive(root, key_path, parent)
+local function new_proxy_recursive(root, key_path, parent)
   -- local parent_mt = getmetatable(parent)
   -- local accesses = parent_mt and parent_mt.accesses or {}
   -- local assignments = parent_mt and parent_mt.assignments or {}
@@ -53,7 +53,7 @@ local function safe_table_recursive(root, key_path, parent)
       local new_kp = new_key_path(key_path, k)
       -- accesses[#accesses + 1] = new_kp
 
-      local proxy_branch = safe_table_recursive(root, new_kp, t)
+      local proxy_branch = new_proxy_recursive(root, new_kp, t)
       rawset(t, k, proxy_branch)
       return proxy_branch
     end,
@@ -86,19 +86,18 @@ local function safe_table_recursive(root, key_path, parent)
 end
 
 ---Return a table that proxies a different table - all methods of indexing will never error and any assignments to any nested fields will never
----overwrite the original table unless the field in question (and parent tables necessary) does not exist.
+---overwrite the original table unless the field in question does not exist.
 ---@generic T : table
----@param label string
 ---@return T t
-function proxy.new(dest, label)
-  return safe_table_recursive(dest, new_key_path({}, label))
+function proxy.new(dest)
+  return new_proxy_recursive(dest, new_key_path({}))
 end
 
 ---@generic V : table
 ---@param proxied V?
----@param on_val fun(val: V, proxy: table?, metatable: neotree.utils.ProxyMetatable)?
----@return V?
----@return table? proxy
+---@param on_val fun(val: V, proxy: V?, metatable: neotree.utils.ProxyMetatable)?
+---@return V? val
+---@return V? proxy
 ---@return neotree.utils.ProxyMetatable? metatable
 proxy.get = function(proxied, on_val)
   assert(type(proxied) == "table", "expected table, got " .. (tostring(proxied)))
@@ -107,7 +106,7 @@ proxy.get = function(proxied, on_val)
   value_proxy = proxied
   local root = assert(mt.root)
   local key_path = assert(mt.key_path)
-  value = vim.tbl_get(root, select(2, unpack(key_path)))
+  value = vim.tbl_get(root, select(1, unpack(key_path)))
   if value ~= nil and on_val then
     on_val(value, value_proxy, mt)
   end
@@ -124,7 +123,7 @@ proxy.set = function(proxied, new_val, force)
   local root = assert(mt.root)
   local key_path = assert(mt.key_path)
   local node = root
-  for i = 2, #key_path - 1 do
+  for i = 1, #key_path - 1 do
     local key = key_path[i]
     local val = node[key]
     if val == nil then

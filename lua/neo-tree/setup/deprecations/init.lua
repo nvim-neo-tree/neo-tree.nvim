@@ -11,10 +11,10 @@ M.show_migrations = function()
     for _, message in ipairs(migrations) do
       vim.list_extend(content, vim.split("\n## " .. message, "\n", { trimempty = false }))
     end
-    local header = "# Neo-tree configuration has been updated. Please review the changes below."
-    table.insert(content, 1, header)
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+    local header = "# Neo-tree configuration has been updated. Please review the changes below."
+    vim.api.nvim_buf_set_lines(buf, -1, -1, false, { header })
+    vim.api.nvim_buf_set_lines(buf, -1, -1, false, content)
     vim.bo[buf].buftype = "nofile"
     vim.bo[buf].bufhidden = "wipe"
     vim.bo[buf].buflisted = false
@@ -36,12 +36,16 @@ end
 M.moved = function(old, new, converter)
   if proxy.get(new) ~= nil then
     -- new value already exists
-    return
+    migrations[#migrations + 1] = ("New config field `%s` already exists, please remove the deprecated configuration at `%s`"):format(
+      new,
+      old
+    )
+    return false
   end
   local old_val = proxy.get(old)
   if old_val == nil then
     -- old value doesn't exist
-    return
+    return false
   end
   if type(converter) == "function" then
     old_val = converter(old_val)
@@ -53,24 +57,28 @@ M.moved = function(old, new, converter)
     old,
     new
   )
+  return true
 end
 
 ---@param proxied any
 M.moved_inside = function(proxied, new_inside, converter)
   local old_value = proxy.get(proxied)
-  if type(old_value) ~= "nil" and type(old_value) ~= "table" then
-    if type(converter) == "function" then
-      old_value = converter(old_value)
-    end
-    local tbl = {
-      [new_inside] = old_value,
-    }
-    proxy.set(proxied, tbl)
-    migrations[#migrations + 1] = ("The `%s` option has been replaced with a table, please move to `%s`."):format(
-      proxied,
-      tostring(proxied) .. "." .. new_inside
-    )
+  if type(old_value) == "nil" or type(old_value) == "table" then
+    return false
   end
+
+  if type(converter) == "function" then
+    old_value = converter(old_value)
+  end
+  local tbl = {
+    [new_inside] = old_value,
+  }
+  proxy.set(proxied, tbl)
+  migrations[#migrations + 1] = ("The `%s` option has been replaced with a table, please move to `%s`."):format(
+    proxied,
+    tostring(proxied) .. "." .. new_inside
+  )
+  return true
 end
 
 ---@param proxied any
@@ -91,14 +99,16 @@ end
 ---@param new_value T
 M.renamed_value = function(proxied, old_value, new_value)
   local value = proxy.get(proxied)
-  if value == old_value then
-    proxy.set(proxied, new_value)
-    migrations[#migrations + 1] = ("The `%s=%s` option has been renamed to `%s`."):format(
-      proxied,
-      old_value,
-      new_value
-    )
+  if value ~= old_value then
+    return false
   end
+  proxy.set(proxied, new_value)
+  migrations[#migrations + 1] = ("The `%s=%s` option has been renamed to `%s`."):format(
+    proxied,
+    old_value,
+    new_value
+  )
+  return true
 end
 
 ---@return neotree.Config.SourceSelector.Item[]
@@ -131,7 +141,6 @@ M.migrate = function(user_config)
   ---@field enable_normal_mode_for_inputs boolean?
   local old = proxy.new(user_config) --[[@as neotree._deprecated.Config]]
   local new = proxy.new(user_config) --[[@as neotree.Config]]
-  local old_fs_filters = old.filesystem.filters
 
   ---@class neotree._deprecated.Config.Filesystem : neotree.Config.Filesystem
   ---@field filters neotree._deprecated.Config.Filesystem.Filters?
@@ -142,18 +151,20 @@ M.migrate = function(user_config)
   ---@class neotree._deprecated.Config.Buffers : neotree.Config.Buffers
   ---@field follow_current_file boolean?
 
-  if proxy.get(old_fs_filters) then
+  proxy.get(old.filesystem.filters, function(_, old_fs_filters)
     ---@class neotree._deprecated.Config.Filesystem.Filters : neotree.Config.Filesystem.FilteredItems
     ---@field show_hidden boolean?
     ---@field respect_gitignore boolean?
     ---@field gitignore_source any
 
-    assert(old_fs_filters)
-    M.moved(old_fs_filters, new.filesystem.filtered_items)
-    M.moved(old_fs_filters.show_hidden, new.filesystem.filtered_items.hide_dotfiles, opposite)
-    M.moved(old_fs_filters.respect_gitignore, new.filesystem.filtered_items.hide_gitignored)
+    local new_filtered_items = assert(new.filesystem.filtered_items)
+    if M.moved(old_fs_filters, new_filtered_items) then
+      old_fs_filters = new_filtered_items
+    end
+    M.moved(old_fs_filters.show_hidden, new_filtered_items.hide_dotfiles, opposite)
+    M.moved(old_fs_filters.respect_gitignore, new_filtered_items.hide_gitignored)
     M.removed(old_fs_filters.gitignore_source)
-  end
+  end)
 
   ---@class neotree._deprecated.Config.Filesystem.FilteredItems : neotree.Config.Filesystem.FilteredItems
   ---@field gitignore_source any
