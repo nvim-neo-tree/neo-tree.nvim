@@ -772,11 +772,6 @@ local relative_path = function(from, to)
   local common_dir = assert(f)
   local steps_out = string.rep(".." .. utils.path_separator, steps_out_count)
   local relpath = steps_out .. from:sub(#common_dir + 2)
-  vim.print({
-    from = from,
-    to = to,
-    relpath = relpath,
-  })
   return relpath
 end
 
