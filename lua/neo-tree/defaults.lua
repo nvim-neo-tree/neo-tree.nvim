@@ -291,7 +291,7 @@ local config = {
     },
     symlink_target = {
       enabled = false,
-      target_display = "force_relative", -- "auto", "force_relative", or "force_absolute"
+      target_display = "auto", -- "auto", "force_relative", or "force_absolute"
       text_format = " ➛ %s", -- %s will be replaced with the symlink target's path.
     },
   },
