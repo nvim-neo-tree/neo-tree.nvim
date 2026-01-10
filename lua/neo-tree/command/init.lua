@@ -44,7 +44,7 @@ M.execute = function(args, state_config_override)
   nt.ensure_config()
 
   if args.source == "migrations" then
-    require("neo-tree.setup.deprecations.init").show_migrations()
+    require("neo-tree.setup.deprecations").show_migrations()
     return
   end
 

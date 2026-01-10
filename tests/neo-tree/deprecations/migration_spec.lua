@@ -37,7 +37,7 @@
 --   end)
 -- end)
 
-local deprecations = require("neo-tree.setup.deprecations.init")
+local deprecations = require("neo-tree.setup.deprecations")
 describe("deprecation module2", function()
   ---@type neotree._deprecated.Config
   ---@diagnostic disable-next-line: missing-fields
