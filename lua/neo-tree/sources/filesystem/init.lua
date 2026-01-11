@@ -402,12 +402,10 @@ M.setup = function(config, global_config)
 
   -- Respond to git events from git_status source or Fugitive
   if global_config.enable_git_status then
-    if not global_config.git_status_async then
-      manager.subscribe(M.name, {
-        event = events.GIT_EVENT,
-        handler = wrap(manager.refresh),
-      })
-    end
+    manager.subscribe(M.name, {
+      event = events.GIT_EVENT,
+      handler = wrap(manager.refresh),
+    })
     manager.subscribe(M.name, {
       event = events.GIT_STATUS_CHANGED,
       handler = wrap(manager.git_status_changed),
