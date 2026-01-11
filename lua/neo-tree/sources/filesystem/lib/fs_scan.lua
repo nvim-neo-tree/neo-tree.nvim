@@ -51,11 +51,15 @@ local on_directory_loaded = function(context, dir_path)
         return
       end
     end
-    if nt.config.enable_git_status and nt.config.git_status_async then
+    if nt.config.enable_git_status then
       for i, child in ipairs(folder.children) do
         if vim.endswith(child.path, ".git") and not git.find_existing_worktree(child.path) then
           -- try running a status (and potentially start tracking)
-          git.status_async(target_path, nil, nt.config.git_status_async_options)
+          if nt.config.git_status_async then
+            git.status_async(target_path, nil, nt.config.git_status_async_options)
+          else
+            git.status(target_path, nil, false)
+          end
           break
         end
       end
