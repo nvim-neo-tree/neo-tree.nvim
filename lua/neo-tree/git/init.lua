@@ -37,25 +37,37 @@ M.worktrees = {}
 ---@param superproject_worktree_root string?
 ---@return boolean registered_new_worktree
 local try_register_worktree = function(worktree_root, git_dir, superproject_worktree_root)
-  if not worktree_root or M.worktrees[worktree_root] then
+  if not worktree_root then
     return false
   end
 
-  -- new root dir, invalidate root dir lookups
-  M._upward_worktree_cache = setmetatable({}, weak_kv)
-
+  local new_worktree = false
   ---@type neotree.git.WorktreeInfo
-  local new_worktree = {
-    git_dir = log.assert(git_dir, "Git dir should exist before registering"),
-    superproject_worktree_root = superproject_worktree_root,
-    status_diff = {},
-  }
-  local config = require("neo-tree").config
-  if config.git_status_async and config.filesystem.use_libuv_file_watcher then
-    new_worktree.watcher = require("neo-tree.git.watch").watch(worktree_root, git_dir)
+  local worktree = M.worktrees[worktree_root]
+
+  if not worktree then
+    new_worktree = true
+    -- new root dir, invalidate root dir lookups
+    M._upward_worktree_cache = setmetatable({}, weak_kv)
+
+    worktree = {
+      git_dir = log.assert(git_dir, "Git dir should exist before registering"),
+      superproject_worktree_root = superproject_worktree_root,
+      status_diff = {},
+    }
+    M.worktrees[worktree_root] = worktree
   end
-  M.worktrees[worktree_root] = new_worktree
-  return true
+
+  local config = require("neo-tree").config
+  if config.filesystem.use_libuv_file_watcher then
+    -- Fix issue(https://github.com/nvim-neo-tree/neo-tree.nvim/issues/724)
+    -- After each render, there will do watcher.references - 1. When watcher.references == 0,
+    -- the watcher will stop. Therefore, every time a git status refresh is triggered,
+    -- watch_folder need to be triggered to do watcher.references + 1.
+    worktree.watcher = require("neo-tree.git.watch").watch(worktree_root, git_dir)
+  end
+
+  return new_worktree
 end
 
 ---@param worktree_root string
