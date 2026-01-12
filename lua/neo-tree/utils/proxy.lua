@@ -122,7 +122,7 @@ function proxy.new(t, enable_tracking, return_primitives)
   end
   local p = new_proxy_recursive(t, proxy._new_key_path({}), metadata)
   getmetatable(p).metadata = metadata
-  return p
+  return p, metadata
 end
 
 ---@generic V : table
