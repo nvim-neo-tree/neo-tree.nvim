@@ -1,4 +1,5 @@
 local typecheck = require("neo-tree.health.typecheck")
+local proxy = require("neo-tree.utils.proxy")
 local health = vim.health
 
 local M = {}
@@ -45,6 +46,32 @@ function M.check()
 end
 
 local validate = typecheck.validate
+---@generic T
+---@param proxied T
+---@param validator neotree.health.Validator<T>
+---@param optional? boolean Whether value can be nil
+---@param message? string message when validation fails
+---@param on_invalid? fun(err: string, value: T):boolean? What to do when a (nested) validation fails, return true to throw error
+local pvalidate = function(proxied, validator, optional, message, on_invalid)
+  vim.print(tostring(proxied), type(proxied))
+  return validate(tostring(proxied), proxied, validator, optional, message, on_invalid)
+end
+---@param t table
+---@return string[]
+local function get_all_key_path_strings(t, key_path_strings, stack)
+  key_path_strings = key_path_strings or {}
+  stack = stack or {}
+  for k, v in pairs(t) do
+    stack[#stack + 1] = k
+    if type(v) == "table" then
+      get_all_key_path_strings(v, key_path_strings, stack)
+    else
+      key_path_strings[#key_path_strings + 1] = proxy._key_path_tostring(stack)
+    end
+    stack[#stack] = nil
+  end
+  return key_path_strings
+end
 
 ---@module "neo-tree.types.config"
 ---@param config neotree.Config.Base
@@ -53,9 +80,9 @@ function M.check_config(config)
   ---@type [string, string?][]
   local errors = {}
   local verbose = vim.o.verbose > 0
-  local valid, missed = validate(
-    "config",
-    config,
+  local proxied_config = proxy.new(config, true, true)
+  local valid = pvalidate(
+    proxied_config,
     function(cfg)
       ---@class neotree.health.Validator.Generators
       local v = {
@@ -64,7 +91,7 @@ function M.check_config(config)
           ---@param arr T[]
           return function(arr)
             for i, val in ipairs(arr) do
-              validate(("[%d]"):format(i), val, validator)
+              pvalidate(("[%d]"):format(i), val, validator)
             end
           end
         end,
@@ -96,27 +123,27 @@ function M.check_config(config)
         Filesystem = {
           ---@param follow_current_file neotree.Config.Filesystem.FollowCurrentFile
           FollowCurrentFile = function(follow_current_file)
-            validate("enabled", follow_current_file.enabled, "boolean", true)
-            validate("leave_dirs_open", follow_current_file.leave_dirs_open, "boolean", true)
+            pvalidate(follow_current_file.enabled, "boolean", true)
+            pvalidate(follow_current_file.leave_dirs_open, "boolean", true)
           end,
         },
 
         ---@param window neotree.Config.Window
         Window = function(window)
-          validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
+          pvalidate(window.mappings, "table") -- TODO: More specific validation for mappings table
         end,
         SourceSelector = {
           ---@param item neotree.Config.SourceSelector.Item
           Item = function(item)
-            validate("source", item.source, "string")
-            validate("padding", item.padding, { "number", "table" }, true) -- TODO: More specific validation for padding table
-            validate("separator", item.separator, { "string", "table" }, true) -- TODO: More specific validation for separator table
+            pvalidate(item.source, "string")
+            pvalidate(item.padding, { "number", "table" }, true) -- TODO: More specific validation for padding table
+            pvalidate(item.separator, { "string", "table" }, true) -- TODO: More specific validation for separator table
           end,
           ---@param sep neotree.Config.SourceSelector.Separator
           Separator = function(sep)
-            validate("left", sep.left, "string")
-            validate("right", sep.right, "string")
-            validate("override", sep.override, v.literal({ "right", "left", "active" }), true)
+            pvalidate(sep.left, "string")
+            pvalidate(sep.right, "string")
+            pvalidate(sep.override, v.literal({ "right", "left", "active" }), true)
           end,
         },
         Renderers = v.array("table"),
@@ -124,204 +151,185 @@ function M.check_config(config)
       ---@param log_level neotree.Logger.Config.Level
       schema.ConfigLogLevel = function(log_level)
         if type(log_level) == "table" then
-          return validate("log_level", log_level, function(ll)
-            validate("console", ll.console, schema.LogLevel)
-            validate("file", ll.file, schema.LogLevel)
+          return pvalidate(log_level, function(ll)
+            pvalidate(ll.console, schema.LogLevel)
+            pvalidate(ll.file, schema.LogLevel)
           end)
         else
-          validate("log_level", log_level, schema.LogLevel)
+          pvalidate(log_level, schema.LogLevel)
         end
       end
 
-      if not validate("config", cfg, "table") then
-        health.error("Config does not exist")
+      if not pvalidate(cfg, "table") then
+        health.warn("Config does not exist")
         return
       end
 
-      validate("sources", cfg.sources, v.array("string"), false)
-      validate("add_blank_line_at_top", cfg.add_blank_line_at_top, "boolean")
-      validate("auto_clean_after_session_restore", cfg.auto_clean_after_session_restore, "boolean")
-      validate("close_if_last_window", cfg.close_if_last_window, "boolean")
-      validate("default_source", cfg.default_source, "string")
-      validate("enable_diagnostics", cfg.enable_diagnostics, "boolean")
-      validate("enable_git_status", cfg.enable_git_status, "boolean")
-      validate("enable_modified_markers", cfg.enable_modified_markers, "boolean")
-      validate("enable_opened_markers", cfg.enable_opened_markers, "boolean")
-      validate("enable_refresh_on_write", cfg.enable_refresh_on_write, "boolean")
-      validate("enable_cursor_hijack", cfg.enable_cursor_hijack, "boolean")
-      validate("git_status_async", cfg.git_status_async, "boolean")
-      validate("git_status_async_options", cfg.git_status_async_options, function(options)
-        validate("batch_size", options.batch_size, "number")
-        validate("batch_delay", options.batch_delay, "number")
-        validate("max_lines", options.max_lines, "number")
+      pvalidate(cfg.sources, v.array("string"), false)
+      pvalidate(cfg.add_blank_line_at_top, "boolean")
+      pvalidate(cfg.auto_clean_after_session_restore, "boolean")
+      pvalidate(cfg.close_if_last_window, "boolean")
+      pvalidate(cfg.default_source, "string")
+      pvalidate(cfg.enable_diagnostics, "boolean")
+      pvalidate(cfg.enable_git_status, "boolean")
+      pvalidate(cfg.enable_modified_markers, "boolean")
+      pvalidate(cfg.enable_opened_markers, "boolean")
+      pvalidate(cfg.enable_refresh_on_write, "boolean")
+      pvalidate(cfg.enable_cursor_hijack, "boolean")
+      pvalidate(cfg.git_status_async, "boolean")
+      pvalidate(cfg.git_status_async_options, function(options)
+        pvalidate(options.batch_size, "number")
+        pvalidate(options.batch_delay, "number")
+        pvalidate(options.max_lines, "number")
       end)
-      validate("hide_root_node", cfg.hide_root_node, "boolean")
-      validate("retain_hidden_root_indent", cfg.retain_hidden_root_indent, "boolean")
-      validate("keep_altfile", cfg.keep_altfile, "boolean")
-      validate("log_level", cfg.log_level, schema.ConfigLogLevel, true)
-      validate("log_to_file", cfg.log_to_file, { "boolean", "string" })
-      validate("open_files_in_last_window", cfg.open_files_in_last_window, "boolean")
-      validate(
-        "open_files_do_not_replace_types",
-        cfg.open_files_do_not_replace_types,
-        v.array("string")
-      )
-      validate("open_files_using_relative_paths", cfg.open_files_using_relative_paths, "boolean")
-      validate(
-        "popup_border_style",
+      pvalidate(cfg.hide_root_node, "boolean")
+      pvalidate(cfg.retain_hidden_root_indent, "boolean")
+      pvalidate(cfg.keep_altfile, "boolean")
+      pvalidate(cfg.log_level, schema.ConfigLogLevel, true)
+      pvalidate(cfg.log_to_file, { "boolean", "string" })
+      pvalidate(cfg.open_files_in_last_window, "boolean")
+      pvalidate(cfg.open_files_do_not_replace_types, v.array("string"))
+      pvalidate(cfg.open_files_using_relative_paths, "boolean")
+      pvalidate(
         cfg.popup_border_style,
         v.literal({ "NC", "rounded", "single", "solid", "double", "" })
       )
-      validate("resize_timer_interval", cfg.resize_timer_interval, "number")
-      validate("sort_case_insensitive", cfg.sort_case_insensitive, "boolean")
-      validate("sort_function", cfg.sort_function, "function", true)
-      validate("use_popups_for_input", cfg.use_popups_for_input, "boolean")
-      validate("use_default_mappings", cfg.use_default_mappings, "boolean")
-      validate("source_selector", cfg.source_selector, function(ss)
-        validate("winbar", ss.winbar, "boolean")
-        validate("statusline", ss.statusline, "boolean")
-        validate("show_scrolled_off_parent_node", ss.show_scrolled_off_parent_node, "boolean")
-        validate("sources", ss.sources, v.array(schema.SourceSelector.Item))
-        validate("content_layout", ss.content_layout, v.literal({ "start", "end", "center" }))
-        validate(
-          "tabs_layout",
-          ss.tabs_layout,
-          v.literal({ "equal", "start", "end", "center", "active" })
-        )
-        validate("truncation_character", ss.truncation_character, "string", false)
-        validate("tabs_min_width", ss.tabs_min_width, "number", true)
-        validate("tabs_max_width", ss.tabs_max_width, "number", true)
-        validate("padding", ss.padding, { "number", "table" }) -- TODO: More specific validation for padding table
-        validate("separator", ss.separator, schema.SourceSelector.Separator)
-        validate("separator_active", ss.separator_active, schema.SourceSelector.Separator, true)
-        validate("show_separator_on_edge", ss.show_separator_on_edge, "boolean")
-        validate("highlight_tab", ss.highlight_tab, "string")
-        validate("highlight_tab_active", ss.highlight_tab_active, "string")
-        validate("highlight_background", ss.highlight_background, "string")
-        validate("highlight_separator", ss.highlight_separator, "string")
-        validate("highlight_separator_active", ss.highlight_separator_active, "string")
+      pvalidate(cfg.resize_timer_interval, "number")
+      pvalidate(cfg.sort_case_insensitive, "boolean")
+      pvalidate(cfg.sort_function, "function", true)
+      pvalidate(cfg.use_popups_for_input, "boolean")
+      pvalidate(cfg.use_default_mappings, "boolean")
+      pvalidate(cfg.source_selector, function(ss)
+        pvalidate(ss.winbar, "boolean")
+        pvalidate(ss.statusline, "boolean")
+        pvalidate(ss.show_scrolled_off_parent_node, "boolean")
+        pvalidate(ss.sources, v.array(schema.SourceSelector.Item))
+        pvalidate(ss.content_layout, v.literal({ "start", "end", "center" }))
+        pvalidate(ss.tabs_layout, v.literal({ "equal", "start", "end", "center", "active" }))
+        pvalidate(ss.truncation_character, "string", false)
+        pvalidate(ss.tabs_min_width, "number", true)
+        pvalidate(ss.tabs_max_width, "number", true)
+        pvalidate(ss.padding, { "number", "table" }) -- TODO: More specific validation for padding table
+        pvalidate(ss.separator, schema.SourceSelector.Separator)
+        pvalidate(ss.separator_active, schema.SourceSelector.Separator, true)
+        pvalidate(ss.show_separator_on_edge, "boolean")
+        pvalidate(ss.highlight_tab, "string")
+        pvalidate(ss.highlight_tab_active, "string")
+        pvalidate(ss.highlight_background, "string")
+        pvalidate(ss.highlight_separator, "string")
+        pvalidate(ss.highlight_separator_active, "string")
       end)
-      validate("event_handlers", cfg.event_handlers, v.array("table"), true) -- TODO: More specific validation for event handlers
-      validate("default_component_configs", cfg.default_component_configs, function(defaults)
-        validate("container", defaults.container, "table") -- TODO: More specific validation
-        validate("indent", defaults.indent, "table") -- TODO: More specific validation
-        validate("icon", defaults.icon, "table") -- TODO: More specific validation
-        validate("modified", defaults.modified, "table") -- TODO: More specific validation
-        validate("name", defaults.name, "table") -- TODO: More specific validation
-        validate("git_status", defaults.git_status, "table") -- TODO: More specific validation
-        validate("file_size", defaults.file_size, "table") -- TODO: More specific validation
-        validate("type", defaults.type, "table") -- TODO: More specific validation
-        validate("last_modified", defaults.last_modified, "table") -- TODO: More specific validation
-        validate("created", defaults.created, "table") -- TODO: More specific validation
-        validate("symlink_target", defaults.symlink_target, "table") -- TODO: More specific validation
+      pvalidate(cfg.event_handlers, v.array("table"), true) -- TODO: More specific validation for event handlers
+      pvalidate(cfg.default_component_configs, function(defaults)
+        pvalidate(defaults.container, "table") -- TODO: More specific validation
+        pvalidate(defaults.indent, "table") -- TODO: More specific validation
+        pvalidate(defaults.icon, "table") -- TODO: More specific validation
+        pvalidate(defaults.modified, "table") -- TODO: More specific validation
+        pvalidate(defaults.name, "table") -- TODO: More specific validation
+        pvalidate(defaults.git_status, "table") -- TODO: More specific validation
+        pvalidate(defaults.file_size, "table") -- TODO: More specific validation
+        pvalidate(defaults.type, "table") -- TODO: More specific validation
+        pvalidate(defaults.last_modified, "table") -- TODO: More specific validation
+        pvalidate(defaults.created, "table") -- TODO: More specific validation
+        pvalidate(defaults.symlink_target, "table") -- TODO: More specific validation
       end)
-      validate("renderers", cfg.renderers, schema.Renderers)
-      validate("nesting_rules", cfg.nesting_rules, v.array("table"), true) -- TODO: More specific validation for nesting rules
-      validate("commands", cfg.commands, "table", true) -- TODO: More specific validation for commands
-      validate("window", cfg.window, function(window)
-        validate("position", window.position, "string") -- TODO: More specific validation
-        validate("width", window.width, "number")
-        validate("height", window.height, "number")
-        validate("auto_expand_width", window.auto_expand_width, "boolean")
-        validate("popup", window.popup, function(popup)
-          validate("title", popup.title, "function")
-          validate("size", popup.size, function(size)
-            validate("height", size.height, { "string", "number" })
-            validate("width", size.width, { "string", "number" })
+      pvalidate(cfg.renderers, schema.Renderers)
+      pvalidate(cfg.nesting_rules, v.array("table"), true) -- TODO: More specific validation for nesting rules
+      pvalidate(cfg.commands, "table", true) -- TODO: More specific validation for commands
+      pvalidate(cfg.window, function(window)
+        pvalidate(window.position, "string") -- TODO: More specific validation
+        pvalidate(window.width, "number")
+        pvalidate(window.height, "number")
+        pvalidate(window.auto_expand_width, "boolean")
+        pvalidate(window.popup, function(popup)
+          pvalidate(popup.title, "function")
+          pvalidate(popup.size, function(size)
+            pvalidate(size.height, { "string", "number" })
+            pvalidate(size.width, { "string", "number" })
           end)
-          validate(
-            "border",
+          pvalidate(
             popup.border,
             v.literal({ "NC", "rounded", "single", "solid", "double", "" }),
             true
           )
         end)
-        validate("insert_as", window.insert_as, v.literal({ "child", "sibling" }), true)
-        validate("mapping_options", window.mapping_options, "table") -- TODO: More specific validation
-        validate("mappings", window.mappings, v.array("table")) -- TODO: More specific validation for mapping items
+        pvalidate(window.insert_as, v.literal({ "child", "sibling" }), true)
+        pvalidate(window.mapping_options, "table") -- TODO: More specific validation
+        pvalidate(window.mappings, v.array("table")) -- TODO: More specific validation for mapping items
       end)
 
-      validate("filesystem", cfg.filesystem, function(fs)
-        validate(
-          "async_directory_scan",
-          fs.async_directory_scan,
-          v.literal({ "auto", "always", "never" })
-        )
-        validate("scan_mode", fs.scan_mode, v.literal({ "shallow", "deep" }))
-        validate("bind_to_cwd", fs.bind_to_cwd, "boolean")
-        validate("cwd_target", fs.cwd_target, function(cwd_target)
-          validate("sidebar", cwd_target.sidebar, v.literal({ "tab", "window", "global" }))
-          validate("current", cwd_target.current, v.literal({ "tab", "window", "global" }))
+      pvalidate(cfg.filesystem, function(fs)
+        pvalidate(fs.async_directory_scan, v.literal({ "auto", "always", "never" }))
+        pvalidate(fs.scan_mode, v.literal({ "shallow", "deep" }))
+        pvalidate(fs.bind_to_cwd, "boolean")
+        pvalidate(fs.cwd_target, function(cwd_target)
+          pvalidate(cwd_target.sidebar, v.literal({ "tab", "window", "global" }))
+          pvalidate(cwd_target.current, v.literal({ "tab", "window", "global" }))
         end)
-        validate("check_gitignore_in_search", fs.check_gitignore_in_search, "boolean")
-        validate("filtered_items", fs.filtered_items, function(f)
-          validate("visible", f.visible, "boolean")
-          validate("force_visible_in_empty_folder", f.force_visible_in_empty_folder, "boolean")
-          validate("children_inherit_highlights", f.children_inherit_highlights, "boolean")
-          validate("show_hidden_count", f.show_hidden_count, "boolean")
-          validate("hide_dotfiles", f.hide_dotfiles, "boolean")
-          validate("hide_gitignored", f.hide_gitignored, "boolean")
-          validate("hide_ignored", f.hide_ignored, "boolean")
-          validate("hide_hidden", f.hide_hidden, "boolean")
-          validate("hide_by_name", f.hide_by_name, v.array("string"))
-          validate("hide_by_pattern", f.hide_by_pattern, v.array("string"))
-          validate("always_show", f.always_show, v.array("string"))
-          validate("always_show_by_pattern", f.always_show_by_pattern, v.array("string"))
-          validate("never_show", f.never_show, v.array("string"))
-          validate("never_show_by_pattern", f.never_show_by_pattern, v.array("string"))
+        pvalidate(fs.check_gitignore_in_search, "boolean")
+        pvalidate(fs.filtered_items, function(f)
+          pvalidate(f.visible, "boolean")
+          pvalidate(f.force_visible_in_empty_folder, "boolean")
+          pvalidate(f.children_inherit_highlights, "boolean")
+          pvalidate(f.show_hidden_count, "boolean")
+          pvalidate(f.hide_dotfiles, "boolean")
+          pvalidate(f.hide_gitignored, "boolean")
+          pvalidate(f.hide_ignored, "boolean")
+          pvalidate(f.hide_hidden, "boolean")
+          pvalidate(f.hide_by_name, v.array("string"))
+          pvalidate(f.hide_by_pattern, v.array("string"))
+          pvalidate(f.always_show, v.array("string"))
+          pvalidate(f.always_show_by_pattern, v.array("string"))
+          pvalidate(f.never_show, v.array("string"))
+          pvalidate(f.never_show_by_pattern, v.array("string"))
         end)
-        validate("find_by_full_path_words", fs.find_by_full_path_words, "boolean")
-        validate("find_command", fs.find_command, "string", true)
-        validate("find_args", fs.find_args, { "table", "function" }, true)
-        validate("group_empty_dirs", fs.group_empty_dirs, "boolean")
-        validate("search_limit", fs.search_limit, "number")
-        validate("follow_current_file", fs.follow_current_file, schema.Filesystem.FollowCurrentFile)
-        validate(
-          "hijack_netrw_behavior",
+        pvalidate(fs.find_by_full_path_words, "boolean")
+        pvalidate(fs.find_command, "string", true)
+        pvalidate(fs.find_args, { "table", "function" }, true)
+        pvalidate(fs.group_empty_dirs, "boolean")
+        pvalidate(fs.search_limit, "number")
+        pvalidate(fs.follow_current_file, schema.Filesystem.FollowCurrentFile)
+        pvalidate(
           fs.hijack_netrw_behavior,
           v.literal({ "open_default", "open_current", "disabled" }),
           true
         )
-        validate("use_libuv_file_watcher", fs.use_libuv_file_watcher, "boolean")
-        validate("renderers", fs.renderers, schema.Renderers)
-        validate("window", fs.window, function(window)
-          validate("mappings", window.mappings, "table") -- TODO: More specific validation for mappings table
-          validate("fuzzy_finder_mappings", window.fuzzy_finder_mappings, "table") -- TODO: More specific validation
+        pvalidate(fs.use_libuv_file_watcher, "boolean")
+        pvalidate(fs.renderers, schema.Renderers)
+        pvalidate(fs.window, function(window)
+          pvalidate(window.mappings, "table") -- TODO: More specific validation for mappings table
+          pvalidate(window.fuzzy_finder_mappings, "table") -- TODO: More specific validation
         end)
       end)
-      validate("buffers", cfg.buffers, function(buffers)
-        validate("bind_to_cwd", buffers.bind_to_cwd, "boolean")
-        validate(
-          "follow_current_file",
-          buffers.follow_current_file,
-          schema.Filesystem.FollowCurrentFile
-        )
-        validate("group_empty_dirs", buffers.group_empty_dirs, "boolean")
-        validate("show_unloaded", buffers.show_unloaded, "boolean")
-        validate("terminals_first", buffers.terminals_first, "boolean")
-        validate("renderers", buffers.renderers, schema.Renderers)
-        validate("window", buffers.window, schema.Window)
+      pvalidate(cfg.buffers, function(buffers)
+        pvalidate(buffers.bind_to_cwd, "boolean")
+        pvalidate(buffers.follow_current_file, schema.Filesystem.FollowCurrentFile)
+        pvalidate(buffers.group_empty_dirs, "boolean")
+        pvalidate(buffers.show_unloaded, "boolean")
+        pvalidate(buffers.terminals_first, "boolean")
+        pvalidate(buffers.renderers, schema.Renderers)
+        pvalidate(buffers.window, schema.Window)
       end)
-      validate("git_status", cfg.git_status, function(git_status)
-        validate("renderers", git_status.renderers, schema.Renderers)
-        validate("window", git_status.window, schema.Window)
+      pvalidate(cfg.git_status, function(git_status)
+        pvalidate(git_status.renderers, schema.Renderers)
+        pvalidate(git_status.window, schema.Window)
       end)
-      validate("document_symbols", cfg.document_symbols, function(ds)
-        validate("follow_cursor", ds.follow_cursor, "boolean")
-        validate("client_filters", ds.client_filters, { "string", "table" }) -- TODO: More specific validation
-        validate("custom_kinds", ds.custom_kinds, "table") -- TODO: More specific validation
-        validate("kinds", ds.kinds, "table")
-        validate("renderers", ds.renderers, schema.Renderers)
-        validate("window", ds.window, schema.Window)
+      pvalidate(cfg.document_symbols, function(ds)
+        pvalidate(ds.follow_cursor, "boolean")
+        pvalidate(ds.client_filters, { "string", "table" }) -- TODO: More specific validation
+        pvalidate(ds.custom_kinds, "table") -- TODO: More specific validation
+        pvalidate(ds.kinds, "table")
+        pvalidate(ds.renderers, schema.Renderers)
+        pvalidate(ds.window, schema.Window)
       end)
-      validate("clipboard", cfg.clipboard, function(clip)
-        validate("sync", clip.sync, function(sync)
+      pvalidate(cfg.clipboard, function(clip)
+        pvalidate(clip.sync, function(sync)
           if type(sync) == "string" then
             return vim.tbl_contains({ "global", "none", "universal" }, sync)
           elseif type(sync) == "table" then
-            validate("new", sync.new, "callable")
-            validate("load", sync.load, "callable")
-            validate("save", sync.save, "callable")
+            pvalidate(sync.new, "callable")
+            pvalidate(sync.load, "callable")
+            pvalidate(sync.save, "callable")
           else
             return false
           end
@@ -332,8 +340,7 @@ function M.check_config(config)
     nil,
     function(err)
       errors[#errors + 1] = { err }
-    end,
-    true
+    end
   )
 
   if #errors == 0 then
@@ -343,16 +350,26 @@ function M.check_config(config)
       health.error(unpack(err))
     end
   end
+
   if verbose then
     health.info(
       "[verbose] Config schema checking is not comprehensive yet, unchecked keys listed below:"
     )
-    if missed then
-      for _, miss in ipairs(missed) do
-        health.info(miss)
-      end
+    local missed = {}
+    for i, s in ipairs(get_all_key_path_strings(config)) do
+      missed[s] = true
+    end
+    ---@type neotree.utils.ProxyMetatable
+    local mt = getmetatable(proxied_config)
+    local accesses = assert(mt.metadata.accesses)
+    for i, key_path in ipairs(accesses) do
+      missed[tostring(key_path)] = nil
+    end
+    for miss in pairs(missed) do
+      vim.health.info(miss)
     end
   end
+
   return valid
 end
 
