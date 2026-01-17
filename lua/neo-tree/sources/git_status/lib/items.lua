@@ -27,28 +27,15 @@ M.get_git_status = function(state)
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
 
+  local status_lookups = {}
   if status_lookup then
-    for path, status in pairs(status_lookup) do
-      ---@type string
-      local normalized_status
-      if type(status) ~= "table" and status ~= "!" then
-        local success, item = pcall(file_items.create_item, context, path)
-        if not success then
-          log.error("Error creating git_status item for " .. path .. ": " .. item)
-        else
-          if item.type == "unknown" then
-            item.type = "file"
-          end
-          item.status = normalized_status
-          item.extra = {
-            git_status = status,
-          }
-        end
-      end
-    end
+    status_lookups[#status_lookups + 1] = status_lookup
   end
   if status_lookup_over_base then
-    for path, status in pairs(status_lookup_over_base) do
+    status_lookups[#status_lookups + 1] = status_lookup_over_base
+  end
+  for i, sl in ipairs(status_lookups) do
+    for path, status in pairs(sl) do
       ---@type string
       local normalized_status
       if type(status) ~= "table" and status ~= "!" then
