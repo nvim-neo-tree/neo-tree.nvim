@@ -13,9 +13,10 @@ M.get_git_status = function(state)
     return
   end
   state.loading = true
-  local status_lookup, project_root = git.status(state.path, state.git_base_by_worktree, false, {
-    untracked_files = "all",
-  })
+  local status_lookup, project_root, status_lookup_over_base =
+    git.status(state.path, state.git_base_by_worktree, false, {
+      untracked_files = "all",
+    })
   state.path = project_root or state.path or vim.fn.getcwd()
   local context = file_items.create_context()
   context.state = state
@@ -26,8 +27,15 @@ M.get_git_status = function(state)
   root.search_pattern = state.search_pattern
   context.folders[root.path] = root
 
+  local status_lookups = {}
   if status_lookup then
-    for path, status in pairs(status_lookup) do
+    status_lookups[#status_lookups + 1] = status_lookup
+  end
+  if status_lookup_over_base then
+    status_lookups[#status_lookups + 1] = status_lookup_over_base
+  end
+  for i, sl in ipairs(status_lookups) do
+    for path, status in pairs(sl) do
       ---@type string
       local normalized_status
       if type(status) ~= "table" and status ~= "!" then
