@@ -47,14 +47,14 @@ M.show_input = function(input, callback)
   end
 end
 
----@param message string
+---@param prompt string
 ---@param default_value string?
----@param callback function
+---@param callback fun(input: string?)
 ---@param options nui_popup_options?
 ---@param completion string?
-M.input = function(message, default_value, callback, options, completion)
+M.input = function(prompt, default_value, callback, options, completion)
   if nt.config.use_popups_for_input then
-    local popup_options = popups.popup_options(message, 10, options)
+    local popup_options = popups.popup_options(prompt, 10, options)
 
     local input = NuiInput(popup_options, {
       prompt = " ",
@@ -64,19 +64,17 @@ M.input = function(message, default_value, callback, options, completion)
 
     M.show_input(input)
   else
-    local opts = {
-      prompt = message .. "\n",
-      default = default_value,
-    }
+    prompt = prompt .. "\n"
     if vim.opt.cmdheight:get() == 0 then
       -- NOTE: I really don't know why but letters before the first '\n' is not rendered except in noice.nvim
       --       when vim.opt.cmdheight = 0 <2023-10-24, pysan3>
-      opts.prompt = "Neo-tree Popup\n" .. opts.prompt
+      prompt = "Neo-tree Popup\n" .. prompt
     end
-    if completion then
-      opts.completion = completion
-    end
-    vim.ui.input(opts, callback)
+    vim.ui.input({
+      completion = completion,
+      prompt = prompt,
+      default = default_value,
+    }, callback)
   end
 end
 
