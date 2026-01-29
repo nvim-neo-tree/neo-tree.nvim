@@ -55,18 +55,17 @@ local function get_folder_node(state)
   end
 end
 
----The using_root_directory is used to decide what part of the filename to show
--- the user when asking for a new filename to e.g. create, copy to or move to.
+---What part of the filepath to show when asking the user for a filepath to e.g. create or copy/move to.
 ---@param state neotree.StateWithTree
 ---@return string root_path The root path from which the relative source path should be taken
-local function get_using_root_directory(state)
-  -- default to showing only the basename of the path
-  local using_root_directory = get_folder_node(state):get_id()
+local function get_input_root(state)
+  -- default to showing only the folder portion of the path
+  local rootdir = get_folder_node(state):get_id()
   local show_path = state.config.show_path
   if show_path == "absolute" then
-    using_root_directory = ""
+    rootdir = ""
   elseif show_path == "relative" then
-    using_root_directory = state.path
+    rootdir = state.path
   elseif show_path ~= nil and show_path ~= "none" then
     log.warn(
       'A neo-tree mapping was setup with a config.show_path option with invalid value: "'
@@ -76,7 +75,7 @@ local function get_using_root_directory(state)
   end
   ---TODO
   ---@diagnostic disable-next-line: return-type-mismatch
-  return using_root_directory
+  return rootdir
 end
 
 ---@class neotree.sources.Common.Commands
@@ -107,8 +106,7 @@ M.add = function(state, callback)
     return
   end
   local in_directory = node:get_id()
-  local using_root_directory = get_using_root_directory(state)
-  fs_actions.create_node(in_directory, callback, using_root_directory)
+  fs_actions.create_node(in_directory, callback, get_input_root(state))
 end
 
 ---Add a new file or dir at the current node
@@ -119,8 +117,7 @@ M.add_directory = function(state, callback)
     return
   end
   local in_directory = node:get_id()
-  local using_root_directory = get_using_root_directory(state)
-  fs_actions.create_directory(in_directory, callback, using_root_directory)
+  fs_actions.create_directory(in_directory, callback, get_input_root(state))
 end
 
 ---Expand all nodes
@@ -666,7 +663,8 @@ M.paste_from_clipboard = function(state, callback)
       fs_actions.copy_node(
         item.node.path,
         folder .. utils.path_separator .. item.node.name,
-        paste_complete
+        paste_complete,
+        get_input_root(state)
       )
     elseif item.action == "cut" then
       fs_actions.move_node(
@@ -699,8 +697,7 @@ M.copy = function(state, callback)
   if node.type == "message" then
     return
   end
-  local using_root_directory = get_using_root_directory(state)
-  fs_actions.copy_node(node.path, nil, callback, using_root_directory)
+  fs_actions.copy_node(node.path, nil, callback, get_input_root(state))
 end
 
 ---Moves a node to a new location, using typed input.
@@ -710,8 +707,7 @@ M.move = function(state, callback)
   if node.type == "message" then
     return
   end
-  local using_root_directory = get_using_root_directory(state)
-  fs_actions.move_node(node.path, nil, callback, using_root_directory)
+  fs_actions.move_node(node.path, nil, callback, get_input_root(state))
 end
 
 M.delete = function(state, callback)

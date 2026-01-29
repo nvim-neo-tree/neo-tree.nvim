@@ -58,7 +58,8 @@ M._file_completion = function(arglead, cmdline, cursorpos)
 
   local names = {}
   local nodetypes = {}
-  local absdir_before_cursor = utils.path_join(_file_completion_root, dir_before_cursor)
+  local absdir_before_cursor =
+    utils.normalize_path(_file_completion_root .. utils.path_separator .. dir_before_cursor)
   for name, nodetype in vim.fs.dir(absdir_before_cursor) do
     if not _file_completion_filter or not _file_completion_filter(name, nodetype) then
       names[#names + 1] = name
@@ -90,15 +91,13 @@ M._file_completion = function(arglead, cmdline, cursorpos)
   return filtered
 end
 
-local _FILE_COMPLETION_VIMSCRIPT_STR =
-  "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
 ---@param root string
 ---@param filter (fun(name: string, nodetype: string):boolean)?
 ---@return string completefunc_str
 local setup_file_completion = function(root, filter)
   _file_completion_root = root
   _file_completion_filter = filter
-  return _FILE_COMPLETION_VIMSCRIPT_STR
+  return "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
 end
 
 ---@param a uv.fs_stat.result?
@@ -257,61 +256,45 @@ end
 -- Gets a non-existing filename from the user and executes the callback with it.
 ---@param source string
 ---@param destination string
----@param destination_root string?
----@param name_chosen_callback fun(string)
+---@param input_root string
+---@param on_new_filename fun(string)
 ---@param first_message string?
-local function get_unused_name(
-  source,
-  destination,
-  destination_root,
-  name_chosen_callback,
-  first_message
-)
-  if not rename_is_safe(source, destination) then
-    local parent_path, name
-    if not destination_root then
-      parent_path, name = utils.split_path(destination)
-    elseif #destination_root > 0 then
-      parent_path = destination:sub(1, #destination_root)
-      name = destination:sub(#destination_root + 2)
-    else
-      parent_path = nil
-      name = destination
-    end
-
-    local message = first_message or name .. " already exists. Please enter a new name: "
-    inputs.input(message, name, function(new_name)
-      if not new_name then
-        return
-      end
-      if string.len(new_name) > 0 then
-        local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
-        get_unused_name(source, new_path, destination_root, name_chosen_callback)
-      end
-    end, {}, setup_file_completion(source))
-  else
-    name_chosen_callback(destination)
+local function get_unused_name(source, destination, input_root, on_new_filename, first_message)
+  if rename_is_safe(source, destination) then
+    on_new_filename(destination)
+    return
   end
+
+  local parent_path, name
+  if #input_root > 0 then
+    parent_path = destination:sub(1, #input_root)
+    name = destination:sub(#input_root + 2)
+  else
+    parent_path = nil
+    name = destination
+  end
+
+  local message = first_message or name .. " already exists. Please enter a new name: "
+  inputs.input(message, name, function(new_name)
+    if not new_name or #new_name == 0 then
+      return
+    end
+    local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
+    get_unused_name(source, new_path, input_root, on_new_filename)
+  end, {}, setup_file_completion(input_root))
 end
 
----Copy Node
+---Move node
 ---@generic S : string
 ---@generic D : string?
 ---@param source S
 ---@param destination D
 ---@param callback fun(source: S, destination: D|S)
----@param using_root_directory string?
-M.move_node = function(source, destination, callback, using_root_directory)
-  log.trace(
-    "Moving node:",
-    source,
-    "to",
-    destination,
-    ", using root directory:",
-    using_root_directory
-  )
+---@param input_root string
+M.move_node = function(source, destination, callback, input_root)
+  log.trace("Moving node:", source, "to", destination, ", using root directory:", input_root)
   local _, name = utils.split_path(source)
-  get_unused_name(source, destination or source, using_root_directory, function(dest)
+  get_unused_name(source, destination or source, input_root, function(dest)
     local parent_of_dest, _ = utils.split_path(dest)
     if source == parent_of_dest then
       log.warn("Cannot move " .. source .. " to itself")
@@ -394,10 +377,10 @@ end
 ---@param source S
 ---@param destination D
 ---@param callback fun(source: S, destination: D|S)
----@param using_root_directory string?
-M.copy_node = function(source, destination, callback, using_root_directory)
+---@param input_root string
+M.copy_node = function(source, destination, callback, input_root)
   local _, name = utils.split_path(source)
-  get_unused_name(source, destination or source, using_root_directory, function(dest)
+  get_unused_name(source, destination or source, input_root, function(dest)
     local parent_of_dest, _ = utils.split_path(dest)
     if source == parent_of_dest then
       log.warn("Cannot copy " .. source .. " to itself")
@@ -458,19 +441,21 @@ M.copy_node = function(source, destination, callback, using_root_directory)
 end
 
 --- Create a new directory
-M.create_directory = function(in_directory, callback, root_directory)
+---@param in_directory string
+---@param callback fun(destination: string)
+---@param input_root string
+M.create_directory = function(in_directory, callback, input_root)
   local base
-  if type(root_directory) == "string" then
-    if in_directory == root_directory then
+  if type(input_root) == "string" then
+    if in_directory == input_root then
       base = ""
-    elseif #root_directory > 0 then
-      base = in_directory:sub(#root_directory + 2) .. utils.path_separator
+    elseif #input_root > 0 then
+      base = in_directory:sub(#input_root + 2) .. utils.path_separator
     else
       base = in_directory .. utils.path_separator
     end
   else
     base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
-    root_directory = false
   end
 
   inputs.input("Enter name for new directory:", base, function(destinations)
@@ -483,8 +468,8 @@ M.create_directory = function(in_directory, callback, root_directory)
         return
       end
 
-      if root_directory then
-        destination = utils.path_join(root_directory, destination)
+      if input_root then
+        destination = utils.path_join(input_root, destination)
       else
         destination = vim.fn.fnamemodify(destination, ":p")
       end
@@ -509,23 +494,25 @@ M.create_directory = function(in_directory, callback, root_directory)
         end
       end)
     end
-  end, {}, setup_file_completion(root_directory))
+  end, {}, setup_file_completion(input_root))
 end
 
 --- Create Node
-M.create_node = function(in_directory, callback, using_root_directory)
+---@param in_directory string the directory to default to
+---@param callback fun(destination: string)
+---@param input_root string the root of the input
+M.create_node = function(in_directory, callback, input_root)
   local base
-  if type(using_root_directory) == "string" then
-    if in_directory == using_root_directory then
+  if type(input_root) == "string" then
+    if in_directory == input_root then
       base = ""
-    elseif #using_root_directory > 0 then
-      base = in_directory:sub(#using_root_directory + 2) .. utils.path_separator
+    elseif #input_root > 0 then
+      base = in_directory:sub(#input_root + 2) .. utils.path_separator
     else
       base = in_directory .. utils.path_separator
     end
   else
     base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
-    using_root_directory = false
   end
 
   local dir_ending = '"/"'
@@ -545,8 +532,8 @@ M.create_node = function(in_directory, callback, using_root_directory)
       local is_dir = vim.endswith(destination, "/")
         or vim.endswith(destination, utils.path_separator)
 
-      if using_root_directory then
-        destination = utils.path_join(using_root_directory, destination)
+      if input_root then
+        destination = utils.path_join(input_root, destination)
       else
         destination = vim.fn.fnamemodify(destination, ":p")
       end
@@ -588,7 +575,7 @@ M.create_node = function(in_directory, callback, using_root_directory)
       end
       complete()
     end
-  end, {}, setup_file_completion(using_root_directory))
+  end, {}, setup_file_completion(input_root or base))
 end
 
 ---Recursively delete a directory and its children.
