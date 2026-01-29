@@ -664,13 +664,14 @@ M.paste_from_clipboard = function(state, callback)
         item.node.path,
         folder .. utils.path_separator .. item.node.name,
         paste_complete,
-        get_input_root(state)
+        folder
       )
     elseif item.action == "cut" then
       fs_actions.move_node(
         item.node.path,
         folder .. utils.path_separator .. item.node.name,
-        paste_complete
+        paste_complete,
+        folder
       )
     end
   end
