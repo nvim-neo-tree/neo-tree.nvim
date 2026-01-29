@@ -220,8 +220,8 @@ function M.check_config(config)
       validate("commands", cfg.commands, "table", true) -- TODO: More specific validation for commands
       validate("window", cfg.window, function(window)
         validate("position", window.position, "string") -- TODO: More specific validation
-        validate("width", window.width, { "number", "string" })
-        validate("height", window.height, { "number", "string" })
+        validate("width", window.width, { "number", "string", "function" })
+        validate("height", window.height, { "number", "string", "function" })
         validate("auto_expand_width", window.auto_expand_width, "boolean")
         validate("popup", window.popup, function(popup)
           validate("title", popup.title, "function")
