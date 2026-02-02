@@ -159,11 +159,13 @@ local path_segment_ends = { "/", "\\", "" }
 local function path_segment_ends_at(path, i)
   return vim.tbl_contains(path_segment_ends, path:sub(i, i))
 end
---- A modified vim.fs.normalize from neovim 0.11, with proper home expansion
+
+---@param path string
+--- A modified vim.fs.normalize from Neovim 0.11, with proper home expansion and env expansion disabled by default
 function compat.fs_normalize(path, opts)
   opts = opts or {}
 
-  local win = opts.win == nil and require("neo-tree.utils").is_windows or not not opts.win
+  local win = not not opts.win
   local os_sep = win and "\\" or "/"
 
   -- Empty path is already normalized
@@ -185,7 +187,7 @@ function compat.fs_normalize(path, opts)
   end
 
   -- Expand environment variables if `opts.expand_env` isn't `false`
-  if opts.expand_env == nil or opts.expand_env then
+  if opts.expand_env then
     path = path:gsub("%$([%w_]+)", os.getenv) --- @type string
   end
 
