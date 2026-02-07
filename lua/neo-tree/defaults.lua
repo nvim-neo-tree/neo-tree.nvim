@@ -674,6 +674,7 @@ local config = {
   },
   document_symbols = {
     follow_cursor = false,
+    follow_tree_cursor = false, -- Automatically show symbol location when moving cursor in the tree
     client_filters = "first",
     renderers = {
       root = {

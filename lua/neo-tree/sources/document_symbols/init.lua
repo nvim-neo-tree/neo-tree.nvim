@@ -83,6 +83,7 @@ end
 
 ---@class (exact) neotree.Config.DocumentSymbols : neotree.Config.Source
 ---@field follow_cursor boolean?
+---@field follow_tree_cursor boolean?
 ---@field client_filters neotree.lsp.ClientFilter?
 ---@field custom_kinds table<integer, string>?
 ---@field kinds table<string, neotree.Config.LspKindDisplay>?
@@ -122,6 +123,38 @@ M.setup = function(config, global_config)
     manager.subscribe(M.name, {
       event = events.VIM_CURSOR_MOVED,
       handler = follow_debounced,
+    })
+  end
+
+  -- Set up follow_tree_cursor: show symbol on cursor move in document_symbols buffer
+  if config.follow_tree_cursor then
+    local group = vim.api.nvim_create_augroup("neo_tree_document_symbols_follow_tree_cursor", { clear = true })
+    manager.subscribe(M.name, {
+      event = events.NEO_TREE_BUFFER_ENTER,
+      handler = function()
+        local bufnr = vim.api.nvim_get_current_buf()
+        -- Only set up for document_symbols source
+        local state = manager.get_state("document_symbols")
+        if not state or state.bufnr ~= bufnr then
+          return
+        end
+        vim.api.nvim_create_autocmd("CursorMoved", {
+          group = group,
+          buffer = bufnr,
+          callback = function()
+            local current_state = manager.get_state("document_symbols")
+            if not current_state or not current_state.tree then
+              return
+            end
+            -- Verify we're still in the right buffer
+            if vim.api.nvim_get_current_buf() ~= current_state.bufnr then
+              return
+            end
+            local commands = require("neo-tree.sources.document_symbols.commands")
+            commands.show_symbol(current_state)
+          end,
+        })
+      end,
     })
   end
 end
