@@ -2,7 +2,6 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 local utils = require("neo-tree.utils")
-local log = require("neo-tree.log")
 local glob = require("neo-tree.sources.filesystem.lib.lua-glob")
 
 ---@class neotree.sources.filesystem.Ignore.Rule
@@ -41,7 +40,7 @@ end
 
 ---@param state neotree.State
 ---@param items neotree.FileItem[]
----@return string[] results
+---@return nil
 M.mark_ignored = function(state, items)
   local ignore_files = state.filtered_items.ignore_files
   if not ignore_files or vim.tbl_isempty(ignore_files) then
@@ -63,9 +62,6 @@ M.mark_ignored = function(state, items)
 
   ---@type table<string, { path: string, parser: neotree.lib.LuaGlob }[]>
   local ignorers = {}
-
-  ---@type string[]
-  local results = {}
 
   for folder, children in pairs(folders) do
     ignorers[folder] = ignorers[folder] or {}
@@ -95,8 +91,6 @@ M.mark_ignored = function(state, items)
       end
     end
   end
-
-  return results
 end
 
 return M
