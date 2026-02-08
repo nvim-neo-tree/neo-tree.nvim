@@ -86,7 +86,7 @@ M.mark_ignored = function(state, items)
         for _, ignorer in ipairs(folder_ignorers) do
           local parser = ignorer.parser
           local ignored = parser:check(item.path)
-          if ignored ~= nil then
+          if ignored then
             item.filtered_by = item.filtered_by or {}
             item.filtered_by.ignore_file = ignorer.path
             item.filtered_by.ignored = ignored
