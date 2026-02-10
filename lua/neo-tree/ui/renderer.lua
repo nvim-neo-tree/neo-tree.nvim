@@ -204,7 +204,6 @@ local remove_filtered = function(source_items, filtered_items)
   local hidden = {}
   local show_gitignored = filtered_items and filtered_items.hide_gitignored == false
   local show_ignored = filtered_items and filtered_items.hide_ignored == false
-  local check_ignore_status = show_gitignored or show_gitignored
   for _, item in ipairs(source_items) do
     local fby = item.filtered_by
     if not fby or item.contains_reveal_target then
@@ -223,13 +222,12 @@ local remove_filtered = function(source_items, filtered_items)
           break
         end
 
-        if check_ignore_status and fby.ignored or fby.gitignored then
-          local hidden_by_gitignore = fby.gitignored and not show_gitignored
-          local hidden_by_ignore = fby.ignored and not show_ignored
-          if not hidden_by_gitignore and not hidden_by_ignore then
-            visible[#visible + 1] = item
-            break
-          end
+        if show_gitignored and fby.gitignored then
+          visible[#visible + 1] = item
+          break
+        elseif show_ignored and fby.ignored then
+          visible[#visible + 1] = item
+          break
         end
 
         if not fby.parent then
