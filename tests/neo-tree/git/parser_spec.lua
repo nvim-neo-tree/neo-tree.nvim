@@ -152,4 +152,48 @@ describe("git parser", function()
     it("on windows", test)
     restore()
   end)
+
+  describe("parses git diff --name-status with renames and copies", function()
+    local diff_name_status_output = {
+      "M",
+      "lua/neo-tree/git/parser.lua",
+      "R079",
+      "lua/neo-tree/ui/banner.lua",
+      "lua/neo-tree/tui/banner.lua",
+      "C095",
+      "lua/neo-tree/ui/styles.lua",
+      "lua/neo-tree/tui/styles.lua",
+      "A",
+      "lua/neo-tree/tui/colors.lua",
+    }
+    local test = function()
+      local iter = coroutine.wrap(function()
+        for _, s in ipairs(diff_name_status_output) do
+          coroutine.yield(s)
+        end
+      end)
+      local worktree_root = utils.is_windows and "C:\\" or "/asdf"
+      local status = git_parser.parse_diff_name_status_output(worktree_root, false, iter)
+      local from_git_root = function(path)
+        return utils.path_join(worktree_root, path)
+      end
+      assert.are.same({
+        [from_git_root("lua/neo-tree/git/parser.lua")] = "M.",
+        [from_git_root("lua/neo-tree/tui/banner.lua")] = "R.",
+        [from_git_root("lua/neo-tree/tui/styles.lua")] = "C.",
+        [from_git_root("lua/neo-tree/tui/colors.lua")] = "A.",
+
+        --parent bubbling
+        [from_git_root("lua/neo-tree/git")] = { "M" },
+        [from_git_root("lua/neo-tree/tui")] = { "A" },
+        [from_git_root("lua/neo-tree")] = { "M" },
+        [from_git_root("lua")] = { "M" },
+      }, status)
+    end
+    local restore = test_utils.os_to_windows(false)
+    it("on unix", test)
+    test_utils.os_to_windows(true)
+    it("on windows", test)
+    restore()
+  end)
 end)
