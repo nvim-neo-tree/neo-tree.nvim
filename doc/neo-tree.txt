@@ -2139,6 +2139,11 @@ Its configuration includes the following options:
 follow_cursor~
 If set to `true`, will automatically focus on the symbol under the cursor.
 
+follow_tree_cursor~
+If set to `true`, will automatically show the symbol location in the
+target window when moving the cursor in the tree, while keeping the focus
+in the neo-tree window.
+
 kinds~
 A table specifying how LSP kinds should be rendered. Each entry should map the
 LSP kind name to an icon and a highlight group, for example

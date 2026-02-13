@@ -28,6 +28,35 @@ M.jump_to_symbol = function(state, node)
   vim.api.nvim_win_set_cursor(state.lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
 end
 
+---Show symbol location without changing focus
+---@param state table
+---@param node NuiTree.Node|nil
+M.show_symbol = function(state, node)
+  if not state or not state.tree then
+    return
+  end
+  node = node or state.tree:get_node()
+  if not node or node:get_depth() == 1 then
+    return
+  end
+
+  local neo_win = vim.api.nvim_get_current_win()
+  local symbol_loc = node.extra.selection_range.start
+
+  -- Jump to symbol in target window
+  vim.api.nvim_win_call(state.lsp_winid, function()
+    if vim.api.nvim_win_get_buf(state.lsp_winid) ~= state.lsp_bufnr then
+      vim.api.nvim_win_set_buf(state.lsp_winid, state.lsp_bufnr)
+    end
+    pcall(vim.api.nvim_win_set_cursor, state.lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
+  end)
+
+  -- Restore focus to neo-tree
+  if vim.api.nvim_win_is_valid(neo_win) then
+    vim.api.nvim_set_current_win(neo_win)
+  end
+end
+
 M.rename = function(state)
   local node = assert(state.tree:get_node())
   if node:get_depth() == 1 then
