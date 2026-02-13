@@ -417,9 +417,20 @@ M.parse_diff_name_status_output = function(
   ---@type string[]
   local statuses = {}
   for status_code in diff_name_status_iter do
+    -- Rename (R) and copy (C) status codes may include a similarity
+    -- percentage, e.g. "R079" or "C100". Strip to just the letter.
+    local first_char = status_code:sub(1, 1)
+    local is_rename_or_copy = first_char == "R" or first_char == "C"
+    if is_rename_or_copy then
+      status_code = first_char
+    end
     status_code = status_code .. "."
     statuses[#statuses + 1] = status_code
     local path = diff_name_status_iter()
+    -- Renames and copies output two paths (old then new); skip the old path.
+    if is_rename_or_copy then
+      path = diff_name_status_iter()
+    end
     if #status_code > 0 and path then
       path = remove_trailing_unix_slash(path)
       if utils.is_windows then
