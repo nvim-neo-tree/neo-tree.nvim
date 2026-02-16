@@ -23,7 +23,8 @@
       "../.dependencies/pack/vendor/start/nvim-web-devicons/lua",
       "../.dependencies/pack/vendor/start/image.nvim/lua",
       "../.dependencies/pack/vendor/start/snacks.nvim/lua",
-      "../.dependencies/pack/vendor/start/nvim-window-picker/lua"
+      "../.dependencies/pack/vendor/start/nvim-window-picker/lua",
+      "../.dependencies/pack/vendor/start/nvim-treesitter/lua"
     ],
     "ignoreDir": [
       ".dependencies",

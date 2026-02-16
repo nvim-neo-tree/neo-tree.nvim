@@ -19,7 +19,8 @@
       "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons",
       "$PWD/.dependencies/pack/vendor/start/image.nvim",
       "$PWD/.dependencies/pack/vendor/start/snacks.nvim",
-      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker"
+      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker",
+      "$PWD/.dependencies/pack/vendor/start/nvim-treesitter"
     ],
     "ignoreDir": [
       ".dependencies",
