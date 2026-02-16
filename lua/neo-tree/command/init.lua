@@ -196,11 +196,6 @@ do_show_or_focus = function(args, state, force_navigate)
     end
     -- close_other_sources()
     local current_win = vim.api.nvim_get_current_win()
-    do
-      local buf = vim.api.nvim_win_get_buf(current_win)
-      local bufname = vim.api.nvim_buf_get_name(buf)
-      vim.print(bufname)
-    end
     manager.navigate(state, args.dir, args.reveal_file, function()
       -- navigate changes the window to neo-tree, so just quickly hop back to the original window
       vim.api.nvim_set_current_win(current_win)
