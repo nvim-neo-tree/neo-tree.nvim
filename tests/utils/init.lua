@@ -178,7 +178,15 @@ end
 ---@param options? { interval?: integer, timeout?: integer }
 function mod.wait_for(callback, options)
   options = options or {}
-  vim.wait(options.timeout or 1000, callback, options.interval or 100)
+  local timeout = options.timeout or 10000
+  local cb_true, errnum = vim.wait(timeout, callback, options.interval or 100)
+  -- if not cb_true then
+  --   if errnum == -1 then
+  --     error("vim.wait timed out after " .. timeout .. " ms")
+  --   else
+  --     error("vim.wait interrupted")
+  --   end
+  -- end
 end
 
 ---@param options? { interval?: integer, timeout?: integer }

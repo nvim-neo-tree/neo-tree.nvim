@@ -128,7 +128,6 @@ M.setup = function(config, global_config)
 
   -- Set up follow_tree_cursor: show symbol on cursor move in document_symbols buffer
   if config.follow_tree_cursor then
-    local group = vim.api.nvim_create_augroup("neo_tree_document_symbols_follow_tree_cursor", { clear = true })
     manager.subscribe(M.name, {
       event = events.NEO_TREE_BUFFER_ENTER,
       handler = function()
@@ -138,6 +137,10 @@ M.setup = function(config, global_config)
         if not state or state.bufnr ~= bufnr then
           return
         end
+        local group = vim.api.nvim_create_augroup(
+          "neo_tree_document_symbols_follow_tree_cursor",
+          { clear = true }
+        )
         vim.api.nvim_create_autocmd("CursorMoved", {
           group = group,
           buffer = bufnr,

@@ -2,16 +2,17 @@ pcall(require, "luacov")
 
 local u = require("tests.utils")
 local treesitter_utils = require("tests.utils.treesitter")
+local lsp_utils = require("tests.utils.lsp")
 local verify = require("tests.utils.verify")
 
 if vim.fn.has("nvim-0.11") == 0 then
   -- Skip on versions below 0.11 due to requiring treesitter parsers
-  describe("Skipping document_symbols tests due to TS requirement", function() end)
   return
 end
 describe("document_symbols commands", function()
+  treesitter_utils.ensure_parser("lua")
+  lsp_utils.enable_lua_ls()
   before_each(function()
-    treesitter_utils.ensure_parser("lua")
     u.clear_environment()
   end)
 
@@ -40,8 +41,14 @@ describe("document_symbols commands", function()
       vim.cmd("edit " .. test_file)
       local main_win = vim.api.nvim_get_current_win()
       local main_buf = vim.api.nvim_get_current_buf()
+      u.wait_for(function()
+        return #vim.lsp.get_clients({ bufnr = main_buf }) > 0
+      end)
 
       -- Open neo-tree with document_symbols
+      require("neo-tree").setup({
+        sources = { "document_symbols" },
+      })
       vim.cmd("Neotree document_symbols right")
       u.wait_for_neo_tree()
 
@@ -120,6 +127,10 @@ describe("document_symbols commands", function()
       -- Open the file
       vim.cmd("edit " .. test_file)
       local main_win = vim.api.nvim_get_current_win()
+      local main_buf = vim.api.nvim_get_current_buf()
+      u.wait_for(function()
+        return #vim.lsp.get_clients({ bufnr = main_buf }) > 0
+      end)
 
       -- Setup neo-tree with follow_tree_cursor enabled
       require("neo-tree").setup({
@@ -137,12 +148,13 @@ describe("document_symbols commands", function()
       local neo_tree_win = vim.api.nvim_get_current_win()
 
       -- Wait for symbols to load
+      local state
       u.wait_for(function()
-        local state = require("neo-tree.sources.manager").get_state("document_symbols")
+        state = require("neo-tree.sources.manager").get_state("document_symbols")
         return state and state.tree and state.tree:get_node() ~= nil
       end)
-
-      local state = require("neo-tree.sources.manager").get_state("document_symbols")
+      -- Headless workaround, bufenter doesn't fire initally
+      vim.api.nvim_exec_autocmds("BufEnter", { buffer = state.bufnr })
 
       -- Record initial cursor position in target window
       local initial_cursor = vim.api.nvim_win_get_cursor(main_win)
@@ -153,6 +165,7 @@ describe("document_symbols commands", function()
         local node = state.tree:get_node()
         return node and node:get_depth() > 1
       end)
+      vim.api.nvim_exec_autocmds("CursorMoved", {})
 
       -- Wait for auto-show
       vim.wait(150)
@@ -174,6 +187,7 @@ describe("document_symbols commands", function()
 
       -- Move to another function
       vim.cmd("normal! j")
+      vim.api.nvim_exec_autocmds("CursorMoved", {})
       vim.wait(150)
 
       -- Verify focus is still in neo-tree
