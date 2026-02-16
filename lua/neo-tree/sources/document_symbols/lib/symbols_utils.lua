@@ -165,9 +165,11 @@ end
 ---latter is deprecated in neovim v0.11
 ---@diagnostic disable-next-line: deprecated
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
-M.render_symbols = function(state)
-  local bufnr = state.lsp_bufnr
-  local bufname = state.path
+
+---@param state neotree.StateWithTree
+---@param callback function
+M.render_symbols = function(state, callback)
+  local bufnr = assert(state.lsp_bufnr, "document_symbols bufnr not set")
 
   -- if no client found, terminate
   local client_found = false
@@ -178,6 +180,7 @@ M.render_symbols = function(state)
     end
   end
   if not client_found then
+    local bufname = assert(state.path)
     local splits = vim.split(bufname, "/")
     renderer.show_nodes({
       {
@@ -199,6 +202,9 @@ M.render_symbols = function(state)
     { textDocument = vim.lsp.util.make_text_document_params(bufnr) },
     function(resp)
       on_lsp_resp(resp, state)
+      if type(callback) == "function" then
+        vim.schedule(callback)
+      end
     end
   )
 end
