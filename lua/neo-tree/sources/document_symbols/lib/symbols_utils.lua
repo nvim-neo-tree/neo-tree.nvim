@@ -167,7 +167,7 @@ end
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 
 ---@param state neotree.StateWithTree
----@param callback function
+---@param callback function?
 M.render_symbols = function(state, callback)
   local bufnr = assert(state.lsp_bufnr, "document_symbols bufnr not set")
 
