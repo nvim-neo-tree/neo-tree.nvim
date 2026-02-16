@@ -67,6 +67,7 @@ update https://github.com/MunifTanjim/nui.nvim nui.nvim
 update https://github.com/nvim-tree/nvim-web-devicons nvim-web-devicons
 update https://github.com/nvim-lua/plenary.nvim plenary.nvim
 update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
+update https://github.com/nvim-treesitter/nvim-treesitter nvim-treesitter
 """
 run_windows = """
 function Update-Repository {
@@ -107,6 +108,7 @@ Update-Repository -GitUrl "https://github.com/MunifTanjim/nui.nvim" -RepoName "n
 Update-Repository -GitUrl "https://github.com/nvim-tree/nvim-web-devicons" -RepoName "nvim-web-devicons"
 Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
 Update-Repository -GitUrl "https://github.com/s1n7ax/nvim-window-picker" -RepoName "nvim-window-picker"
+Update-Repository -GitUrl "https://github.com/nvim-treesitter" -RepoName "nvim-treesitter"
 """
 
 [tasks.luals-check]

@@ -1,10 +1,17 @@
 pcall(require, "luacov")
 
 local u = require("tests.utils")
+local treesitter_utils = require("tests.utils.treesitter")
 local verify = require("tests.utils.verify")
 
+if vim.fn.has("nvim-0.11") == 0 then
+  -- Skip on versions below 0.11 due to requiring treesitter parsers
+  describe("Skipping document_symbols tests due to TS requirement", function() end)
+  return
+end
 describe("document_symbols commands", function()
   before_each(function()
+    treesitter_utils.ensure_parser("lua")
     u.clear_environment()
   end)
 
