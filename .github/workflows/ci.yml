@@ -42,6 +42,7 @@ jobs:
         uses: jdx/mise-action@v2
       - name: "Run tests"
         run: |
+          mise use tree-sitter
           mise deps
           mise test
 
