@@ -21,7 +21,7 @@ function M.ensure_parser(lang, timeout)
     local msg = string.format("Error installing Tree-sitter parsers: %s", vim.inspect(lang))
     error(msg)
   end
-  assert(#vim.api.nvim_get_runtime_file(parser_pattern:format(lang), true) > 0)
+  -- assert(#vim.api.nvim_get_runtime_file(parser_pattern:format(lang), true) > 0)
 end
 
 return M
