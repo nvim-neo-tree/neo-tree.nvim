@@ -27,21 +27,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        neovim: ["0.8", "0.9", "0.10", "0.11"]
-        os: [ubuntu-22.04]
+        neovim: ["v0.8.3", "v0.9.5", "v0.10.4"]
+        os: ["ubuntu-22.04"]
         include:
-          - neovim: "latest"
-            os: [windows-latest]
+          - neovim: "v0.11.6"
+            os: "ubuntu-latest"
+          - neovim: "stable"
+            os: "windows-latest"
     steps:
       - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: "${{matrix.neovim}}" # use instead of mise b/c treesitter might work better?
       - name: "Install neovim and other deps"
         uses: jdx/mise-action@v2
-        with:
-          install: true # [default: true] run `mise install`
-          install_args: "neovim@${{matrix.neovim}}" # [default: ""] additional arguments to `mise install`
       - name: "Run tests"
         run: |
-          mise use neovim@${{matrix.neovim}}
+          mise use tree-sitter
           mise deps
           mise test
 
