@@ -27,13 +27,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        neovim: ["v0.8.3", "v0.9.5", "v0.10.4", "v0.11.6"]
+        neovim: ["v0.8.3", "v0.9.5", "v0.10.4"]
         os: ["ubuntu-22.04"]
         include:
-          - neovim: ["v0.11.6"]
-            os: ["ubuntu-latest"]
-          - neovim: ["stable"]
-            os: ["windows-latest"]
+          - neovim: "v0.11.6"
+            os: "ubuntu-latest"
+          - neovim: "stable"
+            os: "windows-latest"
     steps:
       - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
