@@ -197,6 +197,35 @@ describe("Command", function()
             run_show_command(cmd, expected_tree_node)
             return true
           end)
+      end)
+
+        it("`:Neotree show` should not trigger WinLeave on the current window", function()
+          local testfile = fs_tree.lookup["topfile1"].abspath
+          u.editfile(testfile)
+          local win_leave_fired = false
+          local augroup = vim.api.nvim_create_augroup("test_winleave", { clear = true })
+          vim.api.nvim_create_autocmd("WinLeave", {
+            group = augroup,
+            callback = function()
+              win_leave_fired = true
+            end,
+          })
+          run_show_command("Neotree show")
+          verify.after(500, function()
+            vim.api.nvim_del_augroup_by_id(augroup)
+            assert(not win_leave_fired, "WinLeave should not fire during action=show")
+            return true
+          end)
+        end)
+
+        it("`:Neotree show` should not prevent subsequent focus commands from working", function()
+          local testfile = fs_tree.lookup["topfile1"].abspath
+          u.editfile(testfile)
+          run_show_command("Neotree show")
+          verify.after(200, function()
+            run_focus_command("Neotree focus")
+            return true
+          end)
         end)
       end)
 
