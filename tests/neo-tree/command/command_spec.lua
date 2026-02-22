@@ -41,8 +41,16 @@ end
 local run_close_command = function(command)
   vim.cmd(command)
   u.wait_for(function()
-    return false
-  end, { interval = 200, timeout = 200 })
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    local neotree_open = false
+    for i, winid in ipairs(wins) do
+      local buf = vim.api.nvim_win_get_buf(winid)
+      if vim.bo[buf].filetype == "neo-tree" then
+        neotree_open = true
+      end
+    end
+    return not neotree_open
+  end, { interval = 200, timeout = 200, timeout_message = "Neo-tree didn't close" })
 end
 
 describe("Command", function()
