@@ -18,7 +18,7 @@ local node_expander = require("neo-tree.sources.common.node_expander")
 
 ---@alias neotree.TreeCommand neotree.TreeCommandNormal|neotree.TreeCommandVisual
 
----Gets the node parent folder
+---Gets the node under the cursor node's parent
 ---@param state neotree.StateWithTree
 ---@return NuiTree.Node? node
 local function get_folder_node(state)
