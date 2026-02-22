@@ -32,9 +32,18 @@ function M.ensure_parser(lang, timeout)
   --   end
   -- end
 
-  assert(u.wait_for(function()
-    return vim.api.nvim_get_runtime_file(parser_pattern:format(lang), true) > 0
-  end)("Parser should have been installed"))
+  vim.opt.runtimepath:append({ install_dir })
+  local installed_parser_files = vim.api.nvim_get_runtime_file(parser_pattern:format(lang), true)
+  assert(
+    #installed_parser_files > 0,
+    "test(treesitter): couldn't find files for " .. lang .. " parser"
+  )
+  -- u.wait_for(function()
+  --   local installed_parser_files = vim.api.nvim_get_runtime_file(parser_pattern:format(lang), true)
+  --   return #installed_parser_files > 0, print(installed_parser_files[1])
+  -- end, {
+  --   timeout_message = "test(treesitter): couldn't find files for " .. lang .. " parser",
+  -- })
 end
 
 return M
