@@ -195,13 +195,13 @@ do_show_or_focus = function(args, state, force_navigate)
       return
     end
     -- close_other_sources()
-    local current_win = vim.api.nvim_get_current_win()
-    manager.navigate(state, args.dir, args.reveal_file, function()
-      -- navigate changes the window to neo-tree, so just quickly hop back to the original window
-      vim.api.nvim_set_current_win(current_win)
-    end, false)
+    -- Set the no-focus flag on the state object so that acquire_window
+    -- can check it and avoid stealing focus.
+    state._no_focus = true
+    manager.navigate(state, args.dir, args.reveal_file, nil, false)
   elseif args.action == "focus" then
     -- "focus" mean open and jump to the window if closed, and just focus it if already opened
+    state._no_focus = nil
     if window_exists then
       vim.api.nvim_set_current_win(state.winid)
     end
