@@ -79,7 +79,6 @@ end
 ---@return nil
 M.mark_ignored = function(state, items)
   local ignore_files = state.filtered_items.ignore_files
-  vim.print("mark_ignored")
   if not ignore_files or vim.tbl_isempty(ignore_files) then
     return {}
   end
