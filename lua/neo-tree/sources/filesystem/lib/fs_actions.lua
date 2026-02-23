@@ -28,13 +28,9 @@ local forward_slash_byte = ("/"):byte()
 M._file_completion = function(arglead, cmdline, cursorpos)
   local in_external_vim_ui_input = vim.bo[0].buftype == "prompt"
   if in_external_vim_ui_input then
-    local position = vim.fn.getcurpos(0)
     -- HACK: in snacks.input (and presumably other vim.ui.input windows that use getcompletion()),
-    -- cursor col/row seem to be stuck at (1,0).
-    --
-    -- curswant, however, does seem to correspond to cursor column still.
-    local curswant = position[5]
-    cursorpos = math.max(#cmdline, curswant - 1)
+    -- cursor col/row seem to be stuck at (1,0). Assume we are at the end of the cmdline if so.
+    cursorpos = math.max(#cmdline)
   end
 
   local path_separators_pattern = ("[/%s]"):format(utils.path_separator)
