@@ -17,8 +17,22 @@ local M = {}
 
 ---@type string?
 local _file_completion_root
----@type (fun(name: string, nodetype: string):boolean)?
+
+---@alias neotree.sources.filesystem.lib.fs_actions._filter (fun(abspath: string, nodetype: string):boolean)?
 local _file_completion_filter
+
+---vim.fs.pathjoin adapted for neo-tree's usage. Also excludes empty path segments.
+local relpathjoin = function(...)
+  local actual_paths = {}
+  for i = 1, select("#", ...) do
+    local path = select(i, ...)
+    if #path > 0 then
+      actual_paths[#actual_paths + 1] = path
+    end
+  end
+  local path = table.concat(actual_paths, utils.path_separator)
+  return path
+end
 
 local forward_slash_byte = ("/"):byte()
 ---@param arglead string
@@ -26,6 +40,7 @@ local forward_slash_byte = ("/"):byte()
 ---@param cursorpos integer
 ---@return string[]
 M._file_completion = function(arglead, cmdline, cursorpos)
+  assert(_file_completion_root, "No file completion root specified for file compleiton")
   local in_external_vim_ui_input = vim.bo[0].buftype == "prompt"
   if in_external_vim_ui_input then
     -- HACK: in snacks.input (and presumably other vim.ui.input windows that use getcompletion()),
@@ -52,43 +67,63 @@ M._file_completion = function(arglead, cmdline, cursorpos)
     current_name = cmdline:sub(sepindex_before_cursor + 1, sepindex_after_cursor)
   end
 
-  local names = {}
-  local nodetypes = {}
   local absdir_before_cursor =
-    utils.normalize_path(_file_completion_root .. utils.path_separator .. dir_before_cursor)
-  for name, nodetype in vim.fs.dir(absdir_before_cursor) do
-    if not _file_completion_filter or not _file_completion_filter(name, nodetype) then
-      names[#names + 1] = name
-      nodetypes[name] = nodetype
+    utils.normalize_path(relpathjoin(_file_completion_root, dir_before_cursor))
+  local cmdline_before_cursor = cmdline:sub(1, cursorpos)
+  local globexpr = vim.endswith(cmdline_before_cursor, "*") and cmdline_before_cursor
+    or cmdline .. "*"
+
+  ---Escape for globpath
+  local escaped_completion_root = _file_completion_root:gsub(",", "\\,")
+
+  ---@type string[]
+  local fullpath_matches = vim.fn.globpath(escaped_completion_root, globexpr, true, true, true)
+  local relpaths_from_cursor = {}
+  for i, path in ipairs(fullpath_matches) do
+    local relpath = path:sub(#absdir_before_cursor + 2)
+    if #relpath > 0 then
+      relpaths_from_cursor[#relpaths_from_cursor + 1] = relpath
     end
   end
 
   -- filtering
+  ---@type string[]
+  local results = {}
   local wildoptions = vim.o.wildoptions
-  local filtered = {}
-  if wildoptions:find("fuzzy", 1, true) then
-    filtered = current_name == "" and names or vim.fn.matchfuzzy(names, current_name)
+  if current_name:find("*", 1, true) then
+    -- globpath basically filtered already
+    results = relpaths_from_cursor
+  elseif wildoptions:find("fuzzy", 1, true) then
+    results = current_name == "" and relpaths_from_cursor
+      or vim.fn.matchfuzzy(relpaths_from_cursor, current_name)
   else
-    for _, name in ipairs(names) do
-      if name:find(current_name, 1, true) then
-        filtered[#filtered + 1] = name
+    for i, relpath in ipairs(relpaths_from_cursor) do
+      if vim.startswith(relpath, current_name) then
+        results[#results + 1] = relpath
       end
     end
   end
 
-  -- prepend filenames w/ current dir
-  for i, name in ipairs(filtered) do
-    local fullpath = utils.path_join(dir_before_cursor, name)
-    if nodetypes[name] == "directory" then
-      fullpath = fullpath .. utils.path_separator
+  local formatted_results = {}
+  for i, relpath in ipairs(results) do
+    local fullpath = utils.normalize_path(relpathjoin(absdir_before_cursor, relpath))
+    local stat = uv.fs_stat(fullpath)
+    if not _file_completion_filter or _file_completion_filter(fullpath, stat) then
+      local formatted_result = utils.normalize_path(relpathjoin(dir_before_cursor, relpath))
+      if stat and stat.type == "directory" then
+        formatted_result = formatted_result .. utils.path_separator
+      else
+        formatted_result = formatted_result
+      end
+      formatted_results[formatted_results + 1] = formatted_result
     end
-    filtered[i] = fullpath
   end
-  return filtered
+
+  return formatted_results
 end
 
 ---@param root string
----@param filter (fun(name: string, nodetype: string):boolean)?
+---@param filter neotree.sources.filesystem.lib.fs_actions._filter
 ---@return string completefunc_str
 local setup_file_completion = function(root, filter)
   _file_completion_root = root
