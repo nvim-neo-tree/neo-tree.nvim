@@ -557,7 +557,7 @@ M.create_node = function(in_directory, callback, input_root)
       end
       complete()
     end
-  end, {}, setup_file_completion(input_root or base))
+  end, {}, setup_file_completion(input_root))
 end
 
 ---Recursively delete a directory and its children.
