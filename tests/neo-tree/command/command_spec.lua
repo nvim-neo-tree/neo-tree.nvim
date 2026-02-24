@@ -21,7 +21,7 @@ local run_show_command = function(command, expected_tree_node)
   local expected_num_windows = #vim.api.nvim_list_wins() + 1
 
   vim.cmd(command)
-  verify.eventually(500, function()
+  verify.eventually(function()
     if #vim.api.nvim_list_wins() ~= expected_num_windows then
       return false
     end

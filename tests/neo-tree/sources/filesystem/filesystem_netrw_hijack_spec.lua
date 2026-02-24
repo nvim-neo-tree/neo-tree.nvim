@@ -43,13 +43,13 @@ describe("Filesystem netrw hijack", function()
 
     vim.cmd("edit .")
 
-    verify.eventually(200, function()
+    verify.eventually(function()
       return #vim.api.nvim_list_wins() == 2
     end, "there should be two windows")
 
     verify.buf_name_endswith("neo-tree filesystem [1]")
 
-    verify.eventually(100, function()
+    verify.eventually(function()
       local expected_buf_name = "Makefile"
       local buf_at_2 = vim.api.nvim_win_get_buf(vim.fn.win_getid(2))
       local name_at_2 = vim.api.nvim_buf_get_name(buf_at_2)

@@ -1,8 +1,12 @@
 local verify = {}
 
-verify.eventually = function(timeout, assertfunc, failmsg, ...)
+local DEFAULT_TIMEOUT = 1000
+---@param assertfunc function
+---@param failmsg string
+---@param timeout integer?
+verify.eventually = function(assertfunc, failmsg, timeout, ...)
   local success, args = false, { ... }
-  vim.wait(timeout or 1000, function()
+  vim.wait(timeout or DEFAULT_TIMEOUT, function()
     success = assertfunc(unpack(args))
     return success
   end)
@@ -11,6 +15,9 @@ end
 
 local id = 0
 ---Waits until the next vim.schedule before running assertfunc
+---@param assertfunc function
+---@param timeout integer?
+---@param failmsg string
 verify.schedule = function(assertfunc, timeout, failmsg)
   id = id + 1
   local scheduled_func_ran = false
@@ -21,34 +28,31 @@ verify.schedule = function(assertfunc, timeout, failmsg)
     success = args[1]
     scheduled_func_ran = true
   end)
-  local notimeout, errcode = vim.wait(timeout or 1000, function()
+  local notimeout, errcode = vim.wait(timeout or DEFAULT_TIMEOUT, function()
     return scheduled_func_ran
   end)
   assert(success, failmsg)
 end
 
 verify.after = function(timeout, assertfunc, failmsg)
-  vim.wait(timeout, function()
-    return false
-  end)
+  vim.wait(timeout)
   assert(assertfunc(), failmsg)
 end
 
 verify.bufnr_is = function(bufnr, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     return bufnr == vim.api.nvim_get_current_buf()
-  end, string.format("Current buffer is expected to be '%s' but is not", bufnr))
+  end, string.format("Current buffer is expected to be '%s' but is not", bufnr), timeout)
 end
 
 verify.bufnr_is_not = function(bufnr, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     return bufnr ~= vim.api.nvim_get_current_buf()
-  end, string.format("Current buffer is '%s' when expected to not be", bufnr))
+  end, string.format("Current buffer is '%s' when expected to not be", bufnr), timeout)
 end
 
 verify.buf_name_endswith = function(buf_name, timeout)
   verify.eventually(
-    timeout or 500,
     function()
       if buf_name == "" then
         return true
@@ -60,25 +64,30 @@ verify.buf_name_endswith = function(buf_name, timeout)
         return false
       end
     end,
-    string.format("Current buffer name is expected to be end with '%s' but it does not", buf_name)
+    string.format("Current buffer name is expected to be end with '%s' but it does not", buf_name),
+    timeout
   )
 end
 
+---@param timeout integer?
 verify.buf_name_is = function(buf_name, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     return buf_name == vim.api.nvim_buf_get_name(0)
-  end, string.format("Current buffer name is expected to be '%s' but is not", buf_name))
+  end, string.format("Current buffer name is expected to be '%s' but is not", buf_name), timeout)
 end
 
+---@param timeout integer?
 verify.tree_focused = function(timeout)
-  verify.eventually(timeout or 1000, function()
+  verify.eventually(function()
     if not verify.get_state() then
       return false
     end
     return vim.bo[0].filetype == "neo-tree"
-  end, "Current buffer is not a 'neo-tree' filetype")
+  end, "Current buffer is not a 'neo-tree' filetype", timeout)
 end
 
+---@param source_name string?
+---@param winid integer?
 verify.get_state = function(source_name, winid)
   if source_name == nil then
     local success
@@ -98,7 +107,7 @@ verify.get_state = function(source_name, winid)
 end
 
 verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     local state = verify.get_state(source_name, winid)
     if not state then
       return false
@@ -115,7 +124,7 @@ verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
       return true
     end
     return false
-  end, string.format("Tree node '%s' not focused", expected_node_id))
+  end, string.format("Tree node '%s' not focused", expected_node_id), timeout)
 end
 
 verify.filesystem_tree_node_is = function(expected_node_id, winid, timeout)
@@ -131,15 +140,15 @@ verify.git_status_tree_node_is = function(expected_node_id, winid, timeout)
 end
 
 verify.window_handle_is = function(winid, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     return winid == vim.api.nvim_get_current_win()
-  end, string.format("Current window handle is expected to be '%s' but is not", winid))
+  end, string.format("Current window handle is expected to be '%s' but is not", winid), timeout)
 end
 
 verify.window_handle_is_not = function(winid, timeout)
-  verify.eventually(timeout or 500, function()
+  verify.eventually(function()
     return winid ~= vim.api.nvim_get_current_win()
-  end, string.format("Current window handle is not expected to be '%s' but it is", winid))
+  end, string.format("Current window handle is not expected to be '%s' but it is", winid), timeout)
 end
 
 return verify
