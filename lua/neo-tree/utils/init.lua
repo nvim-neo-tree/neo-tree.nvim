@@ -485,6 +485,7 @@ local stat_providers = {
 
 ---@class neotree.utils.StatTime
 --- @field sec number
+
 ---@class neotree.utils.StatTable
 --- @field birthtime neotree.utils.StatTime
 --- @field mtime neotree.utils.StatTime
@@ -1235,6 +1236,7 @@ end
 
 local forward_slash_byte = ("/"):byte(1, 1)
 local backslash_byte = ("\\"):byte(1, 1)
+
 ---@param path string Any path.
 ---@return string? prefix Nil if the path isn't absolute. Will always return it with the correct path separator appended.
 M.abspath_prefix = function(path)
@@ -1262,6 +1264,50 @@ M.abspath_prefix = function(path)
   end
 
   return path:sub(1, 1) == "/" and "/" or nil
+end
+
+local unc_slash_pattern = [[^//([^/]+)/([^/]+)]]
+local unc_backslash_pattern = [[^\\([^\]+)\([^\]+)]]
+---Works like python's `os.path.splitroot`. Unlike split_path or abspath_prefix, this sticks to python behavior and
+---always returns 3 strings.
+---@param path string
+---@return string drive
+---@return string root
+---@return string tail
+M.path_splitroot = function(path)
+  local drive = ""
+  local root = ""
+  local tail = path
+
+  if M.is_windows then
+    local drive_letter_match = path:match("^([A-Za-z]:)")
+    if drive_letter_match then
+      drive = drive_letter_match
+      tail = tail:sub(#drive + 1)
+    elseif path:sub(1, 2) == [[\\\\]] or path:sub(1, 2) == "//" then
+      local sep = path:sub(1, 1)
+      local unc_pattern = sep == "/" and unc_slash_pattern or unc_backslash_pattern
+      local server, share = path:match(unc_pattern)
+      if server and share then
+        drive = table.concat({ sep, sep, server, sep, share }, "")
+        tail = path:sub(#drive + 1)
+      end
+    end
+
+    local tail_start = tail:sub(1, 1)
+    if tail_start == "/" or tail_start == "\\" then
+      root = tail_start
+      tail = tail:sub(2)
+    end
+  else
+    local tail_start = tail:sub(1, 1)
+    if tail_start == "/" then
+      root = tail_start
+      tail = tail:sub(2)
+    end
+  end
+
+  return drive, root, tail
 end
 
 local table_merge_internal

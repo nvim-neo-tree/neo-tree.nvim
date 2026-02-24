@@ -208,4 +208,33 @@ describe("utils path functions", function()
       restore()
     end)
   end)
+  describe("utils.path_splitroot", function()
+    it("handles POSIX absolute and relative paths", function()
+      local restore = test_utils.os_to_windows(false)
+      assert.are.same({ "", "/", "etc/hosts" }, { utils.path_splitroot("/etc/hosts") })
+      assert.are.same({ "", "", "src/main.lua" }, { utils.path_splitroot("src/main.lua") })
+      assert.are.same({ "", "/", "" }, { utils.path_splitroot("/") })
+      restore()
+    end)
+
+    it("handles Windows drive letters", function()
+      local restore = test_utils.os_to_windows(true)
+      assert.are.same(
+        { "C:", "\\", "Windows\\System" },
+        { utils.path_splitroot("C:\\Windows\\System") }
+      )
+      assert.are.same({ "D:", "", "docs/notes.txt" }, { utils.path_splitroot("D:docs/notes.txt") })
+      assert.are.same({ "Z:", "", "" }, { utils.path_splitroot("Z:") })
+      assert.are.same(
+        { "\\\\server\\share", "\\", "folder\\file" },
+        { utils.path_splitroot("\\\\server\\share\\folder\\file") }
+      )
+      restore()
+    end)
+
+    it("handles empty or edge case inputs", function()
+      assert.are.same({ "", "", "" }, { utils.path_splitroot("") })
+      assert.are.same({ "", "", "." }, { utils.path_splitroot(".") })
+    end)
+  end)
 end)

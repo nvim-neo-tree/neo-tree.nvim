@@ -21,20 +21,6 @@ local _file_completion_root
 ---@alias neotree.sources.filesystem.lib.fs_actions._filter (fun(abspath: string, nodetype: string):boolean)?
 local _file_completion_filter
 
----vim.fs.pathjoin adapted for neo-tree's usage. Also excludes empty path segments.
-local relpathjoin = function(...)
-  local actual_paths = {}
-  for i = 1, select("#", ...) do
-    local path = select(i, ...)
-    if #path > 0 then
-      actual_paths[#actual_paths + 1] = path
-    end
-  end
-  local path = table.concat(actual_paths, utils.path_separator)
-  return path
-end
-
-local forward_slash_byte = ("/"):byte()
 ---@param arglead string
 ---@param cmdline string
 ---@param cursorpos integer
@@ -45,77 +31,42 @@ M._file_completion = function(arglead, cmdline, cursorpos)
   if in_external_vim_ui_input then
     -- HACK: in snacks.input (and presumably other vim.ui.input windows that use getcompletion()),
     -- cursor col/row seem to be stuck at (1,0). Assume we are at the end of the cmdline if so.
-    cursorpos = math.max(#cmdline)
+    cursorpos = math.max(cursorpos, #cmdline)
   end
 
-  local path_separators_pattern = ("[/%s]"):format(utils.path_separator)
-  local sepindex_before_cursor, sepindex_after_cursor
-  for i = cursorpos, 1, -1 do
-    local byte = cmdline:byte(i, i)
-    if byte == utils.path_separator_byte or byte == forward_slash_byte then
-      sepindex_before_cursor = i
-      sepindex_after_cursor = cmdline:find(path_separators_pattern, cursorpos + 1)
-      break
-    end
-  end
-
-  ---@type string?
-  local dir_before_cursor = ""
-  local current_name = cmdline
-  if sepindex_before_cursor then
-    dir_before_cursor = cmdline:sub(1, sepindex_before_cursor)
-    current_name = cmdline:sub(sepindex_before_cursor + 1, sepindex_after_cursor)
-  end
-
-  local absdir_before_cursor =
-    utils.normalize_path(relpathjoin(_file_completion_root, dir_before_cursor))
   local cmdline_before_cursor = cmdline:sub(1, cursorpos)
+
+  local input_root = _file_completion_root
+  if #input_root == 0 then
+    -- Path needs some sort of actual path, derive path from cmdline before cursor instead
+    local drive, root, tail = utils.path_splitroot(cmdline_before_cursor)
+    input_root = drive .. root
+    cmdline_before_cursor = tail
+  end
+
   local globexpr = vim.endswith(cmdline_before_cursor, "*") and cmdline_before_cursor
     or cmdline .. "*"
 
   ---Escape for globpath
-  local escaped_completion_root = _file_completion_root:gsub(",", "\\,")
+  local escaped_root = input_root:gsub(",", "\\,")
+  ---@type string[]
+  local fullpath_matches = vim.fn.globpath(escaped_root, globexpr, true, true, true)
 
   ---@type string[]
-  local fullpath_matches = vim.fn.globpath(escaped_completion_root, globexpr, true, true, true)
-  local relpaths_from_cursor = {}
-  for i, path in ipairs(fullpath_matches) do
-    local relpath = path:sub(#absdir_before_cursor + 2)
-    if #relpath > 0 then
-      relpaths_from_cursor[#relpaths_from_cursor + 1] = relpath
-    end
-  end
-
-  -- filtering
-  ---@type string[]
-  local results = {}
-  local wildoptions = vim.o.wildoptions
-  if current_name:find("*", 1, true) then
-    -- globpath basically filtered already
-    results = relpaths_from_cursor
-  elseif wildoptions:find("fuzzy", 1, true) then
-    results = current_name == "" and relpaths_from_cursor
-      or vim.fn.matchfuzzy(relpaths_from_cursor, current_name)
-  else
-    for i, relpath in ipairs(relpaths_from_cursor) do
-      if vim.startswith(relpath, current_name) then
-        results[#results + 1] = relpath
-      end
-    end
-  end
-
   local formatted_results = {}
-  for i, relpath in ipairs(results) do
-    local fullpath = utils.normalize_path(relpathjoin(absdir_before_cursor, relpath))
+  local drive, root, tail = utils.path_splitroot(input_root)
+  local root_is_anchor = #drive + #root > 0 and #tail == 0
+  -- if input root is /, we cutoff the root itself
+  -- If it's longer (like /home), cutoff the root + the next path separator
+  local result_cutoff = #input_root + (root_is_anchor and 1 or 2)
+  for _, fullpath in ipairs(fullpath_matches) do
     local stat = uv.fs_stat(fullpath)
     if not _file_completion_filter or _file_completion_filter(fullpath, stat) then
-      local formatted_result = utils.normalize_path(relpathjoin(dir_before_cursor, relpath))
+      local result = fullpath:sub(result_cutoff)
       if stat and stat.type == "directory" then
-        formatted_result = formatted_result .. utils.path_separator
-      else
-        formatted_result = formatted_result
+        result = result .. utils.path_separator
       end
-      formatted_results[formatted_results + 1] = formatted_result
+      formatted_results[#formatted_results + 1] = result
     end
   end
 
