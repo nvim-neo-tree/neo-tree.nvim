@@ -217,7 +217,7 @@ describe("utils path functions", function()
       restore()
     end)
 
-    it("handles Windows drive letters", function()
+    it("handles Windows paths", function()
       local restore = test_utils.os_to_windows(true)
       assert.are.same(
         { "C:", "\\", "Windows\\System" },

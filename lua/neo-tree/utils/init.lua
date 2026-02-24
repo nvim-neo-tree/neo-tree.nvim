@@ -1284,13 +1284,20 @@ M.path_splitroot = function(path)
     if drive_letter_match then
       drive = drive_letter_match
       tail = tail:sub(#drive + 1)
-    elseif path:sub(1, 2) == [[\\\\]] or path:sub(1, 2) == "//" then
-      local sep = path:sub(1, 1)
-      local unc_pattern = sep == "/" and unc_slash_pattern or unc_backslash_pattern
-      local server, share = path:match(unc_pattern)
-      if server and share then
-        drive = table.concat({ sep, sep, server, sep, share }, "")
-        tail = path:sub(#drive + 1)
+    else
+      local path_xx = path:sub(1, 2)
+      if path_xx == [[\\]] or path_xx == "//" then
+        local sep = path:sub(1, 1)
+        local server, share = path:match(sep == "/" and unc_slash_pattern or unc_backslash_pattern)
+        vim.print({
+          server = server,
+          share = share,
+          path = path,
+        })
+        if server and share then
+          drive = table.concat({ sep, sep, server, sep, share }, "")
+          tail = path:sub(#drive + 1)
+        end
       end
     end
 
