@@ -60,12 +60,12 @@ local find_ignorers_in_dir = function(relpaths, dir)
   local found = {}
   for _, relpath in ipairs(relpaths) do
     local fullpath = utils.path_join(dir, relpath)
-    local lstat = uv.fs_lstat(fullpath)
-    if lstat then
+    local stat = uv.fs_stat(fullpath)
+    if stat and stat.type == "file" then
       ---@class neotree.sources.filesystem.Ignorer
       local ignorer = {
         fullpath,
-        file_to_glob(fullpath, dir, lstat),
+        file_to_glob(fullpath, dir, stat),
         dir,
       }
       found[#found + 1] = ignorer
