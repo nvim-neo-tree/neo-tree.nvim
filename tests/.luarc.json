@@ -18,13 +18,13 @@
       "${3rd}/busted/library",
       "../lua",
       "../tests",
-      "../.dependencies/pack/vendor/start/plenary.nvim/lua",
-      "../.dependencies/pack/vendor/start/nui.nvim/lua",
-      "../.dependencies/pack/vendor/start/nvim-web-devicons/lua",
-      "../.dependencies/pack/vendor/start/image.nvim/lua",
-      "../.dependencies/pack/vendor/start/snacks.nvim/lua",
-      "../.dependencies/pack/vendor/start/nvim-window-picker/lua",
-      "../.dependencies/pack/vendor/start/nvim-treesitter/lua"
+      "../.dependencies/plenary.nvim/lua",
+      "../.dependencies/nui.nvim/lua",
+      "../.dependencies/nvim-web-devicons/lua",
+      "../.dependencies/image.nvim/lua",
+      "../.dependencies/snacks.nvim/lua",
+      "../.dependencies/nvim-window-picker/lua",
+      "../.dependencies/nvim-treesitter/lua"
     ],
     "ignoreDir": [
       ".dependencies",

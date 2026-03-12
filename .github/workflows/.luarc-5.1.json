@@ -14,13 +14,13 @@
     "checkThirdParty": "Disable",
     "library": [
       "$VIMRUNTIME",
-      "$PWD/.dependencies/pack/vendor/start/plenary.nvim",
-      "$PWD/.dependencies/pack/vendor/start/nui.nvim",
-      "$PWD/.dependencies/pack/vendor/start/nvim-web-devicons",
-      "$PWD/.dependencies/pack/vendor/start/image.nvim",
-      "$PWD/.dependencies/pack/vendor/start/snacks.nvim",
-      "$PWD/.dependencies/pack/vendor/start/nvim-window-picker",
-      "$PWD/.dependencies/pack/vendor/start/nvim-treesitter"
+      "$PWD/.dependencies/plenary.nvim",
+      "$PWD/.dependencies/nui.nvim",
+      "$PWD/.dependencies/nvim-web-devicons",
+      "$PWD/.dependencies/image.nvim",
+      "$PWD/.dependencies/snacks.nvim",
+      "$PWD/.dependencies/nvim-window-picker",
+      "$PWD/.dependencies/nvim-treesitter"
     ],
     "ignoreDir": [
       ".dependencies",
