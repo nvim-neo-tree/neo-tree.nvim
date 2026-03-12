@@ -443,7 +443,11 @@ local process_output = function(path, stdout_lines)
     end
 
     if utils.is_windows then
-      lines[i] = utils.windowize_path(p)
+      local drive, root, _ = utils.path_splitroot(p)
+      if drive ~= "" or root ~= "/" then
+        -- if a non-unix looking path on windows (i.e. not MSYS2), should be okay to convert to backslashes
+        lines[i] = utils.windowize_path(p)
+      end
     end
   end
   return lines

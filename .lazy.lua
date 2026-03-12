@@ -1,5 +1,5 @@
 local root = vim.fs.find({ "neo-tree.nvim" }, { upward = true })[1]
-local deps_dir = root .. "/.dependencies/pack/vendor/start"
+local deps_dir = root .. "/.dependencies"
 return {
   {
     "folke/snacks.nvim",

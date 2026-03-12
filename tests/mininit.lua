@@ -2,12 +2,21 @@ local root_dir = vim.fs.find("neo-tree.nvim", { upward = true, limit = 1 })[1]
 assert(root_dir, "no neo-tree found")
 
 package.path = ("%s;%s/?.lua;%s/?/init.lua"):format(package.path, root_dir, root_dir)
-vim.opt.packpath:prepend(root_dir .. "/.dependencies")
 
-vim.opt.rtp = {
+vim.opt.runtimepath = {
   root_dir,
   vim.env.VIMRUNTIME,
 }
+
+local utils = require("neo-tree.utils")
+local deps_dir = utils.path_join(root_dir, ".dependencies")
+local deps = {}
+for basename, type in vim.fs.dir(deps_dir) do
+  assert(type == "directory")
+  deps[#deps + 1] = utils.path_join(deps_dir, basename)
+  -- add each dep
+end
+vim.opt.runtimepath:append(deps)
 
 vim.env.NEOTREE_TESTING = "true"
 

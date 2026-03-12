@@ -16,6 +16,7 @@ local M = {}
 
 ---The file system path separator for the current platform.
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+M.is_msys2 = M.is_windows and vim.env.MSYSTEM -- HACK
 M.is_macos = vim.fn.has("mac") == 1
 
 ---For testing
