@@ -25,7 +25,6 @@ end
 ---@param git_args string[]
 ---@return string[]
 local ls_files_sync = function(worktree_root, git_args)
-  vim.print(git_args)
   local output = vim.fn.system({ "git", unpack(git_args) })
   assert(vim.v.shell_error == 0)
   local iter = utils.gsplit_plain(output, "\001")
