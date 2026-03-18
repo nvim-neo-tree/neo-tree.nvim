@@ -297,9 +297,14 @@ end
 ---@param on_parsed fun(gs: neotree.git.Status)
 ---@param skip_bubbling boolean?
 local git_status_job = function(context, git_args, on_parsed, skip_bubbling)
-  local default_opts = context.scope_path and { paths = { context.scope_path } } or nil
   local args = git_args
-    or make_git_status_args(context.porcelain_version, context.worktree_root, default_opts)
+  if not args then
+    args = make_git_status_args(
+      context.porcelain_version,
+      context.worktree_root,
+      { paths = context.paths }
+    )
+  end
   git_utils.git_job(args, function(code, stdout_chunks, stderr_chunks)
     if code ~= 0 then
       log.at.warn.format(
@@ -362,21 +367,15 @@ M.status_async = function(path, base_lookup, opts)
         if not git_status_porcelain_version then
           return
         end
+        local nt_config = require("neo-tree").ensure_config()
+        local scope_to_path = nt_config.git_status_scope_to_path and path ~= worktree_root
+        local paths = scope_to_path and { path } or nil
         ---@class neotree.git.JobContext
         ---@field git_status neotree.git.Status
-        ---@field scope_path string? Path to scope git status to (subdirectory of worktree root)
-        local nt_config = require("neo-tree").config
-        local scope_path = (
-          nt_config
-          and nt_config.git_status_scope_to_path
-          and path ~= worktree_root
-        )
-            and path
-          or nil
         local ctx = {
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,
-          scope_path = scope_path,
+          paths = paths,
           git_status = {},
           num_in_batch = 0,
           lines_parsed = 0,
@@ -399,12 +398,10 @@ M.status_async = function(path, base_lookup, opts)
         end
 
         -- do a fast scan first to get basic things in
-        local fast_opts = { untracked_files = "no" }
-        if scope_path then
-          fast_opts.paths = { scope_path }
-        end
-        local fast_args =
-          make_git_status_args(git_status_porcelain_version, worktree_root, fast_opts)
+        local fast_args = make_git_status_args(git_status_porcelain_version, worktree_root, {
+          untracked_files = "no",
+          paths = ctx.paths,
+        })
         git_status_job(ctx, fast_args, function(fast_status)
           change_worktree_git_status(worktree_root, fast_status)
 
