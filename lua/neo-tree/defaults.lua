@@ -31,6 +31,10 @@ local config = {
     max_lines = 10000, -- How many lines of git status results to process. Anything after this will be dropped.
                        -- Anything before this will be used. The last items to be processed are the untracked files.
   },
+  git_status_scope_to_path = false, -- Scope git status to the displayed path instead of the entire worktree root.
+                                    -- Improves performance in monorepos where the worktree root is far above the
+                                    -- directory being browsed. When enabled, `git status` receives a `-- <path>`
+                                    -- pathspec limiting it to the current neo-tree root directory.
   hide_root_node = false, -- Hide the root node.
   retain_hidden_root_indent = false, -- IF the root node is hidden, keep the indentation anyhow.
                                      -- This is needed if you use expanders because they render in the indent.

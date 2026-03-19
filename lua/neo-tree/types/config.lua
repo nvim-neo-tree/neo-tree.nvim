@@ -120,6 +120,7 @@
 ---@field enable_cursor_hijack boolean
 ---@field git_status_async boolean
 ---@field git_status_async_options neotree.Config.GitStatusAsync
+---@field git_status_scope_to_path boolean
 ---@field hide_root_node boolean
 ---@field keep_altfile boolean
 ---@field retain_hidden_root_indent boolean
