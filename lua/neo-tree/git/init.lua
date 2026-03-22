@@ -255,7 +255,7 @@ M.status = function(path, base_lookup, skip_bubbling, status_opts)
   }
 
   local raw_status_text = vim.fn.system(status_cmd)
-  assert(vim.v.shell_error == 0)
+  assert(vim.v.shell_error == 0, raw_status_text)
 
   local last_status_text = raw_status_text_cache[worktree_root]
   local status_text = raw_status_text:gsub("\001", "\000") -- to make the following cache check work
@@ -547,6 +547,9 @@ M.find_worktree_info = function(path, callback)
   if callback then
     log.assert(type(callback) == "function", "callback for find_worktree_info should be a function")
     git_utils.git_job(rev_parse_args, function(code, stdout_chunks, stderr_chunks)
+      if code ~= 0 then
+        return
+      end
       local full_stdout = table.concat(stdout_chunks, "")
       local stdout_lines = {}
       for line in utils.gsplit_plain(full_stdout, "\n") do
@@ -560,6 +563,9 @@ M.find_worktree_info = function(path, callback)
   end
 
   local ok, rev_parse_lines = utils.execute_command({ "git", unpack(rev_parse_args) })
+  if not ok then
+    return
+  end
   local info = process_output(path, rev_parse_lines)
   local git_dir, worktree_root, superproject_worktree_root = unpack(info)
   return worktree_root, git_dir, superproject_worktree_root
