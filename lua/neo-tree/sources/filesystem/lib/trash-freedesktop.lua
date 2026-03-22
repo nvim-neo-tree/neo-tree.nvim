@@ -5,11 +5,51 @@ local utils = require("neo-tree.utils")
 local xdg = require("neo-tree.utils.xdg")
 ---@param path string
 ---@return boolean
-local ensure_writeable_dir = function(path)
+local function dir_is_writable(path)
   local stat = uv.fs_stat(path)
   return stat and stat.type == "directory" and uv.fs_access(path, "w") or false
 end
-return function(paths)
+
+---@param path string
+---@param opts { recursive: boolean?, remove: boolean? }?
+---@param mode number?
+---@return boolean success
+---@return string? err
+local function mkdir(path, opts, mode)
+  opts = opts or {}
+  local stat = uv.fs_stat(path)
+  if stat then
+    if stat.type ~= "directory" then
+      return false, path .. " exists and is not a directory"
+    end
+    return true
+  end
+  local parent_path = utils.split_path(path)
+  if not parent_path then
+    return false, "could not determine parent of " .. path
+  end
+  local parent_stat = uv.fs_stat(parent_path)
+  if not parent_stat then
+    if opts.recursive then
+      mkdir(parent_path, opts, mode)
+    else
+      return false, "parent dir of " .. path .. " does not exist"
+    end
+  end
+  local res, err = uv.fs_mkdir(path, mode or tonumber("755", 8))
+  res = res or false
+  return res, err
+end
+local function ensure_writable_dir(path)
+  if dir_is_writable(path) then
+    return true
+  end
+  if not mkdir(path, { recursive = true }) then
+    return false
+  end
+  return dir_is_writable(path)
+end
+return function()
   if utils.is_windows then
     log.warn("Freedesktop trash module does not support Windows.")
     return nil
@@ -18,14 +58,16 @@ return function(paths)
   local trash_dir = utils.path_join(data_home, "Trash")
   local files_dir = utils.path_join(trash_dir, "files")
   local info_dir = utils.path_join(trash_dir, "info")
-  ensure_writeable_dir(trash_dir)
-  ensure_writeable_dir(files_dir)
-  ensure_writeable_dir(info_dir)
+  local setup = ensure_writable_dir(trash_dir)
+    and ensure_writable_dir(files_dir)
+    and ensure_writable_dir(info_dir)
+  if not setup then
+    return nil
+  end
 
-  return function()
+  return function(paths)
     for i, path in ipairs(paths) do
       local _, filename = utils.split_path(path)
-      local timestamp = os.date("%Y%m%dT%H:%M:%S")
 
       -- 2. Create unique name in trash to avoid collisions
       local trash_filename = filename
@@ -44,7 +86,7 @@ Path=%s
 DeletionDate=%s"
 ]],
         path,
-        timestamp
+        os.date("%Y%m%dT%H:%M:%S")
       )
 
       local info_file_path = utils.path_join(info_dir, trash_filename .. ".trashinfo")
@@ -57,7 +99,7 @@ DeletionDate=%s"
 
       -- 4. Move the file to the trash/files directory
       -- Using os.rename (Note: this only works on the same filesystem)
-      local success, move_err = os.rename(path, files_dir .. "/" .. trash_filename)
+      local success, move_err = uv.fs_rename(path, utils.path_join(files_dir, trash_filename))
 
       if not success then
         -- Cleanup info file if move fails
