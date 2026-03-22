@@ -145,7 +145,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
         vim.schedule(function()
           log.warn(message)
           vim.cmd("rightbelow vertical split")
-          vim.api.nvim_win_set_width(0, state.window.width or 40)
+          vim.api.nvim_win_set_width(remaining_pane, state.window.width or 40)
           vim.cmd("b " .. buf_name)
         end)
         return
