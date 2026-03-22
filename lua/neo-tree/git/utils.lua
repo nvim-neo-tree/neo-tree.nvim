@@ -16,18 +16,21 @@ M.git_job = function(git_args, on_exit, cwd)
   --- Switch to vim.system in v4.0
   local stdout = log.assert(uv.new_pipe())
   local stderr = log.assert(uv.new_pipe())
-  uv.spawn("git", {
+  local handle = uv.spawn("git", {
     args = git_args,
     hide = true,
     stdio = { nil, stdout, stderr },
     cwd = cwd,
   }, function(code, _)
     stdout:close()
-    stdout:shutdown()
     stderr:close()
-    stdout:shutdown()
     on_exit(code, stdout_chunks, stderr_chunks)
   end)
+  if not handle then
+    stdout:close()
+    stderr:close()
+    return
+  end
 
   stdout:read_start(function(err, data)
     log.assert(not err, err)
@@ -68,7 +71,7 @@ M.might_be_in_git_repo = function(path)
   local git_dir_from_env = os.getenv("GIT_DIR") or os.getenv("GIT_COMMON_DIR")
   if git_dir_from_env then
     local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
-    return not not stat
+    return stat ~= nil
   end
   local git_work_tree = os.getenv("GIT_WORK_TREE")
   if git_work_tree then
