@@ -219,7 +219,7 @@ function M.check_config(config)
       validate("use_popups_for_input", cfg.use_popups_for_input, "boolean")
       validate("use_default_mappings", cfg.use_default_mappings, "boolean")
       validate("trash", cfg.trash, function(trash)
-        validate("cmd", trash.cmd, function(cmd)
+        validate("cmd", trash.command, function(cmd)
           if type(cmd) == "function" then
             return true -- TODO: maybe better validation here
           elseif type(cmd) == "table" then

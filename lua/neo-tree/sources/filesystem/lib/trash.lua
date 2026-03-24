@@ -1,6 +1,7 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local validate = require("neo-tree.health.typecheck").validate
+local freedesktop_trash = require("neo-tree.sources.filesystem.lib.trash-freedesktop")
 local M = {}
 
 ---@alias neotree.trash.Command neotree.trash.PureCommand|neotree.trash.FunctionGenerator|neotree.trash.CommandGenerator
@@ -18,6 +19,8 @@ local M = {}
 
 -- Using programs mentioned by
 -- https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
+
+---@type table<string, neotree.trash.Command[]>
 local trash_builtins = {
   macos = {
     { "trash" }, -- trash-cli, usually https://github.com/andreafrancia/trash-cli
@@ -40,7 +43,13 @@ local trash_builtins = {
       "gio",
       "trash",
       healthcheck = function()
-        return utils.executable("gio") and utils.execute_command({ "gio", "trash", "--list" })
+        if not utils.executable("gio") then
+          return false
+        end
+        if not utils.execute_command({ "gio", "trash", "--list" }) then
+          return false
+        end
+        return true
       end,
     },
     { "trash" }, -- trash-cli, usually https://github.com/andreafrancia/trash-cli
@@ -55,6 +64,7 @@ local trash_builtins = {
       end
       return kioclient_cmds
     end,
+    freedesktop_trash,
   },
   windows = {
     { "trash" }, -- trash-cli, usually https://github.com/sindresorhus/trash#cli
@@ -108,7 +118,7 @@ end
 M.trash = function(paths)
   log.assert(#paths > 0)
   local commands = {
-    require("neo-tree").ensure_config().trash.cmd,
+    require("neo-tree").ensure_config().trash.command,
   }
   if utils.is_macos then
     vim.list_extend(commands, trash_builtins.macos)

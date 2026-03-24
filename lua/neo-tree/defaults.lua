@@ -65,7 +65,7 @@ local config = {
   use_popups_for_input = true, -- If false, inputs will use vim.ui.input() instead of custom floats.
   use_default_mappings = true,
   trash = {
-    cmd = nil -- by default: powershell script on windows, `trash` or `osascript` on macOS, and `gio trash` or `trash` (like trash-cli) on other Unixes
+    command = nil -- by default: powershell script on windows, `trash` or `osascript` on macOS, and `gio trash` or `trash` (like trash-cli) on other Unixes
   },
   -- source_selector provides clickable tabs to switch between sources.
   source_selector = {
