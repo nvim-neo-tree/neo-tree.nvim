@@ -736,6 +736,138 @@ M.delete_nodes = function(paths_to_delete, callback)
   end)
 end
 
+M.trash_node = function(path, callback, noconfirm)
+  local _, name = utils.split_path(path)
+
+  log.trace("Deleting node:", path)
+  local _type = "unknown"
+  local stat = uv.fs_lstat(path)
+  local children_count = 0
+  if not stat then
+    log.warn("Could not read file/dir:", path, stat, ", attempting to delete anyway...")
+    -- Guess the type by whether it appears to have an extension
+    if path:match("%.(.+)$") then
+      _type = "file"
+    else
+      _type = "directory"
+    end
+  else
+    _type = stat.type
+    if _type == "link" then
+      local link_to = uv.fs_realpath(path)
+      if not link_to then
+        log.error("Could not read link")
+        return
+      end
+      local target_file = uv.fs_stat(link_to)
+      if target_file then
+        _type = target_file.type
+      end
+      _type = uv.fs_stat(link_to).type
+    end
+    if _type == "directory" then
+      children_count = #scan.scan_dir(path, {
+        hidden = true,
+        respect_gitignore = false,
+        add_dirs = true,
+        depth = 1,
+      })
+    end
+  end
+
+  local do_delete = function()
+    local complete = vim.schedule_wrap(function()
+      events.fire_event(events.FILE_DELETED, path)
+      if callback then
+        callback(path)
+      end
+    end)
+
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if event_result.handled then
+      complete()
+      return
+    end
+
+    if _type ~= "directory" then
+      local success = uv.fs_unlink(path)
+      if not success then
+        return log.error("Could not remove file: " .. path)
+      end
+      clear_buffer(path)
+    else
+      -- first try using native system commands, which are recursive
+      local success = false
+      if utils.is_windows then
+        local delete_ok, result =
+          utils.execute_command({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
+        if not delete_ok then
+          log.debug("Could not delete directory '", path, "' with rmdir: ", result)
+        else
+          log.info("Deleted directory ", path)
+          success = true
+        end
+      else
+        local delete_ok, result = utils.execute_command({ "rm", "-Rf", path })
+        if not delete_ok then
+          log.debug("Could not delete directory '", path, "' with rm: ", result)
+        else
+          log.info("Deleted directory ", path)
+          success = true
+        end
+      end
+
+      -- Fallback to using libuv if native commands fail
+      if not success then
+        success = delete_dir(path)
+        if not success then
+          return log.error("Could not remove directory: " .. path)
+        end
+      end
+    end
+    complete()
+  end
+
+  if noconfirm then
+    do_delete()
+  else
+    local msg = string.format("Are you sure you want to delete '%s'?", name)
+    if children_count > 0 then
+      msg = ("WARNING: Dir has %s %s! %s"):format(
+        children_count,
+        children_count == 1 and "child" or "children",
+        msg
+      )
+    end
+    inputs.confirm(msg, function(confirmed)
+      if confirmed then
+        do_delete()
+      end
+    end)
+  end
+end
+
+---@param paths_to_delete string[]
+---@param callback fun(path)?
+M.trash_nodes = function(paths_to_delete, callback)
+  local msg = "Are you sure you want to delete " .. #paths_to_delete .. " items?"
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    for _, path in ipairs(paths_to_delete) do
+      M.trash_node(path, nil, true)
+    end
+
+    if callback then
+      vim.schedule(function()
+        callback(paths_to_delete[#paths_to_delete])
+      end)
+    end
+  end)
+end
+
 ---@alias neotree.sources.filesystem.ActionCallbacks.OnRename fun(source: string, destination: string)
 
 ---@param prompt string
