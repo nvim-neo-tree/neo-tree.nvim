@@ -220,7 +220,7 @@ M.execute = function(args, state_config_override)
   args.reveal = args.reveal
     or args.reveal_force_cwd
     -- implied reveal if follow_current_file
-    or args.reveal == nil and state.follow_current_file.enabled
+    or args.reveal == nil and state.follow_current_file and state.follow_current_file.enabled
   local has_reveal_file = utils.truthy(args.reveal_file)
   if args.reveal and not has_reveal_file then
     args.reveal_file = manager.get_path_to_reveal()
