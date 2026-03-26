@@ -157,10 +157,11 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
     log.debug("navigate_internal: in path_to_reveal, state.position=", state.position.node_id)
     fs_scan.get_items(state, nil, path_to_reveal, callback)
   else
-    local is_current = state.current_position == "current"
+    local winpos = state.current_position
     local follow_file = state.follow_current_file.enabled
       and not is_search
-      and not is_current
+      and not winpos == "current"
+      and not winpos == "float"
       and manager.get_path_to_reveal()
     local handled = false
     if utils.truthy(follow_file) then
