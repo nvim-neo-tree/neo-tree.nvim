@@ -5,6 +5,11 @@ compat.noref = function()
   return vim.fn.has("nvim-0.10") == 1 and true or {} --[[@as boolean]]
 end
 
+---@return boolean
+compat.has_split_win = function()
+  return vim.fn.has("nvim-0.10") == 1
+end
+
 compat.gsplit_plain_arg = vim.fn.has("nvim-0.9") == 1 and { plain = true } or true
 
 ---source: https://github.com/Validark/Lua-table-functions/blob/master/table.lua
