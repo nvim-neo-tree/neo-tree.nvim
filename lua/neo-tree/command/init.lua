@@ -6,8 +6,6 @@ local renderer = require("neo-tree.ui.renderer")
 local inputs = require("neo-tree.ui.inputs")
 local completion = require("neo-tree.command.completion")
 local git = require("neo-tree.git")
-local do_show_or_focus, handle_reveal
-
 local M = {
   complete_args = completion.complete_args,
 }
@@ -17,6 +15,78 @@ M._last = {
   source = nil,
   position = nil,
 }
+
+local function do_show_or_focus(args, state, force_navigate)
+  local window_exists = renderer.window_exists(state)
+
+  -- local function close_other_sources()
+  --   if not window_exists then
+  --     -- Clear the space in case another source is already open
+  --     local target_position = args.position or state.current_position or state.window.position
+  --     if target_position ~= "current" then
+  --       manager.close_all(target_position)
+  --     end
+  --   end
+  -- end
+
+  if args.action == "show" then
+    -- "show" means show the window without focusing it
+    if window_exists and not force_navigate then
+      -- There's nothing to do here, we are already at the target state
+      return
+    end
+    -- close_other_sources()
+    local current_win = vim.api.nvim_get_current_win()
+    manager.navigate(state, args.dir, args.reveal_file, function()
+      -- navigate changes the window to neo-tree, so just quickly hop back to the original window
+      vim.api.nvim_set_current_win(current_win)
+    end, false)
+  elseif args.action == "focus" then
+    -- "focus" mean open and jump to the window if closed, and just focus it if already opened
+    if window_exists then
+      vim.api.nvim_set_current_win(state.winid)
+    end
+    if force_navigate or not window_exists then
+      -- close_other_sources()
+      manager.navigate(state, args.dir, args.reveal_file, nil, false)
+    end
+  end
+end
+local function handle_reveal(args, state)
+  args.reveal_file = utils.normalize_path(args.reveal_file)
+  -- Deal with cwd if we need to
+  local cwd = args.dir or state.path or manager.get_cwd(state)
+  if utils.is_subpath(cwd, args.reveal_file) then
+    args.dir = cwd
+    do_show_or_focus(args, state, true)
+    return
+  end
+
+  local reveal_file_parent = assert(utils.split_path(args.reveal_file))
+  if args.reveal_force_cwd then
+    args.dir = reveal_file_parent
+    do_show_or_focus(args, state, true)
+    return
+  end
+
+  -- if dir doesn't have the reveal_file, ignore the reveal_file
+  if args.dir then
+    args.reveal_file = nil
+    do_show_or_focus(args, state, true)
+    return
+  end
+
+  log.debug("Prompting for change cwd", args)
+  -- force was not specified and the file does not belong to cwd, so we need to ask the user
+  inputs.confirm("File not in cwd. Change cwd to " .. reveal_file_parent .. "?", function(response)
+    if response == true then
+      args.dir = reveal_file_parent
+    else
+      args.reveal_file = nil
+    end
+    do_show_or_focus(args, state, true)
+  end)
+end
 
 ---@class neotree.command.execute.Args
 ---The action to execute
@@ -147,19 +217,22 @@ M.execute = function(args, state_config_override)
   state.enable_source_selector = args.selector
 
   -- Handle reveal logic
-  args.reveal = args.reveal or args.reveal_force_cwd
-  local do_reveal = utils.truthy(args.reveal_file)
-  if args.reveal and not do_reveal then
+  args.reveal = args.reveal
+    or args.reveal_force_cwd
+    -- implied reveal if follow_current_file
+    or args.reveal == nil and state.follow_current_file and state.follow_current_file.enabled
+  local has_reveal_file = utils.truthy(args.reveal_file)
+  if args.reveal and not has_reveal_file then
     args.reveal_file = manager.get_path_to_reveal()
-    do_reveal = utils.truthy(args.reveal_file)
+    has_reveal_file = utils.truthy(args.reveal_file)
   end
 
   -- All set, now show or focus the window
-  local force_navigate = path_changed or do_reveal or git_base_changed or state.dirty
+  local force_navigate = path_changed or has_reveal_file or git_base_changed or state.dirty
   --if position_changed and args.position ~= "current" and current_position ~= "current" then
   --  manager.close(args.source)
   --end
-  if do_reveal then
+  if has_reveal_file then
     handle_reveal(args, state)
     return
   end
@@ -174,78 +247,6 @@ end
 M._command = function(...)
   local args = parser.parse({ ... }, true)
   M.execute(args)
-end
-
-do_show_or_focus = function(args, state, force_navigate)
-  local window_exists = renderer.window_exists(state)
-  local function close_other_sources()
-    if not window_exists then
-      -- Clear the space in case another source is already open
-      local target_position = args.position or state.current_position or state.window.position
-      if target_position ~= "current" then
-        manager.close_all(target_position)
-      end
-    end
-  end
-
-  if args.action == "show" then
-    -- "show" means show the window without focusing it
-    if window_exists and not force_navigate then
-      -- There's nothing to do here, we are already at the target state
-      return
-    end
-    -- close_other_sources()
-    local current_win = vim.api.nvim_get_current_win()
-    manager.navigate(state, args.dir, args.reveal_file, function()
-      -- navigate changes the window to neo-tree, so just quickly hop back to the original window
-      vim.api.nvim_set_current_win(current_win)
-    end, false)
-  elseif args.action == "focus" then
-    -- "focus" mean open and jump to the window if closed, and just focus it if already opened
-    if window_exists then
-      vim.api.nvim_set_current_win(state.winid)
-    end
-    if force_navigate or not window_exists then
-      -- close_other_sources()
-      manager.navigate(state, args.dir, args.reveal_file, nil, false)
-    end
-  end
-end
-
-handle_reveal = function(args, state)
-  args.reveal_file = utils.normalize_path(args.reveal_file)
-  -- Deal with cwd if we need to
-  local cwd = args.dir or state.path or manager.get_cwd(state)
-  if utils.is_subpath(cwd, args.reveal_file) then
-    args.dir = cwd
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  local reveal_file_parent, _ = utils.split_path(args.reveal_file) --[[@as string]]
-  if args.reveal_force_cwd then
-    args.dir = reveal_file_parent
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  -- if dir doesn't have the reveal_file, ignore the reveal_file
-  if args.dir then
-    args.reveal_file = nil
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  log.debug("Prompting for change cwd", args)
-  -- force was not specified and the file does not belong to cwd, so we need to ask the user
-  inputs.confirm("File not in cwd. Change cwd to " .. reveal_file_parent .. "?", function(response)
-    if response == true then
-      args.dir = reveal_file_parent
-    else
-      args.reveal_file = nil
-    end
-    do_show_or_focus(args, state, true)
-  end)
 end
 
 return M
