@@ -58,7 +58,9 @@ local on_directory_loaded = function(context, dir_path)
           if nt.config.git_status_async then
             git.status_async(target_path, nil, nt.config.git_status_async_options)
           else
-            git.status(target_path, nil, false)
+            vim.schedule(function()
+              git.status(target_path, nil, false)
+            end)
           end
           break
         end
