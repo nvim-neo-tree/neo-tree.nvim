@@ -251,6 +251,10 @@ M.rename = function(state)
   cc.rename(state, utils.wrap(refresh, state))
 end
 
+M.rename_basename = function(state)
+  cc.rename_basename(state, utils.wrap(refresh, state))
+end
+
 ---@param state neotree.sources.filesystem.State
 M.set_root = function(state)
   if state.search_pattern then

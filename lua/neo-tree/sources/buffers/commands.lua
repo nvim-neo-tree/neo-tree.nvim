@@ -86,6 +86,10 @@ M.rename = function(state)
   cc.rename(state, refresh)
 end
 
+M.rename_basename = function(state)
+  cc.rename_basename(state, refresh)
+end
+
 M.set_root = function(state)
   local node = state.tree:get_node()
   while node and node.type ~= "directory" do
