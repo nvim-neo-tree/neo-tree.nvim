@@ -290,6 +290,17 @@ M.move_node = function(source, destination, callback, input_root)
 
     -- Resolve user-inputted relative paths out of the absolute paths
     dest = utils.normalize_path(dest)
+    local complete = vim.schedule_wrap(function()
+      rename_buffer(source, dest)
+      events.fire_event(events.FILE_MOVED, {
+        source = source,
+        destination = dest,
+      })
+      if callback then
+        callback(source, dest)
+      end
+    end)
+
     local function move_file()
       create_all_parents(dest)
       uv.fs_rename(source, dest, function(err)
@@ -297,18 +308,7 @@ M.move_node = function(source, destination, callback, input_root)
           log.error("Could not move the files from", source, "to", dest, ":", err)
           return
         end
-        vim.schedule(function()
-          rename_buffer(source, dest)
-        end)
-        vim.schedule(function()
-          events.fire_event(events.FILE_MOVED, {
-            source = source,
-            destination = dest,
-          })
-          if callback then
-            callback(source, dest)
-          end
-        end)
+        complete()
       end)
     end
     local event_result = events.fire_event(events.BEFORE_FILE_MOVE, {
@@ -317,6 +317,7 @@ M.move_node = function(source, destination, callback, input_root)
       callback = move_file,
     }) or {}
     if event_result.handled then
+      complete()
       return
     end
     move_file()
