@@ -74,6 +74,10 @@ M.rename = function(state)
   cc.rename(state, refresh)
 end
 
+M.rename_basename = function(state)
+  cc.rename_basename(state, refresh)
+end
+
 cc._add_common_commands(M)
 
 return M
