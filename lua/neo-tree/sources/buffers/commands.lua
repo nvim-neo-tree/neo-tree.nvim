@@ -55,7 +55,13 @@ M.copy = function(state)
 end
 
 M.move = function(state)
-  cc.move(state, redraw)
+  local function navigate(_, destination)
+    -- redraw()
+    vim.schedule(function()
+      buffers.navigate(state, nil, destination)
+    end)
+  end
+  cc.move(state, navigate)
 end
 
 M.show_debug_info = cc.show_debug_info
