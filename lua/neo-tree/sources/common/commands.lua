@@ -992,6 +992,125 @@ M.vsplit_with_window_picker = function(state, toggle_directory)
   open_with_cmd(state, "vsplit", toggle_directory, use_window_picker)
 end
 
+-- Jump to any node by two characters.
+---@param state neotree.sources.filesystem.State
+M.quick_jump = function(state)
+  local nodes = renderer.get_all_visible_nodes(state.tree)
+
+  local name_nodes = {}
+  for _, node in ipairs(nodes) do
+    name_nodes[node.name] = {
+      b = true,
+      node = node,
+    }
+  end
+
+  local node2key = utils.assign_hotkeys(name_nodes)
+  local icon = state.components.icon
+
+  -- Recover all icons.
+  local recover = function()
+    state.components.icon = icon
+    renderer.redraw(state)
+  end
+
+  -- render hotkeys
+  local icon_from_map = function(map)
+    local id2key = {}
+    for _, node in ipairs(nodes) do
+      local target_id = node:get_id()
+      local key = map[node]
+      id2key[target_id] = key
+    end
+    return function(config, n, s)
+      local id = n:get_id()
+      local key = id2key[id]
+      if key ~= nil then
+        return {
+          text = key,
+          highlight = "NeoTreeFileIcon",
+        }
+      end
+      return icon(config, n, s)
+    end
+  end
+
+  local redraw_jump = function()
+    state.components.icon = icon_from_map(node2key)
+    renderer.redraw(state)
+    vim.cmd("redraw")
+  end
+
+  local toggle_directory = function(node)
+    if node:is_expanded() then
+      node:collapse()
+    else
+      node:expand()
+    end
+  end
+
+  redraw_jump()
+
+  local depth = 1
+  while true do
+    local ok, key = pcall(vim.fn.getchar)
+    if not ok or type(key) ~= "number" then
+      break
+    end
+
+    local ch = vim.fn.nr2char(key)
+    if not ch:match("[A-Za-z]") then
+      break
+    end
+
+    local candidate = utils.get_candidate(node2key, ch, depth)
+    local n = vim.tbl_count(candidate)
+    if n == 0 then
+      break
+    end
+
+    if n > 1 or depth == 1 then
+      node2key = candidate
+      depth = depth + 1
+      redraw_jump()
+    else
+      local target_node = next(candidate)
+      if target_node == nil then
+        break
+      end
+
+      local fs = require("neo-tree.sources.filesystem")
+      if state.name == "filesystem" then
+        if target_node.type == "file" then
+          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
+        elseif target_node.type == "directory" then
+          fs.toggle_directory(state, target_node, nil)
+        end
+      elseif state.name == "document_symbols" then
+        local sym = require("neo-tree.sources.document_symbols.commands")
+        sym.jump_to_symbol(state, target_node)
+      elseif state.name == "buffers" then
+        if target_node.type == "file" then
+          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
+        elseif target_node.type == "directory" then
+          toggle_directory(target_node)
+        elseif target_node.type == "terminal" then
+          utils.open_file(state, target_node:get_id(), "e", target_node.extra and target_node.extra.bufnr)
+        end
+      elseif state.name == "git_status" then
+        if target_node.type == "file" then
+          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
+        elseif target_node.type == "directory" then
+          toggle_directory(target_node)
+        end
+      end
+      break
+    end
+  end
+
+  recover()
+end
+
 M.show_help = function(state)
   local title = state.config and state.config.title or nil
   local prefix_key = state.config and state.config.prefix_key or nil

@@ -1729,6 +1729,184 @@ M.truncate_by_cell = function(str, col_limit, align)
   return short, strwidth(short)
 end
 
+-- A helper generates double-character hotkeys table.
+-- Hotkeys are classified by the first character, and the inner priority uses qwerty distance.
+-- That is, the closer two characters are, the higher their priority.
+-- If two candidates have the same distance, we break ties in the order:
+-- east -> north -> south -> west -> ne -> se -> nw -> sw.
+-- Example: hh -> hj -> hy -> hn -> hg -> hu -> hb -> ht -> hm -> hk -> ... -> hz.
+---@return table<string, string[]> tbl
+local generate_hotkeys = function()
+  local letters = {}
+  for c = string.byte("a"), string.byte("z") do
+    table.insert(letters, string.char(c))
+  end
+
+  local rows = {
+    { y = 0, offset = 0, keys = "qwertyuiop" },
+    { y = 1, offset = 0, keys = "asdfghjkl" },
+    { y = 2, offset = 1, keys = "zxcvbnm" },
+  }
+
+  -- Set coordinate.
+  local pos = {}
+  for _, row in ipairs(rows) do
+    for i = 1, #row.keys do
+      local ch = row.keys:sub(i, i)
+      pos[ch] = {
+        x = row.offset + (i - 1),
+        y = row.y,
+      }
+    end
+  end
+
+  -- A helper used to calculate distances between two characters.
+  local dist = function(ch1, ch2)
+    local pos1 = pos[ch1]
+    local pos2 = pos[ch2]
+    local dx = pos1.x - pos2.x
+    local dy = pos1.y - pos2.y
+    return dx * dx + dy * dy
+  end
+
+  -- Return direction priority.
+  -- east -> north -> south -> west -> ne -> se -> nw -> sw.
+  local dir = function(base, ch)
+    local pos_base = pos[base]
+    local pos_ch = pos[ch]
+    local dx = pos_ch.x - pos_base.x
+    local dy = pos_ch.y - pos_base.y
+    if dx == 0 and dy == 0 then return 0 end
+    if dx > 0 and dy == 0 then return 1 end
+    if dx == 0 and dy < 0 then return 2 end
+    if dx == 0 and dy > 0 then return 3 end
+    if dx < 0 and dy == 0 then return 4 end
+    if dx > 0 and dy < 0 then return 5 end
+    if dx > 0 and dy > 0 then return 6 end
+    if dx < 0 and dy < 0 then return 7 end
+    if dx < 0 and dy > 0 then return 8 end
+  end
+
+  local compare = function(base)
+    return function(ch1, ch2)
+      if ch1 == ch2 then
+        return true
+      end
+
+      local dist1 = dist(base, ch1)
+      local dist2 = dist(base, ch2)
+      if dist1 ~= dist2 then
+        return dist1 < dist2
+      end
+
+      local dir1 = dir(base, ch1)
+      local dir2 = dir(base, ch2)
+      return dir1 < dir2
+    end
+  end
+
+  -- Generate double-character hotkeys table.
+  local tbl = {}
+  for _, fst in ipairs(letters) do
+    local fst_group = {}
+    local second = {}
+    for _, scd in ipairs(letters) do
+      table.insert(second, scd)
+    end
+
+    table.sort(second, compare(fst))
+
+    for _, scd in ipairs(second) do
+      table.insert(fst_group, fst .. scd)
+    end
+
+    tbl[fst] = fst_group
+  end
+
+  return tbl
+end
+
+local hotkey_candidates = generate_hotkeys()
+
+---@return table<string, integer> head
+local generate_hdptr = function()
+  local head = {}
+  for c = string.byte("a"), string.byte("z") do
+    head[string.char(c)] = 1
+  end
+  return head
+end
+
+---@param name string
+---@return string c
+local fst_ch_in_filename = function(name)
+  if type(name) ~= "string" then
+    return "j"
+  end
+
+  local c = string.match(name, "[A-Za-z]")
+  if c then
+    return string.lower(c)
+  end
+
+  return "j"
+end
+
+-- Return key - node pairs whose key starts by ch.
+---@param node2key table<neotree.FileNode, string>
+---@param ch string
+---@param depth integer
+---@return table<neotree.FileNode, string> candidate
+M.get_candidate = function(node2key, ch, depth)
+  local candidate = {}
+  for node, key in pairs(node2key) do
+    if #key >= depth then
+      local fst = string.sub(key, depth, depth)
+      if fst == ch then
+        candidate[node] = key
+      end
+    end
+  end
+  return candidate
+end
+
+-- Generate bimap node -> hotkey & hotkey -> node.
+---@param name_nodes table<string, { b: boolean, node: neotree.FileNode }>
+---@return table<neotree.FileNode, string> node2key
+M.assign_hotkeys = function(name_nodes)
+  local node2key = {}
+
+  local hdptr = generate_hdptr()
+
+  -- Assign opened buffers more convenient keys.
+  local opened_buffers = M.get_opened_buffers()
+  for buf, _ in pairs(opened_buffers) do
+    if name_nodes[buf] ~= nil then
+      local node = name_nodes[buf].node
+      local fst = fst_ch_in_filename(buf)
+      local hd_ptr = hdptr[fst]
+      local hotkey = hotkey_candidates[fst][hd_ptr]
+      hdptr[fst] = hd_ptr + 1
+      node2key[node] = hotkey
+      name_nodes[buf].b = false
+    end
+  end
+
+  -- Handle the rest.
+  for name, value in pairs(name_nodes) do
+    if value.b then
+      local node = name_nodes[name].node
+      local fst = fst_ch_in_filename(name)
+      local hd = hdptr[fst]
+      local hotkey = hotkey_candidates[fst][hd]
+      hdptr[fst] = hd + 1
+      node2key[node] = hotkey
+    end
+  end
+
+  return node2key
+end
+
 ---@type table<integer, integer[]>
 M.prior_windows = {}
 
