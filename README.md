@@ -88,22 +88,22 @@ There are also some optional plugins that work with Neo-tree:
 - [s1n7ax/nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker) for
   `_with_window_picker` keymaps.
 
-
-### mini.deps example:
+### vim.pack example (requires Neovim 0.12)
 
 ```lua
-local add = MiniDeps.add
-
-add({
-  source = 'nvim-neo-tree/neo-tree.nvim',
-  checkout = 'v3.x',
-  depends = {
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    "nvim-tree/nvim-web-devicons", -- optional, but recommended
-  }
+vim.pack.add({
+  {
+    src = 'https://github.com/nvim-neo-tree/neo-tree.nvim',
+    version = vim.version.range('3')
+  },
+  -- dependencies
+  "https://github.com/nvim-lua/plenary.nvim",
+  "https://github.com/MunifTanjim/nui.nvim",
+  -- optional, but recommended
+  "https://github.com/nvim-tree/nvim-web-devicons",
 })
 ```
+
 
 ### lazy.nvim example:
 
@@ -191,22 +191,23 @@ use({
 
 </details>
 
+
 <details>
   <summary>
-    vim.pack example (Neovim v0.12, still in development at time of writing):
+    mini.deps example:
   </summary>
 
 ```lua
-vim.pack.add({
-  {
-    src = 'https://github.com/nvim-neo-tree/neo-tree.nvim',
-    version = vim.version.range('3')
-  },
-  -- dependencies
-  "https://github.com/nvim-lua/plenary.nvim",
-  "https://github.com/MunifTanjim/nui.nvim",
-  -- optional, but recommended
-  "https://github.com/nvim-tree/nvim-web-devicons",
+local add = MiniDeps.add
+
+add({
+  source = 'nvim-neo-tree/neo-tree.nvim',
+  checkout = 'v3.x',
+  depends = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    "nvim-tree/nvim-web-devicons", -- optional, but recommended
+  }
 })
 ```
 
