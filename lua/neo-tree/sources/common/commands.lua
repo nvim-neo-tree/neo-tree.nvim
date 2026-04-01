@@ -1005,7 +1005,8 @@ M.quick_jump = function(state)
     }
   end
 
-  local node2key = utils.assign_hotkeys(name_nodes)
+  local jump_labels = state.config.jump_labels or state.jump_labels
+  local node2key = utils.assign_hotkeys(name_nodes, jump_labels)
   local icon = state.components.icon
 
   -- Recover all icons.
@@ -1016,15 +1017,8 @@ M.quick_jump = function(state)
 
   -- render hotkeys
   local icon_from_map = function(map)
-    local id2key = {}
-    for _, node in ipairs(nodes) do
-      local target_id = node:get_id()
-      local key = map[node]
-      id2key[target_id] = key
-    end
     return function(config, n, s)
-      local id = n:get_id()
-      local key = id2key[id]
+      local key = map[n]
       if key ~= nil then
         return {
           text = key,
@@ -1039,14 +1033,6 @@ M.quick_jump = function(state)
     state.components.icon = icon_from_map(node2key)
     renderer.redraw(state)
     vim.cmd("redraw")
-  end
-
-  local toggle_directory = function(node)
-    if node:is_expanded() then
-      node:collapse()
-    else
-      node:expand()
-    end
   end
 
   redraw_jump()
@@ -1079,30 +1065,14 @@ M.quick_jump = function(state)
         break
       end
 
-      local fs = require("neo-tree.sources.filesystem")
-      if state.name == "filesystem" then
-        if target_node.type == "file" then
-          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
-        elseif target_node.type == "directory" then
-          fs.toggle_directory(state, target_node, nil)
-        end
-      elseif state.name == "document_symbols" then
-        local sym = require("neo-tree.sources.document_symbols.commands")
-        sym.jump_to_symbol(state, target_node)
-      elseif state.name == "buffers" then
-        if target_node.type == "file" then
-          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
-        elseif target_node.type == "directory" then
-          toggle_directory(target_node)
-        elseif target_node.type == "terminal" then
-          utils.open_file(state, target_node:get_id(), "e", target_node.extra and target_node.extra.bufnr)
-        end
-      elseif state.name == "git_status" then
-        if target_node.type == "file" then
-          utils.open_file(state, target_node.path, "e", target_node.extra and target_node.extra.bufnr)
-        elseif target_node.type == "directory" then
-          toggle_directory(target_node)
-        end
+      local on_jump = state.on_jump or state.config.on_jump
+      if type(on_jump) == "function" then
+        on_jump(state, target_node)
+      elseif on_jump == "open_or_toggle" then
+        utils.open_or_toggle_node(state, target_node)
+      else
+        local id = target_node:get_id()
+        renderer.focus_node(state, id)
       end
       break
     end

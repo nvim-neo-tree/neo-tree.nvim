@@ -1729,107 +1729,41 @@ M.truncate_by_cell = function(str, col_limit, align)
   return short, strwidth(short)
 end
 
--- A helper generates double-character hotkeys table.
--- Hotkeys are classified by the first character, and the inner priority uses qwerty distance.
--- That is, the closer two characters are, the higher their priority.
--- If two candidates have the same distance, we break ties in the order:
--- east -> north -> south -> west -> ne -> se -> nw -> sw.
--- Example: hh -> hj -> hy -> hn -> hg -> hu -> hb -> ht -> hm -> hk -> ... -> hz.
----@return table<string, string[]> tbl
-local generate_hotkeys = function()
-  local letters = {}
-  for c = string.byte("a"), string.byte("z") do
-    table.insert(letters, string.char(c))
+---@param fst string
+---@param cnt integer
+---@param jump_labels string
+---@return string hotkey
+local compute_hotkey = function(fst, cnt, jump_labels)
+  local labels = fst .. string.gsub(jump_labels, fst, "")
+  local labels_len = #labels
+
+  -- compute length
+  local length = 1
+  local prev = 0
+  local sum = labels_len ^ length
+  while sum < cnt do
+    length = length + 1
+    prev = sum
+    sum = sum + labels_len ^ length
   end
 
-  local rows = {
-    { y = 0, offset = 0, keys = "qwertyuiop" },
-    { y = 1, offset = 0, keys = "asdfghjkl" },
-    { y = 2, offset = 1, keys = "zxcvbnm" },
-  }
+  local rest = cnt - prev - 1
 
-  -- Set coordinate.
-  local pos = {}
-  for _, row in ipairs(rows) do
-    for i = 1, #row.keys do
-      local ch = row.keys:sub(i, i)
-      pos[ch] = {
-        x = row.offset + (i - 1),
-        y = row.y,
-      }
-    end
+  -- generate hotkey
+  local hotkey = fst
+  local q
+  while length > 0 do
+    q = math.floor(rest / (labels_len ^ (length - 1)) + 1)
+    hotkey = hotkey .. string.sub(labels, q, q)
+    rest = rest % (labels_len ^ (length - 1))
+    length = length - 1
   end
 
-  -- A helper used to calculate distances between two characters.
-  local dist = function(ch1, ch2)
-    local pos1 = pos[ch1]
-    local pos2 = pos[ch2]
-    local dx = pos1.x - pos2.x
-    local dy = pos1.y - pos2.y
-    return dx * dx + dy * dy
-  end
-
-  -- Return direction priority.
-  -- east -> north -> south -> west -> ne -> se -> nw -> sw.
-  local dir = function(base, ch)
-    local pos_base = pos[base]
-    local pos_ch = pos[ch]
-    local dx = pos_ch.x - pos_base.x
-    local dy = pos_ch.y - pos_base.y
-    if dx == 0 and dy == 0 then return 0 end
-    if dx > 0 and dy == 0 then return 1 end
-    if dx == 0 and dy < 0 then return 2 end
-    if dx == 0 and dy > 0 then return 3 end
-    if dx < 0 and dy == 0 then return 4 end
-    if dx > 0 and dy < 0 then return 5 end
-    if dx > 0 and dy > 0 then return 6 end
-    if dx < 0 and dy < 0 then return 7 end
-    if dx < 0 and dy > 0 then return 8 end
-  end
-
-  local compare = function(base)
-    return function(ch1, ch2)
-      if ch1 == ch2 then
-        return true
-      end
-
-      local dist1 = dist(base, ch1)
-      local dist2 = dist(base, ch2)
-      if dist1 ~= dist2 then
-        return dist1 < dist2
-      end
-
-      local dir1 = dir(base, ch1)
-      local dir2 = dir(base, ch2)
-      return dir1 < dir2
-    end
-  end
-
-  -- Generate double-character hotkeys table.
-  local tbl = {}
-  for _, fst in ipairs(letters) do
-    local fst_group = {}
-    local second = {}
-    for _, scd in ipairs(letters) do
-      table.insert(second, scd)
-    end
-
-    table.sort(second, compare(fst))
-
-    for _, scd in ipairs(second) do
-      table.insert(fst_group, fst .. scd)
-    end
-
-    tbl[fst] = fst_group
-  end
-
-  return tbl
+  return hotkey
 end
 
-local hotkey_candidates = generate_hotkeys()
-
 ---@return table<string, integer> head
-local generate_hdptr = function()
+local generate_cnttbl = function()
   local head = {}
   for c = string.byte("a"), string.byte("z") do
     head[string.char(c)] = 1
@@ -1870,13 +1804,18 @@ M.get_candidate = function(node2key, ch, depth)
   return candidate
 end
 
--- Generate bimap node -> hotkey & hotkey -> node.
+-- Generate hotkeys map.
+-- Hotkeys will take the first letter of the node name to be the leader,
+-- and assign the rest according to the priority of the jump labels in the config.
+-- The length is computed dynamiclly.
+-- It will be like {leader}{label_1}{label_2}{label_3}......
 ---@param name_nodes table<string, { b: boolean, node: neotree.FileNode }>
+---@param jump_labels string
 ---@return table<neotree.FileNode, string> node2key
-M.assign_hotkeys = function(name_nodes)
+M.assign_hotkeys = function(name_nodes, jump_labels)
   local node2key = {}
 
-  local hdptr = generate_hdptr()
+  local cnttbl = generate_cnttbl()
 
   -- Assign opened buffers more convenient keys.
   local opened_buffers = M.get_opened_buffers()
@@ -1884,9 +1823,9 @@ M.assign_hotkeys = function(name_nodes)
     if name_nodes[buf] ~= nil then
       local node = name_nodes[buf].node
       local fst = fst_ch_in_filename(buf)
-      local hd_ptr = hdptr[fst]
-      local hotkey = hotkey_candidates[fst][hd_ptr]
-      hdptr[fst] = hd_ptr + 1
+      local cnt = cnttbl[fst]
+      cnttbl[fst] = cnt + 1
+      local hotkey = compute_hotkey(fst, cnt, jump_labels)
       node2key[node] = hotkey
       name_nodes[buf].b = false
     end
@@ -1897,14 +1836,61 @@ M.assign_hotkeys = function(name_nodes)
     if value.b then
       local node = name_nodes[name].node
       local fst = fst_ch_in_filename(name)
-      local hd = hdptr[fst]
-      local hotkey = hotkey_candidates[fst][hd]
-      hdptr[fst] = hd + 1
+      local cnt = cnttbl[fst]
+      cnttbl[fst] = cnt + 1
+      local hotkey = compute_hotkey(fst, cnt, jump_labels)
       node2key[node] = hotkey
     end
   end
 
   return node2key
+end
+
+-- Expand / collapse a directory node.
+local toggle_directory = function(node)
+  if node.type == "directory" then
+    if node:is_expanded() then
+      node:collapse()
+    else
+      node:expand()
+    end
+  end
+end
+
+-- Open / toggle node.
+M.open_or_toggle_node = function(state, node)
+  local fs = require("neo-tree.sources.filesystem")
+
+  if state.name == "filesystem" then
+    if node.type == "file" then
+      M.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
+    elseif node.type == "directory" then
+      fs.toggle_directory(state, node, nil)
+    end
+  end
+
+  if state.name == "document_symbols" then
+    local sym = require("neo-tree.sources.document_symbols.commands")
+    sym.jump_to_symbol(state, node)
+  end
+
+  if state.name == "git_status" then
+    if node.type == "file" then
+      M.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
+    elseif node.type == "directory" then
+      toggle_directory(node)
+    end
+  end
+
+  if state.name == "buffers" then
+    if node.type == "file" then
+      M.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
+    elseif node.type == "directory" then
+      toggle_directory(node)
+    elseif node.type == "terminal" then
+      M.open_file(state, node:get_id(), "e", node.extra and node.extra.bufnr)
+    end
+  end
 end
 
 ---@type table<integer, integer[]>
