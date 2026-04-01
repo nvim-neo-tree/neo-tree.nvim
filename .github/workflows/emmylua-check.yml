@@ -12,7 +12,7 @@ jobs:
   luals-check:
     strategy:
       matrix:
-        neovim: ["nightly"]
+        neovim: ["0.12", "nightly"]
         lua: ["luajit-master", "5.1"]
     runs-on: ubuntu-latest
 
@@ -27,7 +27,7 @@ jobs:
     - name: Install tools
       uses: jdx/mise-action@v2
       with:
-        install_args: "github:neovim/neovim@nightly"
+        install_args: "github:neovim/neovim@${{matrix.neovim}}"
 
     - name: Run emmylua_check
       continue-on-error: true
