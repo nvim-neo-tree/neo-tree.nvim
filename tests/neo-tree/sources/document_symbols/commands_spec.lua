@@ -5,8 +5,8 @@ local treesitter_utils = require("tests.utils.treesitter")
 local lsp_utils = require("tests.utils.lsp")
 local verify = require("tests.utils.verify")
 
-if vim.fn.has("nvim-0.11") == 0 then
-  -- Skip on versions below 0.11 due to requiring treesitter parsers
+if vim.fn.has("nvim-0.12") == 0 then
+  -- Skip on versions below 0.12 due to nvim-treesitter following latest stable version
   return
 end
 describe("document_symbols commands", function()

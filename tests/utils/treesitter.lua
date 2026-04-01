@@ -9,9 +9,9 @@ local install_dir = root_dir .. "/.repro"
 ---@param lang string
 ---@param timeout number?
 function M.ensure_parser(lang, timeout)
-  assert(vim.fn.has("nvim-0.11") == 1, "ensure_parser only works on nvim 0.11+")
-  timeout = timeout or 2 * 60 * 1000
-  -- install w/ nvim-treesitter master command
+  assert(vim.fn.has("nvim-0.12") == 1, "ensure_parser only works on nvim 0.11+")
+  timeout = timeout or 2 * 60 * 1000 -- 120 seconds
+  -- install w/ nvim-treesitter main command
 
   local nts = require("nvim-treesitter")
   nts.setup({
