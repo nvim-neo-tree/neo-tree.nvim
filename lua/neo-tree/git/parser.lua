@@ -143,20 +143,18 @@ M.parse_status_porcelain = function(
         break
       end
 
-      if XY ~= "# " then
-        local X = XY:sub(1, 1)
-        local Y = XY:sub(2, 2)
-        if M.status_code_is_conflict(X, Y) then
-          unmerged[#unmerged + 1] = #paths + 1
-        elseif XY:find("[RC]", 1, true) then
-          status_iter() -- consume original path
-        end
-
-        local path = line:sub(4)
-        local abspath = git_root_dir .. path
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY:gsub(" ", ".")
+      local X = XY:sub(1, 1)
+      local Y = XY:sub(2, 2)
+      if M.status_code_is_conflict(X, Y) then
+        unmerged[#unmerged + 1] = #paths + 1
+      elseif XY:find("[RC]", 1) then
+        status_iter() -- consume original path
       end
+
+      local path = line:sub(4)
+      local abspath = git_root_dir .. path
+      paths[#paths + 1] = abspath
+      statuses[#statuses + 1] = XY:gsub(" ", ".")
       line = status_iter()
       if context then
         if not increment_batch_or_yield(context, git_status) then
@@ -165,11 +163,11 @@ M.parse_status_porcelain = function(
       end
     end
   elseif porcelain_version == 2 then
-    local status_chars = "MADTRCU?!."
+    local status_beginning_chars = "12?!"
     -- Skip lines until we arrive at a status. this should exclude comments, warnings, and fatal messages
     while line do
       local first_char = line:sub(1, 1)
-      if status_chars:find(first_char, 1, true) then
+      if status_beginning_chars:find(first_char, 1, true) then
         break
       end
       line = status_iter()

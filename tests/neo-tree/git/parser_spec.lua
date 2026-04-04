@@ -4,6 +4,8 @@ local test_utils = require("tests.utils")
 describe("git parser", function()
   describe("parses v2 output", function()
     local porcelain_v2_status = {
+      "warning: could not open directory 'foo/bar/': Permission denied",
+      "#comment",
       "1 MM N... 100644 100644 100644 109d711d57a4f9683fde9128389928002162a490 42c6fcc404e517043706028825185095d0c47421 dir1/dir2/dir3/mixed_modify.txt",
       "1 D. N... 100644 000000 000000 37ce9c00e8b504beab1de2eafc826384fc370d56 0000000000000000000000000000000000000000 dir1/dir2/staged_delete.txt",
       "1 .T N... 100644 100644 120000 0325a864d684a90d6c2ae8ea87cc03f018453413 0325a864d684a90d6c2ae8ea87cc03f018453413 dir1/dir2/type_change.txt",
@@ -57,6 +59,8 @@ describe("git parser", function()
 
   describe("parses v1 output", function()
     local porcelain_v1_status = {
+      "warning: could not open directory 'foo/bar/': Permission denied",
+      "#comment",
       "MM dir1/dir2/dir3/mixed_modify.txt",
       "D  dir1/dir2/staged_delete.txt",
       " T dir1/dir2/type_change.txt",
