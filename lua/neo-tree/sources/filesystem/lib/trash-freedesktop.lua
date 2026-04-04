@@ -99,7 +99,8 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
     for line in f:lines() do
       local size, mtime, name = line:match("(%d+) (%d+) (.+)")
       if size and mtime and name then
-        hash[name] = {
+        hash[vim.uri_decode(name, "rfc2396")] = {
+
           size = tonumber(size),
           mtime = tonumber(mtime),
           seen = false,
@@ -151,24 +152,29 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
 
   -- 3. Write out hash back to temporary directorysizes file
   local out = io.open(tmp_cache_path, "w")
-  if out then
-    for name, data in pairs(hash) do
-      if data.seen then
-        out:write(string.format("%d %d %s\n", data.size, data.mtime, name))
-      end
+  if not out then
+    return nil, "Could not update directorysizes file"
+  end
+  for name, data in pairs(hash) do
+    if data.seen then
+      out:write(string.format("%d %d %s\n", data.size, data.mtime, name))
     end
-    out:close()
+  end
+  out:close()
 
-    -- 4. Atomic rename into place
-    local success, err = uv.fs_rename(tmp_cache_path, cache_file_path)
-    if not success then
-      return nil, "Failed to update cache file: " .. (err or "unknown error")
-    end
+  -- 4. Atomic rename into place
+  local success, err = uv.fs_rename(tmp_cache_path, cache_file_path)
+  if not success then
+    return nil, "Failed to update cache file: " .. (err or "unknown error")
   end
 
   return total_size
 end
 
+local function restorer(paths)
+  return function(paths) end
+end
+---@type neotree.trash.FunctionGenerator
 return function(paths)
   if utils.is_windows then
     log.warn("Freedesktop trash module does not support Windows.")
@@ -180,11 +186,17 @@ return function(paths)
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
     and ensure_writable_dir(trash_info_dir)
+
   if not setup then
     return nil
   end
+
+  if vim.fn.has("nvim-0.10") == 0 then
+    -- Requires neovim 0.10 for vim.uri module
+    return nil
+  end
   -- Roughly check that all of these are on the same device.
-  -- This rough check should be fine because if one of the paths contains a mountpoint then the move will fail anyways.
+  -- This check should be fine because if one of the paths contains a mountpoint then the move will fail anyways.
   local trash_dir_dev = get_dev(trash_dir)
   if get_dev(trash_files_dir) ~= trash_dir_dev or get_dev(trash_info_dir) ~= trash_dir_dev then
     log.at.warn.format(
@@ -206,7 +218,6 @@ return function(paths)
       return nil
     end
   end
-
   return function()
     for i, path in ipairs(paths) do
       local _, filename = utils.split_path(path)
@@ -225,7 +236,7 @@ return function(paths)
 Path=%s
 DeletionDate=%s"
 ]],
-        path,
+        vim.uri_encode(path, "rfc2396"),
         os.date("%Y%m%dT%H:%M:%S")
       )
 
@@ -245,7 +256,7 @@ DeletionDate=%s"
         return false, "Failed to move file to trash: " .. (move_err or "unknown error")
       end
     end
-    update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
+    assert(update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir))
 
     return true
   end
