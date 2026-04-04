@@ -115,6 +115,15 @@ M.parse_status_porcelain = function(
   local unmerged = {}
 
   if porcelain_version == 1 then
+    local status_chars = "MADTRCU?! "
+    -- Skip lines until we arrive at a status. this should exclude comments, warnings, and fatal messages
+    while line do
+      local first_char = line:sub(1, 1)
+      if status_chars:find(first_char, 1, true) then
+        break
+      end
+      line = status_iter()
+    end
     while line do
       -- Example status:
       -- D  deleted_staged.txt
@@ -128,25 +137,24 @@ M.parse_status_porcelain = function(
       -- ?? .gitignore
       -- ?? untracked.txt
       -- !! ignored.txt
+
       local XY = line:sub(1, 2)
       if #XY == 0 or XY == "??" or XY == "!!" then
         break
       end
 
-      if XY ~= "# " then
-        local X = XY:sub(1, 1)
-        local Y = XY:sub(2, 2)
-        if M.status_code_is_conflict(X, Y) then
-          unmerged[#unmerged + 1] = #paths + 1
-        elseif X == "R" or Y == "R" or X == "C" or Y == "C" then
-          status_iter() -- consume original path
-        end
-
-        local path = line:sub(4)
-        local abspath = git_root_dir .. path
-        paths[#paths + 1] = abspath
-        statuses[#statuses + 1] = XY:gsub(" ", ".")
+      local X = XY:sub(1, 1)
+      local Y = XY:sub(2, 2)
+      if M.status_code_is_conflict(X, Y) then
+        unmerged[#unmerged + 1] = #paths + 1
+      elseif XY:find("[RC]", 1) then
+        status_iter() -- consume original path
       end
+
+      local path = line:sub(4)
+      local abspath = git_root_dir .. path
+      paths[#paths + 1] = abspath
+      statuses[#statuses + 1] = XY:gsub(" ", ".")
       line = status_iter()
       if context then
         if not increment_batch_or_yield(context, git_status) then
@@ -155,6 +163,15 @@ M.parse_status_porcelain = function(
       end
     end
   elseif porcelain_version == 2 then
+    local status_beginning_chars = "12?!"
+    -- Skip lines until we arrive at a status. this should exclude comments, warnings, and fatal messages
+    while line do
+      local first_char = line:sub(1, 1)
+      if status_beginning_chars:find(first_char, 1, true) then
+        break
+      end
+      line = status_iter()
+    end
     while line do
       -- Example status:
       -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
@@ -175,9 +192,7 @@ M.parse_status_porcelain = function(
 
       local line_type_byte = line:byte(1, 1)
       local abspath, XY
-      if line_type_byte == COMMENT_BYTE then
-        -- continue for now
-      elseif line_type_byte == TYPE_ONE_BYTE then
+      if line_type_byte == TYPE_ONE_BYTE then
         XY = line:sub(3, 4)
         -- local submodule_state = line:sub(6, 9)
         -- local mH = line:sub(11, 16)
