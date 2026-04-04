@@ -1809,32 +1809,32 @@ end
 -- and assign the rest according to the priority of the jump labels in the config.
 -- The length is computed dynamiclly.
 -- It will be like {leader}{label_1}{label_2}{label_3}......
----@param name_nodes table<string, { b: boolean, node: neotree.FileNode }>
+---@param nodes_name table<neotree.FileNode, { b: boolean, name: string }>
 ---@param jump_labels string
 ---@return table<neotree.FileNode, string> node2key
-M.assign_hotkeys = function(name_nodes, jump_labels)
+M.assign_hotkeys = function(nodes_name, jump_labels)
   local node2key = {}
 
   local cnttbl = generate_cnttbl()
 
   -- Assign opened buffers more convenient keys.
   local opened_buffers = M.get_opened_buffers()
-  for buf, _ in pairs(opened_buffers) do
-    if name_nodes[buf] ~= nil then
-      local node = name_nodes[buf].node
-      local fst = fst_ch_in_filename(buf)
+  for node, value in pairs(nodes_name) do
+    local name = value.name
+    if opened_buffers[name] ~= nil then
+      local fst = fst_ch_in_filename(name)
       local cnt = cnttbl[fst]
       cnttbl[fst] = cnt + 1
       local hotkey = compute_hotkey(fst, cnt, jump_labels)
       node2key[node] = hotkey
-      name_nodes[buf].b = false
+      nodes_name[node].b = false
     end
   end
 
   -- Handle the rest.
-  for name, value in pairs(name_nodes) do
+  for node, value in pairs(nodes_name) do
     if value.b then
-      local node = name_nodes[name].node
+      local name = nodes_name[node].name
       local fst = fst_ch_in_filename(name)
       local cnt = cnttbl[fst]
       cnttbl[fst] = cnt + 1

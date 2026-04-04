@@ -997,16 +997,16 @@ end
 M.quick_jump = function(state)
   local nodes = renderer.get_all_visible_nodes(state.tree)
 
-  local name_nodes = {}
+  local nodes_name = {}
   for _, node in ipairs(nodes) do
-    name_nodes[node.name] = {
+    nodes_name[node] = {
       b = true,
-      node = node,
+      name = node.name,
     }
   end
 
   local jump_labels = state.config.jump_labels or state.jump_labels
-  local node2key = utils.assign_hotkeys(name_nodes, jump_labels)
+  local node2key = utils.assign_hotkeys(nodes_name, jump_labels)
   local icon = state.components.icon
 
   -- Recover all icons.
