@@ -736,7 +736,7 @@ M.delete_nodes = function(paths_to_delete, callback)
   end)
 end
 
-M.trash_node = function(path, callback, noconfirm)
+M.trash_node = function(path, callback)
   local _, name = utils.split_path(path)
 
   log.trace("Deleting node:", path)
@@ -744,7 +744,7 @@ M.trash_node = function(path, callback, noconfirm)
   local stat = uv.fs_lstat(path)
   local children_count = 0
   if not stat then
-    log.warn("Could not read file/dir:", path, stat, ", attempting to delete anyway...")
+    log.warn("Could not read file/dir:", path, stat, ", attempting to trash anyway...")
     -- Guess the type by whether it appears to have an extension
     if path:match("%.(.+)$") then
       _type = "file"
@@ -775,7 +775,7 @@ M.trash_node = function(path, callback, noconfirm)
     end
   end
 
-  local do_delete = function()
+  local do_trash = function()
     local complete = vim.schedule_wrap(function()
       events.fire_event(events.FILE_DELETED, path)
       if callback then
@@ -789,80 +789,47 @@ M.trash_node = function(path, callback, noconfirm)
       return
     end
 
-    if _type ~= "directory" then
-      local success = uv.fs_unlink(path)
-      if not success then
-        return log.error("Could not remove file: " .. path)
-      end
-      clear_buffer(path)
-    else
-      -- first try using native system commands, which are recursive
-      local success = false
-      if utils.is_windows then
-        local delete_ok, result =
-          utils.execute_command({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
-        if not delete_ok then
-          log.debug("Could not delete directory '", path, "' with rmdir: ", result)
-        else
-          log.info("Deleted directory ", path)
-          success = true
-        end
-      else
-        local delete_ok, result = utils.execute_command({ "rm", "-Rf", path })
-        if not delete_ok then
-          log.debug("Could not delete directory '", path, "' with rm: ", result)
-        else
-          log.info("Deleted directory ", path)
-          success = true
-        end
-      end
-
-      -- Fallback to using libuv if native commands fail
-      if not success then
-        success = delete_dir(path)
-        if not success then
-          return log.error("Could not remove directory: " .. path)
-        end
-      end
+    local success, err = trash.trash({ path })
+    if not success then
+      log.error("Could not trash " .. path, err)
+      return
     end
+
     complete()
   end
 
-  if noconfirm then
-    do_delete()
-  else
-    local msg = string.format("Are you sure you want to delete '%s'?", name)
-    if children_count > 0 then
-      msg = ("WARNING: Dir has %s %s! %s"):format(
-        children_count,
-        children_count == 1 and "child" or "children",
-        msg
-      )
-    end
-    inputs.confirm(msg, function(confirmed)
-      if confirmed then
-        do_delete()
-      end
-    end)
+  local msg = string.format("Are you sure you want to trash '%s'?", name)
+  if children_count > 0 then
+    msg = ("WARNING: Dir has %s %s! %s"):format(
+      children_count,
+      children_count == 1 and "child" or "children",
+      msg
+    )
   end
+  inputs.confirm(msg, function(confirmed)
+    if confirmed then
+      do_trash()
+    end
+  end)
 end
 
----@param paths_to_delete string[]
+---@param paths_to_trash string[]
 ---@param callback fun(path)?
-M.trash_nodes = function(paths_to_delete, callback)
-  local msg = "Are you sure you want to delete " .. #paths_to_delete .. " items?"
+M.trash_nodes = function(paths_to_trash, callback)
+  local msg = "Are you sure you want to delete " .. #paths_to_trash .. " items?"
   inputs.confirm(msg, function(confirmed)
     if not confirmed then
       return
     end
 
-    for _, path in ipairs(paths_to_delete) do
-      M.trash_node(path, nil, true)
+    local success, err = trash.trash(paths_to_trash)
+    if not success then
+      log.error(err)
     end
 
     if callback then
       vim.schedule(function()
-        callback(paths_to_delete[#paths_to_delete])
+        callback(paths_to_trash[#paths_to_trash])
       end)
     end
   end)

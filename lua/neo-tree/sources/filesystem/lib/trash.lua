@@ -188,4 +188,7 @@ M.trash = function(paths)
   return false, "No trash commands or functions worked."
 end
 
+---@param paths string The paths in the actual trash
+M.restore = function(paths) end
+
 return M
