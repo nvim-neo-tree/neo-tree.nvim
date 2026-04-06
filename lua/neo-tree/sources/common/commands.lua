@@ -1065,7 +1065,7 @@ M.quick_jump = function(state)
         break
       end
 
-      local on_jump = state.on_jump or state.config.on_jump
+      local on_jump = state.config.on_jump
       if type(on_jump) == "function" then
         on_jump(state, target_node)
       elseif on_jump == "open_or_toggle" then
