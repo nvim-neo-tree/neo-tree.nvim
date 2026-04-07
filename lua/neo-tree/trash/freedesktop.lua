@@ -1,10 +1,12 @@
 -- https://specifications.freedesktop.org/trash/latest/
 local uv = vim.uv
-local log = require("neo-tree.log")
+local log = require("neo-tree.log").new("trash-freedesktop")
 local utils = require("neo-tree.utils")
 local xdg = require("neo-tree.utils.xdg")
 ---@param path string
 ---@return boolean
+
+local M = {}
 local function dir_is_writable(path)
   local stat = uv.fs_stat(path)
   return stat and stat.type == "directory" and uv.fs_access(path, "w") or false
@@ -113,18 +115,16 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
   local total_size = 0
 
   -- 2. List "files" directory and update sizes
-  local fd = assert(uv.fs_scandir(files_dir))
-  while true do
-    local name, nodetype = uv.fs_scandir_next(fd)
+  for name, nodetype in vim.fs.dir(files_dir, { depth = 1 }) do
     if not name then
       break
     end
 
-    local item_path = files_dir .. "/" .. name
+    local item_path = utils.path_join(files_dir, name)
 
     if nodetype == "directory" then
       -- Per spec: stat the .trashinfo file in the info/ directory for mtime
-      local info_path = info_dir .. "/" .. name .. ".trashinfo"
+      local info_path = utils.path_join(info_dir, name .. ".trashinfo")
       local istat = uv.fs_stat(info_path)
 
       if istat then
@@ -171,18 +171,80 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
   return total_size
 end
 
-local function restorer(paths)
-  return function(paths) end
+---@param trash_filename string
+---@param trash_files_dir string
+---@param trash_info_dir string
+---@return boolean
+---@return string? err
+local function restore(trash_filename, trash_files_dir, trash_info_dir)
+  local info_file_path = utils.path_join(trash_info_dir, trash_filename)
+
+  if not uv.fs_lstat(info_file_path) then
+    return false, "Info file doesn't exist, cannot determine original path"
+  end
+
+  local original_path
+  for line in io.lines(info_file_path) do
+    local encoded_path = line:match("^Path=([^\n]+)")
+    if encoded_path then
+      original_path = vim.uri_decode(encoded_path, "rfc2396")
+      break
+    end
+  end
+  if not original_path then
+    return false, "Cannot determine original_path"
+  end
+  -- Move the file to the trash/files directory
+  local renamed, move_err =
+    uv.fs_rename(utils.path_join(trash_files_dir, trash_filename), original_path)
+
+  if not renamed then
+    return false,
+      "Failed to restore " .. trash_filename .. " from trash: " .. (move_err or "unknown error")
+  end
+
+  os.remove(info_file_path)
+  return true
 end
+
+---@type neotree.trash.RestoreFunctionGenerator
+M.new_restorer = function(trash_filenames)
+  local trash_dir = utils.path_join(xdg.data_home, "Trash")
+  local trash_files_dir = utils.path_join(trash_dir, "files")
+  local trash_info_dir = utils.path_join(trash_dir, "info")
+  local setup = ensure_writable_dir(trash_dir)
+    and ensure_writable_dir(trash_files_dir)
+    and ensure_writable_dir(trash_info_dir)
+
+  if not setup then
+    return nil
+  end
+  return function()
+    for _, p in ipairs(trash_filenames) do
+      local restored, err = restore(p, trash_files_dir, trash_info_dir)
+      if not restored then
+        return false, err
+      end
+    end
+    return true
+  end
+end
+
+---@return string trash_dir
+---@return string trash_files_dir
+---@return string trash_info_dir
+M.calculate_trash_paths = function()
+  local trash_dir = utils.path_join(xdg.data_home, "Trash")
+  return trash_dir, utils.path_join(trash_dir, "files"), utils.path_join(trash_dir, "info")
+end
+
 ---@type neotree.trash.FunctionGenerator
-return function(paths)
+M.new_trasher = function(paths)
   if utils.is_windows then
     log.warn("Freedesktop trash module does not support Windows.")
     return nil
   end
-  local trash_dir = utils.path_join(xdg.data_home, "Trash")
-  local trash_files_dir = utils.path_join(trash_dir, "files")
-  local trash_info_dir = utils.path_join(trash_dir, "info")
+  local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
     and ensure_writable_dir(trash_info_dir)
@@ -208,7 +270,7 @@ return function(paths)
     return nil
   end
 
-  for i, path in ipairs(paths) do
+  for _, path in ipairs(paths) do
     if trash_dir_dev ~= get_dev(path) then
       log.at.warn.format(
         "%s and %s are not located on the same device. Skipping freedesktop trash method.",
@@ -218,8 +280,10 @@ return function(paths)
       return nil
     end
   end
+
+  local trash_filenames = {}
   return function()
-    for i, path in ipairs(paths) do
+    for _, path in ipairs(paths) do
       local _, filename = utils.split_path(path)
 
       local trash_filename = filename
@@ -253,11 +317,15 @@ DeletionDate=%s"
 
       if not renamed then
         os.remove(info_file_path)
-        return false, "Failed to move file to trash: " .. (move_err or "unknown error")
+        return false, "Failed to move " .. path .. " to trash: " .. (move_err or "unknown error")
       end
+
+      trash_filenames[#trash_filenames + 1] = trash_filename
     end
     assert(update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir))
 
-    return true
+    return M.new_restorer(trash_filenames)
   end
 end
+
+return M

@@ -8,7 +8,7 @@ local uv = vim.uv or vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
-local trash = require("neo-tree.sources.filesystem.lib.trash")
+local trash = require("neo-tree.trash.init")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local Path = require("plenary.path")
@@ -80,6 +80,16 @@ local setup_file_completion = function(root, filter)
   _file_completion_root = root
   _file_completion_filter = filter
   return "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
+end
+
+---@param path string
+local count_children = function(path)
+  return #scan.scan_dir(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+  })
 end
 
 ---@param a uv.fs_stat.result?
@@ -634,12 +644,7 @@ M.delete_node = function(path, callback, noconfirm)
       _type = uv.fs_stat(link_to).type
     end
     if _type == "directory" then
-      children_count = #scan.scan_dir(path, {
-        hidden = true,
-        respect_gitignore = false,
-        add_dirs = true,
-        depth = 1,
-      })
+      children_count = count_children(path)
     end
   end
 
@@ -740,40 +745,7 @@ M.trash_node = function(path, callback)
   local _, name = utils.split_path(path)
 
   log.trace("Deleting node:", path)
-  local _type = "unknown"
-  local stat = uv.fs_lstat(path)
-  local children_count = 0
-  if not stat then
-    log.warn("Could not read file/dir:", path, stat, ", attempting to trash anyway...")
-    -- Guess the type by whether it appears to have an extension
-    if path:match("%.(.+)$") then
-      _type = "file"
-    else
-      _type = "directory"
-    end
-  else
-    _type = stat.type
-    if _type == "link" then
-      local link_to = uv.fs_realpath(path)
-      if not link_to then
-        log.error("Could not read link")
-        return
-      end
-      local target_file = uv.fs_stat(link_to)
-      if target_file then
-        _type = target_file.type
-      end
-      _type = uv.fs_stat(link_to).type
-    end
-    if _type == "directory" then
-      children_count = #scan.scan_dir(path, {
-        hidden = true,
-        respect_gitignore = false,
-        add_dirs = true,
-        depth = 1,
-      })
-    end
-  end
+  local stat = uv.fs_stat(path)
 
   local do_trash = function()
     local complete = vim.schedule_wrap(function()
@@ -798,14 +770,11 @@ M.trash_node = function(path, callback)
     complete()
   end
 
-  local msg = string.format("Are you sure you want to trash '%s'?", name)
-  if children_count > 0 then
-    msg = ("WARNING: Dir has %s %s! %s"):format(
-      children_count,
-      children_count == 1 and "child" or "children",
-      msg
-    )
+  local displayed_name = name
+  if stat and stat.type == "directory" then
+    displayed_name = name .. utils.path_separator
   end
+  local msg = string.format("Are you sure you want to trash '%s'?", displayed_name)
   inputs.confirm(msg, function(confirmed)
     if confirmed then
       do_trash()
@@ -814,7 +783,7 @@ M.trash_node = function(path, callback)
 end
 
 ---@param paths_to_trash string[]
----@param callback fun(path)?
+---@param callback fun(path: string)?
 M.trash_nodes = function(paths_to_trash, callback)
   local msg = "Are you sure you want to delete " .. #paths_to_trash .. " items?"
   inputs.confirm(msg, function(confirmed)

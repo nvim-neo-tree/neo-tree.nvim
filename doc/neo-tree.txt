@@ -987,9 +987,14 @@ this is bound to `T`.
 
 The default commands that neo-tree tries to use, in order, are:
 
-MacOS: `trash`, or `osascript` commands.
+MacOS:
+- `trash`,
+- `osascript` commands.
 
-Linux: `gio trash`, `trash`, and `kioclient/kioclient5`.
+Linux:
+- `trash-put/restore` from https://github.com/andreafrancia/trash-cli
+- `gio trash`
+- `kioclient/kioclient5`.
 
 Windows: `trash`, or `PowerShell` commands.
 
