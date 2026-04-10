@@ -299,6 +299,7 @@ M.git_status = function(config, node, state)
     stage_sb = symbols.unstaged
     stage_hl = highlights.GIT_UNSTAGED
   elseif git_parser.status_code_is_conflict(x, y) then
+    is_conflict = true
     stage_sb = symbols.conflict
     stage_hl = highlights.GIT_CONFLICT
   end
@@ -343,7 +344,7 @@ M.git_status = function(config, node, state)
     end
   end
 
-  if #y > 0 and y ~= "." then
+  if not is_conflict and #y > 0 and y ~= "." then
     if y == "M" or y == "U" then
       worktree_change_sb = symbols.modified
       worktree_change_hl = highlights.GIT_MODIFIED
