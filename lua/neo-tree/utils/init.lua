@@ -1732,4 +1732,72 @@ end
 ---@type table<integer, integer[]>
 M.prior_windows = {}
 
+---Start an async command with uv.
+---Placeholder before upgrading to vim.system
+---@param cmd string[]
+---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
+---@param cwd string?
+---@return neotree.utils.Job?
+---@return integer|string err
+M.job = function(cmd, on_exit, cwd)
+  local stdout_chunks = {}
+  local stderr_chunks = {}
+
+  local path = cmd[1]
+  local args = { unpack(cmd, 2) }
+  local completed = false
+  local exit_code
+  local stdout = log.assert(uv.new_pipe(false))
+  local stderr = log.assert(uv.new_pipe(false))
+  local handle, pid_or_err = uv.spawn(path, {
+    args = args,
+    hide = true,
+    stdio = { nil, stdout, stderr },
+    cwd = cwd,
+  }, function(code, _)
+    stdout:close()
+    stderr:close()
+    exit_code = code
+    completed = true
+    if on_exit then
+      on_exit(code, stdout_chunks, stderr_chunks)
+    end
+  end)
+  if not handle then
+    stdout:close()
+    stderr:close()
+    return nil, pid_or_err
+  end
+
+  stdout:read_start(function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stdout_chunks[#stdout_chunks + 1] = data
+    end
+  end)
+  stderr:read_start(function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stderr_chunks[#stderr_chunks + 1] = data
+    end
+  end)
+  ---@class neotree.utils.Job
+  local job = {
+    handle = handle,
+    pid = pid_or_err,
+    ---@param timeout_ms integer? Defaults to math.huge
+    wait = function(timeout_ms)
+      vim.wait(timeout_ms or math.huge, function()
+        return completed
+      end)
+      return {
+        code = exit_code,
+        stdout = stdout_chunks,
+        stderr = stderr_chunks,
+      }
+    end,
+  }
+  return job, pid_or_err
+end
+
 return M

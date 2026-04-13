@@ -3,10 +3,10 @@ local utils = require("neo-tree.utils")
 local uv = vim.uv or vim.loop
 local M = {}
 
----@param git_args string[]
+---@param cmd string[]
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])
 ---@param cwd string?
-M.git_job = function(git_args, on_exit, cwd)
+M.job = function(cmd, on_exit, cwd)
   local stdout_chunks = {}
   local stderr_chunks = {}
 
@@ -14,10 +14,10 @@ M.git_job = function(git_args, on_exit, cwd)
   --- correctness (since paths can technically have newlines).
   ---
   --- Switch to vim.system in v4.0
-  local stdout = log.assert(uv.new_pipe())
-  local stderr = log.assert(uv.new_pipe())
+  local stdout = log.assert(uv.new_pipe(false))
+  local stderr = log.assert(uv.new_pipe(false))
   local handle = uv.spawn("git", {
-    args = git_args,
+    args = cmd,
     hide = true,
     stdio = { nil, stdout, stderr },
     cwd = cwd,
@@ -38,10 +38,10 @@ M.git_job = function(git_args, on_exit, cwd)
       stdout_chunks[#stdout_chunks + 1] = data
     end
   end)
-  stdout:read_start(function(err, data)
+  stderr:read_start(function(err, data)
     log.assert(not err, err)
     if type(data) == "string" then
-      stdout_chunks[#stdout_chunks + 1] = data
+      stderr_chunks[#stderr_chunks + 1] = data
     end
   end)
 end
@@ -66,21 +66,23 @@ end
 
 ---A fast check for whether we might be in a git repo. Likely has both false positives and negatives.
 ---@param path string
----@return boolean
+---@return string? worktree_root
+---@return string? git_dir
 M.might_be_in_git_repo = function(path)
-  local git_dir_from_env = os.getenv("GIT_DIR") or os.getenv("GIT_COMMON_DIR")
-  if git_dir_from_env then
-    local stat = uv.fs_stat(utils.normalize_path(git_dir_from_env))
-    return stat ~= nil
-  end
   local git_work_tree = os.getenv("GIT_WORK_TREE")
   if git_work_tree then
     git_work_tree = utils.normalize_path(git_work_tree)
-    if utils.is_subpath(git_work_tree, path) then
-      return true
+    if utils.is_subpath(git_work_tree, path, true) then
+      local git_dir = os.getenv("GIT_DIR") or os.getenv("GIT_COMMON_DIR")
+      return git_work_tree, git_dir
     end
   end
-  return #vim.fs.find({ ".git" }, { limit = 1, upward = true, path = path }) > 0
+  local git_dir = vim.fs.find({ ".git" }, { limit = 1, upward = true, path = path })[1]
+  if not git_dir then
+    return nil, nil
+  end
+  local worktree_root = utils.split_path(git_dir)
+  return worktree_root, git_dir
 end
 
 return M

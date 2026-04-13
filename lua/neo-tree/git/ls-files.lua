@@ -2,6 +2,7 @@ local M = {}
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 local git_utils = require("neo-tree.git.utils")
+local git_cmd = require("neo-tree.git.cmd")
 local git_parser = require("neo-tree.git.parser")
 local co = coroutine
 
@@ -9,7 +10,7 @@ local co = coroutine
 ---@param worktree_root string
 ---@return string[]
 local make_ls_untracked_args = function(worktree_root)
-  return {
+  return git_cmd.with_args({
     "-C",
     worktree_root,
     "ls-files",
@@ -19,24 +20,24 @@ local make_ls_untracked_args = function(worktree_root)
 
     "--exclude-standard",
     "--others",
-  }
+  })
 end
 
----@param git_args string[]
+---@param cmd string[]
 ---@return string[]
-local ls_files_sync = function(worktree_root, git_args)
-  local output = vim.fn.system({ "git", unpack(git_args) })
+local ls_files_sync = function(worktree_root, cmd)
+  local output = vim.fn.system(cmd)
   assert(vim.v.shell_error == 0)
   local iter = utils.gsplit_plain(output, "\001")
 
   return git_parser.parse_ls_files_output(worktree_root, iter)
 end
 
----@param git_args string[]
+---@param git_cmd string[]
 ---@param context neotree.git.JobContext
 ---@param on_parsed fun(paths: string[])
-local ls_files_job = function(git_args, context, on_parsed)
-  git_utils.git_job(git_args, function(code, stdout_chunks)
+local ls_files_job = function(git_cmd, context, on_parsed)
+  utils.job(git_cmd, function(code, stdout_chunks)
     if code ~= 0 then
       log.warn("git.ls-files: ls-files error, code", code)
       return
@@ -54,7 +55,7 @@ end
 ---Returns arguments for `git ls-files` to returns a null-delimited list of paths for ignored files.
 ---@param worktree_root string
 ---@return string[]
-local make_ls_ignored_args = function(worktree_root)
+local make_ls_ignored_cmd = function(worktree_root)
   local args = make_ls_untracked_args(worktree_root)
   args[#args + 1] = "--ignored"
   return args
@@ -63,14 +64,14 @@ end
 ---@param worktree_root string
 ---@return string[]
 M.ignored = function(worktree_root)
-  return ls_files_sync(worktree_root, make_ls_ignored_args(worktree_root))
+  return ls_files_sync(worktree_root, make_ls_ignored_cmd(worktree_root))
 end
 
 ---@param context neotree.git.JobContext
 ---@param on_parsed fun(new_status: string[])
 M.ignored_job = function(context, on_parsed)
-  local ls_ignored_args = make_ls_ignored_args(context.worktree_root)
-  ls_files_job(ls_ignored_args, context, on_parsed)
+  local ls_ignored_cmd = make_ls_ignored_cmd(context.worktree_root)
+  ls_files_job(ls_ignored_cmd, context, on_parsed)
 end
 
 -- ---@param worktree_root string

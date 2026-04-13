@@ -1,4 +1,5 @@
 local git_utils = require("neo-tree.git.utils")
+local git_cmd = require("neo-tree.git.cmd")
 local git_parser = require("neo-tree.git.parser")
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
@@ -7,9 +8,8 @@ local M = {}
 ---@param path string
 ---@param base string
 ---@return string[] args
-local make_git_diff_name_status_args = function(path, base)
-  return {
-    "--no-optional-locks",
+local make_git_diff_name_status_cmd = function(path, base)
+  return git_cmd.with_args({
     "-C",
     path,
     "diff",
@@ -17,7 +17,7 @@ local make_git_diff_name_status_args = function(path, base)
     "HEAD",
     "--name-status",
     "-z",
-  }
+  })
 end
 
 ---@param worktree_root string
@@ -25,8 +25,8 @@ end
 ---@param skip_bubbling boolean?
 ---@return neotree.git.Status?
 M.diff_name_status = function(worktree_root, base, skip_bubbling)
-  local args = make_git_diff_name_status_args(worktree_root, base)
-  local res = vim.fn.system({ "git", unpack(args) })
+  local cmd = make_git_diff_name_status_cmd(worktree_root, base)
+  local res = vim.fn.system(cmd)
   if vim.v.shell_error ~= 0 then
     log.warn("Could not diff HEAD vs", base)
     return nil
@@ -44,9 +44,9 @@ end
 ---@param skip_bubbling boolean?
 ---@param context neotree.git.JobContext
 ---@param on_parsed fun(status: neotree.git.Status)
-M.diff_name_status_job = function(worktree_root, base, skip_bubbling, context, on_parsed)
-  local args = make_git_diff_name_status_args(worktree_root, base)
-  git_utils.git_job(args, function(code, stdout_chunks)
+M.name_status_job = function(worktree_root, base, skip_bubbling, context, on_parsed)
+  local cmd = make_git_diff_name_status_cmd(worktree_root, base)
+  utils.job(cmd, function(code, stdout_chunks)
     if code ~= 0 then
       log.warn("Could not async diff HEAD vs", base)
       return
