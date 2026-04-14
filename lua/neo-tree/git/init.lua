@@ -48,6 +48,7 @@ local try_register_worktree = function(worktree_root, git_dir, superproject_work
   if not worktree then
     new_worktree = true
     -- new root dir, invalidate root dir lookups
+    vim.print("clearing cache")
     M._upward_worktree_cache = setmetatable({}, weak_kv)
 
     worktree = {
@@ -289,7 +290,7 @@ end
 ---Creates a job for `git status`
 ---@param context neotree.git.JobContext
 ---@param git_cmd string[]? nil to use default of make_git_status_args, which includes all files
----@param on_parsed fun(gs: neotree.git.Status)
+---@param on_parsed fun(gs: neotree.git.Status?)
 ---@param skip_bubbling boolean?
 local git_status_job = function(context, git_cmd, on_parsed, skip_bubbling)
   local cmd = git_cmd
@@ -308,6 +309,7 @@ local git_status_job = function(context, git_cmd, on_parsed, skip_bubbling)
         table.concat(stdout_chunks),
         table.concat(stderr_chunks)
       )
+      on_parsed(nil)
       return
     end
 
@@ -315,6 +317,7 @@ local git_status_job = function(context, git_cmd, on_parsed, skip_bubbling)
     local past_raw_status_text = raw_status_text_cache[context.worktree_root]
     if status_text == past_raw_status_text then
       -- stdout text did not change.
+      on_parsed(nil)
       return
     end
     raw_status_text_cache[context.worktree_root] = status_text
@@ -341,7 +344,7 @@ end
 ---@param path string path to run commands in
 ---@param base_lookup neotree.git.BaseLookup? git ref base
 ---@param opts neotree.Config.GitStatusAsync
----@param callback fun(worktree_root: string?)?
+---@param callback fun(gs: neotree.git.Status?, err: string?)
 M.status_async = function(path, base_lookup, opts, callback)
   callback = callback or function() end
   M.find_worktree_info(path, function(worktree_root, git_dir, superproject_worktree_root)
@@ -386,15 +389,21 @@ M.status_async = function(path, base_lookup, opts, callback)
         local base = base_lookup and base_lookup[worktree_root]
         if existing_worktree and existing_worktree.status then
           git_status_job(ctx, nil, function(full_status)
+            if not full_status then
+              callback(nil)
+            end
             change_worktree_git_status(worktree_root, full_status)
             if not base then
-              callback(worktree_root)
+              callback(full_status)
             end
           end)
           if base then
             git_diff.name_status_job(worktree_root, base, false, ctx, function(diff_status)
+              if not diff_status then
+                callback(nil)
+              end
               change_worktree_git_status(worktree_root, existing_worktree.status, base, diff_status)
-              callback(worktree_root)
+              callback(full_status)
             end)
           end
           return
@@ -409,16 +418,13 @@ M.status_async = function(path, base_lookup, opts, callback)
         git_status_job(ctx, fast_args, function(fast_status)
           change_worktree_git_status(worktree_root, fast_status)
 
-          vim.print("first")
           if base then
             git_diff.name_status_job(worktree_root, base, false, ctx, function(status)
-              vim.print("diff")
               change_worktree_git_status(worktree_root, ctx.git_status, base, status)
             end)
           end
           -- Get ignored statuses
           git_ls_files.ignored_job(ctx, function(ignored_paths)
-            vim.print("ignored")
             for _, ignored_path in ipairs(ignored_paths) do
               ctx.git_status[ignored_path] = "!"
             end

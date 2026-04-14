@@ -54,7 +54,7 @@ M.parse_in_batches = function(parsing_coroutine, context, outputs, on_parsed)
   local function do_next_batch()
     if coroutine.status(parsing_coroutine) == "dead" then
       -- Completed
-      on_parsed(select(2, unpack(outputs)))
+      on_parsed(unpack(outputs, 2))
       return
     end
 
