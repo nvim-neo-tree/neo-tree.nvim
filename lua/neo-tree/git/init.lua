@@ -344,7 +344,7 @@ end
 ---@param path string path to run commands in
 ---@param base_lookup neotree.git.BaseLookup? git ref base
 ---@param opts neotree.Config.GitStatusAsync
----@param callback fun(worktree_root: string?)
+---@param callback? fun(worktree-root: string?)
 M.status_async = function(path, base_lookup, opts, callback)
   callback = callback or function() end
   M.find_worktree_info(path, function(worktree_root, git_dir, superproject_worktree_root)
