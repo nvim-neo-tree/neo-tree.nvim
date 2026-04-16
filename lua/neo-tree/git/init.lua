@@ -613,7 +613,7 @@ M.find_existing_worktree = function(path)
   end
   local longest_worktree_root, deepest_worktree
   for worktree_root, worktree in pairs(M.worktrees) do
-    if utils.is_subpath(worktree_root, path, true) then
+    if worktree_root ~= path and utils.is_subpath(worktree_root, path, true) then
       if not longest_worktree_root or #worktree_root > #longest_worktree_root then
         longest_worktree_root = worktree_root
         deepest_worktree = worktree

@@ -74,10 +74,12 @@ local mark_gitignored = function(cwd, items)
   end)
 
   for _, item in ipairs(items) do
+    local path = item.path
+
     for _, root_and_status in ipairs(roots_and_statuses) do
       local worktree_root, git_status = unpack(root_and_status)
-      local path = item.path
-      if utils.is_subpath(worktree_root, path, true) then
+
+      if worktree_root ~= path and utils.is_subpath(worktree_root, path, true) then
         local status = git._find_existing_status_code_in_git_status(git_status, worktree_root, path)
         if status == "!" then
           item.filtered_by = item.filtered_by or {}
