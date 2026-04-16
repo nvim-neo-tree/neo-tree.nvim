@@ -1735,11 +1735,11 @@ M.prior_windows = {}
 ---Start an async command with uv.
 ---Placeholder before upgrading to vim.system
 ---@param cmd string[]
+---@param opts uv.spawn.options? args, hide, and stdio are ignored
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
----@param cwd string?
 ---@return neotree.utils.Job?
 ---@return integer|string err
-M.job = function(cmd, on_exit, cwd)
+M.job = function(cmd, opts, on_exit)
   local stdout_chunks = {}
   local stderr_chunks = {}
 
@@ -1749,12 +1749,12 @@ M.job = function(cmd, on_exit, cwd)
   local exit_code
   local stdout = log.assert(uv.new_pipe(false))
   local stderr = log.assert(uv.new_pipe(false))
-  local handle, pid_or_err = uv.spawn(path, {
-    args = args,
-    hide = true,
-    stdio = { nil, stdout, stderr },
-    cwd = cwd,
-  }, function(code, _)
+  ---@type uv.spawn.options
+  local spawnopts = opts or {}
+  spawnopts.args = args
+  spawnopts.hide = true
+  spawnopts.stdio = { nil, stdout, stderr }
+  local handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
     stdout:close()
     stderr:close()
     exit_code = code

@@ -3,63 +3,21 @@ local utils = require("neo-tree.utils")
 local uv = vim.uv or vim.loop
 local M = {}
 
----@param cmd string[]
----@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])
----@param cwd string?
-M.job = function(cmd, on_exit, cwd)
-  local stdout_chunks = {}
-  local stderr_chunks = {}
-
-  --- uv.spawn blocks for 2x longer than jobstart but jobstart replaces \001 with \n which isn't ideal for path
-  --- correctness (since paths can technically have newlines).
-  ---
-  --- Switch to vim.system in v4.0
-  local stdout = log.assert(uv.new_pipe(false))
-  local stderr = log.assert(uv.new_pipe(false))
-  local handle = uv.spawn("git", {
-    args = cmd,
-    hide = true,
-    stdio = { nil, stdout, stderr },
-    cwd = cwd,
-  }, function(code, _)
-    stdout:close()
-    stderr:close()
-    on_exit(code, stdout_chunks, stderr_chunks)
-  end)
-  if not handle then
-    stdout:close()
-    stderr:close()
-    return
-  end
-
-  stdout:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
-      stdout_chunks[#stdout_chunks + 1] = data
-    end
-  end)
-  stderr:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
-      stderr_chunks[#stderr_chunks + 1] = data
-    end
-  end)
-end
-
+---Runs a coroutine with the inputs
 ---@param parsing_coroutine thread
----@param context neotree.git.JobContext
----@param outputs unknown[]
----@param on_parsed function
-M.parse_in_batches = function(parsing_coroutine, context, outputs, on_parsed)
+---@param batch_delay integer
+---@param outputs unknown[] The first set of outputs from the coroutine
+---@param on_coroutine_finish fun(success: boolean, ...: unknown)
+M.run_coroutine_on_interval = function(parsing_coroutine, batch_delay, outputs, on_coroutine_finish)
   local function do_next_batch()
     if coroutine.status(parsing_coroutine) == "dead" then
       -- Completed
-      on_parsed(unpack(outputs, 2))
+      on_coroutine_finish(unpack(outputs))
       return
     end
 
-    outputs = { log.assert(coroutine.resume(parsing_coroutine)) }
-    vim.defer_fn(do_next_batch, context.batch_delay)
+    outputs = { coroutine.resume(parsing_coroutine) }
+    vim.defer_fn(do_next_batch, batch_delay)
   end
   do_next_batch()
 end

@@ -46,7 +46,7 @@ end
 ---@param on_parsed fun(status: neotree.git.Status)
 M.name_status_job = function(worktree_root, base, skip_bubbling, context, on_parsed)
   local cmd = make_git_diff_name_status_cmd(worktree_root, base)
-  utils.job(cmd, function(code, stdout_chunks)
+  utils.job(cmd, nil, function(code, stdout_chunks)
     if code ~= 0 then
       log.warn("Could not async diff HEAD vs", base)
       return
@@ -54,17 +54,15 @@ M.name_status_job = function(worktree_root, base, skip_bubbling, context, on_par
     local full_output = table.concat(stdout_chunks)
     local parsing_task = coroutine.create(git_parser.parse_diff_name_status_output)
     local first_output = {
-      log.assert(
-        coroutine.resume(
-          parsing_task,
-          worktree_root,
-          skip_bubbling,
-          utils.gsplit_plain(full_output, "\000"),
-          context
-        )
+      coroutine.resume(
+        parsing_task,
+        worktree_root,
+        skip_bubbling,
+        utils.gsplit_plain(full_output, "\000"),
+        context
       ),
     }
-    git_utils.parse_in_batches(parsing_task, context, first_output, on_parsed)
+    git_utils.run_coroutine_on_interval(parsing_task, context.batch_delay, first_output, on_parsed)
   end)
 end
 

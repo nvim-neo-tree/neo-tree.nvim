@@ -29,7 +29,7 @@ local mark_gitignored = function(cwd, items)
     return vim.tbl_isempty(running_statuses)
   end)
   if not all_queued_statuses_finished then
-    log.warn("Skipping wait for statuses since it took longer than 1000 ms")
+    log.info("Skipping wait for statuses since it took longer than 1000 ms")
   end
   local upward_status_found = false
   local roots_and_statuses = {}
@@ -37,10 +37,13 @@ local mark_gitignored = function(cwd, items)
   for worktree_root, worktree in pairs(git.worktrees) do
     local is_upward = utils.is_subpath(worktree_root, cwd, true)
     if is_upward or utils.is_subpath(cwd, worktree_root, true) then
+      local new = false
       if not worktree.status then
-        worktree.status = M.status(worktree_root)
+        git.status(worktree_root)
+        new = true
       end
-      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, worktree.status }
+      roots_and_statuses[#roots_and_statuses + 1] =
+        { worktree_root, worktree.status, "exisitng", new }
     end
     if is_upward then
       upward_status_found = true
@@ -60,7 +63,7 @@ local mark_gitignored = function(cwd, items)
       for _, path in ipairs(ignored_list) do
         status[path] = "!"
       end
-      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status }
+      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status, "ignored" }
     end
   end
 
@@ -126,15 +129,9 @@ local on_directory_loaded = function(context, dir_path)
           -- try running a status (and potentially start tracking)
           running_statuses[target_path] = true
           if nt.config.git_status_async then
-            vim.print(target_path)
-            git.status_async(
-              target_path,
-              nil,
-              nt.config.git_status_async_options,
-              function(worktree_root)
-                running_statuses[target_path] = nil
-              end
-            )
+            git.status_async(target_path, nil, nt.config.git_status_async_options, function()
+              running_statuses[target_path] = nil
+            end)
           else
             vim.schedule(function()
               git.status(target_path, nil, false)
