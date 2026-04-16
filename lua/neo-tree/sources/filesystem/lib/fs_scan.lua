@@ -19,17 +19,23 @@ local M = {}
 
 --- how many entries to load per readdir
 local ENTRIES_BATCH_SIZE = 1000
+local WAIT_FOR_PENDING_STATUS_MS = 200
 
 local running_statuses = {}
 ---@param cwd string Filters what worktrees to view. Should be an ancestor of all the items.
 ---@param items neotree.FileItem[]
 local mark_gitignored = function(cwd, items)
   assert(not vim.in_fast_event(), "mark_gitignored cannot be called in a fast event")
-  local all_queued_statuses_finished = vim.wait(1000, function()
-    return vim.tbl_isempty(running_statuses)
-  end)
-  if not all_queued_statuses_finished then
-    log.info("Skipping wait for statuses since it took longer than 1000 ms")
+  if not vim.tbl_isempty(running_statuses) then
+    local all_queued_statuses_finished = vim.wait(WAIT_FOR_PENDING_STATUS_MS, function()
+      return vim.tbl_isempty(running_statuses)
+    end)
+    if not all_queued_statuses_finished then
+      log.at.debug.format(
+        "Skipping wait for statuses since it took longer than %s ms",
+        WAIT_FOR_PENDING_STATUS_MS
+      )
+    end
   end
   local upward_status_found = false
   local roots_and_statuses = {}
@@ -37,13 +43,10 @@ local mark_gitignored = function(cwd, items)
   for worktree_root, worktree in pairs(git.worktrees) do
     local is_upward = utils.is_subpath(worktree_root, cwd, true)
     if is_upward or utils.is_subpath(cwd, worktree_root, true) then
-      local new = false
       if not worktree.status then
         git.status(worktree_root)
-        new = true
       end
-      roots_and_statuses[#roots_and_statuses + 1] =
-        { worktree_root, worktree.status, "exisitng", new }
+      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, worktree.status }
     end
     if is_upward then
       upward_status_found = true
@@ -63,7 +66,7 @@ local mark_gitignored = function(cwd, items)
       for _, path in ipairs(ignored_list) do
         status[path] = "!"
       end
-      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status, "ignored" }
+      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status }
     end
   end
 
