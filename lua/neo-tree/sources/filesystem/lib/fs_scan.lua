@@ -9,6 +9,7 @@ local file_nesting = require("neo-tree.sources.common.file-nesting")
 local log = require("neo-tree.log")
 local fs_watch = require("neo-tree.sources.filesystem.lib.fs_watch")
 local git = require("neo-tree.git")
+local git_utils = require("neo-tree.git.utils")
 local events = require("neo-tree.events")
 local nt = require("neo-tree")
 local async = require("plenary.async")
@@ -18,6 +19,85 @@ local M = {}
 
 --- how many entries to load per readdir
 local ENTRIES_BATCH_SIZE = 1000
+local WAIT_FOR_PENDING_STATUS_MS = 200
+
+local running_statuses = {}
+---@param cwd string Filters what worktrees to view. Should be an ancestor of all the items.
+---@param items neotree.FileItem[]
+local mark_gitignored = function(cwd, items)
+  if vim.in_fast_event() then
+    log.warn("mark_gitignored cannot be called in a fast event", debug.traceback())
+    return
+  end
+  if not vim.tbl_isempty(running_statuses) then
+    local all_queued_statuses_finished = vim.wait(WAIT_FOR_PENDING_STATUS_MS, function()
+      return vim.tbl_isempty(running_statuses)
+    end)
+    if not all_queued_statuses_finished then
+      log.at.info.format(
+        "(fs) Skipping wait for gitignored items, since it took longer than %s ms",
+        WAIT_FOR_PENDING_STATUS_MS
+      )
+    end
+  end
+  local upward_status_found = false
+  local roots_and_statuses = {}
+  -- Filter out all non-visible worktrees
+  for worktree_root, worktree in pairs(git.worktrees) do
+    local is_upward = utils.is_subpath(worktree_root, cwd, true)
+    if is_upward or utils.is_subpath(cwd, worktree_root, true) then
+      if not worktree.status then
+        git.status(worktree_root)
+      end
+      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, worktree.status }
+    end
+    if is_upward then
+      upward_status_found = true
+    end
+  end
+
+  if not upward_status_found then
+    local maybe_worktree_root = git_utils.might_be_in_git_repo(cwd)
+    if maybe_worktree_root then
+      local worktree_root = git.find_worktree_info(cwd)
+      if not worktree_root then
+        return
+      end
+
+      local ignored_list = require("neo-tree.git.ls-files").ignored(worktree_root)
+      local status = {}
+      for _, path in ipairs(ignored_list) do
+        status[path] = "!"
+      end
+      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status }
+    end
+  end
+
+  -- Sort by descending key length since we want to ensure that the most specific worktrees are matched first
+  table.sort(roots_and_statuses, function(a, b)
+    local root_a, root_b = a[1], b[1]
+    return #root_a > #root_b
+  end)
+
+  for _, item in ipairs(items) do
+    local path = item.path
+
+    for _, root_and_status in ipairs(roots_and_statuses) do
+      local worktree_root, git_status = unpack(root_and_status)
+
+      if worktree_root ~= path and utils.is_subpath(worktree_root, path, true) then
+        local status = git._find_existing_status_code_in_git_status(git_status, worktree_root, path)
+        if status == "!" then
+          item.filtered_by = item.filtered_by or {}
+          item.filtered_by.gitignored = true
+        elseif item.filtered_by then
+          item.filtered_by.gitignored = nil
+        end
+        break
+      end
+    end
+  end
+end
 
 ---@param context neotree.sources.filesystem.Context
 ---@param dir_path string
@@ -53,13 +133,17 @@ local on_directory_loaded = function(context, dir_path)
     end
     if nt.config.enable_git_status then
       for i, child in ipairs(folder.children) do
-        if vim.endswith(child.path, ".git") and not git.find_existing_worktree(child.path) then
+        if vim.endswith(child.path, ".git") and not git.worktrees[target_path] then
           -- try running a status (and potentially start tracking)
+          running_statuses[target_path] = true
           if nt.config.git_status_async then
-            git.status_async(target_path, nil, nt.config.git_status_async_options)
+            git.status_async(target_path, nil, nt.config.git_status_async_options, function()
+              running_statuses[target_path] = nil
+            end)
           else
             vim.schedule(function()
               git.status(target_path, nil, false)
+              running_statuses[target_path] = nil
             end)
           end
           break
@@ -85,35 +169,6 @@ local on_directory_loaded = function(context, dir_path)
 
     fs_watch.watch_folder(target_path, fs_watch_callback)
   end
-end
-
----@param context neotree.sources.filesystem.Context
----@param dir_path string
-local dir_complete = function(context, dir_path)
-  local paths_to_load = context.paths_to_load
-  local folders = context.folders
-
-  on_directory_loaded(context, dir_path)
-
-  -- check to see if there are more folders to load
-  local next_path = nil
-  while #paths_to_load > 0 and not next_path do
-    next_path = table.remove(paths_to_load)
-    -- ensure that the path is still valid
-    local result = uv.fs_stat(next_path)
-    -- ensure that the result is a directory
-    if result and result.type == "directory" then
-      -- ensure that it is not already loaded
-      local existing = folders[next_path]
-      if existing and existing.loaded then
-        next_path = nil
-      end
-    else
-      -- if the path doesn't exist, skip it
-      next_path = nil
-    end
-  end
-  return next_path
 end
 
 ---@param context neotree.sources.filesystem.Context
@@ -161,7 +216,7 @@ local job_complete = function(context, skip_render_context)
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
   if should_check_gitignore(state) then
-    git.mark_gitignored(state, context.all_items)
+    mark_gitignored(state.path, context.all_items)
   end
   if not skip_render_context then
     vim.schedule(function()
@@ -364,27 +419,12 @@ local function async_scan(context, path)
         if ctx.directories_scanned == #ctx.paths_to_load then
           ctx.on_exit()
         end
-
-        --local next_path = dir_complete(ctx, current_dir)
-        --if next_path then
-        --  local success, error = pcall(read_dir, next_path)
-        --  if not success then
-        --    log.error(next_path, ": ", error)
-        --  end
-        --else
-        --  on_exit()
-        --end
       end
 
       uv.fs_readdir(dir, on_fs_readdir)
     end)
   end
 
-  --local first = table.remove(context.paths_to_load)
-  --local success, err = pcall(read_dir, first)
-  --if not success then
-  --  log.error(first, ": ", err)
-  --end
   for i = 1, context.directories_to_scan do
     read_dir(context.paths_to_load[i], context)
   end
@@ -429,7 +469,30 @@ local function sync_scan(context, path_to_scan)
       log.error("Error opening dir:", err)
     end
 
-    local next_path = dir_complete(context, path_to_scan)
+    local paths_to_load = context.paths_to_load
+    local folders = context.folders
+
+    on_directory_loaded(context, path_to_scan)
+
+    -- check to see if there are more folders to load
+    local next_path = nil
+    while #paths_to_load > 0 and not next_path do
+      next_path = table.remove(paths_to_load)
+      -- ensure that the path is still valid
+      local result = uv.fs_stat(next_path)
+      -- ensure that the result is a directory
+      if result and result.type == "directory" then
+        -- ensure that it is not already loaded
+        local existing = folders[next_path]
+        if existing and existing.loaded then
+          next_path = nil
+        end
+      else
+        -- if the path doesn't exist, skip it
+        next_path = nil
+      end
+    end
+
     if next_path then
       sync_scan(context, next_path)
     else
@@ -673,10 +736,9 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  job_complete(context, true)
-
   local finalize = async.wrap(function(_context, _callback)
     vim.schedule(function()
+      job_complete(context, true)
       render_context(_context)
       _callback()
     end)
