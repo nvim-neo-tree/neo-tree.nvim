@@ -25,14 +25,17 @@ local running_statuses = {}
 ---@param cwd string Filters what worktrees to view. Should be an ancestor of all the items.
 ---@param items neotree.FileItem[]
 local mark_gitignored = function(cwd, items)
-  assert(not vim.in_fast_event(), "mark_gitignored cannot be called in a fast event")
+  if vim.in_fast_event() then
+    log.warn("mark_gitignored cannot be called in a fast event", debug.traceback())
+    return
+  end
   if not vim.tbl_isempty(running_statuses) then
     local all_queued_statuses_finished = vim.wait(WAIT_FOR_PENDING_STATUS_MS, function()
       return vim.tbl_isempty(running_statuses)
     end)
     if not all_queued_statuses_finished then
-      log.at.debug.format(
-        "Skipping wait for statuses since it took longer than %s ms",
+      log.at.info.format(
+        "(fs) Skipping wait for gitignored items, since it took longer than %s ms",
         WAIT_FOR_PENDING_STATUS_MS
       )
     end
@@ -733,10 +736,9 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  job_complete(context, true)
-
   local finalize = async.wrap(function(_context, _callback)
     vim.schedule(function()
+      job_complete(context, true)
       render_context(_context)
       _callback()
     end)
