@@ -228,7 +228,7 @@ M.execute_command = function(cmd)
 
   -- An empty result is ok
   if vim.v.shell_error ~= 0 or (#result > 0 and vim.startswith(result[1], "fatal:")) then
-    return false, result or {}
+    return false, result
   else
     return true, result
   end

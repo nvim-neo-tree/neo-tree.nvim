@@ -3,10 +3,10 @@ local uv = vim.uv
 local log = require("neo-tree.log").new("trash-freedesktop")
 local utils = require("neo-tree.utils")
 local xdg = require("neo-tree.utils.xdg")
----@param path string
----@return boolean
 
 local M = {}
+---@param path string
+---@return boolean
 local function dir_is_writable(path)
   local stat = uv.fs_stat(path)
   return stat and stat.type == "directory" and uv.fs_access(path, "w") or false
@@ -207,11 +207,17 @@ local function restore(trash_filename, trash_files_dir, trash_info_dir)
   return true
 end
 
+---@return string trash_dir
+---@return string trash_files_dir
+---@return string trash_info_dir
+M.calculate_trash_paths = function()
+  local trash_dir = utils.path_join(xdg.data_home, "Trash")
+  return trash_dir, utils.path_join(trash_dir, "files"), utils.path_join(trash_dir, "info")
+end
+
 ---@type neotree.trash.RestoreFunctionGenerator
 M.new_restorer = function(trash_filenames)
-  local trash_dir = utils.path_join(xdg.data_home, "Trash")
-  local trash_files_dir = utils.path_join(trash_dir, "files")
-  local trash_info_dir = utils.path_join(trash_dir, "info")
+  local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
     and ensure_writable_dir(trash_info_dir)
@@ -228,14 +234,6 @@ M.new_restorer = function(trash_filenames)
     end
     return true
   end
-end
-
----@return string trash_dir
----@return string trash_files_dir
----@return string trash_info_dir
-M.calculate_trash_paths = function()
-  local trash_dir = utils.path_join(xdg.data_home, "Trash")
-  return trash_dir, utils.path_join(trash_dir, "files"), utils.path_join(trash_dir, "info")
 end
 
 ---@type neotree.trash.FunctionGenerator
@@ -294,22 +292,16 @@ M.new_trasher = function(paths)
         trash_filename = filename .. "." .. counter
       end
 
-      local info_content = string.format(
-        [[
-[Trash Info]
-Path=%s
-DeletionDate=%s"
-]],
-        vim.uri_encode(path, "rfc2396"),
-        os.date("%Y%m%dT%H:%M:%S")
-      )
-
       local info_file_path = utils.path_join(trash_info_dir, trash_filename .. ".trashinfo")
       local f, open_err = io.open(info_file_path, "w")
       if not f then
         return false, "Failed to create trashinfo: " .. (open_err or "")
       end
-      f:write(info_content)
+      f:write(([[
+[Trash Info]
+Path=%s
+DeletionDate=%s"
+]]):format(vim.uri_encode(path, "rfc2396"), os.date("%Y%m%dT%H:%M:%S")))
       f:close()
 
       -- Move the file to the trash/files directory
@@ -322,7 +314,10 @@ DeletionDate=%s"
 
       trash_filenames[#trash_filenames + 1] = trash_filename
     end
-    assert(update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir))
+    local cache_updated, err = update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
+    if not cache_updated then
+      log.error(err)
+    end
 
     return M.new_restorer(trash_filenames)
   end
