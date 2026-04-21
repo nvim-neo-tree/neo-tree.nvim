@@ -91,6 +91,7 @@ M._trash_builtins = {
   },
 }
 
+---Converts a list of commands to a function that runs them, in order, and without stopping on the first error.
 ---@param cmds string[][]
 ---@return neotree.trash._Function?
 local commands_to_runnerfunc = function(cmds)
@@ -100,7 +101,9 @@ local commands_to_runnerfunc = function(cmds)
     for i, cmd in ipairs(cmds) do
       local success, output = utils.execute_command(cmd)
       if not success then
-        log.warn(table.concat(output, "\n"))
+        local cmd_str = table.concat(cmd, "\n")
+        local output_str = table.concat(output, "\n")
+        log.at.warn.format("Command `%s` failed: %s", cmd_str, output_str)
         all_succeeded = false
       end
     end
@@ -211,21 +214,21 @@ M.restore = function(paths, restorer)
   if type(restorer) ~= "function" then
     return false, "restorer: expected function (neotree.trash.Restore), got a " .. type(restorer)
   end
-  -- eval restorer
+
   local res, err = restorer(paths)
   if not res then
     return false, err
   end
-  local runnerfunc
+  local restorefunc
   if type(res) == "table" then
-    runnerfunc = commands_to_runnerfunc(res)
+    restorefunc = commands_to_runnerfunc(res)
   elseif type(res) == "function" then
-    runnerfunc, err = res()
+    restorefunc, err = res()
   end
-  if not runnerfunc then
+  if not restorefunc then
     return false
   end
-  return runnerfunc()
+  return restorefunc()
 end
 
 return M
