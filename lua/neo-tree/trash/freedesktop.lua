@@ -61,6 +61,7 @@ local function get_dev(path)
   return stat and stat.dev
 end
 
+---Implementation of the suggested algorithm for calculating the size of a trash directory.
 ---@param path string
 ---@return integer size
 local function calc_dir_size(path)
@@ -93,8 +94,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
   local tmp_cache_path = os.tmpname() .. ".directorysizes.tmp"
   local cache_file_path = utils.path_join(trash_dir, "directorysizes")
 
-  -- 1. Load directorysizes file into memory
-  -- Format: "size mtime directory-name"
   local hash = {}
   local f = io.open(cache_file_path, "r")
   if f then
@@ -102,7 +101,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
       local size, mtime, name = line:match("(%d+) (%d+) (.+)")
       if size and mtime and name then
         hash[vim.uri_decode(name, "rfc2396")] = {
-
           size = tonumber(size),
           mtime = tonumber(mtime),
           seen = false,
@@ -114,7 +112,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
 
   local total_size = 0
 
-  -- 2. List "files" directory and update sizes
   for name, nodetype in vim.fs.dir(files_dir, { depth = 1 }) do
     if not name then
       break
@@ -123,7 +120,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
     local item_path = utils.path_join(files_dir, name)
 
     if nodetype == "directory" then
-      -- Per spec: stat the .trashinfo file in the info/ directory for mtime
       local info_path = utils.path_join(info_dir, name .. ".trashinfo")
       local istat = uv.fs_stat(info_path)
 
@@ -150,7 +146,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
     end
   end
 
-  -- 3. Write out hash back to temporary directorysizes file
   local out = io.open(tmp_cache_path, "w")
   if not out then
     return nil, "Could not update directorysizes file"
@@ -162,7 +157,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
   end
   out:close()
 
-  -- 4. Atomic rename into place
   local success, err = uv.fs_rename(tmp_cache_path, cache_file_path)
   if not success then
     return nil, "Failed to update cache file: " .. (err or "unknown error")
@@ -171,16 +165,18 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
   return total_size
 end
 
----@param trash_filename string
+---@param trashed_filepath string
 ---@param trash_files_dir string
 ---@param trash_info_dir string
 ---@return boolean
 ---@return string? err
-local function restore(trash_filename, trash_files_dir, trash_info_dir)
-  local info_file_path = utils.path_join(trash_info_dir, trash_filename)
+local function restore(trashed_filepath, trash_info_dir)
+  local _, filename = utils.split_path(trashed_filepath)
+  local info_file_path = utils.path_join(trash_info_dir, filename .. ".trashinfo")
 
   if not uv.fs_lstat(info_file_path) then
-    return false, "Info file doesn't exist, cannot determine original path"
+    return false,
+      "XDG trashinfo doesn't exist at " .. info_file_path .. ", cannot determine original path"
   end
 
   local original_path
@@ -195,12 +191,11 @@ local function restore(trash_filename, trash_files_dir, trash_info_dir)
     return false, "Cannot determine original_path"
   end
   -- Move the file to the trash/files directory
-  local renamed, move_err =
-    uv.fs_rename(utils.path_join(trash_files_dir, trash_filename), original_path)
+  local renamed, move_err = uv.fs_rename(trashed_filepath, original_path)
 
   if not renamed then
     return false,
-      "Failed to restore " .. trash_filename .. " from trash: " .. (move_err or "unknown error")
+      "Failed to restore " .. trashed_filepath .. " from trash: " .. (move_err or "unknown error")
   end
 
   os.remove(info_file_path)
@@ -216,7 +211,8 @@ M.calculate_trash_paths = function()
 end
 
 ---@type neotree.trash.RestoreFunctionGenerator
-M.new_restorer = function(trash_filenames)
+M.generate_restorer = function(trashed_filepaths)
+  print("generating")
   local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
@@ -226,18 +222,22 @@ M.new_restorer = function(trash_filenames)
     return nil
   end
   return function()
-    for _, p in ipairs(trash_filenames) do
-      local restored, err = restore(p, trash_files_dir, trash_info_dir)
+    local all_restored = true
+    for _, filepath in ipairs(trashed_filepaths) do
+      local restored, err = restore(filepath, trash_info_dir)
       if not restored then
-        return false, err
+        all_restored = false
+        if err then
+          log.warn(err)
+        end
       end
     end
-    return true
+    return all_restored
   end
 end
 
 ---@type neotree.trash.FunctionGenerator
-M.new_trasher = function(paths)
+M.generate_trashfunc = function(paths)
   if utils.is_windows then
     log.warn("Freedesktop trash module does not support Windows.")
     return nil
@@ -318,9 +318,8 @@ DeletionDate=%s"
     if not cache_updated then
       log.error(err)
     end
-
-    return M.new_restorer(trash_filenames)
-  end
+  end,
+    M.generate_restorer
 end
 
 return M
