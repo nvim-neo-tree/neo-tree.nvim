@@ -992,11 +992,10 @@ MacOS:
 - `osascript` commands.
 
 Linux:
-- `trash-put/restore` from https://github.com/andreafrancia/trash-cli
 - `gio trash`
-- `kioclient/kioclient5`.
+- Neo-tree's Lua implementation of the FreeDesktop XDG trash spec.
 
-Windows: `trash`, or `PowerShell` commands.
+Windows: `PowerShell` commands.
 
 You can configure the command used by specifying `trash.command` in `setup()`:
 
@@ -1008,7 +1007,8 @@ You can configure the command used by specifying `trash.command` in `setup()`:
     })
 <
 
-This option takes three types of commands:
+This option allows you to specify an override that will be looked at before
+falling back to the built-ins:
 
 1. A string array listing an `rm`-like trash command to use. In otherwords, a
    CLI tool where the invocation of the command looks like `trash ...FILES`.
@@ -1016,19 +1016,17 @@ This option takes three types of commands:
 >lua
     require("neo-tree").setup({
       trash = {
-        command = { "your-trash-cli", "-r" }
+        command = { "your-trash-cli", "--put" }
       }
     })
 <
 
-2. Or a function that either returns a list of commands to execute that will
-   result in the deletion of the items:
+2. Or a function that returns a list of commands to execute:
 
 >lua
     require("neo-tree").setup({
       trash = {
-        ---@param paths string[]
-        ---@return string[][] commands
+        ---@type neotree.trash.CommandGenerator fun(paths: string[]):(fun():boolean,string?)?
         command = function(paths)
           if not require("neo-tree.utils").executable("mv") then
             return nil -- defer to built-ins
@@ -1043,7 +1041,9 @@ This option takes three types of commands:
     })
 <
 
-(if any of these commands fail, the rest are aborted).
+(Neo-tree will attempt to run every command in-order, and log output for each
+command that returns with a non-zero error code).
+
 
 3. Or a function that is entirely responsible for deletion, and returns a
    (true/false, string) result tuple. Return false to defer to builtin handlers,
