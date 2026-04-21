@@ -75,6 +75,15 @@ M.delete_visual = function(state, selected_nodes)
   cc.delete_visual(state, selected_nodes, utils.wrap(refresh, state))
 end
 
+M.trash = function(state)
+  cc.trash(state, utils.wrap(refresh, state))
+end
+
+---@type neotree.TreeCommandVisual
+M.trash_visual = function(state, selected_nodes)
+  cc.trash_visual(state, selected_nodes, utils.wrap(refresh, state))
+end
+
 M.expand_all_nodes = function(state, node)
   cc.expand_all_nodes(state, node, fs.prefetcher)
 end

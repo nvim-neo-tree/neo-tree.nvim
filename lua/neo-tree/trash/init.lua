@@ -8,17 +8,15 @@ local M = {}
 
 ---A convienient format to define a trash command with rm-like syntax.
 ---@class neotree.trash.PureCommand
----@field healthcheck? neotree.trash.PureCommand.HealthCheck
+---@field healthcheck? fun(paths: string[]):success: boolean, err: string?
 ---@field restorer? neotree.trash.Restorer
 ---@field [integer] string
-
----@alias neotree.trash.PureCommand.HealthCheck fun(paths: string[]):success: boolean, err: string?
 
 ---A function that may return trash commands to execute, in order.
 ---@alias neotree.trash.CommandGenerator fun(paths: string[]):(commands: string[][]?, restorer: neotree.trash.Restorer?)
 
 ---A function that may return a function that will do the trashing.
----@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?, restorefunc: neotree.trash._RestoreFunction?)
+---@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?, restorer: neotree.trash.Restorer?)
 
 ---The internal function type that actually does the requisite trashing.
 ---@alias neotree.trash._Function fun():success: boolean
@@ -26,10 +24,10 @@ local M = {}
 ---@alias neotree.trash.Restorer neotree.trash.RestoreFunctionGenerator|neotree.trash.RestoreCommandGenerator
 
 ---A function that may return trash-restoring commands to execute, in order.
----@alias neotree.trash.RestoreCommandGenerator fun(paths: string[]):(string[][]?)
+---@alias neotree.trash.RestoreCommandGenerator fun(trashed_paths: string[]):(string[][]?)
 
 ---A function that may return a function that will do the trash restoration.
----@alias neotree.trash.RestoreFunctionGenerator fun(paths: string[]):(neotree.trash._RestoreFunction?)
+---@alias neotree.trash.RestoreFunctionGenerator fun(trashed_paths: string[]):(neotree.trash._RestoreFunction?)
 
 ---A function that is supposed to restore any files deleted by a certain trash method.
 ---@alias neotree.trash._RestoreFunction fun():success: boolean
@@ -39,10 +37,10 @@ local M = {}
 
 ---A list of built-in trashers that are natively supported for trashing use.
 ---
----https://github.com/andreafrancia/trash-cli is not featured because it doesn't have a non-interactive way of restoring
+---https://github.com/andreafrancia/trash-cli and kioclient are not featured because they doen't have a non-interactive way of restoring
 ---a selected list of items in the trash.
 ---@type table<string, neotree.trash.Command[]>
-M._trash_builtins = {
+M._builtins = {
   macos = {
     { "trash" }, -- either the macOS 15 built-in, or someone's better replacment.
     function(p)
@@ -71,20 +69,20 @@ M._trash_builtins = {
       end,
       ---@type neotree.trash.RestoreCommandGenerator
       restorer = function(trashed_paths)
-        local trash_dir = require("neo-tree.trash.freedesktop").calculate_trash_paths()
+        local _, trash_files_dir = require("neo-tree.trash.freedesktop").calculate_trash_paths()
         -- check that all trashed paths start with the dir
         local cmd = { "gio", "trash", "--restore" }
         for i, trashed_path in ipairs(trashed_paths) do
-          if not utils.is_subpath(trash_dir, trashed_path) then
+          if not utils.is_subpath(trash_files_dir, trashed_path) then
             return nil
           end
-          local fname = trashed_path:sub(#trash_dir + 1)
+          local fname = trashed_path:sub(#trash_files_dir + 1)
           cmd[#cmd + 1] = "trash:///" .. fname
         end
         return { cmd }
       end,
     },
-    freedesktop_trash.new_trasher,
+    freedesktop_trash.generate_trashfunc,
   },
   windows = {
     windows_trash.generate_recycle_commands,
@@ -95,6 +93,10 @@ M._trash_builtins = {
 ---@param cmds string[][]
 ---@return neotree.trash._Function?
 local commands_to_runnerfunc = function(cmds)
+  assert(
+    type(cmds[1]) == "table" and type(cmds[1][1]) == "string",
+    "Trash command generator should have returned a non-empty string[][]."
+  )
   return function()
     log.debug("Executing trash commands:", cmds)
     local all_succeeded = true
@@ -111,78 +113,81 @@ local commands_to_runnerfunc = function(cmds)
   end
 end
 
+---If both returns are nil, then skip.
+---@param paths string[]
+---@param command neotree.trash.Command
+---@return neotree.trash._Function? trashfunc
+---@return string? err
+---@return neotree.trash.Restorer? restorer
+local normalize_trash_command_to_function = function(paths, command)
+  if type(command) == "table" then
+    local cmd = { unpack(command) }
+    vim.list_extend(cmd, paths)
+    if not utils.executable(cmd[1]) then
+      return nil, nil
+    end
+    if type(command.healthcheck) == "function" then
+      local healthy, err = command.healthcheck(paths)
+      if not healthy then
+        if err then
+          log.at.debug.format(
+            "Issue with trash command `%s`: %s, trying next trash command",
+            cmd[1],
+            err
+          )
+        end
+        return nil, nil
+      end
+    end
+
+    return commands_to_runnerfunc({ cmd }), nil, command.restorer
+  end
+
+  if type(command) == "function" then
+    local trashfunc
+    local res, restorer = command(paths)
+    if res == nil then
+      return nil, nil
+    elseif type(res) == "table" then
+      trashfunc = commands_to_runnerfunc(res)
+    elseif type(res) == "function" then
+      trashfunc = res
+    else
+      return nil,
+        "Invalid return type from trash function generator, expected string[][]|function|nil"
+    end
+    return trashfunc, nil, restorer
+  end
+
+  return nil, "Unable to determine trashing method from command"
+end
+
 ---@param paths string[]
 ---@return boolean success
 ---@return string? err
----@return neotree.trash._RestoreFunction? restore An undo function.
+---@return neotree.trash.Restorer? restorer The corresponding restore functionality for the method used to trash.
 M.trash = function(paths)
   log.assert(#paths > 0)
   local commands = {
     require("neo-tree").ensure_config().trash.command,
   }
   if utils.is_macos then
-    vim.list_extend(commands, M._trash_builtins.macos)
+    vim.list_extend(commands, M._builtins.macos)
   elseif utils.is_windows then
-    vim.list_extend(commands, M._trash_builtins.windows)
+    vim.list_extend(commands, M._builtins.windows)
   else
-    vim.list_extend(commands, M._trash_builtins.linux)
+    vim.list_extend(commands, M._builtins.linux)
   end
 
   for _, command in ipairs(commands) do
-    repeat
-      local trashfunc
-      if type(command) == "table" then
-        local cmd = { unpack(command) }
-        vim.list_extend(cmd, paths)
-        if not utils.executable(cmd[1]) then
-          break -- next cmd
-        end
-        if type(command.healthcheck) == "function" then
-          local healthy, err = command.healthcheck(paths)
-          if not healthy then
-            if err then
-              log.at.debug.format(
-                "Issue with trash command `%s`: %s, trying next trash command",
-                cmd[1],
-                err
-              )
-            end
-            break -- next command
-          end
-        end
-
-        trashfunc = commands_to_runnerfunc({ cmd })
-      elseif type(command) == "function" then
-        local res, err = command(paths)
-        if res == nil then
-          if err then
-            log.debug(err, ", trying next trash command")
-          end
-          break -- next command
-        end
-
-        if type(res) == "table" then
-          ---We returned a list of commands to execute verbatim.
-          ---@cast res string[][]
-          assert(
-            type(res[1]) == "table" and type(res[1][1]) == "string",
-            "Trash command generator should have returned a string[][]."
-          )
-          trashfunc = commands_to_runnerfunc(res)
-        elseif type(res) == "function" then
-          trashfunc = res
-        else
-          return false,
-            "Invalid return type from trash function generator, expected string[][]|function|nil"
-        end
-      end
-
-      if not trashfunc then
-        break -- next command
-      end
-
-      return trashfunc()
-    until true
+    local trashfunc, normalize_err, restorer = normalize_trash_command_to_function(paths, command)
+    if normalize_err then
+      return false, normalize_err
+    end
+    if trashfunc then
+      local success, err, restorer_from_trashfunc = trashfunc()
+      return success, err, restorer_from_trashfunc or restorer
+    end
   end
   return false, "No trash commands or functions worked."
 end
@@ -205,25 +210,27 @@ M.restore = function(paths, restorer)
     else
       local xdg_trash_dir = freedesktop_trash.calculate_trash_paths()
       if xdg_trash_dir then
-        restorer = freedesktop_trash.new_restorer
+        restorer = freedesktop_trash.generate_restorer
       else
         return false, "Couldn't find a supported trash restore method for the given paths"
       end
     end
   end
   if type(restorer) ~= "function" then
-    return false, "restorer: expected function (neotree.trash.Restore), got a " .. type(restorer)
+    return false,
+      "restorer: expected function (@type neotree.trash.Restore), got a " .. type(restorer)
   end
 
   local res, err = restorer(paths)
   if not res then
+    vim.print({ restorer, paths, freedesktop_trash, res, err })
     return false, err
   end
   local restorefunc
   if type(res) == "table" then
     restorefunc = commands_to_runnerfunc(res)
   elseif type(res) == "function" then
-    restorefunc, err = res()
+    restorefunc = res
   end
   if not restorefunc then
     return false

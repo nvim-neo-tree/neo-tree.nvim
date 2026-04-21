@@ -461,6 +461,7 @@ local config = {
       ["d"] = "delete",
       -- ["d"] = "trash",
       ["T"] = "trash",
+      ["u"] = "undo",  -- currently only supports trash.
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",

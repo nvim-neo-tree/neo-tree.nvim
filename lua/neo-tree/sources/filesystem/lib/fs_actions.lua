@@ -741,7 +741,10 @@ M.delete_nodes = function(paths_to_delete, callback)
   end)
 end
 
-M.trash_node = function(path, callback)
+---@param path string
+---@param callback fun(path: string)?
+---@param state neotree.State?
+M.trash_node = function(path, callback, state)
   local _, name = utils.split_path(path)
 
   log.trace("Deleting node:", path)
@@ -761,12 +764,18 @@ M.trash_node = function(path, callback)
       return
     end
 
-    local success, err = trash.trash({ path })
+    local paths = { path }
+    local success, err, restorer = trash.trash(paths)
     if not success then
       log.error("Could not trash " .. path, err)
       return
     end
 
+    if state then
+      table.insert(state.undostack, function()
+        trash.restore(paths, restorer)
+      end)
+    end
     complete()
   end
 
@@ -782,23 +791,29 @@ M.trash_node = function(path, callback)
   end)
 end
 
----@param paths_to_trash string[]
----@param callback fun(path: string)?
-M.trash_nodes = function(paths_to_trash, callback)
-  local msg = "Are you sure you want to delete " .. #paths_to_trash .. " items?"
+---@param paths string[]
+---@param callback fun(paths: string[])?
+---@param state neotree.State?
+M.trash_nodes = function(paths, callback, state)
+  local msg = "Are you sure you want to delete " .. #paths .. " items?"
   inputs.confirm(msg, function(confirmed)
     if not confirmed then
       return
     end
 
-    local success, err = trash.trash(paths_to_trash)
+    local success, err, restorer = trash.trash(paths)
     if not success then
       log.error(err)
     end
 
+    if state then
+      table.insert(state.undostack, function()
+        trash.restore(paths, restorer)
+      end)
+    end
     if callback then
       vim.schedule(function()
-        callback(paths_to_trash[#paths_to_trash])
+        callback(paths)
       end)
     end
   end)

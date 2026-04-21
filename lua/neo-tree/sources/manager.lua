@@ -53,64 +53,6 @@ end
 
 ---@alias neotree.Config.SortFunction fun(a: NuiTree.Node, b: NuiTree.Node):boolean?
 
----@class neotree.State : neotree.Config.Source
----@field name string
----@field tabid integer
----@field id integer
----@field bufnr integer?
----@field dirty boolean
----@field position neotree.State.Position
----@field git_base_by_worktree table<string,string?>?
----@field sort table
----@field clipboard neotree.clipboard.Contents
----@field current_position neotree.State.CurrentPosition?
----@field disposed boolean?
----@field winid integer?
----@field path string?
----@field tree NuiTree?
----@field components table<string, neotree.Component>
----private-ish
----@field orig_tree NuiTree?
----@field _ready boolean?
----@field loading boolean?
----window
----@field window neotree.State.Window?
----@field win_width integer?
----@field longest_width_exact integer?
----@field longest_node integer?
----extras
----@field bind_to_cwd boolean?
----@field opened_buffers neotree.utils.OpenedBuffers?
----@field diagnostics_lookup neotree.utils.DiagnosticLookup?
----@field cwd_target neotree.Config.Filesystem.CwdTarget?
----@field sort_field_provider fun(node: NuiTree.Node):any
----@field explicitly_opened_nodes table<string, boolean?>?
----@field filtered_items neotree.Config.Filesystem.FilteredItems?
----@field skip_marker_at_level table<integer, boolean?>?
----@field group_empty_dirs boolean?
----optional mapping args
----@field fallback string?
----@field config table?
----internal
----@field default_expanded_nodes NuiTree.Node[]?
----@field force_open_folders string[]?
----@field enable_source_selector boolean?
----@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
----lsp
----@field lsp_winid number?
----@field lsp_bufnr number?
----search
----@field search_pattern string?
----@field use_fzy boolean?
----@field fzy_sort_result_scores table<string, integer?>?
----@field fuzzy_finder_mode "directory"|boolean?
----@field open_folders_before_search table?
----sort
----@field sort_function_override neotree.Config.SortFunction?
----keymaps
----@field resolved_mappings table<string, neotree.State.ResolvedMapping?>?
----@field commands table<string, neotree.TreeCommand?>?
-
 ---@class (exact) neotree.StateWithTree : neotree.State
 ---@field tree NuiTree
 ---@field _in_pre_render boolean?
@@ -122,14 +64,73 @@ end
 local function create_state(tabid, sd, winid)
   nt.ensure_config()
   local default_config = assert(default_configs[sd.name])
+  ---@class neotree.State : neotree.Config.Source
+  ---@field name string
+  ---@field tabid integer
+  ---@field id integer
+  ---@field bufnr integer?
+  ---@field dirty boolean
+  ---@field position neotree.State.Position
+  ---@field git_base_by_worktree table<string,string?>?
+  ---@field sort table
+  ---@field clipboard neotree.clipboard.Contents
+  ---@field undostack neotree.State.Undostack
+  ---@field current_position neotree.State.CurrentPosition?
+  ---@field disposed boolean?
+  ---@field winid integer?
+  ---@field path string?
+  ---@field tree NuiTree?
+  ---@field components table<string, neotree.Component>
+  ---private-ish
+  ---@field orig_tree NuiTree?
+  ---@field _ready boolean?
+  ---@field loading boolean?
+  ---window
+  ---@field window neotree.State.Window?
+  ---@field win_width integer?
+  ---@field longest_width_exact integer?
+  ---@field longest_node integer?
+  ---extras
+  ---@field bind_to_cwd boolean?
+  ---@field opened_buffers neotree.utils.OpenedBuffers?
+  ---@field diagnostics_lookup neotree.utils.DiagnosticLookup?
+  ---@field cwd_target neotree.Config.Filesystem.CwdTarget?
+  ---@field sort_field_provider fun(node: NuiTree.Node):any
+  ---@field explicitly_opened_nodes table<string, boolean?>?
+  ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
+  ---@field skip_marker_at_level table<integer, boolean?>?
+  ---@field group_empty_dirs boolean?
+  ---optional mapping args
+  ---@field fallback string?
+  ---@field config table?
+  ---internal
+  ---@field default_expanded_nodes NuiTree.Node[]?
+  ---@field force_open_folders string[]?
+  ---@field enable_source_selector boolean?
+  ---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
+  ---lsp
+  ---@field lsp_winid number?
+  ---@field lsp_bufnr number?
+  ---search
+  ---@field search_pattern string?
+  ---@field use_fzy boolean?
+  ---@field fzy_sort_result_scores table<string, integer?>?
+  ---@field fuzzy_finder_mode "directory"|boolean?
+  ---@field open_folders_before_search table?
+  ---sort
+  ---@field sort_function_override neotree.Config.SortFunction?
+  ---keymaps
+  ---@field resolved_mappings table<string, neotree.State.ResolvedMapping?>?
+  ---@field commands table<string, neotree.TreeCommand?>?
   local state = vim.deepcopy(default_config, compat.noref())
-  ---@cast state neotree.State
+
   state.tabid = tabid
   state.id = winid or tabid
   state.dirty = true
   state.position = {}
   state.sort = { label = "Name", direction = 1 }
   state.clipboard = {}
+  state.undostack = {}
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)
   return state

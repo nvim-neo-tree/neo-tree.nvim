@@ -749,7 +749,8 @@ M.delete_visual = function(state, selected_nodes, callback)
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
-M.trash = function(state)
+---@param callback fun(path: string)
+M.trash = function(state, callback)
   local node = assert(state.tree:get_node())
   if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `trash` command can only be used on files and directories")
@@ -763,10 +764,10 @@ M.trash = function(state)
     )
     return
   end
-  fs_actions.trash_node(node.path)
+  fs_actions.trash_node(node.path, callback, state)
 end
 
----@param callback fun(path: string)
+---@param callback fun(paths: string[])
 ---@type neotree.TreeCommandVisual
 M.trash_visual = function(state, selected_nodes, callback)
   local paths_to_trash = {}
@@ -784,7 +785,19 @@ M.trash_visual = function(state, selected_nodes, callback)
       table.insert(paths_to_trash, node_to_trash.path)
     end
   end
-  fs_actions.trash_nodes(paths_to_trash, callback)
+  fs_actions.trash_nodes(paths_to_trash, callback, state)
+end
+
+M.undo = function(state)
+  ---@alias neotree.State.UndoFunction fun()
+  ---@alias neotree.State.Undostack neotree.State.UndoFunction[]
+  ---@type neotree.State.Undostack
+  local undoer = table.remove(state.undostack)
+  if not undoer then
+    log.error("Can't undo, undostack is empty")
+    return
+  end
+  undoer()
 end
 
 M.preview = function(state)
