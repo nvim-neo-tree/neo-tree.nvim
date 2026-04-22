@@ -13,18 +13,18 @@ local M = {}
 ---@field [integer] string
 
 ---A function that may return trash commands to execute, in order.
----@alias neotree.trash.CommandGenerator fun(paths: string[]):(commands: string[][]?, restorer: neotree.trash.Restorer?)
+---@alias neotree.trash.CommandGenerator fun(paths: string[]):(commands: string[][]?)
 
 ---A function that may return a function that will do the trashing.
----@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?, restorer: neotree.trash.Restorer?)
+---@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?)
 
 ---The internal function type that actually does the requisite trashing.
----@alias neotree.trash._Function fun():success: boolean
+---@alias neotree.trash._Function fun():(success: boolean, undoer: neotree.State.UndoFunction?)
 
 ---@alias neotree.trash.Restorer neotree.trash.RestoreFunctionGenerator|neotree.trash.RestoreCommandGenerator
 
 ---A function that may return trash-restoring commands to execute, in order.
----@alias neotree.trash.RestoreCommandGenerator fun(trashed_paths: string[]):(string[][]?)
+---@alias neotree.trash.RestoreCommandGenerator fun(trashed_paths: string[]):(commands: string[][]?)
 
 ---A function that may return a function that will do the trash restoration.
 ---@alias neotree.trash.RestoreFunctionGenerator fun(trashed_paths: string[]):(neotree.trash._RestoreFunction?)
@@ -91,7 +91,7 @@ M._builtins = {
 
 ---Converts a list of commands to a function that runs them, in order, and without stopping on the first error.
 ---@param cmds string[][]
----@return neotree.trash._Function?
+---@return fun():(success: boolean)?
 local commands_to_runnerfunc = function(cmds)
   assert(
     type(cmds[1]) == "table" and type(cmds[1][1]) == "string",
@@ -118,7 +118,7 @@ end
 ---@param command neotree.trash.Command
 ---@return neotree.trash._Function? trashfunc
 ---@return string? err
----@return neotree.trash.Restorer? restorer
+---@return neotree.State.UndoFunction? undoer
 local normalize_trash_command_to_function = function(paths, command)
   if type(command) == "table" then
     local cmd = { unpack(command) }
@@ -140,7 +140,7 @@ local normalize_trash_command_to_function = function(paths, command)
       end
     end
 
-    return commands_to_runnerfunc({ cmd }), nil, command.restorer
+    return commands_to_runnerfunc({ cmd })
   end
 
   if type(command) == "function" then
@@ -165,7 +165,7 @@ end
 ---@param paths string[]
 ---@return boolean success
 ---@return string? err
----@return neotree.trash.Restorer? restorer The corresponding restore functionality for the method used to trash.
+---@return neotree.trash._RestoreFunction? restorefunc A function that, when called, should "undo" the trash operation.
 M.trash = function(paths)
   log.assert(#paths > 0)
   local commands = {
@@ -180,13 +180,14 @@ M.trash = function(paths)
   end
 
   for _, command in ipairs(commands) do
-    local trashfunc, normalize_err, restorer = normalize_trash_command_to_function(paths, command)
+    local trashfunc, normalize_err, restorefunc =
+      normalize_trash_command_to_function(paths, command)
     if normalize_err then
       return false, normalize_err
     end
     if trashfunc then
-      local success, err, restorer_from_trashfunc = trashfunc()
-      return success, err, restorer_from_trashfunc or restorer
+      local success, restorefunc_from_trashfunc = trashfunc()
+      return success, nil, restorefunc_from_trashfunc or restorefunc
     end
   end
   return false, "No trash commands or functions worked."
@@ -194,8 +195,7 @@ end
 
 ---Attempt to restore files from trash.
 ---@param paths string[]
----@param restorer neotree.trash.Restorer? Either an explicit restorer for the given paths, or Neo-tree
----will attempt to guess at the correct restorer.
+---@param restorer neotree.trash.Restorer? Either an explicit restorer for the given paths, or Neo-tree will attempt to guess at the correct restorer.
 ---@return boolean success
 ---@return string? err
 M.restore = function(paths, restorer)
@@ -223,7 +223,6 @@ M.restore = function(paths, restorer)
 
   local res, err = restorer(paths)
   if not res then
-    vim.print({ restorer, paths, freedesktop_trash, res, err })
     return false, err
   end
   local restorefunc

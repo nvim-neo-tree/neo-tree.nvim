@@ -166,7 +166,6 @@ local function update_trash_size_cache(trash_dir, files_dir, info_dir)
 end
 
 ---@param trashed_filepath string
----@param trash_files_dir string
 ---@param trash_info_dir string
 ---@return boolean
 ---@return string? err
@@ -188,7 +187,24 @@ local function restore(trashed_filepath, trash_info_dir)
     end
   end
   if not original_path then
-    return false, "Cannot determine original_path"
+    return false, ("Cannot determine original path of `%s`"):format(trashed_filepath)
+  end
+  if uv.fs_lstat(original_path) then
+    local prompt = ("File exists at `%s`'s original path. Overwrite it with the old file from the trash?"):format(
+      trashed_filepath
+    )
+    local choices = {
+      "&Yes",
+      "&No (default)",
+    }
+    local confirm_code = 0
+    while confirm_code == 0 do
+      confirm_code = vim.fn.confirm(prompt, table.concat(choices, "\n"), 2, "Warning")
+    end
+    if confirm_code == 1 then
+    elseif confirm_code == 2 then
+      return false
+    end
   end
   -- Move the file to the trash/files directory
   local renamed, move_err = uv.fs_rename(trashed_filepath, original_path)
@@ -212,7 +228,6 @@ end
 
 ---@type neotree.trash.RestoreFunctionGenerator
 M.generate_restorer = function(trashed_filepaths)
-  print("generating")
   local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
@@ -279,17 +294,25 @@ M.generate_trashfunc = function(paths)
     end
   end
 
-  local trash_filenames = {}
+  ---@type neotree.trash._Function
   return function()
-    for _, path in ipairs(paths) do
+    local all_trashed = true
+    local trashed_filepaths = {}
+    ---@param path string
+    ---@return boolean success
+    ---@return string? err
+    local trash_file = function(path)
       local _, filename = utils.split_path(path)
+      assert(filename, "Could not determine filename for " .. path)
 
-      local trash_filename = filename
       local counter = 0
-
+      -- Resolve pathname
+      local trash_filename = filename
+      local filename_root = vim.fn.fnamemodify(filename, ":t:r")
+      local filename_extension = vim.fn.fnamemodify(filename, ":e")
       while uv.fs_lstat(utils.path_join(trash_files_dir, trash_filename)) do
         counter = counter + 1
-        trash_filename = filename .. "." .. counter
+        trash_filename = ("%s[%s].%s"):format(filename_root, counter, filename_extension)
       end
 
       local info_file_path = utils.path_join(trash_info_dir, trash_filename .. ".trashinfo")
@@ -305,21 +328,31 @@ DeletionDate=%s"
       f:close()
 
       -- Move the file to the trash/files directory
-      local renamed, move_err = uv.fs_rename(path, utils.path_join(trash_files_dir, trash_filename))
+      local trashed_filepath = utils.path_join(trash_files_dir, trash_filename)
+      local renamed, move_err = uv.fs_rename(path, trashed_filepath)
 
       if not renamed then
         os.remove(info_file_path)
         return false, "Failed to move " .. path .. " to trash: " .. (move_err or "unknown error")
       end
 
-      trash_filenames[#trash_filenames + 1] = trash_filename
+      trashed_filepaths[#trashed_filepaths + 1] = trashed_filepath
+      return true
     end
-    local cache_updated, err = update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
-    if not cache_updated then
-      log.error(err)
+
+    for _, path in ipairs(paths) do
+      local file_trashed, err = trash_file(path)
+      if err then
+        log.error(err)
+      end
+      all_trashed = all_trashed and file_trashed
     end
-  end,
-    M.generate_restorer
+    -- local cache_updated, err = update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
+    -- if not cache_updated then
+    --   log.error(err)
+    -- end
+    return all_trashed, M.generate_restorer(trashed_filepaths)
+  end
 end
 
 return M
