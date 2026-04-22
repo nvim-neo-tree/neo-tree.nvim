@@ -765,16 +765,14 @@ M.trash_node = function(path, callback, state)
     end
 
     local paths = { path }
-    local success, err, restorer = trash.trash(paths)
+    local success, err, restorefunc = trash.trash(paths)
     if not success then
       log.error("Could not trash " .. path, err)
       return
     end
 
-    if state then
-      table.insert(state.undostack, function()
-        trash.restore(paths, restorer)
-      end)
+    if state and restorefunc then
+      table.insert(state.undostack, restorefunc)
     end
     complete()
   end
