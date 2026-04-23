@@ -167,14 +167,14 @@ end
 
 ---@param trashed_filepath string
 ---@param trash_info_dir string
----@return boolean
+---@return string? restored_to
 ---@return string? err
 local function restore(trashed_filepath, trash_info_dir)
   local _, filename = utils.split_path(trashed_filepath)
   local info_file_path = utils.path_join(trash_info_dir, filename .. ".trashinfo")
 
   if not uv.fs_lstat(info_file_path) then
-    return false,
+    return nil,
       "XDG trashinfo doesn't exist at " .. info_file_path .. ", cannot determine original path"
   end
 
@@ -187,7 +187,7 @@ local function restore(trashed_filepath, trash_info_dir)
     end
   end
   if not original_path then
-    return false, ("Cannot determine original path of `%s`"):format(trashed_filepath)
+    return nil, ("Cannot determine original path of `%s`"):format(trashed_filepath)
   end
   if uv.fs_lstat(original_path) then
     local prompt = ("File exists at `%s`'s original path. Overwrite it with the old file from the trash?"):format(
@@ -203,19 +203,19 @@ local function restore(trashed_filepath, trash_info_dir)
     end
     if confirm_code == 1 then
     elseif confirm_code == 2 then
-      return false
+      return nil
     end
   end
   -- Move the file to the trash/files directory
   local renamed, move_err = uv.fs_rename(trashed_filepath, original_path)
 
   if not renamed then
-    return false,
+    return nil,
       "Failed to restore " .. trashed_filepath .. " from trash: " .. (move_err or "unknown error")
   end
 
   os.remove(info_file_path)
-  return true
+  return original_path
 end
 
 ---@return string trash_dir
@@ -237,17 +237,24 @@ M.generate_restorer = function(trashed_filepaths)
     return nil
   end
   return function()
-    local all_restored = true
+    local restored_filepaths = {}
     for _, filepath in ipairs(trashed_filepaths) do
-      local restored, err = restore(filepath, trash_info_dir)
-      if not restored then
-        all_restored = false
-        if err then
-          log.warn(err)
-        end
+      local restored_filepath, err = restore(filepath, trash_info_dir)
+      if restored_filepath then
+        restored_filepaths[#restored_filepaths + 1] = restored_filepath
+      elseif err then
+        log.warn(err)
       end
     end
-    return all_restored
+    if restored_filepaths == #trashed_filepaths then
+      if #trashed_filepaths == 1 then
+        log.at.info.format("Restored %s from trash", trashed_filepaths)
+      end
+      log.at.info.format("Restored %s files from trash", #trashed_filepaths)
+    elseif restored_filepaths < #trashed_filepaths then
+      log.at.info.format("Restored %s/%s files from trash", restored_filepaths, #trashed_filepaths)
+    end
+    return restored_filepaths == #trashed_filepaths
   end
 end
 
