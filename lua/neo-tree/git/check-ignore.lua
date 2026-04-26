@@ -17,7 +17,7 @@ M.check = function(worktree_root, paths)
     return nil
   end
   local ignored = {}
-  for ignored_path in utils.gsplit_plain(result, "\0") do
+  for ignored_path in utils.gsplit_plain(result, "\001") do
     ignored[#ignored + 1] = utils.path_join(worktree_root, ignored_path)
   end
   return ignored, vim.v.shell_error == 0
