@@ -71,33 +71,33 @@ local mark_gitignored = function(cwd, items)
   end)
 
   -- 1. Sort items into per-worktree-root lists
-  local items_by_root = {}
+  local worktree_data = {}
+  for _, root_and_status in ipairs(roots_and_statuses) do
+    local worktree_root, status = unpack(root_and_status)
+    worktree_data[worktree_root] = { status, {} }
+  end
   for _, item in ipairs(items) do
     for _, root_and_status in ipairs(roots_and_statuses) do
-      local worktree_root, status = unpack(root_and_status)
-      if worktree_root ~= item.path and utils.is_subpath(worktree_root, item.path, true) then
-        items_by_root[worktree_root] = items_by_root[worktree_root]
-          or {
-            status = status,
-            items = {},
-          }
-        table.insert(items_by_root[worktree_root].items, item)
+      local worktree_root = root_and_status[1]
+      local path = item.path
+      if worktree_root ~= path and utils.is_subpath(worktree_root, path, true) then
+        local items_within_root = worktree_data[worktree_root][2]
+        items_within_root[#items_within_root + 1] = item
         break
       end
     end
   end
 
   -- 2. Process each root group
-  for worktree_root, data in pairs(items_by_root) do
-    local git_status = data.status
-    local root_items = data.items
+  for worktree_root, data in pairs(worktree_data) do
+    local git_status, items_within_root = unpack(data)
 
     if not git_status then
-      -- Use check_ignore for roots without a current status
+      -- Use check-ignore for roots without a current status
       local paths = {}
       local item_map = {}
-      for _, item in ipairs(root_items) do
-        table.insert(paths, item.path)
+      for _, item in ipairs(items_within_root) do
+        paths[#paths + 1] = item.path
         item_map[item.path] = item
       end
 
@@ -115,7 +115,7 @@ local mark_gitignored = function(cwd, items)
       end
     else
       -- Rely on the status
-      for _, item in ipairs(root_items) do
+      for _, item in ipairs(items_within_root) do
         local status =
           git._find_existing_status_code_in_git_status(git_status, worktree_root, item.path)
         if status == "!" then
