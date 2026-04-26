@@ -1,6 +1,6 @@
 -- https://specifications.freedesktop.org/trash/latest/
 local uv = vim.uv
-local log = require("neo-tree.log").new("trash-freedesktop")
+local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 local xdg = require("neo-tree.utils.xdg")
 
@@ -227,7 +227,7 @@ M.calculate_trash_paths = function()
 end
 
 ---@type neotree.trash.RestoreFunctionGenerator
-M.generate_restorer = function(trashed_filepaths)
+M.generate_restorer = function(paths)
   local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
@@ -237,24 +237,26 @@ M.generate_restorer = function(trashed_filepaths)
     return nil
   end
   return function()
-    local restored_filepaths = {}
-    for _, filepath in ipairs(trashed_filepaths) do
+    local restored = {}
+    for _, filepath in ipairs(paths) do
       local restored_filepath, err = restore(filepath, trash_info_dir)
       if restored_filepath then
-        restored_filepaths[#restored_filepaths + 1] = restored_filepath
+        restored[#restored + 1] = restored_filepath
       elseif err then
         log.warn(err)
       end
     end
-    if restored_filepaths == #trashed_filepaths then
-      if #trashed_filepaths == 1 then
-        log.at.info.format("Restored %s from trash", trashed_filepaths)
+
+    if #restored == #paths then
+      if #restored == 1 then
+        log.at.info.format("Restored %s from trash", restored[1])
+      else
+        log.at.info.format("Restored %s files from trash", #paths)
       end
-      log.at.info.format("Restored %s files from trash", #trashed_filepaths)
-    elseif restored_filepaths < #trashed_filepaths then
-      log.at.info.format("Restored %s/%s files from trash", restored_filepaths, #trashed_filepaths)
+    elseif #restored < #paths then
+      log.at.info.format("Restored %s/%s files from trash", #restored, #paths)
     end
-    return restored_filepaths == #trashed_filepaths
+    return #restored == #paths
   end
 end
 
