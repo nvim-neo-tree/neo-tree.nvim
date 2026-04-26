@@ -19,9 +19,10 @@ local M = {}
 
 --- how many entries to load per readdir
 local ENTRIES_BATCH_SIZE = 1000
-local WAIT_FOR_PENDING_STATUS_MS = 200
 
-local running_statuses = {}
+---@type string[]
+local possible_worktree_roots = {}
+
 ---@param cwd string Filters what worktrees to view. Should be an ancestor of all the items.
 ---@param items neotree.FileItem[]
 local mark_gitignored = function(cwd, items)
@@ -29,26 +30,14 @@ local mark_gitignored = function(cwd, items)
     log.warn("mark_gitignored cannot be called in a fast event", debug.traceback())
     return
   end
-  if not vim.tbl_isempty(running_statuses) then
-    local all_queued_statuses_finished = vim.wait(WAIT_FOR_PENDING_STATUS_MS, function()
-      return vim.tbl_isempty(running_statuses)
-    end)
-    if not all_queued_statuses_finished then
-      log.at.info.format(
-        "(fs) Skipping wait for gitignored items, since it took longer than %s ms",
-        WAIT_FOR_PENDING_STATUS_MS
-      )
-    end
-  end
   local upward_status_found = false
+  ---@type [string, neotree.git.Status?][]
   local roots_and_statuses = {}
+
   -- Filter out all non-visible worktrees
   for worktree_root, worktree in pairs(git.worktrees) do
     local is_upward = utils.is_subpath(worktree_root, cwd, true)
     if is_upward or utils.is_subpath(cwd, worktree_root, true) then
-      if not worktree.status then
-        git.status(worktree_root)
-      end
       roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, worktree.status }
     end
     if is_upward then
@@ -56,22 +45,24 @@ local mark_gitignored = function(cwd, items)
     end
   end
 
+  -- Verify statuses for new worktrees
   if not upward_status_found then
     local maybe_worktree_root = git_utils.might_be_in_git_repo(cwd)
     if maybe_worktree_root then
-      local worktree_root = git.find_worktree_info(cwd)
-      if not worktree_root then
-        return
-      end
-
-      local ignored_list = require("neo-tree.git.ls-files").ignored(worktree_root)
-      local status = {}
-      for _, path in ipairs(ignored_list) do
-        status[path] = "!"
-      end
-      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, status }
+      possible_worktree_roots[#possible_worktree_roots + 1] = maybe_worktree_root
     end
   end
+
+  for _, worktree_root in ipairs(possible_worktree_roots) do
+    local worktree = git.worktrees[worktree_root]
+    if not worktree or not worktree.status then
+      local real_root = git.find_worktree_info(worktree_root)
+      if real_root == worktree_root then
+        roots_and_statuses[#roots_and_statuses + 1] = { worktree_root }
+      end
+    end
+  end
+  possible_worktree_roots = {}
 
   -- Sort by descending key length since we want to ensure that the most specific worktrees are matched first
   table.sort(roots_and_statuses, function(a, b)
@@ -79,21 +70,60 @@ local mark_gitignored = function(cwd, items)
     return #root_a > #root_b
   end)
 
+  -- 1. Sort items into per-worktree-root lists
+  local items_by_root = {}
   for _, item in ipairs(items) do
-    local path = item.path
-
     for _, root_and_status in ipairs(roots_and_statuses) do
-      local worktree_root, git_status = unpack(root_and_status)
+      local worktree_root, status = unpack(root_and_status)
+      if worktree_root ~= item.path and utils.is_subpath(worktree_root, item.path, true) then
+        items_by_root[worktree_root] = items_by_root[worktree_root]
+          or {
+            status = status,
+            items = {},
+          }
+        table.insert(items_by_root[worktree_root].items, item)
+        break
+      end
+    end
+  end
 
-      if worktree_root ~= path and utils.is_subpath(worktree_root, path, true) then
-        local status = git._find_existing_status_code_in_git_status(git_status, worktree_root, path)
+  -- 2. Process each root group
+  for worktree_root, data in pairs(items_by_root) do
+    local git_status = data.status
+    local root_items = data.items
+
+    if not git_status then
+      -- Use check_ignore for roots without a current status
+      local paths = {}
+      local item_map = {}
+      for _, item in ipairs(root_items) do
+        table.insert(paths, item.path)
+        item_map[item.path] = item
+      end
+
+      local ignored_paths = require("neo-tree.git.check-ignore").check(worktree_root, paths)
+      if not ignored_paths then
+        log.warn("Could not check ignored paths for", worktree_root)
+      else
+        for _, ignored_path in ipairs(ignored_paths) do
+          local item = item_map[ignored_path]
+          if item then
+            item.filtered_by = item.filtered_by or {}
+            item.filtered_by.gitignored = true
+          end
+        end
+      end
+    else
+      -- Rely on the status
+      for _, item in ipairs(root_items) do
+        local status =
+          git._find_existing_status_code_in_git_status(git_status, worktree_root, item.path)
         if status == "!" then
           item.filtered_by = item.filtered_by or {}
           item.filtered_by.gitignored = true
         elseif item.filtered_by then
           item.filtered_by.gitignored = nil
         end
-        break
       end
     end
   end
@@ -134,16 +164,13 @@ local on_directory_loaded = function(context, dir_path)
     if nt.config.enable_git_status then
       for i, child in ipairs(folder.children) do
         if vim.endswith(child.path, ".git") and not git.worktrees[target_path] then
+          possible_worktree_roots[#possible_worktree_roots + 1] = target_path
           -- try running a status (and potentially start tracking)
-          running_statuses[target_path] = true
           if nt.config.git_status_async then
-            git.status_async(target_path, nil, nt.config.git_status_async_options, function()
-              running_statuses[target_path] = nil
-            end)
+            git.status_async(target_path, nil, nt.config.git_status_async_options)
           else
             vim.schedule(function()
               git.status(target_path, nil, false)
-              running_statuses[target_path] = nil
             end)
           end
           break

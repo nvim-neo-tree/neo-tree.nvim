@@ -373,11 +373,11 @@ M.status_async = function(path, base_lookup, opts, callback)
         local scope_to_path = nt_config.git_status_scope_to_path and path ~= worktree_root
         local paths = scope_to_path and { path } or nil
         ---@class neotree.git.JobContext
-        ---@field git_status neotree.git.Status
         local ctx = {
           porcelain_version = git_status_porcelain_version,
           worktree_root = worktree_root,
           paths = paths,
+          ---@type neotree.git.Status
           git_status = {},
           num_in_batch = 0,
           lines_parsed = 0,
