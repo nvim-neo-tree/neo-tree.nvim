@@ -411,6 +411,16 @@ local config = {
       nowait = true,
     },
     mappings = {
+      ["<C-s>"] = {
+        "quick_jump"
+        config = {
+          -- This will automaticly open / toggle the target node after jumping.
+          -- You can set it to `nil` to perform only the jump action,
+          -- or write your own callback function.
+          on_jump = "open_or_toggle",
+          jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
+        }
+      },
       ["<space>"] = {
           "toggle_node",
           nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use
@@ -622,6 +632,10 @@ local config = {
                           -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
     use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect changes
                                     -- instead of relying on nvim autocmd events.
+    on_jump = "open_or_toggle", -- This will automaticly open / toggle the target node after jumpping.
+                                -- You can set it to "nil" to perform only the jump action,
+                                -- or write your own callback function.
+    jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
   },
   buffers = {
     bind_to_cwd = true,
@@ -651,6 +665,10 @@ local config = {
         ["ot"] = { "order_by_type", nowait = false },
       },
     },
+    on_jump = "open_or_toggle", -- This will automaticly open / toggle the target node after jumpping.
+                                -- You can set it to "nil" to perform only the jump action,
+                                -- or write your own callback function.
+    jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
   },
   git_status = {
     window = {
@@ -675,6 +693,10 @@ local config = {
         ["ot"] = { "order_by_type", nowait = false },
       },
     },
+    on_jump = "open_or_toggle", -- This will automaticly open / toggle the target node after jumpping.
+                                -- You can set it to "nil" to perform only the jump action,
+                                -- or write your own callback function.
+    jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
   },
   document_symbols = {
     follow_cursor = false,
@@ -756,7 +778,7 @@ local config = {
       -- Parameter = { icon = ' ', hl = '@parameter' },
       -- StaticMethod = { icon = '󰠄 ', hl = 'Function' },
       -- Macro = { icon = ' ', hl = 'Macro' },
-    }
+    },
   },
   example = {
     renderers = {
@@ -775,5 +797,9 @@ local config = {
       },
     },
   },
+  on_jump = "open_or_toggle", -- This will automaticly open / toggle the target node after jumpping.
+                              -- You can set it to "nil" to perform only the jump action,
+                              -- or write your own callback function.
+  jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
 }
 return config

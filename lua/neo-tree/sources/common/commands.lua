@@ -992,6 +992,95 @@ M.vsplit_with_window_picker = function(state, toggle_directory)
   open_with_cmd(state, "vsplit", toggle_directory, use_window_picker)
 end
 
+-- Jump to any node by two characters.
+---@param state neotree.sources.filesystem.State
+M.quick_jump = function(state)
+  local nodes = renderer.get_all_visible_nodes(state.tree)
+
+  local nodes_name = {}
+  for _, node in ipairs(nodes) do
+    nodes_name[node] = {
+      b = true,
+      name = node.name,
+    }
+  end
+
+  local jump_labels = state.config.jump_labels or state.jump_labels
+  local node2key = utils.assign_hotkeys(nodes_name, jump_labels)
+  local icon = state.components.icon
+
+  -- Recover all icons.
+  local recover = function()
+    state.components.icon = icon
+    renderer.redraw(state)
+  end
+
+  -- render hotkeys
+  local icon_from_map = function(map)
+    return function(config, n, s)
+      local key = map[n]
+      if key ~= nil then
+        return {
+          text = key,
+          highlight = "NeoTreeFileIcon",
+        }
+      end
+      return icon(config, n, s)
+    end
+  end
+
+  local redraw_jump = function()
+    state.components.icon = icon_from_map(node2key)
+    renderer.redraw(state)
+    vim.cmd("redraw")
+  end
+
+  redraw_jump()
+
+  local depth = 1
+  while true do
+    local ok, key = pcall(vim.fn.getchar)
+    if not ok or type(key) ~= "number" then
+      break
+    end
+
+    local ch = vim.fn.nr2char(key)
+    if not ch:match("[A-Za-z]") then
+      break
+    end
+
+    local candidate = utils.get_candidate(node2key, ch, depth)
+    local n = vim.tbl_count(candidate)
+    if n == 0 then
+      break
+    end
+
+    if n > 1 or depth == 1 then
+      node2key = candidate
+      depth = depth + 1
+      redraw_jump()
+    else
+      local target_node = next(candidate)
+      if target_node == nil then
+        break
+      end
+
+      local on_jump = state.config.on_jump
+      if type(on_jump) == "function" then
+        on_jump(state, target_node)
+      elseif on_jump == "open_or_toggle" then
+        utils.open_or_toggle_node(state, target_node)
+      else
+        local id = target_node:get_id()
+        renderer.focus_node(state, id)
+      end
+      break
+    end
+  end
+
+  recover()
+end
+
 M.show_help = function(state)
   local title = state.config and state.config.title or nil
   local prefix_key = state.config and state.config.prefix_key or nil
