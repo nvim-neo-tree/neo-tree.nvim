@@ -48,7 +48,11 @@ local function do_show_or_focus(args, state, force_navigate)
     end
     if force_navigate or not window_exists then
       -- close_other_sources()
-      manager.navigate(state, args.dir, args.reveal_file, nil, false)
+      manager.navigate(state, args.dir, args.reveal_file, function()
+        if state.winid and vim.api.nvim_win_is_valid(state.winid) then
+          vim.api.nvim_set_current_win(state.winid)
+        end
+      end, false)
     end
   end
 end
