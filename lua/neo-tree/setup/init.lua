@@ -73,7 +73,7 @@ local define_events = function()
   events.define_autocmd_event(events.VIM_BUFFER_ENTER, { "BufEnter", "BufWinEnter" }, 0)
   events.define_autocmd_event(
     events.VIM_BUFFER_MODIFIED_SET,
-    vim.fn.exists('##BufModifiedSet') == 1 and { "BufModifiedSet" } or { "OptionSet modified" },
+    vim.fn.exists("##BufModifiedSet") == 1 and { "BufModifiedSet" } or { "OptionSet modified" },
     0,
     update_opened_buffers
   )
