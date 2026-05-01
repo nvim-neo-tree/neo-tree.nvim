@@ -1,6 +1,7 @@
 local utils = require("neo-tree.utils")
 local log = require("neo-tree.log")
 local freedesktop_trash = require("neo-tree.trash.freedesktop")
+local gio_trash = require("neo-tree.trash.gio")
 local windows_trash = require("neo-tree.trash.windows")
 local M = {}
 
@@ -8,7 +9,6 @@ local M = {}
 
 ---A convienient format to define a trash command with rm-like syntax.
 ---@class neotree.trash.PureCommand
----@field healthcheck? fun(paths: string[]):success: boolean, err: string?
 ---@field restorer? neotree.trash.Restorer
 ---@field [integer] string
 
@@ -19,7 +19,7 @@ local M = {}
 ---@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?)
 
 ---The internal function type that actually does the requisite trashing.
----@alias neotree.trash._Function fun():(success: boolean, undoer: neotree.State.UndoFunction?)
+---@alias neotree.trash._Function fun():(success: boolean, restorefunc: neotree.trash._RestoreFunction?)
 
 ---@alias neotree.trash.Restorer neotree.trash.RestoreFunctionGenerator|neotree.trash.RestoreCommandGenerator
 
@@ -58,30 +58,7 @@ M._builtins = {
     end,
   },
   linux = {
-    {
-      "gio",
-      "trash",
-      healthcheck = function()
-        if not utils.execute_command({ "gio", "trash", "--list" }) then
-          return false, "Could not run `gio trash --list`, check if gvfs is installed"
-        end
-        return true
-      end,
-      ---@type neotree.trash.RestoreCommandGenerator
-      restorer = function(trashed_paths)
-        local _, trash_files_dir = require("neo-tree.trash.freedesktop").calculate_trash_paths()
-        -- check that all trashed paths start with the dir
-        local cmd = { "gio", "trash", "--restore" }
-        for i, trashed_path in ipairs(trashed_paths) do
-          if not utils.is_subpath(trash_files_dir, trashed_path) then
-            return nil
-          end
-          local fname = trashed_path:sub(#trash_files_dir + 1)
-          cmd[#cmd + 1] = "trash:///" .. fname
-        end
-        return { cmd }
-      end,
-    },
+    gio_trash.generate_trashfunc,
     freedesktop_trash.generate_trashfunc,
   },
   windows = {
@@ -125,19 +102,6 @@ local normalize_trash_command_to_function = function(paths, command)
     vim.list_extend(cmd, paths)
     if not utils.executable(cmd[1]) then
       return nil, nil
-    end
-    if type(command.healthcheck) == "function" then
-      local healthy, err = command.healthcheck(paths)
-      if not healthy then
-        if err then
-          log.at.debug.format(
-            "Issue with trash command `%s`: %s, trying next trash command",
-            cmd[1],
-            err
-          )
-        end
-        return nil, nil
-      end
     end
 
     return commands_to_runnerfunc({ cmd })
@@ -194,11 +158,11 @@ M.trash = function(paths)
 end
 
 ---Attempt to restore files from trash.
----@param paths string[]
+---@param trashed_paths string[]
 ---@param restorer neotree.trash.Restorer? Either an explicit restorer for the given paths, or Neo-tree will attempt to guess at the correct restorer.
 ---@return boolean success
 ---@return string? err
-M.restore = function(paths, restorer)
+M.restore = function(trashed_paths, restorer)
   if not restorer then
     -- determine how to restore the files
     if utils.is_macos then
@@ -208,12 +172,20 @@ M.restore = function(paths, restorer)
     if utils.is_windows then
       restorer = windows_trash.generate_restore_commands
     else
-      local xdg_trash_dir = freedesktop_trash.calculate_trash_paths()
-      if xdg_trash_dir then
-        restorer = freedesktop_trash.generate_restorer
-      else
-        return false, "Couldn't find a supported trash restore method for the given paths"
+      local _, trash_files_dir = freedesktop_trash.calculate_trash_paths()
+      if not trash_files_dir then
+        return false, "Couldn't determine XDG trash paths, not restoring"
       end
+      for _, trashed_path in ipairs(trashed_paths) do
+        if not utils.is_subpath(trash_files_dir, trashed_path) then
+          log.at.warn.format(
+            "File %s isn't in XDG trash files directory %s, skipping",
+            trashed_path,
+            trash_files_dir
+          )
+        end
+      end
+      restorer = freedesktop_trash.generate_restorer
     end
   end
   if type(restorer) ~= "function" then
@@ -221,7 +193,7 @@ M.restore = function(paths, restorer)
       "restorer: expected function (@type neotree.trash.Restore), got a " .. type(restorer)
   end
 
-  local res, err = restorer(paths)
+  local res, err = restorer(trashed_paths)
   if not res then
     return false, err
   end

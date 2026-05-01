@@ -459,9 +459,9 @@ local config = {
       },
       ["A"] = "add_directory", -- also accepts the config.show_path and config.insert_as options.
       ["d"] = "delete",
-      -- ["d"] = "trash",
       ["T"] = "trash",
       ["u"] = "undo",  -- currently only supports trash.
+      ["U"] = "restore_from_trash", -- only works on files that are in the recycle bin
       ["r"] = "rename",
       ["y"] = "copy_to_clipboard",
       ["x"] = "cut_to_clipboard",

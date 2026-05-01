@@ -993,7 +993,8 @@ MacOS:
 
 Linux:
 - `gio trash`
-- Neo-tree's Lua implementation of the FreeDesktop XDG trash spec.
+- Neo-tree's Lua implementation of the FreeDesktop XDG trash spec at
+  require('neo-tree.trash.freedesktop').
 
 Windows: `PowerShell` commands.
 
@@ -1044,7 +1045,6 @@ falling back to the built-ins:
 (Neo-tree will attempt to run every command in-order, and log output for each
 command that returns with a non-zero error code).
 
-
 3. Or a function that is entirely responsible for deletion, and returns a
    (true/false, string) result tuple. Return false to defer to builtin handlers,
    return true to succeed, error to stop.
@@ -1071,7 +1071,6 @@ command that returns with a non-zero error code).
       }
     })
 <
-
 
 FILTERED ITEMS                                          *neo-tree-filtered-items*
 

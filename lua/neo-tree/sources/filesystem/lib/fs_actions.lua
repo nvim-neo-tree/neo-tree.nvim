@@ -747,7 +747,7 @@ end
 M.trash_node = function(path, callback, state)
   local _, name = utils.split_path(path)
 
-  log.trace("Deleting node:", path)
+  log.trace("Trashing node:", path)
   local stat = uv.fs_stat(path)
 
   local do_trash = function()
@@ -793,22 +793,88 @@ end
 ---@param callback fun(paths: string[])?
 ---@param state neotree.State?
 M.trash_nodes = function(paths, callback, state)
-  local msg = "Are you sure you want to delete " .. #paths .. " items?"
+  local msg = "Are you sure you want to trash " .. #paths .. " items?"
   inputs.confirm(msg, function(confirmed)
     if not confirmed then
       return
     end
 
-    local success, err, restorer = trash.trash(paths)
+    local success, err, restorefunc = trash.trash(paths)
     if not success then
       log.error(err)
     end
 
-    if state then
-      table.insert(state.undostack, function()
-        trash.restore(paths, restorer)
+    if state and restorefunc then
+      table.insert(state.undostack, restorefunc)
+    end
+    if callback then
+      vim.schedule(function()
+        callback(paths)
       end)
     end
+  end)
+end
+
+---@param path string
+---@param callback fun(path: string)?
+---@param state neotree.State?
+M.restore_node_from_trash = function(path, callback, state)
+  local _, name = utils.split_path(path)
+
+  log.trace("Restoring node:", path)
+  local stat = uv.fs_stat(path)
+
+  local do_trash = function()
+    local complete = vim.schedule_wrap(function()
+      events.fire_event(events.FILE_DELETED, path)
+      if callback then
+        callback(path)
+      end
+    end)
+
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if event_result.handled then
+      complete()
+      return
+    end
+
+    local paths = { path }
+    local success, err = trash.restore(paths)
+    if not success then
+      log.error("Could not restore " .. path .. " from trash", err)
+      return
+    end
+
+    complete()
+  end
+
+  local displayed_name = name
+  if stat and stat.type == "directory" then
+    displayed_name = name .. utils.path_separator
+  end
+  local msg = string.format("Are you sure you want to restore '%s'?", displayed_name)
+  inputs.confirm(msg, function(confirmed)
+    if confirmed then
+      do_trash()
+    end
+  end)
+end
+
+---@param paths string[]
+---@param callback fun(paths: string[])?
+---@param state neotree.State?
+M.restore_nodes_from_trash = function(paths, callback, state)
+  local msg = "Are you sure you want to restore " .. #paths .. " items?"
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    local success, err = trash.restore(paths)
+    if not success then
+      log.error(err)
+    end
+
     if callback then
       vim.schedule(function()
         callback(paths)

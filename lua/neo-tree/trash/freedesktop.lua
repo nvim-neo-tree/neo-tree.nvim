@@ -12,11 +12,11 @@ local function dir_is_writable(path)
   return stat and stat.type == "directory" and uv.fs_access(path, "w") or false
 end
 
----@param path string @param opts { recursive: boolean?, remove: boolean? }?
----@param mode number?
+---@param path string
+---@param opts { recursive: boolean?, remove: boolean?, mode: number? }?
 ---@return boolean success
 ---@return string? err
-local function mkdir(path, opts, mode)
+local function mkdir(path, opts)
   opts = opts or {}
   local stat = uv.fs_stat(path)
   if stat then
@@ -32,12 +32,12 @@ local function mkdir(path, opts, mode)
   local parent_stat = uv.fs_stat(parent_path)
   if not parent_stat then
     if opts.recursive then
-      mkdir(parent_path, opts, mode)
+      mkdir(parent_path, opts)
     else
       return false, "parent dir of " .. path .. " does not exist"
     end
   end
-  local res, err = uv.fs_mkdir(path, mode or tonumber("755", 8))
+  local res, err = uv.fs_mkdir(path, opts.mode or tonumber("755", 8))
   res = res or false
   return res, err
 end
