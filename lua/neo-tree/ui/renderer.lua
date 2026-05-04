@@ -1060,7 +1060,7 @@ end
 ---@param state neotree.State
 local attach_position_autocmds = function(nt_bufnr, state)
   local autocmd = vim.api.nvim_create_autocmd
-  local wait_for_save = false
+  local wait_for_restore = true
   autocmd("BufDelete", {
     buffer = nt_bufnr,
     callback = function(args)
@@ -1077,12 +1077,12 @@ local attach_position_autocmds = function(nt_bufnr, state)
         return
       end
 
-      if not wait_for_save then
+      if not wait_for_restore then
         M.position.save(state, true)
         return
       end
       if M.position.save(state) then
-        wait_for_save = false
+        wait_for_restore = false
       end
     end,
   })
@@ -1092,12 +1092,12 @@ local attach_position_autocmds = function(nt_bufnr, state)
     callback = function(args)
       M.position.restore_selection(state)
       if state.bufnr ~= args.buf then
-        wait_for_save = true
+        wait_for_restore = true
         return
       end
 
       M.position.restore(state)
-      wait_for_save = false
+      wait_for_restore = false
     end,
   })
 end
