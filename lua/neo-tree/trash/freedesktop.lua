@@ -227,7 +227,7 @@ M.calculate_trash_paths = function()
 end
 
 ---@type neotree.trash.RestoreFunctionGenerator
-M.generate_restorer = function(paths)
+M.generate_restorer = function(paths_in_trash)
   local trash_dir, trash_files_dir, trash_info_dir = M.calculate_trash_paths()
   local setup = ensure_writable_dir(trash_dir)
     and ensure_writable_dir(trash_files_dir)
@@ -238,7 +238,7 @@ M.generate_restorer = function(paths)
   end
   return function()
     local restored = {}
-    for _, filepath in ipairs(paths) do
+    for _, filepath in ipairs(paths_in_trash) do
       local restored_filepath, err = restore(filepath, trash_info_dir)
       if restored_filepath then
         restored[#restored + 1] = restored_filepath
@@ -247,16 +247,16 @@ M.generate_restorer = function(paths)
       end
     end
 
-    if #restored == #paths then
+    if #restored == #paths_in_trash then
       if #restored == 1 then
         log.at.info.format("Restored %s from trash", restored[1])
       else
-        log.at.info.format("Restored %s files from trash", #paths)
+        log.at.info.format("Restored %s files from trash", #restored)
       end
-    elseif #restored < #paths then
-      log.at.info.format("Restored %s/%s files from trash", #restored, #paths)
+    elseif #restored < #paths_in_trash then
+      log.at.info.format("Restored %s/%s files from trash", #restored, #paths_in_trash)
     end
-    return #restored == #paths
+    return #restored == #paths_in_trash
   end
 end
 
@@ -346,7 +346,7 @@ M.generate_trashfunc = function(paths)
     end
   end
 
-  ---@type neotree.trash._Function
+  ---@type neotree.trash.InternalFunction
   return function()
     local all_trashed = true
     local trashed_filepaths = {}

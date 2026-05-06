@@ -3,6 +3,7 @@ local log = require("neo-tree.log")
 local M = {}
 
 ---@param gvfs_paths string[]
+---@return boolean
 local restore = function(gvfs_paths)
   local restore_ok =
     utils.execute_command(vim.list_extend({ "gio", "trash", "--restore" }, gvfs_paths))
@@ -61,7 +62,7 @@ M.generate_trashfunc = function(paths)
         new_trash_items[#new_trash_items + 1] = trash_filepath
       end
     end
-    ---@type neotree.trash._RestoreFunction
+    ---@type neotree.trash.RestoreInternalFunction
     local restorefunc = function()
       return restore(new_trash_items)
     end

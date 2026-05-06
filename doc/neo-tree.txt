@@ -313,8 +313,15 @@ d    = delete:               Delete the selected file or directory.
 T    = trash:                Trash the selected file or directory.
                              See |neo-tree-trash| to configure.
                              Supports visual selection.
+                             Supports undo, depending on command used.
 
-i    = show_file_details     Show file details in a popup window, such as size
+u    = undo:                 Reverts the most recent undoable action.
+
+U    = restore_from_trash:   Restores selected file or directories from the
+                             trash folder. Currently only works on Linux.
+                             Supports visual selection.
+
+i    = show_file_details:    Show file details in a popup window, such as size
                              and last modified date.
 
                              This command supports two optional options to
@@ -992,9 +999,9 @@ MacOS:
 - `osascript` commands.
 
 Linux:
-- `gio trash`
+- `gio trash` (supports undo)
 - Neo-tree's Lua implementation of the FreeDesktop XDG trash spec at
-  require('neo-tree.trash.freedesktop').
+  require('neo-tree.trash.freedesktop'). (supports undo)
 
 Windows: `PowerShell` commands.
 
@@ -1008,8 +1015,8 @@ You can configure the command used by specifying `trash.command` in `setup()`:
     })
 <
 
-This option allows you to specify an override that will be looked at before
-falling back to the built-ins:
+This option allows you to specify an override that will be tried first, before
+falling back to the built-ins. The accepted formats for this option are:
 
 1. A string array listing an `rm`-like trash command to use. In otherwords, a
    CLI tool where the invocation of the command looks like `trash ...FILES`.
@@ -1027,7 +1034,7 @@ falling back to the built-ins:
 >lua
     require("neo-tree").setup({
       trash = {
-        ---@type neotree.trash.CommandGenerator fun(paths: string[]):(fun():boolean,string?)?
+        ---@type neotree.trash.CommandGenerator
         command = function(paths)
           if not require("neo-tree.utils").executable("mv") then
             return nil -- defer to built-ins
@@ -1045,27 +1052,55 @@ falling back to the built-ins:
 (Neo-tree will attempt to run every command in-order, and log output for each
 command that returns with a non-zero error code).
 
-3. Or a function that is entirely responsible for deletion, and returns a
-   (true/false, string) result tuple. Return false to defer to builtin handlers,
-   return true to succeed, error to stop.
+3. Or a function that, itself, returns an internal function that does the
+deletion, which will be executed immediately.
+
+The internal function returns a boolean indicating whether it succeeded
+(usually, whether it trashed every file given) and may return an additional
+restore function that, when called (via Neo-tree's "undo" keymap), should undo
+the trashing as best it can.
+
+This additional restore function returns a boolean indicating whether it fully
+succeeded or not.
 
 >lua
     require("neo-tree").setup({
       trash = {
-        ---@type neotree.trash.FunctionGenerator fun(paths: string[]):(fun():boolean,string?)?
+        ---@type neotree.trash.FunctionGenerator
         command = function(paths)
           if not setup then
             return nil -- defer to built-ins
           end
+          ---@type neotree.trash.InternalFunction
           return function()
+            local paths_in_trash = {}
             for i, p in ipairs(paths) do
-              -- ... logic to trash the given paths
-              if something_failed then
-                return false, err
+              local trashed = false
+              -- ... logic to trash each path
+              if not trashed then
+                require("neo-tree.log").warn("couldn't trash", p, "because...")
+              else
+                paths_in_trash[#paths_in_trash + 1] = "/some/path/" .. p
               end
             end
 
-            return true
+            -- Restore functions are optional
+            ---@type neotree.trash.RestoreInternalFunction
+            local restorefunc = function()
+              local all_restored = true
+              for i, p in ipairs(paths_in_trash) do
+                local restored = false
+                -- ... logic to restore each path
+                if restored then
+                  require("neo-tree.log").warn("couldn't restore", p, "because...")
+                else
+                  all_restored = false
+                end
+              end
+              return all_restored
+            end
+
+            return #paths_in_trash == #paths, restorefunc
           end
         end
       }

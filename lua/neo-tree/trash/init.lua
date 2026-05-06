@@ -16,10 +16,10 @@ local M = {}
 ---@alias neotree.trash.CommandGenerator fun(paths: string[]):(commands: string[][]?)
 
 ---A function that may return a function that will do the trashing.
----@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash._Function?)
+---@alias neotree.trash.FunctionGenerator fun(paths: string[]):(trashfunc: neotree.trash.InternalFunction?)
 
----The internal function type that actually does the requisite trashing.
----@alias neotree.trash._Function fun():(success: boolean, restorefunc: neotree.trash._RestoreFunction?)
+---The internal function/closure that actually restores files, when called.
+---@alias neotree.trash.InternalFunction fun():(success: boolean, restorefunc: neotree.trash.RestoreInternalFunction?)
 
 ---@alias neotree.trash.Restorer neotree.trash.RestoreFunctionGenerator|neotree.trash.RestoreCommandGenerator
 
@@ -27,10 +27,10 @@ local M = {}
 ---@alias neotree.trash.RestoreCommandGenerator fun(trashed_paths: string[]):(commands: string[][]?)
 
 ---A function that may return a function that will do the trash restoration.
----@alias neotree.trash.RestoreFunctionGenerator fun(trashed_paths: string[]):(neotree.trash._RestoreFunction?)
+---@alias neotree.trash.RestoreFunctionGenerator fun(trashed_paths: string[]):(neotree.trash.RestoreInternalFunction?)
 
----A function that is supposed to restore any files deleted by a certain trash method.
----@alias neotree.trash._RestoreFunction fun():success: boolean
+---The internal function/closure that actually restores files, when called.
+---@alias neotree.trash.RestoreInternalFunction fun():success: boolean
 
 -- Using programs mentioned by
 -- https://github.com/folke/snacks.nvim/blob/ed08ef1a630508ebab098aa6e8814b89084f8c03/lua/snacks/explorer/actions.lua
@@ -93,7 +93,7 @@ end
 ---If both returns are nil, then skip.
 ---@param paths string[]
 ---@param command neotree.trash.Command
----@return neotree.trash._Function? trashfunc
+---@return neotree.trash.InternalFunction? trashfunc
 ---@return string? err
 ---@return neotree.State.UndoFunction? undoer
 local normalize_trash_command_to_function = function(paths, command)
@@ -129,7 +129,7 @@ end
 ---@param paths string[]
 ---@return boolean success
 ---@return string? err
----@return neotree.trash._RestoreFunction? restorefunc A function that, when called, should "undo" the trash operation.
+---@return neotree.trash.RestoreInternalFunction? restorefunc A function that, when called, should "undo" the trash operation.
 M.trash = function(paths)
   log.assert(#paths > 0)
   local commands = {
