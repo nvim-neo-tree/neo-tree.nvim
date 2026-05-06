@@ -1,5 +1,5 @@
 -- https://specifications.freedesktop.org/trash/latest/
-local uv = vim.uv
+local uv = vim.uv or vim.loop
 local log = require("neo-tree.log")
 local utils = require("neo-tree.utils")
 local xdg = require("neo-tree.utils.xdg")
