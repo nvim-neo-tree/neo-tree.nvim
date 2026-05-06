@@ -7,6 +7,7 @@ local M = {}
 ---@param modname string
 ---@param repo string
 ---@param optional boolean?
+---@return boolean
 local check_dependency = function(modname, repo, optional)
   local m = pcall(require, modname)
   if not m then
@@ -16,15 +17,16 @@ local check_dependency = function(modname, repo, optional)
     else
       health.error(errmsg)
     end
-    return
+    return false
   end
 
   health.ok(repo .. " is installed")
+  return true
 end
 
 ---@param path string
 ---@param desc string?
----@return boolean success
+---@return boolean executable
 local check_executable = function(path, desc)
   if utils.executable(path) then
     health.ok(("`%s` is executable"):format(path))
@@ -60,24 +62,29 @@ function M.check()
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
 
-  health.start("Trash executables (prioritized in descending order)")
+  health.start("Trash executables (prioritized in descending order, `:h neo-tree-trash`)")
   if utils.is_windows then
     check_executable("trash", "(from https://github.com/sindresorhus/trash#cli or similar)")
     if not check_executable("pwsh", "(https://github.com/PowerShell/PowerShell)") then
-      check_executable("powershell", "(builtin Windows PowerShell)")
+      check_executable("powershell", "(built-in Windows PowerShell)")
     end
   elseif utils.is_macos then
-    check_executable("trash", "(builtin)")
-    check_executable("osascript", "(builtin)")
+    check_executable("trash", "(built-in)")
+    check_executable("osascript", "(built-in)")
   else
     if check_executable("gio", "(from glib2)") then
       if not utils.execute_command({ "gio", "trash", "--list" }) then
         health.warn("`gio trash` --list failed, maybe you need `gvfs` installed?")
       end
     end
-    check_executable("trash", "(from https://github.com/andreafrancia/trash-cli or similar)")
-    if not check_executable("kioclient") then
-      check_executable("kioclient5")
+    if vim.fn.has("nvim-0.10") == 1 then
+      health.info(
+        [[(Neo-tree will fall back to its own implementation of the XDG freedesktop trash spec, as needed)]]
+      )
+    else
+      health.warn(
+        [[Neovim version is below 0.10, cannot fallback to Neo-tree's XDG freedesktop trash implementation.]]
+      )
     end
   end
 end

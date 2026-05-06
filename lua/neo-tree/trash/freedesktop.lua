@@ -61,109 +61,109 @@ local function get_dev(path)
   return stat and stat.dev
 end
 
----Implementation of the suggested algorithm for calculating the size of a trash directory.
----@param path string
----@return integer size
-local function calc_dir_size(path)
-  local size = 0
-  local req = uv.fs_scandir(path)
-  if not req then
-    return 0
-  end
-
-  while true do
-    local name, type = uv.fs_scandir_next(req)
-    if not name then
-      break
-    end
-    local child_path = path .. "/" .. name
-    if type == "directory" then
-      size = size + calc_dir_size(child_path)
-    else
-      local stat = uv.fs_lstat(child_path)
-      size = size + (stat and stat.size or 0)
-    end
-  end
-  return size
-end
-
----@param trash_dir string
----@param files_dir string
----@param info_dir string
-local function update_trash_size_cache(trash_dir, files_dir, info_dir)
-  local tmp_cache_path = os.tmpname() .. ".directorysizes.tmp"
-  local cache_file_path = utils.path_join(trash_dir, "directorysizes")
-
-  local hash = {}
-  local f = io.open(cache_file_path, "r")
-  if f then
-    for line in f:lines() do
-      local size, mtime, name = line:match("(%d+) (%d+) (.+)")
-      if size and mtime and name then
-        hash[vim.uri_decode(name, "rfc2396")] = {
-          size = tonumber(size),
-          mtime = tonumber(mtime),
-          seen = false,
-        }
-      end
-    end
-    f:close()
-  end
-
-  local total_size = 0
-
-  for name, nodetype in vim.fs.dir(files_dir, { depth = 1 }) do
-    if not name then
-      break
-    end
-
-    local item_path = utils.path_join(files_dir, name)
-
-    if nodetype == "directory" then
-      local info_path = utils.path_join(info_dir, name .. ".trashinfo")
-      local istat = uv.fs_stat(info_path)
-
-      if istat then
-        local mtime = istat.mtime.sec
-        local entry = hash[name]
-
-        if not entry or entry.mtime ~= mtime then
-          -- Cache miss or directory modified: recalculate
-          local calculated_size = calc_dir_size(item_path)
-          total_size = total_size + calculated_size
-          hash[name] = { size = calculated_size, mtime = mtime, seen = true }
-        else
-          -- Cache hit: use stored size
-          total_size = total_size + entry.size
-          entry.seen = true
-        end
-      end
-    else
-      local stat = uv.fs_lstat(item_path)
-      if stat then
-        total_size = total_size + stat.size
-      end
-    end
-  end
-
-  local out = io.open(tmp_cache_path, "w")
-  if not out then
-    return nil, "Could not update directorysizes file"
-  end
-  for name, data in pairs(hash) do
-    if data.seen then
-      out:write(string.format("%d %d %s\n", data.size, data.mtime, name))
-    end
-  end
-  out:close()
-
-  local success, err = uv.fs_rename(tmp_cache_path, cache_file_path)
-  if not success then
-    return nil, "Failed to update cache file: " .. (err or "unknown error")
-  end
-
-  return total_size
-end
+-- ---Implementation of the suggested algorithm for calculating the size of a trash directory.
+-- ---@param path string
+-- ---@return integer size
+-- local function calc_dir_size(path)
+--   local size = 0
+--   local req = uv.fs_scandir(path)
+--   if not req then
+--     return 0
+--   end
+--
+--   while true do
+--     local name, type = uv.fs_scandir_next(req)
+--     if not name then
+--       break
+--     end
+--     local child_path = path .. "/" .. name
+--     if type == "directory" then
+--       size = size + calc_dir_size(child_path)
+--     else
+--       local stat = uv.fs_lstat(child_path)
+--       size = size + (stat and stat.size or 0)
+--     end
+--   end
+--   return size
+-- end
+--
+-- ---@param trash_dir string
+-- ---@param files_dir string
+-- ---@param info_dir string
+-- local function update_trash_size_cache(trash_dir, files_dir, info_dir)
+--   local tmp_cache_path = os.tmpname() .. ".directorysizes.tmp"
+--   local cache_file_path = utils.path_join(trash_dir, "directorysizes")
+--
+--   local hash = {}
+--   local f = io.open(cache_file_path, "r")
+--   if f then
+--     for line in f:lines() do
+--       local size, mtime, name = line:match("(%d+) (%d+) (.+)")
+--       if size and mtime and name then
+--         hash[vim.uri_decode(name, "rfc2396")] = {
+--           size = tonumber(size),
+--           mtime = tonumber(mtime),
+--           seen = false,
+--         }
+--       end
+--     end
+--     f:close()
+--   end
+--
+--   local total_size = 0
+--
+--   for name, nodetype in vim.fs.dir(files_dir, { depth = 1 }) do
+--     if not name then
+--       break
+--     end
+--
+--     local item_path = utils.path_join(files_dir, name)
+--
+--     if nodetype == "directory" then
+--       local info_path = utils.path_join(info_dir, name .. ".trashinfo")
+--       local istat = uv.fs_stat(info_path)
+--
+--       if istat then
+--         local mtime = istat.mtime.sec
+--         local entry = hash[name]
+--
+--         if not entry or entry.mtime ~= mtime then
+--           -- Cache miss or directory modified: recalculate
+--           local calculated_size = calc_dir_size(item_path)
+--           total_size = total_size + calculated_size
+--           hash[name] = { size = calculated_size, mtime = mtime, seen = true }
+--         else
+--           -- Cache hit: use stored size
+--           total_size = total_size + entry.size
+--           entry.seen = true
+--         end
+--       end
+--     else
+--       local stat = uv.fs_lstat(item_path)
+--       if stat then
+--         total_size = total_size + stat.size
+--       end
+--     end
+--   end
+--
+--   local out = io.open(tmp_cache_path, "w")
+--   if not out then
+--     return nil, "Could not update directorysizes file"
+--   end
+--   for name, data in pairs(hash) do
+--     if data.seen then
+--       out:write(string.format("%d %d %s\n", data.size, data.mtime, name))
+--     end
+--   end
+--   out:close()
+--
+--   local success, err = uv.fs_rename(tmp_cache_path, cache_file_path)
+--   if not success then
+--     return nil, "Failed to update cache file: " .. (err or "unknown error")
+--   end
+--
+--   return total_size
+-- end
 
 ---@param trashed_filepath string
 ---@param trash_info_dir string
@@ -201,8 +201,8 @@ local function restore(trashed_filepath, trash_info_dir)
     while confirm_code == 0 do
       confirm_code = vim.fn.confirm(prompt, table.concat(choices, "\n"), 2, "Warning")
     end
-    if confirm_code == 1 then
-    elseif confirm_code == 2 then
+    -- confirm_code == 1 means ok to overwrite
+    if confirm_code == 2 then
       return nil
     end
   end
@@ -260,6 +260,49 @@ M.generate_restorer = function(paths)
   end
 end
 
+---@param path string
+---@param trash_files_dir string
+---@param trash_info_dir string
+---@return string? path_in_trash
+---@return string? err
+local trash_file = function(path, trash_files_dir, trash_info_dir)
+  local _, filename = utils.split_path(path)
+  assert(filename, "Could not determine filename for " .. path)
+
+  local counter = 0
+  -- Resolve pathname
+  local trash_filename = filename
+  local filename_root = vim.fn.fnamemodify(filename, ":t:r")
+  local filename_extension = vim.fn.fnamemodify(filename, ":e")
+  while uv.fs_lstat(utils.path_join(trash_files_dir, trash_filename)) do
+    counter = counter + 1
+    trash_filename = ("%s[%s].%s"):format(filename_root, counter, filename_extension)
+  end
+
+  local info_file_path = utils.path_join(trash_info_dir, trash_filename .. ".trashinfo")
+  local f, open_err = io.open(info_file_path, "w")
+  if not f then
+    return nil, "Failed to create trashinfo: " .. (open_err or "")
+  end
+  f:write(([[
+[Trash Info]
+Path=%s
+DeletionDate=%s
+]]):format(vim.uri_encode(path, "rfc2396"), os.date("%Y%m%dT%H:%M:%S")))
+  f:close()
+
+  -- Move the file to the trash/files directory
+  local path_in_trash = utils.path_join(trash_files_dir, trash_filename)
+  local renamed, move_err = uv.fs_rename(path, path_in_trash)
+
+  if not renamed then
+    os.remove(info_file_path)
+    return nil, "Failed to move " .. path .. " to trash: " .. (move_err or "unknown error")
+  end
+
+  return path_in_trash
+end
+
 ---@type neotree.trash.FunctionGenerator
 M.generate_trashfunc = function(paths)
   if utils.is_windows then
@@ -307,54 +350,16 @@ M.generate_trashfunc = function(paths)
   return function()
     local all_trashed = true
     local trashed_filepaths = {}
-    ---@param path string
-    ---@return boolean success
-    ---@return string? err
-    local trash_file = function(path)
-      local _, filename = utils.split_path(path)
-      assert(filename, "Could not determine filename for " .. path)
-
-      local counter = 0
-      -- Resolve pathname
-      local trash_filename = filename
-      local filename_root = vim.fn.fnamemodify(filename, ":t:r")
-      local filename_extension = vim.fn.fnamemodify(filename, ":e")
-      while uv.fs_lstat(utils.path_join(trash_files_dir, trash_filename)) do
-        counter = counter + 1
-        trash_filename = ("%s[%s].%s"):format(filename_root, counter, filename_extension)
-      end
-
-      local info_file_path = utils.path_join(trash_info_dir, trash_filename .. ".trashinfo")
-      local f, open_err = io.open(info_file_path, "w")
-      if not f then
-        return false, "Failed to create trashinfo: " .. (open_err or "")
-      end
-      f:write(([[
-[Trash Info]
-Path=%s
-DeletionDate=%s"
-]]):format(vim.uri_encode(path, "rfc2396"), os.date("%Y%m%dT%H:%M:%S")))
-      f:close()
-
-      -- Move the file to the trash/files directory
-      local trashed_filepath = utils.path_join(trash_files_dir, trash_filename)
-      local renamed, move_err = uv.fs_rename(path, trashed_filepath)
-
-      if not renamed then
-        os.remove(info_file_path)
-        return false, "Failed to move " .. path .. " to trash: " .. (move_err or "unknown error")
-      end
-
-      trashed_filepaths[#trashed_filepaths + 1] = trashed_filepath
-      return true
-    end
 
     for _, path in ipairs(paths) do
-      local file_trashed, err = trash_file(path)
+      local file_in_trash, err = trash_file(path, trash_files_dir, trash_info_dir)
+      if file_in_trash then
+        trashed_filepaths[#trashed_filepaths + 1] = file_in_trash
+      end
       if err then
         log.error(err)
       end
-      all_trashed = all_trashed and file_trashed
+      all_trashed = all_trashed and (file_in_trash ~= nil)
     end
     -- local cache_updated, err = update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
     -- if not cache_updated then

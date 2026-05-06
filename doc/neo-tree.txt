@@ -1017,7 +1017,7 @@ falling back to the built-ins:
 >lua
     require("neo-tree").setup({
       trash = {
-        command = { "your-trash-cli", "--put" }
+        command = { "your-trash-cli", "--put", "--" }
       }
     })
 <
