@@ -15,6 +15,7 @@ Configuration ............... |neo-tree-configuration|
   Setup ..................... |neo-tree-setup|
   Source Selector ........... |neo-tree-source-selector|
   Filtered Items ............ |neo-tree-filtered-items|
+  Trash ..................... |neo-tree-trash|
   Preview Mode .............. |neo-tree-preview-mode|
   Hijack Netrw Behavior ..... |neo-tree-netrw-hijack|
   Component Configs ......... |neo-tree-component-configs|
@@ -307,9 +308,20 @@ A    = add_directory:        Create a new directory, in this mode it does not
                              command. Also accepts `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
-                             Supports visual selection.~
+                             Supports visual selection.
 
-i    = show_file_details     Show file details in a popup window, such as size
+T    = trash:                Trash the selected file or directory.
+                             See |neo-tree-trash| to configure.
+                             Supports visual selection.
+                             Supports undo, depending on command used.
+
+u    = undo:                 Reverts the most recent undoable action.
+
+U    = restore_from_trash:   Restores selected file or directories from the
+                             trash folder. Currently only works on Linux.
+                             Supports visual selection.
+
+i    = show_file_details:    Show file details in a popup window, such as size
                              and last modified date.
 
                              This command supports two optional options to
@@ -798,7 +810,7 @@ wish to remove a default mapping without overriding it with your own function,
 assign it the string "none". This will cause it to be skipped and allow any
 existing global mappings to work.
 
-NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG!~
+NOTE: SOME OPTIONS ARE ONLY DOCUMENTED IN THE DEFAULT CONFIG! ~
 Run `:lua require("neo-tree").paste_default_config()` to dump the fully
 commented default config in your current file. Even if you don't want to use
 that config as your starting point, you still may want to dump it to a blank
@@ -975,8 +987,127 @@ In addition to `"tab"` and `"window"`, you can also set the target to `"global"`
 for either option, which is the same as using the |cd| command. Setting the target
 to `"none"` will prevent neo-tree from setting vim's cwd for that position.
 
+TRASH                                                            *neo-tree-trash*
 
-FILTERED ITEMS                                         *neo-tree-filtered-items*
+Neo-tree can use existing commands on your system to trash files. By default,
+this is bound to `T`.
+
+The default commands that neo-tree tries to use, in order, are:
+
+MacOS:
+- `trash`,
+- `osascript` commands.
+
+Linux:
+- `gio trash` (supports undo)
+- Neo-tree's Lua implementation of the FreeDesktop XDG trash spec at
+  require('neo-tree.trash.freedesktop'). (supports undo)
+
+Windows: `PowerShell` commands.
+
+You can configure the command used by specifying `trash.command` in `setup()`:
+
+>lua
+    require("neo-tree").setup({
+      trash = {
+        command = nil -- the default - uses built-ins.
+      }
+    })
+<
+
+This option allows you to specify an override that will be tried first, before
+falling back to the built-ins. The accepted formats for this option are:
+
+1. A string array listing an `rm`-like trash command to use. In otherwords, a
+   CLI tool where the invocation of the command looks like `trash ...FILES`.
+
+>lua
+    require("neo-tree").setup({
+      trash = {
+        command = { "your-trash-cli", "--put", "--" }
+      }
+    })
+<
+
+2. Or a function that returns a list of commands to execute:
+
+>lua
+    require("neo-tree").setup({
+      trash = {
+        ---@type neotree.trash.CommandGenerator
+        command = function(paths)
+          if not require("neo-tree.utils").executable("mv") then
+            return nil -- defer to built-ins
+          end
+          local cmds = {}
+          for i, p in ipairs(paths) do
+            cmds[#cmds+1] = { "mv", p, ("%s/trash"):format(vim.env.HOME) }
+          end
+          return cmds
+        end
+      }
+    })
+<
+
+(Neo-tree will attempt to run every command in-order, and log output for each
+command that returns with a non-zero error code).
+
+3. Or a function that, itself, returns an internal function that does the
+deletion, which will be executed immediately.
+
+The internal function returns a boolean indicating whether it succeeded
+(usually, whether it trashed every file given) and may return an additional
+restore function that, when called (via Neo-tree's "undo" keymap), should undo
+the trashing as best it can.
+
+This additional restore function returns a boolean indicating whether it fully
+succeeded or not.
+
+>lua
+    require("neo-tree").setup({
+      trash = {
+        ---@type neotree.trash.FunctionGenerator
+        command = function(paths)
+          if not setup then
+            return nil -- defer to built-ins
+          end
+          ---@type neotree.trash.InternalFunction
+          return function()
+            local paths_in_trash = {}
+            for i, p in ipairs(paths) do
+              local trashed = false
+              -- ... logic to trash each path
+              if not trashed then
+                require("neo-tree.log").warn("couldn't trash", p, "because...")
+              else
+                paths_in_trash[#paths_in_trash + 1] = "/some/path/" .. p
+              end
+            end
+
+            -- Restore functions are optional
+            ---@type neotree.trash.RestoreInternalFunction
+            local restorefunc = function()
+              local all_restored = true
+              for i, p in ipairs(paths_in_trash) do
+                local restored = false
+                -- ... logic to restore each path
+                if restored then
+                  require("neo-tree.log").warn("couldn't restore", p, "because...")
+                else
+                  all_restored = false
+                end
+              end
+              return all_restored
+            end
+
+            return #paths_in_trash == #paths, restorefunc
+          end
+        end
+      }
+    })
+<
+
+FILTERED ITEMS                                          *neo-tree-filtered-items*
 
 The `filesystem` source has a `filtered_items` section in it's config that
 allows you to specify what files and folders should be hidden. By default, any

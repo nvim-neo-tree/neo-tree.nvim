@@ -728,7 +728,7 @@ M.delete = function(state, callback)
   fs_actions.delete_node(node.path, callback)
 end
 
----@param callback function
+---@param callback fun(path: string)
 ---@type neotree.TreeCommandVisual
 M.delete_visual = function(state, selected_nodes, callback)
   local paths_to_delete = {}
@@ -747,6 +747,95 @@ M.delete_visual = function(state, selected_nodes, callback)
     end
   end
   fs_actions.delete_nodes(paths_to_delete, callback)
+end
+
+---@param callback fun(path: string)
+M.trash = function(state, callback)
+  local node = assert(state.tree:get_node())
+  if node.type ~= "file" and node.type ~= "directory" then
+    log.warn("The `trash` command can only be used on files and directories")
+    return
+  end
+  if node:get_depth() == 1 then
+    log.error(
+      "Will not trash root node "
+        .. node.path
+        .. ", please back out of the current directory if you want to trash the root node."
+    )
+    return
+  end
+  fs_actions.trash_node(node.path, callback, state)
+end
+
+---@param callback fun(paths: string[])
+---@type neotree.TreeCommandVisual
+M.trash_visual = function(state, selected_nodes, callback)
+  local paths_to_trash = {}
+  for _, node_to_trash in pairs(selected_nodes) do
+    if node_to_trash:get_depth() == 1 then
+      log.error(
+        "Will not trash root node "
+          .. node_to_trash.path
+          .. ", please back out of the current directory if you want to trash the root node."
+      )
+      return
+    end
+
+    if node_to_trash.type == "file" or node_to_trash.type == "directory" then
+      table.insert(paths_to_trash, node_to_trash.path)
+    end
+  end
+  fs_actions.trash_nodes(paths_to_trash, callback, state)
+end
+
+M.restore_from_trash = function(state, callback)
+  local node = assert(state.tree:get_node())
+  if node.type ~= "file" and node.type ~= "directory" then
+    log.warn("The `trash` command can only be used on files and directories")
+    return
+  end
+  if node:get_depth() == 1 then
+    log.error(
+      "Will not trash root node "
+        .. node.path
+        .. ", please back out of the current directory if you want to trash the root node."
+    )
+    return
+  end
+  fs_actions.restore_node_from_trash(node.path, callback, state)
+end
+
+---@param callback fun(paths: string[])
+---@type neotree.TreeCommandVisual
+M.restore_from_trash_visual = function(state, selected_nodes, callback)
+  local paths_to_trash = {}
+  for _, node_to_trash in pairs(selected_nodes) do
+    if node_to_trash:get_depth() == 1 then
+      log.error(
+        "Will not trash root node "
+          .. node_to_trash.path
+          .. ", please back out of the current directory if you want to restore the root node."
+      )
+      return
+    end
+
+    if node_to_trash.type == "file" or node_to_trash.type == "directory" then
+      table.insert(paths_to_trash, node_to_trash.path)
+    end
+  end
+  fs_actions.restore_nodes_from_trash(paths_to_trash, callback, state)
+end
+
+M.undo = function(state)
+  ---@alias neotree.State.UndoFunction fun()
+  ---@alias neotree.State.Undostack neotree.State.UndoFunction[]
+  ---@type neotree.State.Undostack
+  local undoer = table.remove(state.undostack)
+  if not undoer then
+    log.error("Can't undo, undostack is empty")
+    return
+  end
+  undoer()
 end
 
 M.preview = function(state)

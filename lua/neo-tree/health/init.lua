@@ -1,4 +1,5 @@
 local typecheck = require("neo-tree.health.typecheck")
+local utils = require("neo-tree.utils")
 local health = vim.health
 
 local M = {}
@@ -6,6 +7,7 @@ local M = {}
 ---@param modname string
 ---@param repo string
 ---@param optional boolean?
+---@return boolean
 local check_dependency = function(modname, repo, optional)
   local m = pcall(require, modname)
   if not m then
@@ -15,14 +17,31 @@ local check_dependency = function(modname, repo, optional)
     else
       health.error(errmsg)
     end
-    return
+    return false
   end
 
   health.ok(repo .. " is installed")
+  return true
+end
+
+---@param path string
+---@param desc string?
+---@return boolean executable
+local check_executable = function(path, desc)
+  if utils.executable(path) then
+    health.ok(("`%s` is executable"):format(path))
+    return true
+  end
+  local warning = ("`%s` not found"):format(path)
+  if desc then
+    warning = table.concat({ warning, desc }, " ")
+  end
+  health.warn(warning)
+  return false
 end
 
 function M.check()
-  health.start("Dependencies")
+  health.start("Required dependencies")
   check_dependency("plenary", "nvim-lua/plenary.nvim")
   check_dependency("nui.tree", "MunifTanjim/nui.nvim")
 
@@ -42,6 +61,32 @@ function M.check()
   health.start("Configuration")
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
+
+  health.start("Trash executables (prioritized in descending order, `:h neo-tree-trash`)")
+  if utils.is_windows then
+    check_executable("trash", "(from https://github.com/sindresorhus/trash#cli or similar)")
+    if not check_executable("pwsh", "(https://github.com/PowerShell/PowerShell)") then
+      check_executable("powershell", "(built-in Windows PowerShell)")
+    end
+  elseif utils.is_macos then
+    check_executable("trash", "(built-in)")
+    check_executable("osascript", "(built-in)")
+  else
+    if check_executable("gio", "(from glib2)") then
+      if not utils.execute_command({ "gio", "trash", "--list" }) then
+        health.warn("`gio trash` --list failed, maybe you need `gvfs` installed?")
+      end
+    end
+    if vim.fn.has("nvim-0.10") == 1 then
+      health.info(
+        [[(Neo-tree will fall back to its own implementation of the XDG freedesktop trash spec, as needed)]]
+      )
+    else
+      health.warn(
+        [[Neovim version is below 0.10, cannot fallback to Neo-tree's XDG freedesktop trash implementation.]]
+      )
+    end
+  end
 end
 
 local validate = typecheck.validate
@@ -59,6 +104,9 @@ function M.check_config(config)
     function(cfg)
       ---@class neotree.health.Validator.Generators
       local v = {
+        ---@generic T
+        ---@param validator neotree.health.Validator<T>
+        ---@return fun(arr: T[])
         array = function(validator)
           ---@generic T
           ---@param arr T[]
@@ -177,6 +225,15 @@ function M.check_config(config)
       validate("sort_function", cfg.sort_function, "function", true)
       validate("use_popups_for_input", cfg.use_popups_for_input, "boolean")
       validate("use_default_mappings", cfg.use_default_mappings, "boolean")
+      validate("trash", cfg.trash, function(trash)
+        validate("cmd", trash.command, function(cmd)
+          if type(cmd) == "function" then
+            return true -- TODO: maybe better validation here
+          elseif type(cmd) == "table" then
+            v.array("string")(cmd)
+          end
+        end, true)
+      end)
       validate("source_selector", cfg.source_selector, function(ss)
         validate("winbar", ss.winbar, "boolean")
         validate("statusline", ss.statusline, "boolean")
