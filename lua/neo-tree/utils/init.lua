@@ -226,7 +226,6 @@ end
 M.execute_command = function(cmd)
   local result = vim.fn.systemlist(cmd)
 
-  -- An empty result is ok
   if vim.v.shell_error ~= 0 or (#result > 0 and vim.startswith(result[1], "fatal:")) then
     return false, result
   else

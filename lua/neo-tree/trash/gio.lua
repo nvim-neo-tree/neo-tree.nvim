@@ -11,11 +11,11 @@ local restore = function(gvfs_paths)
 end
 
 ---@return [string, string][]? entries
+---@return string? err
 local list_entries = function()
   local list_ok, before_list_output = utils.execute_command({ "gio", "trash", "--list" })
   if not list_ok then
-    log.at.warn.format("Error with `gio trash --list`: %s", table.concat(before_list_output, "\n"))
-    return nil
+    return nil, table.concat(before_list_output, "\n")
   end
   local list = {}
   for _, line in ipairs(before_list_output) do
@@ -47,11 +47,13 @@ M.generate_trashfunc = function(paths)
 
     local was_in_before_list = {}
     for _, entry in ipairs(before_list) do
+      vim.print(entry)
       was_in_before_list[entry[1]] = entry[2]
     end
 
-    local after_list = list_entries()
+    local after_list, err = list_entries()
     if not after_list then
+      log.error(err)
       return false
     end
 

@@ -675,7 +675,11 @@ M.delete_node = function(path, callback, noconfirm)
         local delete_ok, result =
           utils.execute_command({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
         if not delete_ok then
-          log.debug("Could not delete directory '", path, "' with rmdir: ", result)
+          log.at.debug.format(
+            "Could not delete directory '%s' with rmdir: %s",
+            path,
+            table.concat(result, "\n")
+          )
         else
           log.info("Deleted directory ", path)
           success = true
@@ -683,7 +687,11 @@ M.delete_node = function(path, callback, noconfirm)
       else
         local delete_ok, result = utils.execute_command({ "rm", "-Rf", path })
         if not delete_ok then
-          log.debug("Could not delete directory '", path, "' with rm: ", result)
+          log.at.debug.format(
+            "Could not delete directory '%s' with rm: %s",
+            path,
+            table.concat(result, "\n")
+          )
         else
           log.info("Deleted directory ", path)
           success = true

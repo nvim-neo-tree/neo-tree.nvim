@@ -42,7 +42,7 @@ local M = {}
 ---@type table<string, neotree.trash.Command[]>
 M._builtins = {
   macos = {
-    { "trash" }, -- either the macOS 15 built-in, or someone's better replacment.
+    { "trash", "--" }, -- either the macOS 15 built-in, or someone's better replacment.
     function(p)
       local cmds = {}
       for i, path in ipairs(p) do
