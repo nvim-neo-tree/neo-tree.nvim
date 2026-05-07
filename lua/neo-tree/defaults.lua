@@ -718,6 +718,7 @@ local config = {
         ["T"] = "noop",
         ["<C-r>"] = "noop",
         ["u"] = "noop",
+        ["U"] = "noop",
         ["/"] = "filter",
         ["f"] = "filter_on_submit",
       },
