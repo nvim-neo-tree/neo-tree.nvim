@@ -74,7 +74,7 @@ local function create_state(tabid, sd, winid)
   ---@field git_base_by_worktree table<string,string?>?
   ---@field sort table
   ---@field clipboard neotree.clipboard.Contents
-  ---@field undostack neotree.State.Undostack
+  ---@field undostack fun()[]
   ---@field current_position neotree.State.CurrentPosition?
   ---@field disposed boolean?
   ---@field winid integer?

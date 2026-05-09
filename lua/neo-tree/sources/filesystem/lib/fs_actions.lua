@@ -825,14 +825,13 @@ end
 
 ---@param path string
 ---@param callback fun(path: string)?
----@param state neotree.State?
-M.restore_node_from_trash = function(path, callback, state)
+M.restore_node_from_trash = function(path, callback)
   local _, name = utils.split_path(path)
 
   log.trace("Restoring node:", path)
   local stat = uv.fs_stat(path)
 
-  local do_trash = function()
+  local do_restore = function()
     local complete = vim.schedule_wrap(function()
       events.fire_event(events.FILE_DELETED, path)
       if callback then
@@ -863,15 +862,14 @@ M.restore_node_from_trash = function(path, callback, state)
   local msg = string.format("Are you sure you want to restore '%s'?", displayed_name)
   inputs.confirm(msg, function(confirmed)
     if confirmed then
-      do_trash()
+      do_restore()
     end
   end)
 end
 
 ---@param paths string[]
 ---@param callback fun(paths: string[])?
----@param state neotree.State?
-M.restore_nodes_from_trash = function(paths, callback, state)
+M.restore_nodes_from_trash = function(paths, callback)
   local msg = "Are you sure you want to restore " .. #paths .. " items?"
   inputs.confirm(msg, function(confirmed)
     if not confirmed then

@@ -95,7 +95,6 @@ end
 ---@param command neotree.trash.Command
 ---@return neotree.trash.InternalFunction? trashfunc
 ---@return string? err
----@return neotree.State.UndoFunction? undoer
 local normalize_trash_command_to_function = function(paths, command)
   if type(command) == "table" then
     local cmd = { unpack(command) }
@@ -109,7 +108,7 @@ local normalize_trash_command_to_function = function(paths, command)
 
   if type(command) == "function" then
     local trashfunc
-    local res, restorer = command(paths)
+    local res = command(paths)
     if res == nil then
       return nil, nil
     elseif type(res) == "table" then
@@ -120,7 +119,7 @@ local normalize_trash_command_to_function = function(paths, command)
       return nil,
         "Invalid return type from trash function generator, expected string[][]|function|nil"
     end
-    return trashfunc, nil, restorer
+    return trashfunc, nil
   end
 
   return nil, "Unable to determine trashing method from command"
@@ -144,53 +143,67 @@ M.trash = function(paths)
   end
 
   for _, command in ipairs(commands) do
-    local trashfunc, normalize_err, restorefunc =
-      normalize_trash_command_to_function(paths, command)
-    if normalize_err then
+    local trashfunc, normalize_err = normalize_trash_command_to_function(paths, command)
+    if not trashfunc then
       return false, normalize_err
     end
     if trashfunc then
       local success, restorefunc_from_trashfunc = trashfunc()
-      return success, nil, restorefunc_from_trashfunc or restorefunc
+      return success, nil, restorefunc_from_trashfunc
     end
   end
   return false, "No trash commands or functions worked."
 end
 
----Attempt to restore files from trash.
----@param trashed_paths string[]
----@param restorer neotree.trash.Restorer? Either an explicit restorer for the given paths, or Neo-tree will attempt to guess at the correct restorer.
----@return boolean success
+---Determines whether a given lists of paths are restorable by a singular restorer, and if so, returns said restorer.
+---@param paths string[]
+---@return neotree.trash.Restorer? restorer
 ---@return string? err
-M.restore = function(trashed_paths, restorer)
-  if not restorer then
-    -- determine how to restore the files
-    if utils.is_macos then
-      return false, "Restoring from trash on macOS is not supported"
+local restorable = function(paths)
+  -- determine how to restore the files
+  if utils.is_macos then
+    return nil, "Restoring from trash on macOS is not supported"
+  end
+
+  if utils.is_windows then
+    for _, path in ipairs(paths) do
+      local drive_root = utils.abspath_prefix(path)
+
+      if not drive_root then
+        return nil, ("Could not determine drive for path `%s`"):format(path)
+      end
+
+      local recycle_base = utils.path_join(drive_root .. "$Recycle.Bin")
+      if not utils.is_subpath(recycle_base, path) then
+        return nil, ("Path `%s` is not within Recycle Bin folder `%s`"):format(path, recycle_base)
+      end
     end
 
-    if utils.is_windows then
-      restorer = windows_trash.generate_restore_commands
-    else
-      local _, trash_files_dir = freedesktop_trash.calculate_trash_paths()
-      if not trash_files_dir then
-        return false, "Couldn't determine XDG trash paths, not restoring"
-      end
-      for _, trashed_path in ipairs(trashed_paths) do
-        if not utils.is_subpath(trash_files_dir, trashed_path) then
-          log.at.warn.format(
-            "File %s isn't in XDG trash files directory %s, skipping",
-            trashed_path,
-            trash_files_dir
-          )
-        end
-      end
-      restorer = freedesktop_trash.generate_restorer
+    return windows_trash.generate_restore_commands
+  end
+
+  local _, trash_files_dir = freedesktop_trash.calculate_trash_paths()
+  if not trash_files_dir then
+    return nil, "Couldn't determine XDG trash paths, not restoring"
+  end
+
+  for _, path in ipairs(paths) do
+    if not utils.is_subpath(trash_files_dir, path) then
+      return nil,
+        ("File %s isn't in XDG trash files directory %s, skipping"):format(path, trash_files_dir)
     end
   end
-  if type(restorer) ~= "function" then
-    return false,
-      "restorer: expected function (@type neotree.trash.Restore), got a " .. type(restorer)
+  return freedesktop_trash.generate_restorer
+end
+
+---Attempt to restore files from trash.
+---@param trashed_paths string[]
+---@return boolean success
+---@return string? err
+M.restore = function(trashed_paths)
+  local restorer, restorable_err = restorable(trashed_paths)
+  if not restorer then
+    return false, restorable_err
   end
 
   local res, err = restorer(trashed_paths)

@@ -802,7 +802,7 @@ M.restore_from_trash = function(state, callback)
     )
     return
   end
-  fs_actions.restore_node_from_trash(node.path, callback, state)
+  fs_actions.restore_node_from_trash(node.path, callback)
 end
 
 ---@param callback fun(paths: string[])
@@ -823,13 +823,11 @@ M.restore_from_trash_visual = function(state, selected_nodes, callback)
       table.insert(paths_to_trash, node_to_trash.path)
     end
   end
-  fs_actions.restore_nodes_from_trash(paths_to_trash, callback, state)
+  fs_actions.restore_nodes_from_trash(paths_to_trash, callback)
 end
 
+---@param state neotree.State
 M.undo = function(state)
-  ---@alias neotree.State.UndoFunction fun()
-  ---@alias neotree.State.Undostack neotree.State.UndoFunction[]
-  ---@type neotree.State.Undostack
   local undoer = table.remove(state.undostack)
   if not undoer then
     log.error("Can't undo, undostack is empty")
