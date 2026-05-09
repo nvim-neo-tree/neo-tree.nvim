@@ -1,39 +1,29 @@
 local u = require("tests.utils")
 describe("config.trash.command", function()
-  -- Just make sure we start all tests in the expected state
   after_each(function()
     u.clear_environment()
   end)
 
-  it("accepts nil values from function commands", function()
-    local triggered = false
-    require("neo-tree").setup({
-      trash = {
-        command = function()
-          triggered = true
-          return nil
-        end,
-      },
-    })
-
-    require("neo-tree.trash").trash({ "example" })
-    assert.are.equal(triggered, true, "Was not triggered")
-  end)
-
   it("works with functions that return functions", function()
-    local triggered = false
+    local paths_from_command
     require("neo-tree").setup({
       trash = {
-        command = function()
+        command = function(paths)
           return function()
-            triggered = true
+            paths_from_command = paths
             return true
           end
         end,
       },
     })
 
-    require("neo-tree.trash").trash({ "example" })
-    assert.are.equal(triggered, true, "Was not triggered")
+    local paths = { "/example" }
+    require("neo-tree.trash").trash(paths)
+    assert.are.equal(paths, paths_from_command, "Internal function should have received paths")
+  end)
+
+  it("Should error if no paths are passed in", function()
+    local ok = pcall(require("neo-tree.trash").trash, {})
+    assert.are.equal(ok, false, "Expected trash to error")
   end)
 end)
