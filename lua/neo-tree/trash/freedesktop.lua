@@ -263,6 +263,7 @@ end
 ---@param path string
 ---@param trash_files_dir string
 ---@param trash_info_dir string
+---@nodiscard
 ---@return string? path_in_trash
 ---@return string? err
 local trash_file = function(path, trash_files_dir, trash_info_dir)
@@ -352,14 +353,16 @@ M.generate_trashfunc = function(paths)
     local trashed_filepaths = {}
 
     for _, path in ipairs(paths) do
-      local file_in_trash, err = trash_file(path, trash_files_dir, trash_info_dir)
-      if file_in_trash then
-        trashed_filepaths[#trashed_filepaths + 1] = file_in_trash
+      if uv.fs_lstat(path) then
+        local file_in_trash, err = trash_file(path, trash_files_dir, trash_info_dir)
+        if file_in_trash then
+          trashed_filepaths[#trashed_filepaths + 1] = file_in_trash
+        end
+        if err then
+          log.error(err)
+        end
+        all_trashed = all_trashed and (file_in_trash ~= nil)
       end
-      if err then
-        log.error(err)
-      end
-      all_trashed = all_trashed and (file_in_trash ~= nil)
     end
     -- local cache_updated, err = update_trash_size_cache(trash_dir, trash_files_dir, trash_info_dir)
     -- if not cache_updated then
