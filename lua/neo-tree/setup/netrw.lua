@@ -39,6 +39,14 @@ M.hijack = function()
   utils.debounce("hijack_netrw_" .. dir_window, function()
     local manager = require("neo-tree.sources.manager")
     local log = require("neo-tree.log")
+    -- The hijack may have been triggered by a BufEnter that fired in a transient
+    -- window that no longer exists (this can happen during `:e <dir>` when the
+    -- startup buffer is a directory). Skip in that case so we don't create an
+    -- orphan state for a dead window.
+    if not vim.api.nvim_win_is_valid(dir_window) then
+      log.debug("hijack_netrw: dir_window", dir_window, "is no longer valid, skipping")
+      return
+    end
     -- We will want to replace the "directory" buffer with either the "alternate"
     -- buffer or a new blank one.
     local replacement_buffer = vim.fn.bufnr("#")
