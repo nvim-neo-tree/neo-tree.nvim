@@ -1403,7 +1403,13 @@ draw = function(nodes, state, parent_id)
       return
     end
   else
-    M.acquire_window(state)
+    local winid = M.acquire_window(state)
+    if not winid or not state.bufnr then
+      -- acquire_window bailed out (e.g. the target window was closed before the
+      -- async scan finished). Don't try to build a tree without a buffer.
+      log.trace("Could not acquire window, aborting draw")
+      return
+    end
     create_tree(state)
   end
   ---@cast state neotree.StateWithTree
