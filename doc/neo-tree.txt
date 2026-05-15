@@ -317,9 +317,9 @@ T    = trash:                Trash the selected file or directory.
 
 u    = undo:                 Reverts the most recent undoable action.
 
-U    = restore_from_trash:   Restores selected file or directories from the
-                             trash folder. Currently only works on Linux.
-                             Supports visual selection.
+U    = restore_from_trash:   Restores selected file or directories when used on
+                             items inside the trash folder. See |neo-tree-trash|
+                             for supported OSs.
 
 i    = show_file_details:    Show file details in a popup window, such as size
                              and last modified date.

@@ -394,7 +394,7 @@ M.copy_node = function(source, destination, callback, input_root)
 
     local source_stat = log.assert(uv.fs_lstat(source))
     if source_stat.type == "link" then
-      local target = log.assert(uv.fs_realpath(source))
+      local target = log.assert(uv.fs_readlink(source))
       local symlink_ok, err = uv.fs_symlink(target, destination)
       log.assert(symlink_ok, "Could not copy symlink ", source, "to", destination, ":", err)
     else

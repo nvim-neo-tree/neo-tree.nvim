@@ -791,14 +791,14 @@ end
 M.restore_from_trash = function(state, callback)
   local node = assert(state.tree:get_node())
   if node.type ~= "file" and node.type ~= "directory" then
-    log.warn("The `trash` command can only be used on files and directories")
+    log.warn("The `restore_from_trash` command can only be used on files and directories")
     return
   end
   if node:get_depth() == 1 then
     log.error(
-      "Will not trash root node "
+      "Will not restore root node "
         .. node.path
-        .. ", please back out of the current directory if you want to trash the root node."
+        .. ", please back out of the current directory if you want to restore the root node."
     )
     return
   end
@@ -808,22 +808,22 @@ end
 ---@param callback fun(paths: string[])
 ---@type neotree.TreeCommandVisual
 M.restore_from_trash_visual = function(state, selected_nodes, callback)
-  local paths_to_trash = {}
-  for _, node_to_trash in pairs(selected_nodes) do
-    if node_to_trash:get_depth() == 1 then
+  local paths_to_restore = {}
+  for _, node_to_restore in pairs(selected_nodes) do
+    if node_to_restore:get_depth() == 1 then
       log.error(
-        "Will not trash root node "
-          .. node_to_trash.path
+        "Will not restore root node "
+          .. node_to_restore.path
           .. ", please back out of the current directory if you want to restore the root node."
       )
       return
     end
 
-    if node_to_trash.type == "file" or node_to_trash.type == "directory" then
-      table.insert(paths_to_trash, node_to_trash.path)
+    if node_to_restore.type == "file" or node_to_restore.type == "directory" then
+      table.insert(paths_to_restore, node_to_restore.path)
     end
   end
-  fs_actions.restore_nodes_from_trash(paths_to_trash, callback)
+  fs_actions.restore_nodes_from_trash(paths_to_restore, callback)
 end
 
 ---@param state neotree.State

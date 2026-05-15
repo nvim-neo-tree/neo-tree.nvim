@@ -7,7 +7,7 @@ local M = {}
 
 ---@alias neotree.trash.Command neotree.trash.PureCommand|neotree.trash.FunctionGenerator|neotree.trash.CommandGenerator
 
----A convienient format to define a trash command with rm-like syntax.
+---A convenient format to define a trash command with rm-like syntax.
 ---@class neotree.trash.PureCommand
 ---@field restorer? neotree.trash.Restorer
 ---@field [integer] string
@@ -37,12 +37,12 @@ local M = {}
 
 ---A list of built-in trashers that are natively supported for trashing use.
 ---
----https://github.com/andreafrancia/trash-cli and kioclient are not featured because they doen't have a non-interactive way of restoring
+---https://github.com/andreafrancia/trash-cli and kioclient are not featured because they don't have a non-interactive way of restoring
 ---a selected list of items in the trash.
 ---@type table<string, neotree.trash.Command[]>
 M._builtins = {
   macos = {
-    { "trash", "--" }, -- either the macOS 15 built-in, or someone's better replacment.
+    { "trash", "--" }, -- either the macOS 15 built-in, or someone's less-broken replacement like https://github.com/sindresorhus/macos-trash.
     function(p)
       local cmds = {}
       for i, path in ipairs(p) do
@@ -144,9 +144,11 @@ M.trash = function(paths)
 
   for _, command in ipairs(commands) do
     local trashfunc, normalize_err = normalize_trash_command(paths, command)
-    if not trashfunc then
+    if normalize_err then
+      log.error(normalize_err)
       return false, normalize_err
     end
+
     if trashfunc then
       local success, restorefunc_from_trashfunc = trashfunc()
       return success, nil, restorefunc_from_trashfunc

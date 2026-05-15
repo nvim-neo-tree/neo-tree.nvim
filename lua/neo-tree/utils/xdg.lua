@@ -1,5 +1,4 @@
 local utils = require("neo-tree.utils")
-local compat = require("neo-tree.utils._compat")
 local M = {} -- Our module table
 
 --- Helper function to get an environment variable or a default value.
