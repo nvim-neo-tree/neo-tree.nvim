@@ -47,7 +47,7 @@ jobs:
       - name: "Run tests"
         run: |
           mise use tree-sitter
-          mise run update-dependencies
+          mise deps
           mise test
 
       # - name: Upload coverage to Codecov
