@@ -9,7 +9,7 @@ View [mise.toml](./mise.toml) for tasks and their implementation.
 
 ```bash
 # Install/update dependencies
-mise update-dependencies
+mise deps
 # Or `mise update-dependencies`
 
 # Run stylua

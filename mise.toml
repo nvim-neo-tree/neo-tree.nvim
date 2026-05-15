@@ -29,7 +29,7 @@ run = "stylua --glob '*.lua' --glob '!defaults.lua' ."
 deps_dir = '.dependencies'
 
 [tasks.update-dependencies]
-alias = 'dependencies'
+alias = 'deps'
 run = """
 #!/usr/bin/env bash
 update() {
@@ -122,7 +122,7 @@ run_windows = """
 $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 lua-language-server --configpath=$env:NEOTREE_LUARC --check .
 """
-wait_for = ['update-dependencies']
+wait_for = ['deps']
 
 [tasks.emmylua-check]
 run = """
@@ -135,7 +135,7 @@ $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIM
 $env:PWD = Get-Location
 emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
 """
-wait_for = ['update-dependencies']
+wait_for = ['deps']
 
 [tasks.clean]
 run = [
