@@ -23,7 +23,7 @@ local list_entries = function()
     if tab_index then
       local trash_filepath = line:sub(1, tab_index - 1)
       local original_filepath = line:sub(tab_index + 1)
-      list = { trash_filepath, original_filepath }
+      list[#list + 1] = { trash_filepath, original_filepath }
     end
   end
   return list

@@ -277,7 +277,11 @@ local trash_file = function(path, trash_files_dir, trash_info_dir)
   local filename_extension = vim.fn.fnamemodify(filename, ":e")
   while uv.fs_lstat(utils.path_join(trash_files_dir, trash_filename)) do
     counter = counter + 1
-    trash_filename = ("%s[%s].%s"):format(filename_root, counter, filename_extension)
+    if filename_extension ~= "" then
+      trash_filename = ("%s[%s].%s"):format(filename_root, counter, filename_extension)
+    else
+      trash_filename = ("%s[%s]"):format(filename_root, counter)
+    end
   end
 
   local info_file_path = utils.path_join(trash_info_dir, trash_filename .. ".trashinfo")
