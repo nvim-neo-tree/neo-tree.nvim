@@ -989,37 +989,45 @@ to `"none"` will prevent neo-tree from setting vim's cwd for that position.
 
 TRASH                                                            *neo-tree-trash*
 
-Neo-tree can use existing commands on your system to trash files. By default,
-this is bound to `T`.
+Neo-tree can trash files with the `trash` command (`T` by default).
 
-The default commands that neo-tree tries to use, in order, are:
+Support for undoable trash operations and the ability to restore any file from a
+trash bin depends on OS (see below). The default binds for these, are `u` for
+the `undo` command, and `U` for the `restore_from_trash` command.
+
+Neo-tree has a variety of built-in methods it tries to use, depending on OS. In
+order, these are:
 
 MacOS:
 - `trash`,
 - `osascript` commands.
 
 Linux:
-- `gio trash` (supports undo)
-- Neo-tree's Lua implementation of the FreeDesktop XDG trash spec at
-  require('neo-tree.trash.freedesktop'). (supports undo)
+- `gio trash` (supports undo, and restoration)
+- Neo-tree's native implementation of the FreeDesktop XDG trash spec at
+`require('neo-tree.trash.freedesktop')`. (supports undo, and restoration)
 
-Windows: `PowerShell` commands.
+Windows:
+- `PowerShell` commands (supports restoration).
 
 You can configure the command used by specifying `trash.command` in `setup()`:
 
 >lua
     require("neo-tree").setup({
       trash = {
-        command = nil -- the default - uses built-ins.
+        -- the default - uses built-ins.
+        command = nil,
+        -- Use Neo-tree's built-in freedesktop trasher over `gio trash`
+        -- command = function(...) require('neo-tree.trash.freedesktop').generate_trashfunc(...) end
       }
     })
 <
 
-This option allows you to specify an override that will be tried first, before
-falling back to the built-ins. The accepted formats for this option are:
+This option will be attempted first, before falling back to the built-ins listed
+above. The accepted formats for this option are:
 
-1. A string array listing an `rm`-like trash command to use. In otherwords, a
-   CLI tool where the invocation of the command looks like `trash ...FILES`.
+1. An `rm`-like trash command to use. Neo-tree will append all the filepaths
+being trashed after the last argument given.
 
 >lua
     require("neo-tree").setup({
@@ -1029,7 +1037,7 @@ falling back to the built-ins. The accepted formats for this option are:
     })
 <
 
-2. Or a function that returns a list of commands to execute:
+2. A function that returns a list of commands to execute:
 
 >lua
     require("neo-tree").setup({
@@ -1057,7 +1065,7 @@ deletion, which will be executed immediately.
 
 The internal function returns a boolean indicating whether it succeeded
 (usually, whether it trashed every file given) and may return an additional
-restore function that, when called (via Neo-tree's "undo" keymap), should undo
+restore function that, when called (via Neo-tree's `undo` keymap), should undo
 the trashing as best it can.
 
 This additional restore function returns a boolean indicating whether it fully

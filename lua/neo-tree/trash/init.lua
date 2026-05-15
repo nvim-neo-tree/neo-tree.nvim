@@ -95,7 +95,7 @@ end
 ---@param command neotree.trash.Command
 ---@return neotree.trash.InternalFunction? trashfunc
 ---@return string? err
-local normalize_trash_command_to_function = function(paths, command)
+local normalize_trash_command = function(paths, command)
   if type(command) == "table" then
     local cmd = { unpack(command) }
     vim.list_extend(cmd, paths)
@@ -143,7 +143,7 @@ M.trash = function(paths)
   end
 
   for _, command in ipairs(commands) do
-    local trashfunc, normalize_err = normalize_trash_command_to_function(paths, command)
+    local trashfunc, normalize_err = normalize_trash_command(paths, command)
     if not trashfunc then
       return false, normalize_err
     end

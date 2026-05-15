@@ -47,7 +47,6 @@ M.generate_trashfunc = function(paths)
 
     local was_in_before_list = {}
     for _, entry in ipairs(before_list) do
-      vim.print(entry)
       was_in_before_list[entry[1]] = entry[2]
     end
 
