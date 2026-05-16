@@ -75,6 +75,15 @@ M.delete_visual = function(state, selected_nodes)
   cc.delete_visual(state, selected_nodes, refresh)
 end
 
+M.trash = function(state)
+  cc.trash(state, refresh)
+end
+
+---@type neotree.TreeCommandVisual
+M.trash_visual = function(state, selected_nodes)
+  cc.trash_visual(state, selected_nodes, refresh)
+end
+
 M.refresh = refresh
 
 M.rename = function(state)

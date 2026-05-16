@@ -48,6 +48,7 @@ describe("document_symbols commands", function()
       -- Open neo-tree with document_symbols
       require("neo-tree").setup({
         sources = { "document_symbols" },
+        default_source = "document_symbols",
       })
       vim.cmd("Neotree document_symbols right")
       u.wait_for_neo_tree()
@@ -135,6 +136,7 @@ describe("document_symbols commands", function()
       -- Setup neo-tree with follow_tree_cursor enabled
       require("neo-tree").setup({
         sources = { "document_symbols" },
+        default_source = "document_symbols",
         document_symbols = {
           follow_tree_cursor = true,
         },
@@ -227,6 +229,7 @@ describe("document_symbols commands", function()
       -- Setup neo-tree with follow_tree_cursor disabled (default)
       require("neo-tree").setup({
         sources = { "document_symbols" },
+        default_source = "document_symbols",
         document_symbols = {
           follow_tree_cursor = false,
         },
@@ -275,6 +278,7 @@ describe("document_symbols commands", function()
       -- Setup neo-tree with follow_tree_cursor enabled
       require("neo-tree").setup({
         sources = { "filesystem", "document_symbols" },
+        default_source = "document_symbols",
         document_symbols = {
           follow_tree_cursor = true,
         },

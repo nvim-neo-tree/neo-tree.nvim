@@ -79,6 +79,9 @@ end
 M.delete = function(state)
   cc.delete(state, refresh)
 end
+M.trash = function(state)
+  cc.delete(state, refresh)
+end
 
 ---Navigate up one level.
 M.navigate_up = function(state)

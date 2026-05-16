@@ -42,7 +42,12 @@ end
 ---@param path string
 function Watcher:start(path)
   if not self.active then
-    self.handle:start(path, flags, self.callback)
+    self.handle:start(path, flags, function(err, fname)
+      if err == "EPERM" then
+        self:stop()
+      end
+      self.callback(err, fname)
+    end)
     self.active = true
   end
 end

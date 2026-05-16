@@ -4,16 +4,18 @@
 -- https://github.com/mhartington/dotfiles
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
-local api = vim.api
 local uv = vim.uv or vim.loop
 local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
+local trash = require("neo-tree.trash")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local Path = require("plenary.path")
 
 local M = {}
+
+local internal_hooks = {}
 
 ---@type string?
 local _file_completion_root
@@ -80,6 +82,16 @@ local setup_file_completion = function(root, filter)
   _file_completion_root = root
   _file_completion_filter = filter
   return "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
+end
+
+---@param path string
+local count_children = function(path)
+  return #scan.scan_dir(path, {
+    hidden = true,
+    respect_gitignore = false,
+    add_dirs = true,
+    depth = 1,
+  })
 end
 
 ---@param a uv.fs_stat.result?
@@ -561,10 +573,39 @@ M.create_node = function(in_directory, callback, input_root)
   end, {}, setup_file_completion(input_root))
 end
 
+---@param dir_path string
+---@return boolean success
+local function delete_dir_with_commands(dir_path)
+  -- first try using native system commands, which are recursive
+  if utils.is_windows then
+    local delete_ok, result =
+      utils.execute_command({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(dir_path) })
+    if not delete_ok then
+      log.at.debug.format(
+        "Could not delete directory '%s' with rmdir: %s",
+        dir_path,
+        table.concat(result, "\n")
+      )
+      return false
+    end
+  else
+    local delete_ok, result = utils.execute_command({ "rm", "-Rf", dir_path })
+    if not delete_ok then
+      log.at.debug.format(
+        "Could not delete directory '%s' with rm: %s",
+        dir_path,
+        table.concat(result, "\n")
+      )
+      return false
+    end
+  end
+
+  return true
+end
 ---Recursively delete a directory and its children.
 ---@param dir_path string Directory to delete.
 ---@return boolean success Whether the directory was deleted.
-local function delete_dir(dir_path)
+local function delete_dir_with_libuv(dir_path)
   local handle = uv.fs_scandir(dir_path)
   if type(handle) == "string" then
     log.error(handle)
@@ -584,7 +625,7 @@ local function delete_dir(dir_path)
 
     local child_path = dir_path .. "/" .. child_name
     if t == "directory" then
-      local success = delete_dir(child_path)
+      local success = delete_dir_with_libuv(child_path)
       if not success then
         log.error("failed to delete ", child_path)
         return false
@@ -600,40 +641,24 @@ local function delete_dir(dir_path)
   return uv.fs_rmdir(dir_path) or false
 end
 
--- Delete Node
-M.delete_node = function(path, callback, noconfirm)
-  local _, name = utils.split_path(path)
-  local msg = string.format("Are you sure you want to delete '%s'?", name)
+---@param path string
+---@param callback fun(path: string)?
+internal_hooks.on_file_deleted = function(path, callback)
+  vim.schedule(function()
+    events.fire_event(events.FILE_DELETED, path)
+    if callback then
+      callback(path)
+    end
+  end)
+end
 
+---@param path string
+---@param callback fun(path: string)?
+local delete = function(path, callback)
   log.trace("Deleting node:", path)
   local _type = "unknown"
-  local stat = uv.fs_stat(path)
-  if stat then
-    _type = stat.type
-    if _type == "link" then
-      local link_to = uv.fs_readlink(path)
-      if not link_to then
-        log.error("Could not read link")
-        return
-      end
-      local target_file = uv.fs_stat(link_to)
-      if target_file then
-        _type = target_file.type
-      end
-      _type = uv.fs_stat(link_to).type
-    end
-    if _type == "directory" then
-      local children = scan.scan_dir(path, {
-        hidden = true,
-        respect_gitignore = false,
-        add_dirs = true,
-        depth = 1,
-      })
-      if #children > 0 then
-        msg = "WARNING: Dir not empty! " .. msg
-      end
-    end
-  else
+  local stat = uv.fs_lstat(path)
+  if not stat then
     log.warn("Could not read file/dir:", path, stat, ", attempting to delete anyway...")
     -- Guess the type by whether it appears to have an extension
     if path:match("%.(.+)$") then
@@ -641,74 +666,66 @@ M.delete_node = function(path, callback, noconfirm)
     else
       _type = "directory"
     end
+  else
+    _type = stat.type
+    if _type == "link" then
+      local target_file = uv.fs_stat(path)
+      _type = target_file and target_file.type or _type
+    end
+  end
+
+  local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+  if event_result.handled then
+    internal_hooks.on_file_deleted(path, callback)
     return
   end
 
-  local do_delete = function()
-    local complete = vim.schedule_wrap(function()
-      events.fire_event(events.FILE_DELETED, path)
-      if callback then
-        callback(path)
-      end
-    end)
-
-    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
-    if event_result.handled then
-      complete()
+  if _type == "directory" then
+    local success = delete_dir_with_commands(path) or delete_dir_with_libuv(path)
+    -- Fallback to using libuv if native commands fail
+    if not success then
+      log.error("Could not remove directory:", path)
       return
     end
-
-    if _type == "directory" then
-      -- first try using native system commands, which are recursive
-      local success = false
-      if utils.is_windows then
-        local result =
-          vim.fn.system({ "cmd.exe", "/c", "rmdir", "/s", "/q", vim.fn.shellescape(path) })
-        local error = vim.v.shell_error
-        if error ~= 0 then
-          log.debug("Could not delete directory '", path, "' with rmdir: ", result)
-        else
-          log.info("Deleted directory ", path)
-          success = true
-        end
-      else
-        local result = vim.fn.system({ "rm", "-Rf", path })
-        local error = vim.v.shell_error
-        if error ~= 0 then
-          log.debug("Could not delete directory '", path, "' with rm: ", result)
-        else
-          log.info("Deleted directory ", path)
-          success = true
-        end
-      end
-      -- Fallback to using libuv if native commands fail
-      if not success then
-        success = delete_dir(path)
-        if not success then
-          return log.error("Could not remove directory: " .. path)
-        end
-      end
-    else
-      local success = uv.fs_unlink(path)
-      if not success then
-        return log.error("Could not remove file: " .. path)
-      end
-      clear_buffer(path)
-    end
-    complete()
-  end
-
-  if noconfirm then
-    do_delete()
   else
+    if not uv.fs_unlink(path) then
+      log.error("Could not remove file:", path)
+      return
+    end
+    clear_buffer(path)
+  end
+  log.info("Deleted", _type, path)
+  internal_hooks.on_file_deleted(path, callback)
+end
+
+-- Delete Node
+---@param path string
+---@param callback fun(string)?
+---@param noconfirm boolean?
+M.delete_node = function(path, callback, noconfirm)
+  local _, name = utils.split_path(path)
+  local children_count = uv.fs_stat(path) == "directory" and count_children(path) or -1
+  if noconfirm then
+    delete(path, callback)
+  else
+    local msg = string.format("Are you sure you want to delete '%s'?", name)
+    if children_count > 0 then
+      msg = ("WARNING: Dir has %s %s! %s"):format(
+        children_count,
+        children_count == 1 and "child" or "children",
+        msg
+      )
+    end
     inputs.confirm(msg, function(confirmed)
       if confirmed then
-        do_delete()
+        delete(path, callback)
       end
     end)
   end
 end
 
+---@param paths_to_delete string[]
+---@param callback fun(path)?
 M.delete_nodes = function(paths_to_delete, callback)
   local msg = "Are you sure you want to delete " .. #paths_to_delete .. " items?"
   inputs.confirm(msg, function(confirmed)
@@ -717,14 +734,150 @@ M.delete_nodes = function(paths_to_delete, callback)
     end
 
     for _, path in ipairs(paths_to_delete) do
-      M.delete_node(path, nil, true)
+      delete(path, nil)
     end
 
+    ---Should be refactored in 4.0 or something. this should callback with paths instead
     if callback then
       vim.schedule(function()
         callback(paths_to_delete[#paths_to_delete])
       end)
     end
+  end)
+end
+
+---@param paths string[]
+---@param callback fun(paths: string[])?
+internal_hooks.on_files_trashed = function(paths, callback)
+  ---Check each path to see if it was actually trashed
+  local trashed_paths = {}
+  for _, path in ipairs(paths) do
+    if not vim.uv.fs_lstat(path) then
+      trashed_paths[#trashed_paths + 1] = path
+    end
+  end
+  vim.schedule(function()
+    for _, path in ipairs(trashed_paths) do
+      events.fire_event(events.FILE_DELETED, path)
+    end
+    if callback then
+      callback(paths)
+    end
+  end)
+end
+
+---@param path string
+---@param callback fun(path: string)?
+---@param state neotree.State?
+M.trash_node = function(path, callback, state)
+  local _, name = utils.split_path(path)
+
+  log.trace("Trashing node:", path)
+  local stat = uv.fs_stat(path)
+
+  local displayed_name = name
+  if stat and stat.type == "directory" then
+    displayed_name = name .. utils.path_separator
+  end
+  local msg = string.format("Are you sure you want to trash '%s'?", displayed_name)
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if event_result.handled then
+      internal_hooks.on_file_deleted(path, callback)
+      return
+    end
+
+    local paths = { path }
+    local success, err, restorefunc = trash.trash(paths)
+    if not success then
+      log.error("Could not trash " .. path, err)
+      return
+    end
+
+    if state and restorefunc then
+      table.insert(state.undostack, restorefunc)
+    end
+    internal_hooks.on_file_deleted(path, callback)
+  end)
+end
+
+---@param paths string[]
+---@param callback fun(paths: string[])?
+---@param state neotree.State?
+M.trash_nodes = function(paths, callback, state)
+  local msg = "Are you sure you want to trash " .. #paths .. " items?"
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    local success, err, restorefunc = trash.trash(paths)
+    if not success then
+      log.error(err)
+    end
+
+    if state and restorefunc then
+      table.insert(state.undostack, restorefunc)
+    end
+
+    internal_hooks.on_files_trashed(paths, callback)
+  end)
+end
+
+---@param path string
+---@param callback fun(path: string)?
+M.restore_node_from_trash = function(path, callback)
+  local _, name = utils.split_path(path)
+
+  log.trace("Restoring node:", path)
+  local stat = uv.fs_stat(path)
+
+  local displayed_name = name
+  if stat and stat.type == "directory" then
+    displayed_name = name .. utils.path_separator
+  end
+  local msg = string.format("Are you sure you want to restore '%s'?", displayed_name)
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
+    if event_result.handled then
+      internal_hooks.on_file_deleted(path, callback)
+      return
+    end
+
+    local paths = { path }
+    local success, err = trash.restore(paths)
+    if not success then
+      log.error("Could not restore " .. path .. " from trash", err)
+      return
+    end
+
+    internal_hooks.on_file_deleted(path, callback)
+  end)
+end
+
+---@param paths string[]
+---@param callback fun(paths: string[])?
+M.restore_nodes_from_trash = function(paths, callback)
+  local msg = "Are you sure you want to restore " .. #paths .. " items?"
+  inputs.confirm(msg, function(confirmed)
+    if not confirmed then
+      return
+    end
+
+    local success, err = trash.restore(paths)
+    if not success then
+      log.error(err)
+    end
+
+    internal_hooks.on_files_trashed(paths, callback)
   end)
 end
 
