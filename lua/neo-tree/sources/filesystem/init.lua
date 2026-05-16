@@ -492,7 +492,7 @@ end
 ---Expands or collapses the current node.
 ---@param state neotree.sources.filesystem.State
 ---@param node NuiTree.Node
----@param path_to_reveal string
+---@param path_to_reveal string?
 ---@param skip_redraw boolean?
 ---@param recursive boolean?
 ---@param callback function?
