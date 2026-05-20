@@ -874,10 +874,10 @@ M.focus_preview = function(state)
 end
 
 ---Expands or collapses the current node.
----@param toggle_directory fun(node: NuiTree.Node)
-M.toggle_node = function(state, toggle_directory)
+---@param toggle_directory fun(node: NuiTree.Node)?
+M.toggle_node = function(state, toggle_directory, node)
   local tree = state.tree
-  local node = assert(tree:get_node())
+  node = node or assert(tree:get_node())
   if not utils.is_expandable(node) then
     return
   end
@@ -906,13 +906,17 @@ M.toggle_directory = function(state, toggle_directory)
   M.toggle_node(state, toggle_directory)
 end
 
----Open file or expandable node
----@param state neotree.StateWithTree
----@param node NuiTree.Node
+---Open node under cursor
 ---@param open_cmd string The vim command to use to open the file
----@param toggle_directory fun(node: NuiTree.Node) The function to call to toggle a directory open/closed
----@param open_file fun(state: neotree.State, path: string, open_cmd: string, bufnr: integer)? The function to call to toggle a directory open/closed
-local open_node = function(state, node, open_cmd, toggle_directory, open_file)
+---@param toggle_directory function The function to call to toggle a directory open/closed
+local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
+  local tree = state.tree
+  local success, node = pcall(tree.get_node, tree)
+  if not (success and node) then
+    log.debug("Could not get node.")
+    return
+  end
+
   local config = state.config or {}
   if node.type == "file" and config.no_expand_file ~= nil then
     log.warn("`no_expand_file` options is deprecated, move to `expand_nested_files` (OPPOSITE)")
@@ -921,7 +925,7 @@ local open_node = function(state, node, open_cmd, toggle_directory, open_file)
 
   local should_expand_file = config.expand_nested_files and not node:is_expanded()
   if utils.is_expandable(node) and (node.type ~= "file" or should_expand_file) then
-    M.toggle_node(state, toggle_directory)
+    M.toggle_node(state, toggle_directory, node)
     return
   end
 
@@ -931,11 +935,8 @@ local open_node = function(state, node, open_cmd, toggle_directory, open_file)
   if node.type == "terminal" then
     path = node:get_id()
   end
-  if type(open_file) == "function" then
-    open_file(state, path, open_cmd, bufnr)
-  else
-    utils.open_file(state, path, open_cmd, bufnr)
-  end
+  open_file = type(open_file) == "function" and open_file or utils.open_file
+  open_file(state, path, open_cmd, bufnr)
   local extra = node.extra or {}
   local pos = extra.position or extra.end_position
   if pos ~= nil then
@@ -944,21 +945,6 @@ local open_node = function(state, node, open_cmd, toggle_directory, open_file)
       vim.cmd("normal! zvzz") -- expand folds and center cursor
     end)
   end
-end
-
----Open node under cursor
----@param open_cmd string The vim command to use to open the file
----@param toggle_directory function The function to call to toggle a directory
----open/closed
-local open_with_cmd = function(state, open_cmd, toggle_directory, open_file)
-  local tree = state.tree
-  local success, node = pcall(tree.get_node, tree)
-  if not (success and node) then
-    log.debug("Could not get node.")
-    return
-  end
-
-  open_node(state, node, open_cmd, toggle_directory, open_file)
 end
 
 ---Open file or directory in the closest window
@@ -1088,25 +1074,22 @@ end
 
 -- Jump to any node by two characters.
 ---@param state neotree.sources.filesystem.State
-M.quick_jump = function(state)
+M.quick_jump = function(state, toggle_directory)
   local nodes = renderer.get_all_visible_nodes(state.tree)
   local quick_jump_utils = require("neo-tree.sources.common.utils.quick-jump")
 
-  local nodes_name = {}
-  for _, node in ipairs(nodes) do
-    nodes_name[node] = {
-      b = true,
-      name = node.name,
-    }
-  end
-
   local jump_labels = state.config.jump_labels
-  local node2key = quick_jump_utils.assign_hotkeys(nodes_name, jump_labels)
-  local icon = state.components.icon
+  local node2key = quick_jump_utils.assign_hotkeys(nodes, jump_labels)
+  local is_document_symbols = state.name == "document_symbols"
+  local icon = is_document_symbols and state.components.kind_icon or state.components.icon
 
   -- Recover all icons.
   local recover = function()
-    state.components.icon = icon
+    if is_document_symbols then
+      state.components.kind_icon = icon
+    else
+      state.components.icon = icon
+    end
     renderer.redraw(state)
   end
 
@@ -1124,14 +1107,19 @@ M.quick_jump = function(state)
     end
   end
 
-  local redraw_jump = function()
-    ---@diagnostic disable-next-line: assign-type-mismatch
-    state.components.icon = icon_from_map(node2key)
+  local redraw_jump_icons = function()
+    if is_document_symbols then
+      ---@diagnostic disable-next-line: assign-type-mismatch
+      state.components.kind_icon = icon_from_map(node2key)
+    else
+      ---@diagnostic disable-next-line: assign-type-mismatch
+      state.components.icon = icon_from_map(node2key)
+    end
     renderer.redraw(state)
     vim.cmd("redraw")
   end
 
-  redraw_jump()
+  redraw_jump_icons()
 
   local depth = 1
   while true do
@@ -1154,7 +1142,7 @@ M.quick_jump = function(state)
     if n > 1 or depth == 1 then
       node2key = candidate
       depth = depth + 1
-      redraw_jump()
+      redraw_jump_icons()
     else
       local target_node = next(candidate)
       if target_node == nil then
@@ -1165,10 +1153,8 @@ M.quick_jump = function(state)
       if type(on_jump) == "function" then
         on_jump(state, target_node)
       elseif on_jump == "open_or_toggle" then
-        quick_jump_utils.open_or_toggle_node(state, target_node)
-      else
-        local id = target_node:get_id()
-        renderer.focus_node(state, id)
+        renderer.focus_node(state, target_node:get_id())
+        open_with_cmd(state, "e", toggle_directory)
       end
       break
     end

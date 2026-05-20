@@ -1,4 +1,3 @@
-local utils = require("neo-tree.utils")
 local M = {}
 
 ---@param first_char string
@@ -34,18 +33,9 @@ local compute_hotkey = function(first_char, count, jump_labels)
   return hotkey
 end
 
----@return table<string, integer> head
-local generate_cnttbl = function()
-  local head = {}
-  for c = string.byte("a"), string.byte("z") do
-    head[string.char(c)] = 1
-  end
-  return head
-end
-
 ---@param name string
 ---@return string c
-local fst_ch_in_filename = function(name)
+local first_char_in_filename = function(name)
   if type(name) ~= "string" then
     return "j"
   end
@@ -76,93 +66,50 @@ M.get_candidate = function(node2key, ch, depth)
   return candidate
 end
 
+local byte_to_index_offset = string.byte("a") - 1
+---@param node neotree.FileNode
+local assign_hotkey = function(node, first_charbyte_counters, jump_labels)
+  local first_char = first_char_in_filename(node.name)
+  local first_char_byte = first_char:byte()
+  local count = first_charbyte_counters[first_char_byte - byte_to_index_offset]
+  local hotkey = compute_hotkey(first_char, count, jump_labels)
+  first_charbyte_counters[first_char_byte - byte_to_index_offset] = count + 1
+  return hotkey
+end
+
 -- Generate hotkeys map.
 -- Hotkeys will take the first letter of the node name to be the leader,
 -- and assign the rest according to the priority of the jump labels in the config.
 -- The length is computed dynamiclly.
 -- It will be like {leader}{label_1}{label_2}{label_3}......
----@param nodes_name table<neotree.FileNode, { b: boolean, name: string }>
+---@param nodes neotree.FileNode[]
 ---@param jump_labels string
 ---@return table<neotree.FileNode, string> node2key
-M.assign_hotkeys = function(nodes_name, jump_labels)
+M.assign_hotkeys = function(nodes, jump_labels)
   local node2key = {}
 
-  local cnttbl = generate_cnttbl()
+  local first_charbyte_counters = {}
+  for c = string.byte("a"), string.byte("z") do
+    first_charbyte_counters[c - byte_to_index_offset] = 1
+  end
 
   -- Assign opened buffers more convenient keys.
   local opened_buffers = require("neo-tree.utils").get_opened_buffers()
-  for node, value in pairs(nodes_name) do
-    local name = value.name
-    if opened_buffers[name] ~= nil then
-      local fst = fst_ch_in_filename(name)
-      local cnt = cnttbl[fst]
-      cnttbl[fst] = cnt + 1
-      local hotkey = compute_hotkey(fst, cnt, jump_labels)
-      node2key[node] = hotkey
-      nodes_name[node].b = false
+  local other_nodes = {}
+  for _, node in ipairs(nodes) do
+    if opened_buffers[node.name] ~= nil then
+      node2key[node] = assign_hotkey(node, first_charbyte_counters, jump_labels)
+    else
+      other_nodes[#other_nodes + 1] = node
     end
   end
 
   -- Handle the rest.
-  for node, value in pairs(nodes_name) do
-    if value.b then
-      local name = nodes_name[node].name
-      local fst = fst_ch_in_filename(name)
-      local cnt = cnttbl[fst]
-      cnttbl[fst] = cnt + 1
-      local hotkey = compute_hotkey(fst, cnt, jump_labels)
-      node2key[node] = hotkey
-    end
+  for _, node in ipairs(other_nodes) do
+    node2key[node] = assign_hotkey(node, first_charbyte_counters, jump_labels)
   end
 
   return node2key
-end
-
--- Expand / collapse a directory node.
-local toggle_directory = function(node)
-  if node.type == "directory" then
-    if node:is_expanded() then
-      node:collapse()
-    else
-      node:expand()
-    end
-  end
-end
-
--- Open / toggle node.
-M.open_or_toggle_node = function(state, node)
-  local fs = require("neo-tree.sources.filesystem")
-
-  if state.name == "filesystem" then
-    if node.type == "file" then
-      utils.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
-    elseif node.type == "directory" then
-      fs.toggle_directory(state, node, nil)
-    end
-  end
-
-  if state.name == "document_symbols" then
-    local sym = require("neo-tree.sources.document_symbols.commands")
-    sym.jump_to_symbol(state, node)
-  end
-
-  if state.name == "git_status" then
-    if node.type == "file" then
-      utils.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
-    elseif node.type == "directory" then
-      toggle_directory(node)
-    end
-  end
-
-  if state.name == "buffers" then
-    if node.type == "file" then
-      utils.open_file(state, node.path, "e", node.extra and node.extra.bufnr)
-    elseif node.type == "directory" then
-      toggle_directory(node)
-    elseif node.type == "terminal" then
-      M.open_file(state, node:get_id(), "e", node.extra and node.extra.bufnr)
-    end
-  end
 end
 
 return M
