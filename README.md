@@ -396,6 +396,16 @@ require("neo-tree").setup({
       nowait = true,
     },
     mappings = {
+      ["<C-s>"] = {
+        "quick_jump",
+        config = {
+          -- This will automaticly open / toggle the target node after jumping.
+          -- You can set it to `nil` to perform only the jump action,
+          -- or write your own callback (---@type fun(state, node)).
+          on_jump = "open_or_toggle",
+          jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
+        }
+      },
       ["<space>"] = {
         "toggle_node",
         nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use
