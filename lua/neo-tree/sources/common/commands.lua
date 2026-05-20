@@ -1150,10 +1150,13 @@ M.quick_jump = function(state, toggle_directory)
       end
 
       local on_jump = state.config.on_jump
+      assert(
+        renderer.focus_node(state, target_node:get_id()),
+        ("Could not focus node %s for quick_jump"):format(target_node.id)
+      )
       if type(on_jump) == "function" then
         on_jump(state, target_node)
       elseif on_jump == "open_or_toggle" then
-        renderer.focus_node(state, target_node:get_id())
         open_with_cmd(state, "e", toggle_directory)
       end
       break
