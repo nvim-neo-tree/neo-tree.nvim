@@ -361,6 +361,17 @@ m    = move:                 Move the selected file or directory.
                              Also accepts the optional `config.show_path` option
                              like the add file action.
 
+<C-s> = quick_jump           Enters a temporary "jump" mode where icons are
+                             replaced with jump labels. Inputting the labels
+                             will jump to the corresponding node, inputting
+                             otherwise will exit the mode.
+
+                             `config.jump_labels` sets what characters are used
+                             for jump labels (prioritized in the order listed),
+                             `config.on_jump` can either be "open_or_toggle"
+                             (default) or `fun(state, target_node)`, where
+                             `target_node` is the node that was jumped to.
+
 
 VIEW CHANGES                                            *neo-tree-view-changes*
 H  = toggle_hidden:  Toggle whether hidden (filtered items) are shown or not.

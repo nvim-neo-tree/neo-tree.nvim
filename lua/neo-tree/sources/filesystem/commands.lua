@@ -254,6 +254,10 @@ M.vsplit_with_window_picker = function(state)
   cc.vsplit_with_window_picker(state, utils.wrap(fs.toggle_directory, state))
 end
 
+M.quick_jump = function(state)
+  cc.quick_jump(state, utils.wrap(fs.toggle_directory, state))
+end
+
 M.refresh = refresh
 
 M.rename = function(state)
