@@ -1136,6 +1136,7 @@ M.quick_jump = function(state, toggle_directory)
     local candidate = quick_jump_utils.get_candidate(node2key, ch, depth)
     local n = vim.tbl_count(candidate)
     if n == 0 then
+      log.info("Exiting jump mode as no candidates were found for the given key")
       break
     end
 
@@ -1144,16 +1145,13 @@ M.quick_jump = function(state, toggle_directory)
       depth = depth + 1
       redraw_jump_icons()
     else
-      local target_node = next(candidate)
-      if target_node == nil then
-        break
-      end
+      local target_node = assert(next(candidate), "expected 1 candidate but got none")
 
-      local on_jump = state.config.on_jump
       assert(
         renderer.focus_node(state, target_node:get_id()),
         ("Could not focus node %s for quick_jump"):format(target_node.id)
       )
+      local on_jump = state.config.on_jump
       if type(on_jump) == "function" then
         on_jump(state, target_node)
       elseif on_jump == "open_or_toggle" then
