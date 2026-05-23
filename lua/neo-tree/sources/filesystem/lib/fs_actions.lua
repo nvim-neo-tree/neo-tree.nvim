@@ -801,6 +801,7 @@ M.trash_node = function(path, callback, state)
     if state and restorefunc then
       table.insert(state.undostack, restorefunc)
     end
+    clear_buffer(path)
     internal_hooks.on_file_deleted(path, callback)
   end)
 end
@@ -822,6 +823,12 @@ M.trash_nodes = function(paths, callback, state)
 
     if state and restorefunc then
       table.insert(state.undostack, restorefunc)
+    end
+
+    for _, path in ipairs(paths) do
+      if not uv.fs_lstat(path) then
+        clear_buffer(path)
+      end
     end
 
     internal_hooks.on_files_trashed(paths, callback)
