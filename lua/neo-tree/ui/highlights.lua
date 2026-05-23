@@ -38,6 +38,7 @@ M.MESSAGE = "NeoTreeMessage"
 M.MODIFIED = "NeoTreeModified"
 M.NORMAL = "NeoTreeNormal"
 M.NORMALNC = "NeoTreeNormalNC"
+M.SELECTED = "NeoTreeSelected"
 M.SIGNCOLUMN = "NeoTreeSignColumn"
 M.STATUS_LINE = "NeoTreeStatusLine"
 M.STATUS_LINE_NC = "NeoTreeStatusLineNC"
@@ -321,6 +322,7 @@ M.setup = function()
 
   local faded_root = calculate_faded_highlight_group("NeoTreeRootName", 0.5)
   M.create_highlight_group(M.FILE_STATS_HEADER, {}, nil, faded_root.foreground, faded_root.gui)
+  M.create_highlight_group(M.SELECTED, { "Question" })
 end
 
 return M

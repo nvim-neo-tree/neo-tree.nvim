@@ -130,6 +130,7 @@ local function create_state(tabid, sd, winid)
   state.position = {}
   state.sort = { label = "Name", direction = 1 }
   state.clipboard = {}
+  state.selected = {}
   state.undostack = {}
   events.fire_event(events.STATE_CREATED, state)
   table.insert(all_states, state)

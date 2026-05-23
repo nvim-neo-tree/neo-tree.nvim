@@ -902,8 +902,9 @@ create_tree = function(state)
 end
 
 ---@param state neotree.StateWithTree
+---@param skip_selection_tags boolean
 ---@return NuiTree.Node[]?
-local get_selected_nodes = function(state)
+local get_selected_nodes = function(state, skip_selection_tags)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
   end
@@ -917,10 +918,11 @@ local get_selected_nodes = function(state)
   while start_pos <= end_pos do
     local node = state.tree:get_node(start_pos)
     if node then
-      table.insert(selected_nodes, node)
+      selected_nodes[#selected_nodes + 1] = node
     end
     start_pos = start_pos + 1
   end
+
   return selected_nodes
 end
 
@@ -1003,7 +1005,11 @@ local set_buffer_mappings = function(state)
         keymap.set(state.bufnr, "v", cmd, function()
           vim.api.nvim_feedkeys(ESC_KEY, "i", true)
           vim.schedule(function()
-            local selected_nodes = get_selected_nodes(state)
+            local selected_nodes = get_selected_nodes(
+              state,
+              -- insane hack but not sure how to encode this as an attribute
+              vfunc == require("neo-tree.sources.common.commands").select_visual
+            )
             if utils.truthy(selected_nodes) then
               ---@cast selected_nodes -nil
               state.config = config
