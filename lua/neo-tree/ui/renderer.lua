@@ -923,7 +923,13 @@ local get_selected_nodes = function(state, skip_selection_tags)
     start_pos = start_pos + 1
   end
 
-  return selected_nodes
+  if not skip_selection_tags then
+    for id in pairs(state.selected) do
+      selected_nodes[#selected_nodes + 1] = state.tree:get_node(id)
+    end
+  end
+
+  return utils.unique(selected_nodes)
 end
 
 ---@class neotree.State.ResolvedMapping

@@ -632,14 +632,14 @@ end
 ---@param state neotree.StateWithTree
 M.select = function(state)
   local node = assert(state.tree:get_node())
-  state.selected[node.id] = not state.selected[node.id]
+  state.selected[node.id] = not state.selected[node.id] or nil
   renderer.redraw(state)
 end
 
 ---@type neotree.TreeCommandVisual
 M.select_visual = function(state, selected_nodes)
   for _, node in ipairs(selected_nodes) do
-    state.selected[node.id] = not state.selected[node.id]
+    state.selected[node.id] = not state.selected[node.id] or nil
   end
   renderer.redraw(state)
 end
