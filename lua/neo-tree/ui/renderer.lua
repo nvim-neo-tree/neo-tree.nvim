@@ -902,9 +902,8 @@ create_tree = function(state)
 end
 
 ---@param state neotree.StateWithTree
----@param skip_selection_tags boolean
 ---@return NuiTree.Node[]?
-local get_selected_nodes = function(state, skip_selection_tags)
+local get_visually_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
     return nil
   end
@@ -923,13 +922,27 @@ local get_selected_nodes = function(state, skip_selection_tags)
     start_pos = start_pos + 1
   end
 
-  if not skip_selection_tags then
-    for id in pairs(state.selected) do
-      selected_nodes[#selected_nodes + 1] = state.tree:get_node(id)
-    end
-  end
-
   return utils.unique(selected_nodes)
+end
+
+---@param state neotree.StateWithTree
+local get_tagged_selected_nodes = function(state)
+  local selected_nodes = {}
+  for id in pairs(state.selected) do
+    selected_nodes[#selected_nodes + 1] = state.tree:get_node(id)
+  end
+  return selected_nodes
+end
+
+---@param func function command
+---@param state neotree.StateWithTree
+---@param config table
+---@param fallback string
+---@param selected_nodes NuiTree.Node[]?
+local call_command = function(func, state, config, fallback, selected_nodes)
+  state.config = config
+  state.fallback = fallback
+  return func(state, selected_nodes)
 end
 
 ---@class neotree.State.ResolvedMapping
@@ -998,12 +1011,18 @@ local set_buffer_mappings = function(state)
         break
       end
       local fallback = utils.keycode(cmd)
+      local is_selection_bind = func == require("neo-tree.sources.common.commands").select
       resolved_mappings[cmd] = {
         text = helptext,
         handler = function()
-          state.config = config
-          state.fallback = fallback
-          return func(state)
+          local selected_nodes = get_tagged_selected_nodes(state)
+          if utils.truthy(selected_nodes) and vfunc and not is_selection_bind then
+            -- Use the selected nodes in the vfunc instead.
+            selected_nodes[#selected_nodes + 1] = state.tree:get_node()
+            call_command(vfunc, state, config, fallback, utils.unique(selected_nodes))
+          else
+            call_command(func, state, config, fallback)
+          end
         end,
       }
       keymap.set(state.bufnr, "n", cmd, resolved_mappings[cmd].handler, map_options)
@@ -1011,16 +1030,15 @@ local set_buffer_mappings = function(state)
         keymap.set(state.bufnr, "v", cmd, function()
           vim.api.nvim_feedkeys(ESC_KEY, "i", true)
           vim.schedule(function()
-            local selected_nodes = get_selected_nodes(
-              state,
-              -- insane hack but not sure how to encode this as an attribute
-              vfunc == require("neo-tree.sources.common.commands").select_visual
-            )
-            if utils.truthy(selected_nodes) then
-              ---@cast selected_nodes -nil
-              state.config = config
-              vfunc(state, selected_nodes)
+            local selected_nodes = get_visually_selected_nodes(state) or {}
+            if not is_selection_bind then
+              vim.list_extend(selected_nodes, get_tagged_selected_nodes(state))
             end
+            selected_nodes = utils.unique(selected_nodes)
+            if not utils.truthy(selected_nodes) then
+              return
+            end
+            call_command(vfunc, state, config, fallback, selected_nodes)
           end)
         end, map_options)
       end
@@ -1028,7 +1046,6 @@ local set_buffer_mappings = function(state)
   end
   state.resolved_mappings = resolved_mappings
 end
-
 local function create_floating_window(state, win_options, bufname)
   state.force_float = nil
   -- First get the default options for floating windows.

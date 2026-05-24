@@ -222,7 +222,7 @@ local config = {
       folder_open = "",
       folder_empty = "󰉖",
       folder_empty_open = "󰷏",
-      selected = "",
+      selected = "󰐾",
       use_filtered_colors = true, -- Whether to use a different highlight when the file is filtered (hidden, dotfile, etc.).
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
