@@ -39,6 +39,17 @@ M.kind_icon = function(config, node, state)
     icon = config.provider(icon, node, state) or icon
   end
 
+  if state.selected[node.id] then
+    ---@type neotree.Render.Node[]
+    return {
+      {
+        text = require("neo-tree").config.default_component_configs.icon.selected or "[x]",
+        highlight = highlights.SELECTED,
+      },
+      icon,
+    }
+  end
+
   return icon
 end
 
