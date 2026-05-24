@@ -1361,6 +1361,10 @@ M.table_merge = function(base_table, override_table)
 end
 
 ---Evaluate the truthiness of a value, according to js/python rules.
+---Differences from Lua:
+---Strings are falsy if they are empty.
+---Numbers are falsy if 0 or below.
+---Tables are falsy if empty.
 ---@param value any
 ---@return boolean truthy
 M.truthy = function(value)

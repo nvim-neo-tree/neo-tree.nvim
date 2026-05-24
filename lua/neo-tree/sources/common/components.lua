@@ -443,6 +443,7 @@ end
 ---@field folder_empty_open string The icon to display to represent an empty but open folder.
 ---@field folder_open string The icon to display for an open folder.
 ---@field folder_closed string The icon to display for a closed folder.
+---@field selected string The icon to display for a closed folder.
 ---@field use_filtered_colors boolean Whether to use the same highlight as filtered_by when the item is filtered.
 ---@field provider neotree.IconProvider?
 
@@ -472,6 +473,17 @@ M.icon = function(config, node, state)
   if config.use_filtered_colors then
     local filtered_by = M.filtered_by(config, node, state)
     icon.highlight = filtered_by.highlight or icon.highlight --  prioritize filtered highlighting
+  end
+
+  if state.selected[node.id] then
+    ---@type neotree.Render.Node[]
+    return {
+      {
+        text = config.selected or "[x]",
+        highlight = highlights.SELECTED,
+      },
+      icon,
+    }
   end
 
   return icon

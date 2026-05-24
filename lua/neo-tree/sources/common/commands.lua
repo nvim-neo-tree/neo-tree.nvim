@@ -629,6 +629,28 @@ M.show_file_details = function(state)
   popups.alert("File Details", lines)
 end
 
+---@param state neotree.StateWithTree
+M.select = function(state)
+  local node = assert(state.tree:get_node())
+  state.selected[node.id] = not state.selected[node.id] or nil
+  renderer.redraw(state)
+end
+
+---@type neotree.TreeCommandVisual
+M.select_visual = function(state, selected_nodes)
+  for _, node in ipairs(selected_nodes) do
+    state.selected[node.id] = not state.selected[node.id] or nil
+  end
+  renderer.redraw(state)
+  state._skip_consuming_selection = true
+end
+
+M.clear_selection = function(state)
+  state.selected = {}
+  log.info("Cleared selection")
+  renderer.redraw(state)
+end
+
 ---Pastes all items from the clipboard to the current directory.
 ---@param callback fun(node: NuiTree.Node?, destination: string) The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
