@@ -277,6 +277,17 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
                              that is within the current working directory.
                              This will loop around if you are on the last one.
 
+<C-s>          = quick_jump: Enters a temporary "jump" mode where icons are
+                             replaced with jump labels. Inputting the labels
+                             will jump to the corresponding node, inputting
+                             otherwise will exit the mode.
+
+                             `config.jump_labels` sets what characters are used
+                             for jump labels (prioritized in the order listed),
+                             `config.on_jump` can either be "open_or_toggle"
+                             (default) or `fun(state, target_node)`, where
+                             `target_node` is the node that was jumped to.
+
 
 FILE ACTIONS                                            *neo-tree-file-actions*
 a    = add:                  Create a new file OR directory. Add a `/` to the
@@ -308,12 +319,14 @@ A    = add_directory:        Create a new directory, in this mode it does not
                              command. Also accepts `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
-                             Supports visual selection.
+
+                             Supports selection. ~
 
 T    = trash:                Trash the selected file or directory.
                              See |neo-tree-trash| to configure.
-                             Supports visual selection.
-                             Supports undo, depending on command used.
+
+                             Supports selection. ~
+                             Supports undo, depending on command used. ~
 
 u    = undo:                 Reverts the most recent undoable action.
 
@@ -344,10 +357,10 @@ b    = rename_basename:      Rename the selected file or directory without the
                              extension.
 
 y    = copy_to_clipboard:    Mark file to be copied.
-                             Supports visual selection.~
+                             Supports selection.~
 
 x    = cut_to_clipboard:     Mark file to be cut (moved).
-                             Supports visual selection.~
+                             Supports selection.~
 
 p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
 
@@ -361,16 +374,14 @@ m    = move:                 Move the selected file or directory.
                              Also accepts the optional `config.show_path` option
                              like the add file action.
 
-<C-s> = quick_jump           Enters a temporary "jump" mode where icons are
-                             replaced with jump labels. Inputting the labels
-                             will jump to the corresponding node, inputting
-                             otherwise will exit the mode.
+<tab>         = select       Toggles whether a node is considered "selected" for
+                             the next selection-supporting command Neo-tree
+                             performs. (e.g. delete/trash)
 
-                             `config.jump_labels` sets what characters are used
-                             for jump labels (prioritized in the order listed),
-                             `config.on_jump` can either be "open_or_toggle"
-                             (default) or `fun(state, target_node)`, where
-                             `target_node` is the node that was jumped to.
+                             See |neo-tree-custom-mappings-selection| for
+                             details.
+
+                             Supports visual selection. ~
 
 
 VIEW CHANGES                                            *neo-tree-view-changes*
@@ -557,16 +568,18 @@ specific to that source and will not work for others.
 
 
 CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
+                                            *neo-tree-custom-mappings-selection*
 
-If you want to create a mapping that supports visual mode, the way to do that
-is to add a second command where the name is the same as the normal mode
-command, but with `_visual` added to the end. Any mapping for this command will
-then work in either normal or visual mode.
+In neo-tree, nodes can be selected in 2 ways: either by visual selection in
+visual mode, or by tagging the nodes as "selected" with the `select` command.
 
-The `_visual` version of the command will be called with a second argument
-which is a list of the nodes that were selected when the command was called.
+To create a mapping that can operate on a selection of nodes, add a second
+command where the name is the same as the normal mode command, but with
+`_visual` added to the end. When selected nodes exist, the `_visual` version of
+the command will be called with a second argument - a list of the nodes that
+were selected when the command was called.
 
-For example, this is how the built-in `delete` command is defined:
+For example, this is approximately how the built-in `delete` command is defined:
 
 >lua
     M.delete = function(state, callback)
@@ -583,6 +596,9 @@ For example, this is how the built-in `delete` command is defined:
       fs_actions.delete_nodes(paths_to_delete, callback)
     end
 <
+
+Nodes tagged as selected will be unselected if the command completes without
+error.
 
 CUSTOM MAPPINGS WITH ARGUMENTS               *neo-tree-custom-mappings-args*
 

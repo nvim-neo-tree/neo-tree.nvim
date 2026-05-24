@@ -942,7 +942,12 @@ end
 local call_command = function(func, state, config, fallback, selected_nodes)
   state.config = config
   state.fallback = fallback
-  return func(state, selected_nodes)
+  if selected_nodes then
+    func(state, utils.unique(selected_nodes))
+    state.selected = {}
+  else
+    func(state)
+  end
 end
 
 ---@class neotree.State.ResolvedMapping
@@ -1017,9 +1022,9 @@ local set_buffer_mappings = function(state)
         handler = function()
           local selected_nodes = get_tagged_selected_nodes(state)
           if utils.truthy(selected_nodes) and vfunc and not is_selection_bind then
-            -- Use the selected nodes in the vfunc instead.
+            -- Use the visual-mode function with selected nodes instead.
             selected_nodes[#selected_nodes + 1] = state.tree:get_node()
-            call_command(vfunc, state, config, fallback, utils.unique(selected_nodes))
+            call_command(vfunc, state, config, fallback, selected_nodes)
           else
             call_command(func, state, config, fallback)
           end
@@ -1034,7 +1039,6 @@ local set_buffer_mappings = function(state)
             if not is_selection_bind then
               vim.list_extend(selected_nodes, get_tagged_selected_nodes(state))
             end
-            selected_nodes = utils.unique(selected_nodes)
             if not utils.truthy(selected_nodes) then
               return
             end

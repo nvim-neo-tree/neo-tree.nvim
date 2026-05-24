@@ -644,6 +644,12 @@ M.select_visual = function(state, selected_nodes)
   renderer.redraw(state)
 end
 
+M.clear_selection = function(state)
+  state.selected = {}
+  log.info("Cleared selection")
+  renderer.redraw(state)
+end
+
 ---Pastes all items from the clipboard to the current directory.
 ---@param callback fun(node: NuiTree.Node?, destination: string) The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
