@@ -195,7 +195,7 @@ are defined by default. All built-in commands are listed here but some are not
 mapped by default. See |neo-tree-custom-commands| for details on how to use them
 in a custom mapping.
 
-Note: The "selected" item is the line the cursor is currently on.
+Note: The "targeted" item is the one on the line the cursor is currently on.
 
 <             = prev_source: Switches to the previous source.
 
@@ -203,16 +203,14 @@ Note: The "selected" item is the line the cursor is currently on.
 
 <bs>          = navigate_up: Moves the root directory up one level.
 
-.             = set_root:    Changes the root directory to the currently
-                             selected folder.
+.             = set_root:    Changes the root directory to the targeted
+                             directory.
 
 <space>       = toggle_node  Expand or collapse a node with children, which
                              may be a directory or a nested file.
 
-<2-LeftMouse> = open:        Expand or collapse a folder. If a file is selected,
-                             open it in the window closest to the tree.
-
-<cr>          = open:        Same as above.
+<2-LeftMouse> = open:        Expand or collapse a directory, or open a file
+<cr>                         in the window closest to the tree.
 
 C             = close_node:  Close node if it is open, else close it's parent.
 
@@ -259,15 +257,15 @@ t             = open_tabnew: Same as open, but opens in a new tab.
                              |:drop| command with the |:tab| modifier.
 
 w = open_with_window_picker: Uses the `window-picker` plugin to select a window
-                             to open the selected node in. Requires that
+                             to open the targeted node in. Requires that
                              https://github.com/s1n7ax/nvim-window-picker
                              be installed.
 
-   split_with_window_picker: Same as `open_with_window_picker` but opens split
-                             in selected node instead.
+   split_with_window_picker: Same as `open_with_window_picker` but opens a split
+                             with the targeted node instead.
 
-  vsplit_with_window_picker: Same as `open_with_window_picker` but opens
-                             vertical split in selected node instead.
+  vsplit_with_window_picker: Same as `split_with_window_picker` but with a
+                             vertical split.
 
 [g      = prev_git_modified: Jump to the previous file reported by `git status`
                              that is within the current working directory.
@@ -307,7 +305,7 @@ a    = add:                  Create a new file OR directory. Add a `/` to the
                              `"none"`:     which is the default.
                              `"relative"`: shows the portion which is relative
                                          to the current root of the tree.
-                             `"absolute"`: is the full path to the current
+                             `"absolute"`: is the full path to the targeted
                                          directory.
 
                              The file path also supports BASH style brace
@@ -326,19 +324,20 @@ A    = add_directory:        Create a new directory, in this mode it does not
                              BASH style brace expansion as explained in `add`
                              command. Also accepts `config.show_path` options
 
-d    = delete:               Delete the selected file or directory.
+d    = delete:               Delete the targeted file/directory.
                              Supports selection. ~
 
-T    = trash:                Trash the selected file or directory.
+T    = trash:                Trash the targeted file/directory.
                              See |neo-tree-trash| to configure.
                              Supports selection. ~
                              Supports undo, depending on command used. ~
 
 u    = undo:                 Reverts the most recent undoable action.
 
-U    = restore_from_trash:   Restores selected file or directories when used on
+U    = restore_from_trash:   Restores the targeted file or directory when used on
                              items inside the trash folder. See |neo-tree-trash|
                              for supported OSs.
+                             Supports selection. ~
 
 i    = show_file_details:    Show file details in a popup window, such as size
                              and last modified date.
@@ -357,9 +356,9 @@ i    = show_file_details:    Show file details in a popup window, such as size
                              If the options are not set, they default to the
                              format string "%Y-%m-%d %I:%M %p".
 
-r    = rename:               Rename the selected file or directory.
+r    = rename:               Rename the targeted file or directory.
 
-b    = rename_basename:      Rename the selected file or directory without the
+b    = rename_basename:      Rename the targeted file or directory without the
                              extension.
 
 y    = copy_to_clipboard:    Mark file to be copied.
@@ -368,7 +367,8 @@ y    = copy_to_clipboard:    Mark file to be copied.
 x    = cut_to_clipboard:     Mark file to be cut (moved).
                              Supports selection.~
 
-p    = paste_from_clipboard: Copy/move each marked file to the selected folder.
+p    = paste_from_clipboard: Copy/move each marked file to the selected
+                             directory.
 
 <C-r> = clear_clipboard:     Clears the clipboard.
 
