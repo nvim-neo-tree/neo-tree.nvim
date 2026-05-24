@@ -290,6 +290,14 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
 
 
 FILE ACTIONS                                            *neo-tree-file-actions*
+
+<tab>         = select       Toggles whether a node is considered "selected" for
+                             the next selection-supporting command Neo-tree
+                             performs. (e.g. delete/trash) See
+                             |neo-tree-custom-mappings-selection| for
+                             details.
+                             Supports visual selection. ~
+
 a    = add:                  Create a new file OR directory. Add a `/` to the
                              end of the name to make a directory. This command
                              supports an optional `config.show_path` option
@@ -319,12 +327,10 @@ A    = add_directory:        Create a new directory, in this mode it does not
                              command. Also accepts `config.show_path` options
 
 d    = delete:               Delete the selected file or directory.
-
                              Supports selection. ~
 
 T    = trash:                Trash the selected file or directory.
                              See |neo-tree-trash| to configure.
-
                              Supports selection. ~
                              Supports undo, depending on command used. ~
 
@@ -373,16 +379,6 @@ c    = copy:                 Copy the selected file or directory.
 m    = move:                 Move the selected file or directory.
                              Also accepts the optional `config.show_path` option
                              like the add file action.
-
-<tab>         = select       Toggles whether a node is considered "selected" for
-                             the next selection-supporting command Neo-tree
-                             performs. (e.g. delete/trash)
-
-                             See |neo-tree-custom-mappings-selection| for
-                             details.
-
-                             Supports visual selection. ~
-
 
 VIEW CHANGES                                            *neo-tree-view-changes*
 H  = toggle_hidden:  Toggle whether hidden (filtered items) are shown or not.

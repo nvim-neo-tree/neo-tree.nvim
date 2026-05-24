@@ -84,6 +84,7 @@ local function create_state(tabid, sd, winid)
   ---private-ish
   ---@field orig_tree NuiTree?
   ---@field _ready boolean?
+  ---@field _skip_consuming_selection boolean?
   ---@field loading boolean?
   ---window
   ---@field window neotree.State.Window?

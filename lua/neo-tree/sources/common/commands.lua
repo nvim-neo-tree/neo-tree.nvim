@@ -642,6 +642,7 @@ M.select_visual = function(state, selected_nodes)
     state.selected[node.id] = not state.selected[node.id] or nil
   end
   renderer.redraw(state)
+  state._skip_consuming_selection = true
 end
 
 M.clear_selection = function(state)

@@ -944,7 +944,10 @@ local call_command = function(func, state, config, fallback, selected_nodes)
   state.fallback = fallback
   if selected_nodes then
     func(state, utils.unique(selected_nodes))
-    state.selected = {}
+    if not state._skip_consuming_selection then
+      state.selected = {}
+    end
+    state._skip_consuming_selection = false
   else
     func(state)
   end
