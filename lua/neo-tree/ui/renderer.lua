@@ -10,6 +10,7 @@ local keymap = require("nui.utils.keymap")
 local log = require("neo-tree.log")
 local windows = require("neo-tree.ui.windows")
 local nt = require("neo-tree")
+local _compat = require("neo-tree.utils._compat")
 
 local M = { resize_timer_interval = 50 }
 local ESC_KEY = utils.keycode("<ESC>")
@@ -1017,7 +1018,7 @@ local set_buffer_mappings = function(state)
   state.resolved_mappings = resolved_mappings
 end
 
-local function create_floating_window(state, win_options, bufname)
+local function create_floating_window(state, win_options)
   state.force_float = nil
   -- First get the default options for floating windows.
   local title = utils.resolve_config_option(state, "window.popup.title", function(current_state)
@@ -1033,10 +1034,12 @@ local function create_floating_window(state, win_options, bufname)
   win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
   win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
 
-  ---@class NuiPopup
   local win = NuiPopup(win_options)
+  win.bufnr = buffer
   win:mount()
+  ---@diagnostic disable-next-line: inject-field
   win.source_name = state.name
+  ---@diagnostic disable-next-line: inject-field
   win.original_options = state.window
   table.insert(floating_windows, win)
 
@@ -1048,20 +1051,23 @@ local function create_floating_window(state, win_options, bufname)
   state.winid = win.winid
   state.bufnr = win.bufnr
   log.debug("Created floating window with winid:", win.winid, " and bufnr:", win.bufnr)
-  vim.api.nvim_buf_set_name(state.bufnr, bufname)
 
   -- why is this necessary?
   vim.api.nvim_set_current_win(win.winid)
   return win
 end
 
+local autocmd = vim.api.nvim_create_autocmd
 ---Tracks position for the neo-tree bufnr
 ---@param nt_bufnr integer
 ---@param state neotree.State
-local attach_position_autocmds = function(nt_bufnr, state)
-  local autocmd = vim.api.nvim_create_autocmd
+local attach_position_autocmds = function(state)
+  local position_augroup = vim.api.nvim_create_augroup("NeoTreePosition", { clear = false })
   local wait_for_restore = true
+  local nt_bufnr = state.bufnr
   autocmd("BufDelete", {
+
+    group = position_augroup,
     buffer = nt_bufnr,
     callback = function(args)
       if args.buf == nt_bufnr then
@@ -1072,6 +1078,7 @@ local attach_position_autocmds = function(nt_bufnr, state)
 
   autocmd({ "CursorMoved", "ModeChanged", "WinScrolled" }, {
     buffer = nt_bufnr,
+    group = position_augroup,
     callback = function(args)
       if state.bufnr ~= args.buf then
         return
@@ -1089,6 +1096,7 @@ local attach_position_autocmds = function(nt_bufnr, state)
 
   autocmd({ "WinEnter" }, {
     buffer = nt_bufnr,
+    group = position_augroup,
     callback = function(args)
       M.position.restore_selection(state)
       if state.bufnr ~= args.buf then
@@ -1101,6 +1109,108 @@ local attach_position_autocmds = function(nt_bufnr, state)
     end,
   })
 end
+
+local local_options_set = {}
+
+local neotree_winhl =
+  "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
+if vim.version().minor >= 7 then
+  neotree_winhl = neotree_winhl .. ",WinSeparator:NeoTreeWinSeparator"
+end
+---@param win number
+---@param buf number
+local function set_neo_tree_options(win, buf)
+  vim.print({
+    "setting",
+    win,
+    buf,
+  })
+  if local_options_set[win] and local_options_set[win][buf] then
+    return
+  end
+  local wo_nt = _compat.wo[win][0]
+  -- vim.cmd([[
+  --   setlocal cursorline
+  --   setlocal cursorlineopt=line
+  --   setlocal nowrap
+  --   setlocal nolist nospell nonumber norelativenumber
+  --   ]])
+
+  wo_nt.cursorline = true
+  wo_nt.cursorlineopt = "line"
+  wo_nt.wrap = false
+  wo_nt.list = false
+  wo_nt.spell = false
+  wo_nt.number = false
+  wo_nt.relativenumber = false
+  wo_nt.colorcolumn = ""
+  wo_nt.signcolumn = "no"
+  wo_nt.winhighlight = neotree_winhl
+  local_options_set[win] = local_options_set[win] or {}
+  local_options_set[win][buf] = local_options_set[win][buf] or true
+end
+
+---@param win number
+---@param buf number
+local function set_neo_tree_popup_options(win, buf)
+  if local_options_set[win] and local_options_set[win][buf] then
+    return
+  end
+  if buf ~= 0 then
+    assert(vim.api.nvim_get_current_buf() == buf)
+  end
+  -- vim.cmd([[
+  -- s", "etlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
+  -- setlocal nolist nospell nonumber norelativenumber
+  -- ]])
+  local wo_nt_popup = _compat.wo[win][0]
+  wo_nt_popup.winhighlight = "Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder"
+  wo_nt_popup.list = false
+  wo_nt_popup.spell = false
+  wo_nt_popup.number = false
+  wo_nt_popup.relativenumber = false
+  local_options_set[win] = local_options_set[win] or {}
+  local_options_set[win][buf] = local_options_set[win][buf] or true
+end
+
+---Attaches autocmds that set options in any window containing a neo-tree buffer.
+M.setup_option_autocmds = function()
+  local option_augroup = vim.api.nvim_create_augroup("NeoTreeOptions", { clear = false })
+  autocmd({ "BufWinEnter", "BufEnter", "TabEnter", "WinEnter" }, {
+    group = option_augroup,
+    callback = function(args)
+      local win = vim.api.nvim_get_current_win()
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].filetype ~= "neo-tree" then
+        return
+      end
+      set_neo_tree_options(win, args.buf)
+    end,
+  })
+  autocmd({ "BufWinEnter", "BufEnter", "TabEnter", "WinEnter" }, {
+    group = option_augroup,
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].filetype ~= "neo-tree-popup" then
+        return
+      end
+      set_neo_tree_popup_options(win, buf)
+    end,
+  })
+end
+
+--todo: move to setup
+M.setup_option_autocmds()
+
+---@type vim.bo
+local neo_tree_buffer_options = {
+  buftype = "nofile",
+  swapfile = false,
+  filetype = "neo-tree",
+  modifiable = false,
+  undolevels = -1,
+}
 
 ---Tries to reuse a neo-tree buffer, or creates a new one.
 ---@param bufname string
@@ -1115,19 +1225,25 @@ local get_buffer = function(bufname, state)
       bufnr = 0
     end
   end
+
   if bufnr < 1 then
     bufnr = vim.api.nvim_create_buf(false, false)
     vim.api.nvim_buf_set_name(bufnr, bufname)
-    vim.bo[bufnr].buftype = "nofile"
-    vim.bo[bufnr].swapfile = false
-    vim.bo[bufnr].filetype = "neo-tree"
-    vim.bo[bufnr].modifiable = false
-    vim.bo[bufnr].undolevels = -1
-    attach_position_autocmds(bufnr, state)
+    local bo = vim.bo[bufnr]
+    for k, v in pairs(neo_tree_buffer_options) do
+      bo[k] = v
+    end
+    attach_position_autocmds(state)
   end
   return bufnr
 end
 
+local pos_to_splitdir = {
+  top = "above",
+  bottom = "below",
+}
+
+---@param state neotree.State
 M.acquire_window = function(state)
   if M.window_exists(state) then
     return state.winid
@@ -1147,22 +1263,12 @@ M.acquire_window = function(state)
   else
     size_opt, default_size = "window.width", "40"
   end
-  local win_options = {
+  local nui_win_options = {
     ns_id = highlights.ns_id,
     size = utils.resolve_config_option(state, size_opt, default_size),
     position = state.current_position,
     relative = relative,
-    buf_options = {
-      buftype = "nofile",
-      modifiable = false,
-      swapfile = false,
-      filetype = "neo-tree",
-      undolevels = -1,
-    },
-    win_options = {
-      colorcolumn = "",
-      signcolumn = "no",
-    },
+    buf_options = vim.deepcopy(neo_tree_buffer_options),
   }
 
   local event_args = {
@@ -1173,11 +1279,16 @@ M.acquire_window = function(state)
   }
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
 
-  local win
+  local new_win
+  local buf = get_buffer(bufname, state)
+  nui_win_options.bufnr = buf
+
+  local enter = not state._no_focus
+  state._no_focus = nil
   if state.current_position == "float" then
     M.close_all_floating_windows()
     M.close(state)
-    win = create_floating_window(state, win_options, bufname)
+    new_win = create_floating_window(state, nui_win_options)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
@@ -1187,7 +1298,7 @@ M.acquire_window = function(state)
       return
     end
     state.winid = winid
-    state.bufnr = get_buffer(bufname, state)
+    state.bufnr = buf
     vim.api.nvim_win_set_buf(state.winid, state.bufnr)
   else
     local close_old_window = function(new_winid)
@@ -1200,15 +1311,27 @@ M.acquire_window = function(state)
     local location = windows.get_location(state.current_position)
     if location.winid > 0 then
       close_old_window(location.winid)
-      state.bufnr = get_buffer(bufname, state)
+      state.bufnr = buf
       state.winid = location.winid
       vim.api.nvim_win_set_buf(state.winid, state.bufnr)
     else
       close_old_window()
-      win = NuiSplit(win_options)
-      win:mount()
-      state.bufnr = win.bufnr
-      state.winid = win.winid
+      new_win = NuiSplit(nui_win_options)
+      if not enter and vim.fn.has("nvim-0.10") == 1 then
+        -- hijack the window with a custom split method that doesn't emit winleave
+        local vertical = nui_win_options.position == "left" or nui_win_options.position == "right"
+        new_win.winid = vim.api.nvim_open_win(buf, false, {
+          win = -1,
+          vertical = vertical,
+          width = vertical and nui_win_options.size or nil,
+          height = not vertical and nui_win_options.size or nil,
+          ---@diagnostic disable-next-line: assign-type-mismatch
+          split = pos_to_splitdir[nui_win_options.position] or nui_win_options.position,
+        })
+      end
+      new_win:mount()
+      state.bufnr = new_win.bufnr
+      state.winid = new_win.winid
       location.winid = state.winid
     end
     location.source = state.name
@@ -1224,11 +1347,10 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
 
-  if win then
-    vim.api.nvim_buf_set_name(state.bufnr, bufname)
+  if new_win then
     vim.api.nvim_set_current_win(state.winid)
     -- Used to track the position of the cursor within the tree as it gains and loses focus
-    attach_position_autocmds(state.bufnr, state)
+    attach_position_autocmds(state)
   end
 
   set_buffer_mappings(state)

@@ -1,4 +1,5 @@
 local compat = {}
+local api = vim.api
 local uv = vim.uv or vim.loop
 ---@return boolean
 compat.noref = function()
@@ -235,5 +236,40 @@ function compat.fs_normalize(path, opts)
 
   return path
 end
+
+---Backported since older vim.wo doesn't allow window-buffer-local options
+local function new_win_opt_accessor(winid, bufnr)
+  -- TODO(lewis6991): allow passing both buf and win to nvim_get_option_value
+  if bufnr ~= nil and bufnr ~= 0 then
+    error("only bufnr=0 is supported")
+  end
+
+  return setmetatable({}, {
+    __index = function(_, k)
+      if bufnr == nil and type(k) == "number" then
+        if winid == nil then
+          return new_win_opt_accessor(k)
+        else
+          return new_win_opt_accessor(winid, k)
+        end
+      end
+
+      return api.nvim_get_option_value(k, {
+        scope = bufnr and "local" or nil,
+        win = winid or 0,
+      })
+    end,
+
+    __newindex = function(_, k, v)
+      return api.nvim_set_option_value(k, v, {
+        scope = bufnr and "local" or nil,
+        win = winid or 0,
+      })
+    end,
+  })
+end
+
+---@type vim.wo
+compat.wo = new_win_opt_accessor()
 
 return compat

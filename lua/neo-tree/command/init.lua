@@ -36,6 +36,7 @@ local function do_show_or_focus(args, state, force_navigate)
       return
     end
     -- close_other_sources()
+    state._no_focus = true
     local current_win = vim.api.nvim_get_current_win()
     manager.navigate(state, args.dir, args.reveal_file, function()
       -- navigate changes the window to neo-tree, so just quickly hop back to the original window
