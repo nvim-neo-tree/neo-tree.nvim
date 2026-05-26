@@ -96,5 +96,7 @@ cc._add_common_commands(M, "^cancel$") -- cancel
 cc._add_common_commands(M, "help") -- help commands
 cc._add_common_commands(M, "with_window_picker$") -- open using window picker
 cc._add_common_commands(M, "^toggle_auto_expand_width$")
+cc._add_common_commands(M, "quick_jump")
+cc._add_common_commands(M, "select")
 
 return M

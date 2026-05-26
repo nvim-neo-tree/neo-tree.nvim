@@ -222,6 +222,7 @@ local config = {
       folder_open = "",
       folder_empty = "󰉖",
       folder_empty_open = "󰷏",
+      selected = "󰐾",
       use_filtered_colors = true, -- Whether to use a different highlight when the file is filtered (hidden, dotfile, etc.).
       -- The next two settings are only a fallback, if you use nvim-web-devicons and configure default icons there
       -- then these will never be used.
@@ -414,6 +415,18 @@ local config = {
       nowait = true,
     },
     mappings = {
+      ["<C-s>"] = {
+        "quick_jump",
+        config = {
+          -- This will automaticly open / toggle the target node after jumping.
+          -- You can set it to `nil` to perform only the jump action,
+          -- or write your own callback function.
+          on_jump = "open_or_toggle",
+          jump_labels = "jfkdlsahgnuvrbytmiceoxwpqz",
+        }
+      },
+      ["<Tab>"] = "select",
+      ["<C-;>"] = "clear_selection",
       ["<space>"] = {
           "toggle_node",
           nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use
@@ -766,7 +779,7 @@ local config = {
       -- Parameter = { icon = ' ', hl = '@parameter' },
       -- StaticMethod = { icon = '󰠄 ', hl = 'Function' },
       -- Macro = { icon = ' ', hl = 'Macro' },
-    }
+    },
   },
   example = {
     renderers = {
