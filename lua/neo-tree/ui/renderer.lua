@@ -1159,11 +1159,6 @@ end
 ---@param win number
 ---@param buf number
 local function set_neo_tree_options(win, buf)
-  vim.print({
-    "setting",
-    win,
-    buf,
-  })
   if local_options_set[win] and local_options_set[win][buf] then
     return
   end
@@ -1356,39 +1351,6 @@ M.acquire_window = function(state)
       state.bufnr = buf
       state.winid = location.winid
       vim.api.nvim_win_set_buf(state.winid, state.bufnr)
-    elseif no_focus and compat.has_split_win() and nofocus_split_map[state.current_position] then
-      -- Use nvim_open_win with enter=false (Neovim 0.10+) to create the split
-      -- without stealing focus. This avoids triggering WinEnter/BufEnter events
-      -- for the neo-tree window entirely.
-      close_old_window()
-      state.bufnr = vim.api.nvim_create_buf(false, true)
-      local size = utils.resolve_config_option(state, size_opt, default_size)
-      if type(size) == "string" then
-        size = tonumber(size)
-      end
-      local win_config = {
-        split = nofocus_split_map[state.current_position],
-        win = 0,
-      }
-      if state.current_position == "left" or state.current_position == "right" then
-        win_config.width = size or 40
-      else
-        win_config.height = size or 15
-      end
-      state.winid = vim.api.nvim_open_win(state.bufnr, false, win_config)
-      location.winid = state.winid
-      -- Apply buffer and window options that NuiSplit would normally set
-      for k, v in pairs(win_options.buf_options) do
-        vim.api.nvim_set_option_value(k, v, { buf = state.bufnr })
-      end
-      for k, v in pairs(win_options.win_options) do
-        vim.api.nvim_set_option_value(k, v, { win = state.winid })
-      end
-      if win_options.ns_id then
-        vim.api.nvim_win_set_hl_ns(state.winid, win_options.ns_id)
-      end
-      -- Mark as a "win" so the post-setup block runs (bufname, autocmds, etc.)
-      win = { winid = state.winid, bufnr = state.bufnr }
     else
       close_old_window()
       new_win = NuiSplit(nui_win_options)
@@ -1408,10 +1370,6 @@ M.acquire_window = function(state)
       state.bufnr = new_win.bufnr
       state.winid = new_win.winid
       location.winid = state.winid
-      -- Restore focus if no_focus is set (fallback for nvim < 0.10)
-      if saved_win and vim.api.nvim_win_is_valid(saved_win) then
-        vim.api.nvim_set_current_win(saved_win)
-      end
     end
     location.source = state.name
   end
