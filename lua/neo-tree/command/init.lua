@@ -16,6 +16,40 @@ M._last = {
   position = nil,
 }
 
+---@generic T
+---@param tabid integer?
+---@param callback fun(): T
+---@return T
+local function with_tab_context(tabid, callback)
+  if not tabid or tabid == vim.api.nvim_get_current_tabpage() then
+    return callback()
+  end
+
+  if not vim.api.nvim_tabpage_is_valid(tabid) then
+    error("Invalid tabid: " .. tostring(tabid))
+  end
+
+  local original_tabid = vim.api.nvim_get_current_tabpage()
+  local original_winid = vim.api.nvim_get_current_win()
+  local ok, result = pcall(function()
+    vim.api.nvim_set_current_tabpage(tabid)
+    return callback()
+  end)
+
+  if vim.api.nvim_tabpage_is_valid(original_tabid) then
+    pcall(vim.api.nvim_set_current_tabpage, original_tabid)
+    if vim.api.nvim_win_is_valid(original_winid) then
+      pcall(vim.api.nvim_set_current_win, original_winid)
+    end
+  end
+
+  if not ok then
+    error(result)
+  end
+
+  return result
+end
+
 local function do_show_or_focus(args, state, force_navigate)
   local window_exists = renderer.window_exists(state)
 
@@ -36,10 +70,13 @@ local function do_show_or_focus(args, state, force_navigate)
       return
     end
     -- close_other_sources()
+    local current_tab = vim.api.nvim_get_current_tabpage()
     local current_win = vim.api.nvim_get_current_win()
     manager.navigate(state, args.dir, args.reveal_file, function()
       -- navigate changes the window to neo-tree, so just quickly hop back to the original window
-      vim.api.nvim_set_current_win(current_win)
+      if vim.api.nvim_get_current_tabpage() == current_tab and vim.api.nvim_win_is_valid(current_win) then
+        vim.api.nvim_set_current_win(current_win)
+      end
     end, false)
   elseif args.action == "focus" then
     -- "focus" mean open and jump to the window if closed, and just focus it if already opened
@@ -103,6 +140,7 @@ end
 ---@field reveal_force_cwd boolean? Whether to always change directories when a reveal file is outside the cwd.
 ---@field dir string? The root directory to set.
 ---@field git_base string? The git base used for diff
+---@field tabid integer? The tabpage id to run the command against for sidebar positions.
 
 ---@class (partial) neotree.command.execute.StateConfigOverride : neotree.Config.Filesystem, neotree.Config.Buffers, neotree.Config.GitStatus, neotree.Config.DocumentSymbols
 
@@ -112,6 +150,7 @@ end
 M.execute = function(args, state_config_override)
   local nt = require("neo-tree")
   nt.ensure_config()
+  local current_tabid = vim.api.nvim_get_current_tabpage()
 
   if args.source == "migrations" then
     require("neo-tree.setup.deprecations").show_migrations()
@@ -122,11 +161,13 @@ M.execute = function(args, state_config_override)
 
   -- handle close action, which can specify a source and/or position
   if args.action == "close" then
-    if args.source then
-      manager.close(args.source, args.position)
-    else
-      manager.close_all(args.position)
-    end
+    with_tab_context(args.tabid, function()
+      if args.source then
+        manager.close(args.source, args.position)
+      else
+        manager.close_all(args.position)
+      end
+    end)
     return
   end
 
@@ -160,86 +201,94 @@ M.execute = function(args, state_config_override)
   end
 
   -- Now get the correct state
-  ---@type neotree.State
-  local state
   local requested_position = args.position or nt.config[args.source].window.position
-  if requested_position == "current" then
-    local winid = vim.api.nvim_get_current_win()
-    state = manager.get_state(args.source, nil, winid)
-    if state_config_override then
-      state = manager._change_state(args.source, nil, winid, state_config_override)
-    end
-  else
-    state = manager.get_state(args.source, nil, nil)
-    if state_config_override then
-      state = manager._change_state(args.source, nil, nil, state_config_override)
-    end
+  if requested_position == "current" and args.tabid and args.tabid ~= current_tabid then
+    error("tabid can only target sidebar positions; position=current must run in the current tab")
   end
 
-  -- Next handle toggle, the rest is irrelevant if there is a window to toggle
-  if args.toggle then
-    if renderer.close(state) then
-      -- It was open, and now it's not.
-      return
-    end
-  end
-
-  -- Handle position override
-  if args.position then
-    state.current_position = args.position
-  end
-
-  -- Handle setting directory if requested
-  local path_changed = false
-  if utils.truthy(args.dir) then
-    -- Root paths on Windows have 3 characters ("C:\")
-    local root_len = vim.fn.has("win32") == 1 and 3 or 1
-    if #args.dir > root_len and args.dir:sub(-1) == utils.path_separator then
-      args.dir = args.dir:sub(1, -2)
-    end
-    path_changed = state.path ~= args.dir
-  end
-
-  -- Handle setting git ref
-  local git_base_changed = false
-  if utils.truthy(args.git_base) then
-    state.git_base_by_worktree = state.git_base_by_worktree or {}
-    local path = args.dir or state.path
-    local worktree_root = git.find_worktree_info(path)
-    if worktree_root then
-      local prev_git_base = state.git_base_by_worktree[worktree_root]
-      state.git_base_by_worktree[worktree_root] = args.git_base
-      git_base_changed = args.git_base ~= prev_git_base
-    end
-  end
-
-  -- Handle source selector option
-  state.enable_source_selector = args.selector
-
-  -- Handle reveal logic
-  args.reveal = args.reveal
-    or args.reveal_force_cwd
-    -- implied reveal if follow_current_file
-    or args.reveal == nil and state.follow_current_file and state.follow_current_file.enabled
-  local has_reveal_file = utils.truthy(args.reveal_file)
-  if args.reveal and not has_reveal_file then
-    args.reveal_file = manager.get_path_to_reveal()
-    has_reveal_file = utils.truthy(args.reveal_file)
+  local path_to_reveal_from_current = nil
+  if not utils.truthy(args.reveal_file) then
+    path_to_reveal_from_current = manager.get_path_to_reveal()
   end
 
   -- All set, now show or focus the window
-  local force_navigate = path_changed or has_reveal_file or git_base_changed or state.dirty
-  --if position_changed and args.position ~= "current" and current_position ~= "current" then
-  --  manager.close(args.source)
-  --end
-  if has_reveal_file then
-    handle_reveal(args, state)
-    return
-  end
-  if not args.dir then
-    args.dir = state.path
-  end
-  do_show_or_focus(args, state, force_navigate)
+  with_tab_context(args.tabid, function()
+    ---@type neotree.State
+    local state
+    if requested_position == "current" then
+      local winid = vim.api.nvim_get_current_win()
+      state = manager.get_state(args.source, nil, winid)
+      if state_config_override then
+        state = manager._change_state(args.source, nil, winid, state_config_override)
+      end
+    else
+      state = manager.get_state(args.source, nil, nil)
+      if state_config_override then
+        state = manager._change_state(args.source, nil, nil, state_config_override)
+      end
+    end
+
+    -- Handle reveal logic
+    args.reveal = args.reveal
+      or args.reveal_force_cwd
+      -- implied reveal if follow_current_file
+      or args.reveal == nil and state.follow_current_file and state.follow_current_file.enabled
+    local has_reveal_file = utils.truthy(args.reveal_file)
+    if args.reveal and not has_reveal_file then
+      args.reveal_file = path_to_reveal_from_current
+      has_reveal_file = utils.truthy(args.reveal_file)
+    end
+
+    -- Next handle toggle, the rest is irrelevant if there is a window to toggle
+    if args.toggle then
+      if renderer.close(state) then
+        -- It was open, and now it's not.
+        return
+      end
+    end
+
+    -- Handle position override
+    if args.position then
+      state.current_position = args.position
+    end
+
+    -- Handle setting directory if requested
+    local path_changed = false
+    if utils.truthy(args.dir) then
+      -- Root paths on Windows have 3 characters ("C:\")
+      local root_len = vim.fn.has("win32") == 1 and 3 or 1
+      if #args.dir > root_len and args.dir:sub(-1) == utils.path_separator then
+        args.dir = args.dir:sub(1, -2)
+      end
+      path_changed = state.path ~= args.dir
+    end
+
+    -- Handle setting git ref
+    local git_base_changed = false
+    if utils.truthy(args.git_base) then
+      state.git_base_by_worktree = state.git_base_by_worktree or {}
+      local path = args.dir or state.path
+      local worktree_root = git.find_worktree_info(path)
+      if worktree_root then
+        local prev_git_base = state.git_base_by_worktree[worktree_root]
+        state.git_base_by_worktree[worktree_root] = args.git_base
+        git_base_changed = args.git_base ~= prev_git_base
+      end
+    end
+
+    -- Handle source selector option
+    state.enable_source_selector = args.selector
+
+    local force_navigate = path_changed or has_reveal_file or git_base_changed or state.dirty
+    if has_reveal_file then
+      handle_reveal(args, state)
+      return
+    end
+    if not args.dir then
+      args.dir = state.path
+    end
+    do_show_or_focus(args, state, force_navigate)
+  end)
 end
 
 ---Parses and executes the command line. Use execute(args) instead.
