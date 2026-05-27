@@ -5,6 +5,28 @@ local kinds = require("neo-tree.sources.document_symbols.lib.kinds")
 
 local M = {}
 
+local ignore_kinds = {}
+
+--- Filter out symbols whose kind matches an ignore set.
+--- @param symbols table[] list of symbol nodes
+--- @param ignore table<string,true>|nil lowercase kind name → true; nil or empty returns symbols as-is
+local function filter_symbols(symbols, ignore)
+  if not ignore or vim.tbl_isempty(ignore) then
+    return symbols
+  end
+  local out = {}
+  for _, s in ipairs(symbols) do
+    local label = s.extra and s.extra.kind and s.extra.kind.name
+    if not label or not ignore[label:lower()] then
+      if s.children then
+        s.children = filter_symbols(s.children, ignore) -- mutates in place
+      end
+      out[#out + 1] = s
+    end
+  end
+  return out
+end
+
 ---@alias Loc integer[] a location in a buffer {row, col}, 0-indexed
 ---@alias LocRange { start: Loc, ["end"]: Loc } a range consisting of two loc
 
@@ -146,6 +168,7 @@ local on_lsp_resp = function(lsp_resp, state)
     for i, resp_node in ipairs(client_result) do
       table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state, "/"))
     end
+    symbol_list = filter_symbols(symbol_list, ignore_kinds)
 
     -- add the parsed response to the tree
     local splits = vim.split(bufname, "/")
@@ -212,6 +235,14 @@ end
 M.setup = function(config)
   filters.setup(config.client_filters)
   kinds.setup(config.custom_kinds, config.kinds)
+  ignore_kinds = {}
+  for _, k in ipairs(config.ignore_symbols or {}) do
+    if type(k) == "string" and k ~= "" then
+      ignore_kinds[k:lower()] = true
+    end
+  end
 end
+
+M._filter_symbols = filter_symbols
 
 return M

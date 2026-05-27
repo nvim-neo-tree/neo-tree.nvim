@@ -699,6 +699,7 @@ local config = {
     follow_cursor = false,
     follow_tree_cursor = false, -- Automatically show symbol location when moving cursor in the tree
     client_filters = "first",
+    ignore_symbols = {}, -- LSP symbol kind names to hide, e.g. { "Variable", "Field" }
     renderers = {
       root = {
         {"indent"},
