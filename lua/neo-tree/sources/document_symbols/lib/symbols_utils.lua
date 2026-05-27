@@ -7,6 +7,9 @@ local M = {}
 
 local ignore_kinds = {}
 
+--- Filter out symbols whose kind matches an ignore set.
+--- @param symbols table[] list of symbol nodes
+--- @param ignore table<string,true>|nil lowercase kind name → true; nil or empty returns symbols as-is
 local function filter_symbols(symbols, ignore)
   if not ignore or vim.tbl_isempty(ignore) then
     return symbols

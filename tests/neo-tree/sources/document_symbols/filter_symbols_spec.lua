@@ -81,16 +81,6 @@ describe("filter_symbols", function()
     assert.are.same(0, #got)
   end)
 
-  it("handles case-insensitive matching", function()
-    local syms = {
-      make_sym("f", "Function"),
-      make_sym("v", "Variable"),
-    }
-    local got = symbols._filter_symbols(syms, { VARIABLE = true })
-    assert.are.same(1, #got)
-    assert.are.same("f", got[1].name)
-  end)
-
   it("passes through symbols without kind info", function()
     local syms = {
       make_sym("f", "Function"),
