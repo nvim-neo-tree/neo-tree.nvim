@@ -1073,8 +1073,8 @@ local function create_floating_window(state, win_options)
   win_options.position = utils.resolve_config_option(state, "window.popup.position", "50%")
   win_options.border = utils.resolve_config_option(state, "window.popup.border", b)
 
+  win_options.bufnr = state.bufnr
   local win = NuiPopup(win_options)
-  win.bufnr = buffer
   win:mount()
   ---@diagnostic disable-next-line: inject-field
   win.source_name = state.name
@@ -1103,7 +1103,8 @@ local autocmd = vim.api.nvim_create_autocmd
 local attach_position_autocmds = function(state)
   local position_augroup = vim.api.nvim_create_augroup("NeoTreePosition", { clear = false })
   local wait_for_restore = true
-  local nt_bufnr = state.bufnr
+  local nt_bufnr = assert(state.bufnr)
+
   autocmd("BufDelete", {
 
     group = position_augroup,
@@ -1246,11 +1247,23 @@ local neo_tree_buffer_options = {
   undolevels = -1,
 }
 
+local state_bufname = function(state)
+  return string.format("neo-tree %s [%s]", state.name, state.id)
+end
+local setup_buffer = function(state, bufnr)
+  vim.api.nvim_buf_set_name(bufnr, state_bufname(state))
+  local bo = vim.bo[bufnr]
+  for k, v in pairs(neo_tree_buffer_options) do
+    bo[k] = v
+  end
+end
+
 ---Tries to reuse a neo-tree buffer, or creates a new one.
----@param bufname string
 ---@param state neotree.State
-local get_buffer = function(bufname, state)
-  local bufnr = vim.fn.bufnr(bufname)
+---@return integer bufnr
+---@nodiscard
+local get_buffer = function(state)
+  local bufnr = vim.fn.bufnr(state_bufname(state))
   if bufnr > 0 then
     if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
       return bufnr
@@ -1262,12 +1275,7 @@ local get_buffer = function(bufname, state)
 
   if bufnr < 1 then
     bufnr = vim.api.nvim_create_buf(false, false)
-    vim.api.nvim_buf_set_name(bufnr, bufname)
-    local bo = vim.bo[bufnr]
-    for k, v in pairs(neo_tree_buffer_options) do
-      bo[k] = v
-    end
-    attach_position_autocmds(state)
+    setup_buffer(state, bufnr)
   end
   return bufnr
 end
@@ -1286,14 +1294,10 @@ M.acquire_window = function(state)
   -- used by tests to determine if the tree is ready for testing
   state._ready = false
 
-  -- Check the no-focus flag set by command/init.lua action="show".
-  local no_focus = state._no_focus == true
-
   local default_position = utils.resolve_config_option(state, "window.position", "left")
   local relative = utils.resolve_config_option(state, "window.relative", "editor")
   state.current_position = state.current_position or default_position
 
-  local bufname = string.format("neo-tree %s [%s]", state.name, state.id)
   local size_opt, default_size
   if state.current_position == "top" or state.current_position == "bottom" then
     size_opt, default_size = "window.height", "15"
@@ -1317,14 +1321,14 @@ M.acquire_window = function(state)
   events.fire_event(events.NEO_TREE_WINDOW_BEFORE_OPEN, event_args)
 
   local new_win
-  local buf = get_buffer(bufname, state)
-  nui_win_options.bufnr = buf
 
+  -- Check the no-focus flag set by command/init.lua action="show".
   local enter = not state._no_focus
   state._no_focus = nil
   if state.current_position == "float" then
     M.close_all_floating_windows()
     M.close(state)
+    state.bufnr = get_buffer(state)
     new_win = create_floating_window(state, nui_win_options)
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
@@ -1335,7 +1339,7 @@ M.acquire_window = function(state)
       return
     end
     state.winid = winid
-    state.bufnr = buf
+    state.bufnr = get_buffer(state)
     vim.api.nvim_win_set_buf(state.winid, state.bufnr)
   else
     local close_old_window = function(new_winid)
@@ -1348,16 +1352,20 @@ M.acquire_window = function(state)
     local location = windows.get_location(state.current_position)
     if location.winid > 0 then
       close_old_window(location.winid)
-      state.bufnr = buf
+      state.bufnr = get_buffer(state)
       state.winid = location.winid
       vim.api.nvim_win_set_buf(state.winid, state.bufnr)
     else
       close_old_window()
       new_win = NuiSplit(nui_win_options)
+      ---NuiSplit does not have a way to pass in a custom buffer. Take the one from nuisplit
+      setup_buffer(state, new_win.bufnr)
+      state.bufnr = new_win.bufnr
+
       if not enter and vim.fn.has("nvim-0.10") == 1 then
         -- hijack the window with a custom split method that doesn't emit winleave
         local vertical = nui_win_options.position == "left" or nui_win_options.position == "right"
-        new_win.winid = vim.api.nvim_open_win(buf, false, {
+        new_win.winid = vim.api.nvim_open_win(state.bufnr, false, {
           win = -1,
           vertical = vertical,
           width = vertical and nui_win_options.size or nil,
@@ -1384,10 +1392,8 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
 
-  if new_win then
+  if new_win and enter then
     vim.api.nvim_set_current_win(state.winid)
-    -- Used to track the position of the cursor within the tree as it gains and loses focus
-    attach_position_autocmds(state)
   end
 
   set_buffer_mappings(state)

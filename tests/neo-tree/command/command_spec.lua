@@ -205,7 +205,7 @@ describe("Command", function()
             run_show_command(cmd, expected_tree_node)
             return true
           end)
-      end)
+        end)
 
         it("`:Neotree show` should not trigger WinLeave on the current window", function()
           local testfile = fs_tree.lookup["topfile1"].abspath
