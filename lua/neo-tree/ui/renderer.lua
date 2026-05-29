@@ -1087,23 +1087,17 @@ local function create_floating_window(state, win_options)
       win:unmount()
     end)
   end, { once = true })
-  state.winid = win.winid
-  state.bufnr = win.bufnr
   log.debug("Created floating window with winid:", win.winid, " and bufnr:", win.bufnr)
-
-  -- why is this necessary?
-  vim.api.nvim_set_current_win(win.winid)
   return win
 end
 
 local autocmd = vim.api.nvim_create_autocmd
 ---Tracks position for the neo-tree bufnr
----@param nt_bufnr integer
 ---@param state neotree.State
-local attach_position_autocmds = function(state)
+---@param nt_bufnr integer
+local attach_position_autocmds = function(state, nt_bufnr)
   local position_augroup = vim.api.nvim_create_augroup("NeoTreePosition", { clear = false })
   local wait_for_restore = true
-  local nt_bufnr = assert(state.bufnr)
 
   autocmd("BufDelete", {
 
@@ -1120,7 +1114,7 @@ local attach_position_autocmds = function(state)
     buffer = nt_bufnr,
     group = position_augroup,
     callback = function(args)
-      if state.bufnr ~= args.buf then
+      if nt_bufnr ~= args.buf then
         return
       end
 
@@ -1138,8 +1132,11 @@ local attach_position_autocmds = function(state)
     buffer = nt_bufnr,
     group = position_augroup,
     callback = function(args)
+      if not state.winid then
+        return
+      end
       M.position.restore_selection(state)
-      if state.bufnr ~= args.buf then
+      if nt_bufnr ~= args.buf then
         wait_for_restore = true
         return
       end
@@ -1216,21 +1213,13 @@ M.setup_option_autocmds = function()
     callback = function(args)
       local win = vim.api.nvim_get_current_win()
       local buf = vim.api.nvim_win_get_buf(win)
-      if vim.bo[buf].filetype ~= "neo-tree" then
-        return
+      local ft = vim.bo[buf].filetype
+      if ft == "neo-tree" then
+        set_neo_tree_options(win, args.buf)
+      elseif ft == "neo-tree-popup" then
+        set_neo_tree_options(win, args.buf)
       end
       set_neo_tree_options(win, args.buf)
-    end,
-  })
-  autocmd({ "BufWinEnter", "BufEnter", "TabEnter", "WinEnter" }, {
-    group = option_augroup,
-    callback = function()
-      local win = vim.api.nvim_get_current_win()
-      local buf = vim.api.nvim_win_get_buf(win)
-      if vim.bo[buf].filetype ~= "neo-tree-popup" then
-        return
-      end
-      set_neo_tree_popup_options(win, buf)
     end,
   })
 end
@@ -1256,6 +1245,7 @@ local setup_buffer = function(state, bufnr)
   for k, v in pairs(neo_tree_buffer_options) do
     bo[k] = v
   end
+  attach_position_autocmds(state, bufnr)
 end
 
 ---Tries to reuse a neo-tree buffer, or creates a new one.
@@ -1330,6 +1320,7 @@ M.acquire_window = function(state)
     M.close(state)
     state.bufnr = get_buffer(state)
     new_win = create_floating_window(state, nui_win_options)
+    state.winid = new_win.winid
   elseif state.current_position == "current" then
     -- state.id is always the window id or tabnr that this state was created for
     -- in the case of a position = current state object, it will be the window id
