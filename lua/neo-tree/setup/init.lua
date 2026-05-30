@@ -618,6 +618,7 @@ M.merge_config = function(user_config)
   end
 
   require("neo-tree.clipboard").setup(M.config.clipboard)
+  require("neo-tree.ui.renderer").setup_option_autocmds()
 
   return M.config
 end

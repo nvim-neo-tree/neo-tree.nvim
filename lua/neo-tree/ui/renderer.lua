@@ -1222,9 +1222,6 @@ M.setup_option_autocmds = function()
   })
 end
 
---todo: move to setup
-M.setup_option_autocmds()
-
 ---@type vim.bo
 local neo_tree_buffer_options = {
   buftype = "nofile",
