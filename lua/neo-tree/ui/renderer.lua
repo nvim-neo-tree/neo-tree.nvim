@@ -3,7 +3,6 @@ local NuiTree = require("nui.tree")
 local NuiSplit = require("nui.split")
 local NuiPopup = require("nui.popup")
 local utils = require("neo-tree.utils")
-local compat = require("neo-tree.utils._compat")
 local highlights = require("neo-tree.ui.highlights")
 local popups = require("neo-tree.ui.popups")
 local events = require("neo-tree.events")
@@ -937,7 +936,7 @@ local get_tagged_selected_nodes = function(state)
 end
 
 ---@param func function command
----@param state neotree.StateWithTree
+---@param state neotree.State
 ---@param config table
 ---@param fallback string
 ---@param selected_nodes NuiTree.Node[]?
@@ -1094,10 +1093,10 @@ end
 local autocmd = vim.api.nvim_create_autocmd
 ---Tracks position for the neo-tree bufnr
 ---@param state neotree.State
----@param nt_bufnr integer
-local attach_position_autocmds = function(state, nt_bufnr)
+local attach_position_autocmds = function(state)
   local position_augroup = vim.api.nvim_create_augroup("NeoTreePosition", { clear = false })
   local wait_for_restore = true
+  local nt_bufnr = state.bufnr
 
   autocmd("BufDelete", {
 
@@ -1217,9 +1216,8 @@ M.setup_option_autocmds = function()
       if ft == "neo-tree" then
         set_neo_tree_options(win, args.buf)
       elseif ft == "neo-tree-popup" then
-        set_neo_tree_options(win, args.buf)
+        set_neo_tree_popup_options(win, args.buf)
       end
-      set_neo_tree_options(win, args.buf)
     end,
   })
 end
@@ -1239,35 +1237,33 @@ local neo_tree_buffer_options = {
 local state_bufname = function(state)
   return string.format("neo-tree %s [%s]", state.name, state.id)
 end
-local setup_buffer = function(state, bufnr)
+local setup_buffer = function(state)
+  local bufnr = assert(state.bufnr, "state needs a buffer")
   vim.api.nvim_buf_set_name(bufnr, state_bufname(state))
   local bo = vim.bo[bufnr]
   for k, v in pairs(neo_tree_buffer_options) do
     bo[k] = v
   end
-  attach_position_autocmds(state, bufnr)
+  set_buffer_mappings(state)
 end
 
 ---Tries to reuse a neo-tree buffer, or creates a new one.
 ---@param state neotree.State
----@return integer bufnr
----@nodiscard
-local get_buffer = function(state)
+local assign_buffer = function(state)
   local bufnr = vim.fn.bufnr(state_bufname(state))
   if bufnr > 0 then
-    if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
-      return bufnr
+    if vim.api.nvim_buf_is_loaded(bufnr) then
+      state.bufnr = bufnr
+      return
     else
       pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
       bufnr = 0
     end
   end
 
-  if bufnr < 1 then
-    bufnr = vim.api.nvim_create_buf(false, false)
-    setup_buffer(state, bufnr)
-  end
-  return bufnr
+  bufnr = vim.api.nvim_create_buf(false, false)
+  state.bufnr = bufnr
+  setup_buffer(state)
 end
 
 local pos_to_splitdir = {
@@ -1318,7 +1314,7 @@ M.acquire_window = function(state)
   if state.current_position == "float" then
     M.close_all_floating_windows()
     M.close(state)
-    state.bufnr = get_buffer(state)
+    assign_buffer(state)
     new_win = create_floating_window(state, nui_win_options)
     state.winid = new_win.winid
   elseif state.current_position == "current" then
@@ -1330,7 +1326,7 @@ M.acquire_window = function(state)
       return
     end
     state.winid = winid
-    state.bufnr = get_buffer(state)
+    assign_buffer(state)
     vim.api.nvim_win_set_buf(state.winid, state.bufnr)
   else
     local close_old_window = function(new_winid)
@@ -1343,15 +1339,15 @@ M.acquire_window = function(state)
     local location = windows.get_location(state.current_position)
     if location.winid > 0 then
       close_old_window(location.winid)
-      state.bufnr = get_buffer(state)
+      assign_buffer(state)
       state.winid = location.winid
       vim.api.nvim_win_set_buf(state.winid, state.bufnr)
     else
       close_old_window()
       new_win = NuiSplit(nui_win_options)
-      ---NuiSplit does not have a way to pass in a custom buffer. Take the one from nuisplit
-      setup_buffer(state, new_win.bufnr)
       state.bufnr = new_win.bufnr
+      ---NuiSplit does not have a way to pass in a custom buffer. Take the one from nuisplit
+      setup_buffer(state)
 
       if not enter and vim.fn.has("nvim-0.10") == 1 then
         -- hijack the window with a custom split method that doesn't emit winleave
@@ -1383,11 +1379,15 @@ M.acquire_window = function(state)
     vim.api.nvim_buf_set_var(state.bufnr, "neo_tree_winid", state.winid)
   end
 
-  if new_win and enter then
-    vim.api.nvim_set_current_win(state.winid)
+  if new_win then
+    if enter then
+      vim.api.nvim_set_current_win(state.winid)
+    end
+    ---Currently, this must be placed here because otherwise the nvim_set_current_win above will clear any queued up
+    ---positions that neo-tree may need to be set.
+    attach_position_autocmds(state)
   end
 
-  set_buffer_mappings(state)
   state._no_focus = nil
   return state.winid
 end
