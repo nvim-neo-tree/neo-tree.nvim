@@ -1221,13 +1221,13 @@ M.setup_option_autocmds = function()
   autocmd({ "BufWinEnter", "BufEnter", "TabEnter", "WinEnter" }, {
     group = option_augroup,
     callback = function()
-      local win = vim.api.nvim_get_current_win()
-      set_options_in_win(win)
+      set_options_in_win(vim.api.nvim_get_current_win())
     end,
   })
   events.subscribe({
     event = events.NEO_TREE_WINDOW_AFTER_OPEN,
     handler = function(args)
+      -- guards against https://github.com/nvim-neo-tree/neo-tree.nvim/issues/1674
       set_options_in_win(args.winid)
     end,
   })
