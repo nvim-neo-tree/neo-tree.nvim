@@ -11,9 +11,12 @@ vim.opt.runtimepath = {
 local utils = require("neo-tree.utils")
 local deps_dir = utils.path_join(root_dir, ".dependencies")
 local deps = {}
+local version = vim.version()
 for basename, type in vim.fs.dir(deps_dir) do
   assert(type == "directory")
-  deps[#deps + 1] = utils.path_join(deps_dir, basename)
+  if version.minor >= 12 or basename ~= "nvim-treesitter" then
+    deps[#deps + 1] = utils.path_join(deps_dir, basename)
+  end
   -- add each dep
 end
 vim.opt.runtimepath:append(deps)
