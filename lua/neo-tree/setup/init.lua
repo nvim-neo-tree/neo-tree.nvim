@@ -374,16 +374,7 @@ M.merge_config = function(user_config)
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
   })
-  events.subscribe({
-    event = events.NEO_TREE_WINDOW_AFTER_OPEN,
-    handler = function(args)
-      if not vim.w[args.winid].neo_tree_settings_applied then
-        -- TODO: should figure out a less disorganized way to set window options
-        -- BufEnter doesn't trigger while vim is starting up so this will handle it instead.
-        M.buffer_enter_event()
-      end
-    end,
-  })
+  require("neo-tree.ui.renderer").setup_option_autocmds()
 
   if user_config.event_handlers ~= nil then
     for _, handler in ipairs(user_config.event_handlers) do
@@ -618,7 +609,6 @@ M.merge_config = function(user_config)
   end
 
   require("neo-tree.clipboard").setup(M.config.clipboard)
-  require("neo-tree.ui.renderer").setup_option_autocmds()
 
   return M.config
 end

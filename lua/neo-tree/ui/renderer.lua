@@ -1191,7 +1191,7 @@ local function set_neo_tree_popup_options(win, buf)
     assert(vim.api.nvim_get_current_buf() == buf)
   end
   -- vim.cmd([[
-  -- s", "etlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
+  -- setlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
   -- setlocal nolist nospell nonumber norelativenumber
   -- ]])
   local wo_nt_popup = _compat.wo[win][0]
@@ -1204,20 +1204,31 @@ local function set_neo_tree_popup_options(win, buf)
   local_options_set[win][buf] = local_options_set[win][buf] or true
 end
 
+---@param win integer
+local set_options_in_win = function(win)
+  local buf = vim.api.nvim_win_get_buf(win)
+  local ft = vim.bo[buf].filetype
+  if ft == "neo-tree" then
+    set_neo_tree_options(win, buf)
+  elseif ft == "neo-tree-popup" then
+    set_neo_tree_popup_options(win, buf)
+  end
+end
+
 ---Attaches autocmds that set options in any window containing a neo-tree buffer.
 M.setup_option_autocmds = function()
   local option_augroup = vim.api.nvim_create_augroup("NeoTreeOptions", { clear = false })
   autocmd({ "BufWinEnter", "BufEnter", "TabEnter", "WinEnter" }, {
     group = option_augroup,
-    callback = function(args)
+    callback = function()
       local win = vim.api.nvim_get_current_win()
-      local buf = vim.api.nvim_win_get_buf(win)
-      local ft = vim.bo[buf].filetype
-      if ft == "neo-tree" then
-        set_neo_tree_options(win, args.buf)
-      elseif ft == "neo-tree-popup" then
-        set_neo_tree_popup_options(win, args.buf)
-      end
+      set_options_in_win(win)
+    end,
+  })
+  events.subscribe({
+    event = events.NEO_TREE_WINDOW_AFTER_OPEN,
+    handler = function(args)
+      set_options_in_win(args.winid)
     end,
   })
 end
