@@ -53,12 +53,21 @@ function M.check()
   check_dependency("image", "3rd/image.nvim", true)
 
   health.start("Optional LSP integration for commands (like copy/delete/move/etc.)")
-  check_dependency("lsp-file-operations", "antosha417/nvim-lsp-file-operations", true)
+  local newer_lsp_file_operations =
+    check_dependency("nvim-file-operations", "Crysthamus/nvim-file-operations", true)
+  local older_lsp_file_operations =
+    check_dependency("lsp-file-operations", "antosha417/nvim-lsp-file-operations", true)
+  if not newer_lsp_file_operations and older_lsp_file_operations then
+    health.warn(
+      "Consider migrating to Crysthamus/nvim-file-operations for improved integrations with certain language servers."
+    )
+  end
 
   health.start("Optional window picker (for _with_window_picker commands)")
   check_dependency("window-picker", "s1n7ax/nvim-window-picker", true)
 
   health.start("Configuration")
+
   local config = require("neo-tree").ensure_config()
   M.check_config(config)
 

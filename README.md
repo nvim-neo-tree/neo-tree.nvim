@@ -65,6 +65,8 @@ should you!
 
 ## Installation
 
+Neo-tree currently supports Neovim 0.8 and onwards.
+
 This plugin relies upon these two excellent library plugins:
 
 - [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI
@@ -76,7 +78,9 @@ There are also some optional plugins that work with Neo-tree:
 
 - [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons)
   for file icons.
-- [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations)
+- [Crysthamus/nvim-file-operations](https://github.com/Crysthamus/nvim-file-operations)
+  or
+  [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations)
   for LSP-enhanced renames/etc.
 - [folke/snacks.nvim](https://github.com/folke/snacks.nvim) for image previews,
   see Preview Mode section.
@@ -139,13 +143,13 @@ return {
     },
   },
   {
-    "antosha417/nvim-lsp-file-operations",
+    "Crysthamus/nvim-file-operations",
+    -- branch = "compat" -- if you are on Neovim <= 0.10
     dependencies = {
-      "nvim-lua/plenary.nvim",
       "nvim-neo-tree/neo-tree.nvim", -- makes sure that this loads after Neo-tree.
     },
     config = function()
-      require("lsp-file-operations").setup()
+      require("nvim-file-operations").setup()
     end,
   },
   {
