@@ -120,6 +120,19 @@ M.setup = function(config, global_config)
       event = events.VIM_CURSOR_MOVED,
       handler = follow_debounced,
     })
+    manager.subscribe(M.name, {
+      event = events.AFTER_RENDER,
+      handler = function(state)
+        if state.name ~= M.name or not state.tree or not state.lsp_winid then
+          return
+        end
+        local cursor = vim.api.nvim_win_get_cursor(state.lsp_winid)
+        local node_id = symbols.get_symbol_by_loc(state.tree, { cursor[1] - 1, cursor[2] })
+        if #node_id > 0 then
+          renderer.focus_node(state, node_id, true)
+        end
+      end,
+    })
   end
 
   -- Set up follow_tree_cursor: show symbol on cursor move in document_symbols buffer
