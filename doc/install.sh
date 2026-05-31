@@ -14,10 +14,15 @@ export NEOTREE_OPTIONAL_DIR="${NEOTREE_DATA_HOME}/site/pack/neo-tree-optional/st
 # Modify the optional plugins you want below:
 declare -a OPTIONAL_PLUGINS=(
   "https://github.com/nvim-tree/nvim-web-devicons.git"            # for file icons
-  # "https://github.com/Crysthamus/nvim-file-operations.git"  # for LSP-enhanced renames/etc.
-  # "https://github.com/antosha417/nvim-lsp-file-operations.git"  # for LSP-enhanced renames/etc.
-  # "https://github.com/folke/snacks.nvim.git"                    # for image previews
-  # "https://github.com/3rd/image.nvim.git"                       # for image previews
+
+  # Pick one for LSP-enhanced renames/file operations
+  # "https://github.com/Crysthamus/nvim-file-operations.git"      # Neovim 0.11+
+  # "https://github.com/antosha417/nvim-lsp-file-operations.git"  # (legacy)
+
+  # Pick one for image previews
+  # "https://github.com/folke/snacks.nvim.git"
+  # "https://github.com/3rd/image.nvim.git"
+
   # "https://github.com/s1n7ax/nvim-window-picker.git"            # for _with_window_picker keymaps
 )
 

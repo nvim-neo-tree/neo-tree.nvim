@@ -78,7 +78,7 @@ There are also some optional plugins that work with Neo-tree:
 
 - [nvim-tree/nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons)
   for file icons.
-- [Crysthamus/nvim-file-operations](https://github.com/Crysthamus/nvim-file-operations) (Neovim 0.11+ only)
+- [Crysthamus/nvim-file-operations](https://github.com/Crysthamus/nvim-file-operations)
   or
   [antosha417/nvim-lsp-file-operations](https://github.com/antosha417/nvim-lsp-file-operations)
   for LSP-enhanced renames/etc.
@@ -144,6 +144,7 @@ return {
   },
   {
     "Crysthamus/nvim-file-operations",
+    -- branch = "compat" -- if you are on Neovim <= 0.10
     dependencies = {
       "nvim-neo-tree/neo-tree.nvim", -- makes sure that this loads after Neo-tree.
     },
