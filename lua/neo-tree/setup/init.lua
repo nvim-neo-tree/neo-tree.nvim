@@ -108,54 +108,6 @@ local define_events = function()
   })
 end
 
-local prior_window_options = {}
-
---- Store the current window options so we can restore them when we close the tree.
---- @param winid number | nil The window id to store the options for, defaults to current window
-local store_local_window_settings = function(winid)
-  winid = winid or vim.api.nvim_get_current_win()
-  local neo_tree_settings_applied, _ =
-    pcall(vim.api.nvim_win_get_var, winid, "neo_tree_settings_applied")
-  if neo_tree_settings_applied then
-    -- don't store our own window settings
-    return
-  end
-  prior_window_options[tostring(winid)] = {
-    cursorline = vim.wo.cursorline,
-    cursorlineopt = vim.wo.cursorlineopt,
-    foldcolumn = vim.wo.foldcolumn,
-    wrap = vim.wo.wrap,
-    list = vim.wo.list,
-    spell = vim.wo.spell,
-    number = vim.wo.number,
-    relativenumber = vim.wo.relativenumber,
-    winhighlight = vim.wo.winhighlight,
-  }
-end
-
---- Restore the window options for the current window
---- @param winid number | nil The window id to restore the options for, defaults to current window
-local restore_local_window_settings = function(winid)
-  winid = winid or vim.api.nvim_get_current_win()
-  -- return local window settings to their prior values
-  local wo = prior_window_options[tostring(winid)]
-  if wo then
-    vim.wo.cursorline = wo.cursorline
-    vim.wo.cursorlineopt = wo.cursorlineopt
-    vim.wo.foldcolumn = wo.foldcolumn
-    vim.wo.wrap = wo.wrap
-    vim.wo.list = wo.list
-    vim.wo.spell = wo.spell
-    vim.wo.number = wo.number
-    vim.wo.relativenumber = wo.relativenumber
-    vim.wo.winhighlight = wo.winhighlight
-    log.debug("Window settings restored")
-    vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", false)
-  else
-    log.debug("No window settings to restore")
-  end
-end
-
 local last_buffer_enter_filetype = nil
 M.buffer_enter_event = function()
   -- if it is a neo-tree window, just set local options
@@ -163,35 +115,14 @@ M.buffer_enter_event = function()
     if last_buffer_enter_filetype == "neo-tree" then
       -- we've switched to another neo-tree window
       events.fire_event(events.NEO_TREE_BUFFER_LEAVE)
-    else
-      store_local_window_settings()
-    end
-    vim.cmd([[
-    setlocal cursorline
-    setlocal cursorlineopt=line
-    setlocal nowrap
-    setlocal nolist nospell nonumber norelativenumber
-    ]])
-
-    local winhighlight =
-      "Normal:NeoTreeNormal,NormalNC:NeoTreeNormalNC,SignColumn:NeoTreeSignColumn,CursorLine:NeoTreeCursorLine,FloatBorder:NeoTreeFloatBorder,StatusLine:NeoTreeStatusLine,StatusLineNC:NeoTreeStatusLineNC,VertSplit:NeoTreeVertSplit,EndOfBuffer:NeoTreeEndOfBuffer"
-    if vim.version().minor >= 7 then
-      vim.cmd("setlocal winhighlight=" .. winhighlight .. ",WinSeparator:NeoTreeWinSeparator")
-    else
-      vim.cmd("setlocal winhighlight=" .. winhighlight)
     end
 
     events.fire_event(events.NEO_TREE_BUFFER_ENTER)
     last_buffer_enter_filetype = vim.bo.filetype
-    vim.api.nvim_win_set_var(0, "neo_tree_settings_applied", true)
     return
   end
 
   if vim.bo.filetype == "neo-tree-popup" then
-    vim.cmd([[
-    setlocal winhighlight=Normal:NeoTreeFloatNormal,FloatBorder:NeoTreeFloatBorder
-    setlocal nolist nospell nonumber norelativenumber
-    ]])
     events.fire_event(events.NEO_TREE_POPUP_BUFFER_ENTER)
     last_buffer_enter_filetype = vim.bo.filetype
     return
@@ -443,34 +374,7 @@ M.merge_config = function(user_config)
     event = events.VIM_BUFFER_ENTER,
     handler = M.buffer_enter_event,
   })
-  events.subscribe({
-    event = events.NEO_TREE_WINDOW_AFTER_OPEN,
-    handler = function(args)
-      if not vim.w[args.winid].neo_tree_settings_applied then
-        -- TODO: should figure out a less disorganized way to set window options
-        -- BufEnter doesn't trigger while vim is starting up so this will handle it instead.
-        M.buffer_enter_event()
-      end
-    end,
-  })
-
-  -- Setup autocmd for neo-tree BufLeave, to restore window settings.
-  -- This is set to happen just before leaving the window.
-  -- The patterns used should ensure it only runs in neo-tree windows where position = "current"
-  local augroup = vim.api.nvim_create_augroup("NeoTree_BufLeave", { clear = true })
-  local bufleave = function(data)
-    -- Vim patterns in autocmds are not quite precise enough
-    -- so we are doing a second stage filter in lua
-    local pattern = "neo%-tree [^ ]+ %[1%d%d%d%]"
-    if string.match(data.file, pattern) then
-      restore_local_window_settings()
-    end
-  end
-  vim.api.nvim_create_autocmd({ "BufWinLeave" }, {
-    group = augroup,
-    pattern = "neo-tree *",
-    callback = bufleave,
-  })
+  require("neo-tree.ui.renderer").setup_option_autocmds()
 
   if user_config.event_handlers ~= nil then
     for _, handler in ipairs(user_config.event_handlers) do

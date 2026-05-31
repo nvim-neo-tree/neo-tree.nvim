@@ -1,7 +1,9 @@
 [settings]
 windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
+
 [env]
 NEOTREE_LUARC = ".luarc.json"
+MISE_BACKENDS_NEOVIM = "aqua:neovim/neovim"
 
 [tools]
 lua-language-server = "3"
