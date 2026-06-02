@@ -123,14 +123,7 @@ M.setup = function(config, global_config)
     manager.subscribe(M.name, {
       event = events.AFTER_RENDER,
       handler = function(state)
-        if state.name ~= M.name or not state.tree or not state.lsp_winid then
-          return
-        end
-        local cursor = vim.api.nvim_win_get_cursor(state.lsp_winid)
-        local node_id = symbols.get_symbol_by_loc(state.tree, { cursor[1] - 1, cursor[2] })
-        if #node_id > 0 then
-          renderer.focus_node(state, node_id, true)
-        end
+        follow_debounced({ afile = vim.api.nvim_buf_get_name(0) })
       end,
     })
   end
