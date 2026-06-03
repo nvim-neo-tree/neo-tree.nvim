@@ -1368,6 +1368,8 @@ M.acquire_window = function(state)
           ---@diagnostic disable-next-line: assign-type-mismatch
           split = pos_to_splitdir[nui_win_options.position] or nui_win_options.position,
         })
+        vim.wo[new_win.winid].winfixheight = true
+        vim.wo[new_win.winid].winfixwidth = true
       end
       new_win:mount()
       state.bufnr = new_win.bufnr
