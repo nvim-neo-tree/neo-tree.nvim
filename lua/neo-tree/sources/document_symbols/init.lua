@@ -120,6 +120,12 @@ M.setup = function(config, global_config)
       event = events.VIM_CURSOR_MOVED,
       handler = follow_debounced,
     })
+    manager.subscribe(M.name, {
+      event = events.AFTER_RENDER,
+      handler = function(state)
+        follow_debounced({ afile = vim.api.nvim_buf_get_name(0) })
+      end,
+    })
   end
 
   -- Set up follow_tree_cursor: show symbol on cursor move in document_symbols buffer
