@@ -1551,8 +1551,19 @@ local function render_stickies(state)
   end
 
   local stickies = state.stickies or {}
+  local state_width = vim.api.nvim_win_get_width(state.winid)
   for i, row in ipairs(rows_to_sticky) do
-    local sticky = stickies[i] or new_sticky_win(state, i - 1)
+    local sticky = stickies[i]
+    if sticky then
+      local conf = vim.api.nvim_win_get_config(sticky)
+      if conf.width ~= state_width then
+        vim.api.nvim_win_set_config(sticky, {
+          width = state_width,
+        })
+      end
+    else
+      sticky = new_sticky_win(state, i - 1)
+    end
     ---@type vim.fn.winsaveview.ret
     local saved = vim.api.nvim_win_call(sticky, vim.fn.winsaveview)
     if saved.topline ~= row then
@@ -1581,6 +1592,7 @@ vim.api.nvim_create_autocmd("WinScrolled", {
       if not state or not state.tree then
         return
       end
+      ---@cast state neotree.StateWithTree
       render_stickies(state)
     end
   end,
