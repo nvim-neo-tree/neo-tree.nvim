@@ -682,6 +682,7 @@ local config = {
         ["gr"] = "git_revert_file",
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
+        ["gl"] = "git_pull",
         ["gg"] = "git_commit_and_push",
         ["i"] = "show_file_details", -- see `:h neo-tree-file-actions` for options to customize the window.
         ["b"] = "rename_basename",

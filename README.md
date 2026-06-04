@@ -626,6 +626,7 @@ require("neo-tree").setup({
         ["gr"] = "git_revert_file",
         ["gc"] = "git_commit",
         ["gp"] = "git_push",
+        ["gl"] = "git_pull",
         ["gg"] = "git_commit_and_push",
         ["o"] = {
           "show_help",
