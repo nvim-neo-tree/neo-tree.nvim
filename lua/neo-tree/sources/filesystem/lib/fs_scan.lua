@@ -34,11 +34,12 @@ local mark_gitignored = function(cwd, items)
   ---@type [string, neotree.git.Status?][]
   local roots_and_statuses = {}
 
-  -- Filter out all non-visible worktrees
+  -- Filter for visible worktrees
   for worktree_root, worktree in pairs(git.worktrees) do
     local is_upward = utils.is_subpath(worktree_root, cwd, true)
     if is_upward or utils.is_subpath(cwd, worktree_root, true) then
-      roots_and_statuses[#roots_and_statuses + 1] = { worktree_root, worktree.status }
+      roots_and_statuses[#roots_and_statuses + 1] =
+        { worktree_root, worktree.status_progress.ignored and worktree.status or nil }
     end
     if is_upward then
       upward_status_found = true
@@ -74,8 +75,11 @@ local mark_gitignored = function(cwd, items)
   local worktree_data = {}
   for _, root_and_status in ipairs(roots_and_statuses) do
     local worktree_root, status = unpack(root_and_status)
+    -- Second is list of items within the worktree root
     worktree_data[worktree_root] = { status, {} }
   end
+
+  -- Populate the items within the worktree root
   for _, item in ipairs(items) do
     for _, root_and_status in ipairs(roots_and_statuses) do
       local worktree_root = root_and_status[1]

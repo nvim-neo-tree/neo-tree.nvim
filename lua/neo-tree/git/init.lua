@@ -29,6 +29,12 @@ local M = {}
 ---@field watcher neotree.sources.filesystem.Watcher?
 ---@field superproject_worktree_root string?
 ---@field status neotree.git.Status?
+---@field status_progress neotree.git.WorktreeInfo.StatusProgress
+
+---@class neotree.git.WorktreeInfo.StatusProgress
+---@field tracked boolean?
+---@field ignored boolean?
+---@field untracked boolean?
 
 ---@type table<string, neotree.git.WorktreeInfo?>
 M.worktrees = {}
@@ -54,6 +60,7 @@ local try_register_worktree = function(worktree_root, git_dir, superproject_work
       git_dir = log.assert(git_dir, "Git dir should exist before registering"),
       superproject_worktree_root = superproject_worktree_root,
       status_diff = {},
+      status_progress = {},
     }
     M.worktrees[worktree_root] = worktree
   end
@@ -147,11 +154,23 @@ end
 ---@param git_status neotree.git.Status
 ---@param base string?
 ---@param git_status_diff_base neotree.git.Status?
-local change_worktree_git_status = function(worktree_root, git_status, base, git_status_diff_base)
+---@param status_progress neotree.git.WorktreeInfo.StatusProgress?
+local change_worktree_git_status = function(
+  worktree_root,
+  git_status,
+  base,
+  git_status_diff_base,
+  status_progress
+)
   assert(git_status)
   local worktree =
     assert(M.worktrees[worktree_root], "Could not find worktree for " .. worktree_root)
   worktree.status = git_status
+  if status_progress then
+    for k, v in pairs(status_progress) do
+      worktree.status_progress[k] = worktree.status_progress[k] or v
+    end
+  end
   if base then
     worktree.status_diff[base] = git_status_diff_base
   end
@@ -280,7 +299,12 @@ M.status = function(path, base_lookup, skip_bubbling, status_opts)
     worktree_root,
     git_status,
     base_lookup and base_lookup[worktree_root],
-    git_status_over_base
+    git_status_over_base,
+    {
+      tracked = true,
+      ignored = true,
+      untracked = true,
+    }
   )
   return git_status, worktree_root, git_status_over_base
 end
@@ -403,7 +427,9 @@ M.status_async = function(path, base_lookup, opts, callback)
           end
 
           --- Either the diff, or diff + ignored + all
-          change_worktree_git_status(worktree_root, fast_status)
+          change_worktree_git_status(worktree_root, fast_status, nil, nil, {
+            tracked = true,
+          })
 
           if base then
             git_diff.name_status_job(worktree_root, base, false, ctx, function(status)
@@ -417,6 +443,7 @@ M.status_async = function(path, base_lookup, opts, callback)
           if status_existed then
             return
           end
+
           -- Get ignored statuses
           git_ls_files.ignored_job(ctx, function(ignored_paths, err)
             if not ignored_paths then
@@ -425,7 +452,9 @@ M.status_async = function(path, base_lookup, opts, callback)
             for _, ignored_path in ipairs(ignored_paths) do
               ctx.git_status[ignored_path] = "!"
             end
-            change_worktree_git_status(worktree_root, ctx.git_status)
+            change_worktree_git_status(worktree_root, ctx.git_status, nil, nil, {
+              ignored = true,
+            })
           end)
 
           -- Check for showUntrackedFiles and rescan for the full status
@@ -471,7 +500,11 @@ M.status_async = function(path, base_lookup, opts, callback)
                   log.error(err)
                   return
                 end
-                change_worktree_git_status(worktree_root, full_status)
+                change_worktree_git_status(worktree_root, full_status, nil, nil, {
+                  tracked = true,
+                  ignored = true,
+                  untracked = true,
+                })
                 callback(worktree_root)
               end)
             end
