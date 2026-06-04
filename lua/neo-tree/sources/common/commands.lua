@@ -396,13 +396,25 @@ M.git_commit_and_push = function(state)
   M.git_commit(state, true)
 end
 
+M.git_pull = function(state)
+  inputs.confirm("Run a git pull?", function(yes)
+    if not yes then
+      return
+    end
+    local result = vim.fn.systemlist({ "git", "pull" })
+    events.fire_event(events.GIT_EVENT)
+    popups.alert("git pull", result)
+  end)
+end
+
 M.git_push = function(state)
   inputs.confirm("Are you sure you want to push your changes?", function(yes)
-    if yes then
-      local result = vim.fn.systemlist({ "git", "push" })
-      events.fire_event(events.GIT_EVENT)
-      popups.alert("git push", result)
+    if not yes then
+      return
     end
+    local result = vim.fn.systemlist({ "git", "push" })
+    events.fire_event(events.GIT_EVENT)
+    popups.alert("git push", result)
   end)
 end
 
