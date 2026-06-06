@@ -4,16 +4,15 @@ local M = {}
 ---@field literal_pathspecs boolean?
 
 ---Returns a git command, argv-style, with sane defaults for parsing usage.
----opts.literal_pathspecs exists because some commands do not like the options (i.e. check-ignore). It is enabled by default.
 ---@param args string[]
----@param opts neotree.git.cmd.Opts?
 ---@return string[]
-M.with_args = function(args, opts)
-  opts = opts or {}
-  local command = {
+M.with_args = function(args)
+  -- From gitsigns
+  return vim.list_extend({
     "git",
     "--no-pager",
     "--no-optional-locks",
+    "--literal-pathspecs",
     "-c",
     "gc.auto=0",
     "-c",
@@ -22,11 +21,7 @@ M.with_args = function(args, opts)
     "color.ui=false",
     "-c",
     "color.diff=false",
-  }
-  if opts.literal_pathspecs ~= false then
-    command[#command + 1] = "--literal-pathspecs"
-  end
-  return vim.list_extend(command, args)
+  }, args)
 end
 
 return M

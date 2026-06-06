@@ -97,7 +97,7 @@ local mark_gitignored = function(cwd, items)
     local git_status, items_within_root = unpack(data)
 
     if not git_status then
-      -- Use check-ignore for roots without a current status
+      -- Use ls-files for roots without a current status
       local paths = {}
       local item_map = {}
       for _, item in ipairs(items_within_root) do
@@ -105,7 +105,7 @@ local mark_gitignored = function(cwd, items)
         item_map[item.path] = item
       end
 
-      local ignored_paths = require("neo-tree.git.check-ignore").check(worktree_root, paths)
+      local ignored_paths = require("neo-tree.git.ls-files").ignored(worktree_root)
       if not ignored_paths then
         log.warn("Could not check ignored paths for", worktree_root)
       else
