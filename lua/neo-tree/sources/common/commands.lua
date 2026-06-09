@@ -645,8 +645,13 @@ M.show_file_details = function(state)
   end
 
   local lines = {}
+  local left_width = 0
   for i, v in ipairs(left) do
-    local line = string.format("%9s: %s", v, right[i])
+    left_width = math.max(#v, left_width)
+  end
+  local line_format = "%" .. (left_width + 1) .. "s: %s"
+  for i, v in ipairs(left) do
+    local line = string.format(line_format, v, right[i])
     table.insert(lines, line)
   end
 
