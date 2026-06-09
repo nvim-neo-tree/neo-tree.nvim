@@ -606,6 +606,7 @@ M.show_file_details = function(state)
   if node.type == "message" then
     return
   end
+  ---@cast node neotree.FileNode
   local stat = utils.get_stat(node)
   local left = {}
   local right = {}
@@ -613,8 +614,19 @@ M.show_file_details = function(state)
   table.insert(right, node.name)
   table.insert(left, "Path")
   table.insert(right, node.path)
-  table.insert(left, "Type")
-  table.insert(right, node.type)
+  if node.link_to then
+    table.insert(left, "Type")
+    table.insert(right, "link")
+    table.insert(left, "Target path")
+    table.insert(right, node.link_to)
+    if node.type ~= "link" then
+      table.insert(left, "Target type")
+      table.insert(right, node.type)
+    end
+  else
+    table.insert(left, "Type")
+    table.insert(right, node.type)
+  end
   if stat.size then
     table.insert(left, "Size")
     table.insert(right, utils.human_size(stat.size))
