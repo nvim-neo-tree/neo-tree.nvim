@@ -1501,6 +1501,103 @@ local restore_marks = function(state, marks)
   end
 end
 
+---@param state neotree.StateWithTree
+---@param row integer
+---@return integer win
+local new_sticky_win = function(state, row)
+  return vim.api.nvim_open_win(state.bufnr, false, {
+    relative = "win",
+    win = state.winid,
+    focusable = false,
+    row = row,
+    col = 0,
+    height = 1,
+    width = vim.api.nvim_win_get_width(state.winid),
+    border = "none",
+  })
+end
+
+local MAX_STICKIES = 3
+---@param state neotree.StateWithTree
+local function render_stickies(state)
+  local first_visible_line = vim.fn.line("w0", state.winid)
+
+  ---@type integer[]
+  local rows_to_sticky = {}
+
+  local parent_rows = {}
+
+  local node = state.tree:get_node(first_visible_line)
+  while node do
+    local parent_id = node:get_parent_id()
+    if not parent_id then
+      break
+    end
+
+    local parent, parent_row = state.tree:get_node(parent_id)
+    if not parent or not parent_row then
+      break
+    end
+
+    parent_rows[#parent_rows + 1] = parent_row
+    node = parent
+  end
+
+  for i = #parent_rows, 1, -1 do
+    rows_to_sticky[#rows_to_sticky + 1] = parent_rows[i]
+    if #rows_to_sticky >= MAX_STICKIES then
+      break
+    end
+  end
+
+  local stickies = state.stickies or {}
+  local state_width = vim.api.nvim_win_get_width(state.winid)
+  for i, row in ipairs(rows_to_sticky) do
+    local sticky = stickies[i]
+    if sticky then
+      local conf = vim.api.nvim_win_get_config(sticky)
+      if conf.width ~= state_width then
+        vim.api.nvim_win_set_config(sticky, {
+          width = state_width,
+        })
+      end
+    else
+      sticky = new_sticky_win(state, i - 1)
+    end
+    ---@type vim.fn.winsaveview.ret
+    local saved = vim.api.nvim_win_call(sticky, vim.fn.winsaveview)
+    if saved.topline ~= row then
+      vim.api.nvim_win_call(sticky, function()
+        vim.fn.winrestview({ topline = row })
+      end)
+    end
+    stickies[i] = sticky
+  end
+
+  if #rows_to_sticky < #stickies then
+    for i = #rows_to_sticky + 1, #stickies do
+      local sticky = table.remove(stickies)
+      vim.api.nvim_win_close(sticky, true)
+    end
+  end
+  state.stickies = stickies
+end
+
+vim.api.nvim_create_autocmd("WinScrolled", {
+  callback = function(args)
+    local win = assert(tonumber(args.file))
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.bo[buf].filetype == "neo-tree" then
+      local state = require("neo-tree.sources.manager").get_state_for_window(win)
+      if not state or not state.tree then
+        return
+      end
+      ---@cast state neotree.StateWithTree
+      render_stickies(state)
+    end
+  end,
+})
+
 ---Renders the given tree and expands window width if needed
 ---@param state neotree.StateWithTree The state containing tree to render. Almost same as state.tree:render()
 render_tree = function(state)
