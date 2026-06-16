@@ -848,7 +848,6 @@ language server that supports EmmyLua/LuaCATS annotations, you can use
     {
       "nvim-neo-tree/neo-tree.nvim",
       dependencies = {
-        "nvim-lua/plenary.nvim",
         "nvim-tree/nvim-web-devicons",
         "MunifTanjim/nui.nvim",
         -- { "3rd/image.nvim", opts = {} }, -- Optional image support

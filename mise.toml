@@ -68,9 +68,11 @@ update https://github.com/3rd/image.nvim image.nvim
 update https://github.com/folke/snacks.nvim snacks.nvim
 update https://github.com/MunifTanjim/nui.nvim nui.nvim
 update https://github.com/nvim-tree/nvim-web-devicons nvim-web-devicons
-update https://github.com/nvim-lua/plenary.nvim plenary.nvim
 update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
 update https://github.com/nvim-treesitter/nvim-treesitter nvim-treesitter
+
+# For testing, TODO: remove
+update https://github.com/nvim-lua/plenary.nvim plenary.nvim
 """
 run_windows = """
 function Update-Repository {
@@ -109,9 +111,11 @@ Update-Repository -GitUrl "https://github.com/3rd/image.nvim" -RepoName "image.n
 Update-Repository -GitUrl "https://github.com/folke/snacks.nvim" -RepoName "snacks.nvim"
 Update-Repository -GitUrl "https://github.com/MunifTanjim/nui.nvim" -RepoName "nui.nvim"
 Update-Repository -GitUrl "https://github.com/nvim-tree/nvim-web-devicons" -RepoName "nvim-web-devicons"
-Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
 Update-Repository -GitUrl "https://github.com/s1n7ax/nvim-window-picker" -RepoName "nvim-window-picker"
 Update-Repository -GitUrl "https://github.com/nvim-treesitter/nvim-treesitter" -RepoName "nvim-treesitter"
+
+# For testing, TODO: remove
+Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
 """
 
 [tasks.luals-check]

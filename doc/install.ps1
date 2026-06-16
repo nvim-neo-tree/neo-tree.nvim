@@ -52,7 +52,6 @@ Invoke-GitCloneSparse -b v3.x "https://github.com/nvim-neo-tree/neo-tree.nvim.gi
 
 Write-Host "Installing core dependencies..."
 Set-Location $NEOTREE_DEPS_DIR
-Invoke-GitCloneSparse "https://github.com/nvim-lua/plenary.nvim.git"
 Invoke-GitCloneSparse "https://github.com/MunifTanjim/nui.nvim.git"
 
 if ($OPTIONAL_PLUGINS.Count -gt 0) {
