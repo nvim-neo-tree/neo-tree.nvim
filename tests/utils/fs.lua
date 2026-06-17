@@ -1,5 +1,4 @@
-local Path = require("plenary.path")
-
+local utils = require("neo-tree.utils")
 local fs = {}
 
 function fs.create_temp_dir()
@@ -9,18 +8,17 @@ function fs.create_temp_dir()
   -- 2. Remove any double separators (on macOS TMPDIR can end in a trailing / which absolute doesn't remove, this should
   --    be coverted by https://github.com/nvim-lua/plenary.nvim/issues/330).
   local temp_dir = vim.fn.resolve(
-    Path:new(
+    utils.path_join(
       vim.fn.fnamemodify(vim.fn.tempname(), ":h"),
-      string.format("neo-tree-test-%s", vim.fn.rand())
-    ):absolute()
+      string.format("neo-tree-test-%s", math.random(0, 1000))
+    )
   )
   vim.fn.mkdir(temp_dir, "p")
   return temp_dir
 end
 
 function fs.create_dir(path)
-  local abspath = Path:new(path):absolute()
-  vim.fn.mkdir(abspath, "p")
+  vim.fn.mkdir(path, "p")
 end
 
 function fs.remove_dir(dir, recursive)
@@ -31,7 +29,7 @@ function fs.remove_dir(dir, recursive)
 end
 
 function fs.write_file(path, content)
-  local abspath = Path:new(path):absolute()
+  local abspath = path
   fs.create_dir(vim.fn.fnamemodify(abspath, ":h"))
   vim.fn.writefile(content or {}, abspath)
 end
@@ -51,13 +49,13 @@ function fs.create_fs_tree(fs_tree)
 
       -- create actual files and directories
       if item.type == "dir" then
-        item.abspath = Path:new(basedir, item.name):absolute()
+        item.abspath = utils.path_join(basedir, item.name)
         fs.create_dir(item.abspath)
         if item.items then
           create_items(item.items, item.abspath, relative_path)
         end
       elseif item.type == "file" then
-        item.abspath = Path:new(basedir, item.name):absolute()
+        item.abspath = utils.path_join(basedir, item.name)
         fs.write_file(item.abspath)
       end
     end

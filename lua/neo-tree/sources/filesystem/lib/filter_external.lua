@@ -1,5 +1,4 @@
 local log = require("neo-tree.log")
-local Job = require("plenary.job")
 local utils = require("neo-tree.utils")
 local Queue = require("neo-tree.collections").Queue
 
@@ -43,16 +42,10 @@ local get_find_command = function(state)
 end
 
 local running_jobs = Queue:new()
+
+---@param job neotree.utils.Job
 local kill_job = function(job)
-  local pid = job.pid
-  job:shutdown()
-  if pid ~= nil and pid > 0 then
-    if utils.is_windows then
-      vim.fn.system("taskkill /F /T /PID " .. pid)
-    else
-      vim.fn.system("kill -9 " .. pid)
-    end
-  end
+  job.handle:close()
   return true
 end
 
@@ -225,34 +218,35 @@ M.filter_files_external = function(
   end
   local item_count = 0
   ---@diagnostic disable-next-line: missing-fields
-  local job = Job:new({
-    command = cmd,
+  local job = utils.job(vim.list_extend({ cmd }, args), {
     cwd = path,
-    args = args,
-    enable_recording = false,
-    on_stdout = function(err, line)
+    stdout = function(err, line)
+      if not line then
+        return
+      end
       if item_count < limit and on_insert then
         on_insert(err, line)
         item_count = item_count + 1
       end
     end,
-    on_stderr = function(err, line)
+    stderr = function(err, line)
+      if not line then
+        return
+      end
       if item_count < limit and on_insert then
         on_insert(err or line, line)
         -- item_count = item_count + 1
       end
     end,
-    on_exit = function(_, return_val)
-      if on_exit then
-        on_exit(return_val)
-      end
-    end,
-  })
+  }, function(...)
+    if on_exit then
+      on_exit(...)
+    end
+  end)
 
   -- This ensures that only one job is running at a time
-  running_jobs:for_each(kill_job)
+  -- running_jobs:for_each(kill_job)
   running_jobs:add(job)
-  job:start()
 end
 
 local function fzy_sort_get_total_score(terms, path)
@@ -320,7 +314,7 @@ M.fzy_sort_files = function(opts, state)
   local index = 1
   state.fzy_sort_result_scores = {}
   local function on_insert(err, path)
-    if not err then
+    if not err and path then
       local relative_path = path
       if not full_path_words and #path > pwd_length and path:sub(1, pwd_length) == pwd then
         relative_path = "./" .. path:sub(pwd_length + 1)

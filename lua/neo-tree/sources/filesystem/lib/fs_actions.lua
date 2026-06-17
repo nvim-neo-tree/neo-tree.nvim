@@ -5,13 +5,11 @@
 -- and modified to fit neo-tree's api.
 -- Permalink: https://github.com/mhartington/dotfiles/blob/7560986378753e0c047d940452cb03a3b6439b11/config/nvim/lua/mh/filetree/init.lua
 local uv = vim.uv or vim.loop
-local scan = require("plenary.scandir")
 local utils = require("neo-tree.utils")
 local inputs = require("neo-tree.ui.inputs")
 local trash = require("neo-tree.trash")
 local events = require("neo-tree.events")
 local log = require("neo-tree.log")
-local Path = require("plenary.path")
 
 local M = {}
 
@@ -86,12 +84,11 @@ end
 
 ---@param path string
 local count_children = function(path)
-  return #scan.scan_dir(path, {
-    hidden = true,
-    respect_gitignore = false,
-    add_dirs = true,
-    depth = 1,
-  })
+  local count = 0
+  for _ in vim.fs.dir(path) do
+    count = count + 1
+  end
+  return count
 end
 
 ---@param a uv.fs_stat.result?
@@ -336,33 +333,72 @@ M.move_node = function(source, destination, callback, input_root)
   end, 'Move "' .. name .. '" to:')
 end
 
----Plenary path.copy() when used to copy a recursive structure, can return a nested
--- table with for each file a Path instance and the success result.
----@param copy_result table The output of Path.copy()
----@param flat_result table Return value containing the flattened results
-local function flatten_path_copy_result(flat_result, copy_result)
-  if not copy_result then
-    return
+---@param source string
+---@param destination string
+---@return boolean success
+---@return string? err
+local function copylink(source, destination)
+  local target = log.assert(uv.fs_readlink(source))
+  local symlink_ok, err = uv.fs_symlink(target, destination)
+  if not symlink_ok then
+    return false, "Could not copy symlink ", source, "to", destination, ":", err
   end
-  for k, v in pairs(copy_result) do
-    if type(v) == "table" then
-      flatten_path_copy_result(flat_result, v)
-    else
-      table.insert(flat_result, { destination = k.filename, success = v })
-    end
-  end
+  return true
 end
 
--- Check if all files were copied successfully, using the flattened copy result
-local function check_path_copy_result(flat_result)
-  if not flat_result then
-    return
+local default_copyfile_flags = { excl = nil, ficlone = true }
+
+---@param source string
+---@param destination string
+---@return boolean success
+---@return string? err
+local function copyfile(source, destination)
+  local success, err = uv.fs_copyfile(source, destination, default_copyfile_flags)
+  return success or false, err
+end
+
+---@param source string
+---@param destination string
+---@param source_type string
+---@return boolean success
+---@return string? err
+local function copy(source, destination, source_type)
+  if uv.fs_lstat(destination) then
+    return false, destination .. " already exists"
   end
-  for _, file_result in ipairs(flat_result) do
-    if not file_result.success then
-      return false
+
+  if source_type == "file" then
+    return copyfile(source, destination)
+  end
+
+  if source_type == "link" then
+    return copylink(source, destination)
+  end
+
+  if source_type ~= "directory" then
+    return false, "unsupported type " .. source_type
+  end
+
+  local stat = assert(uv.fs_stat(source))
+  local mkdir_ok, mkdir_err = uv.fs_mkdir(destination, stat.mode)
+  if not mkdir_ok then
+    return false, mkdir_err
+  end
+
+  local all_copied = true
+  for name, kind in vim.fs.dir(source) do
+    local copy_ok, copy_err =
+      copy(utils.path_join(source, name), utils.path_join(destination, name), kind)
+    if not copy_ok then
+      all_copied = false
+      log.error(copy_err)
     end
   end
+
+  if not all_copied then
+    return false, ("Not all items from %s were copied"):format(destination)
+  end
+
   return true
 end
 
@@ -382,7 +418,14 @@ M.copy_node = function(source, destination, callback, input_root)
       return
     end
 
-    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
+    local source_lstat = log.assert(uv.fs_lstat(source))
+    local source_is_dir = source_lstat.type == "directory"
+    if source_lstat.type == "link" then
+      local source_stat = log.assert(uv.fs_stat(source))
+      source_is_dir = source_is_dir or (source_stat and source_stat.type == "directory")
+    end
+
+    if source_is_dir and utils.is_descendant(source, dest) then
       log.warn("Cannot copy " .. source .. " to its own descendant " .. parent_of_dest)
       return
     end
@@ -392,38 +435,10 @@ M.copy_node = function(source, destination, callback, input_root)
       return
     end
 
-    local source_stat = log.assert(uv.fs_lstat(source))
-    if source_stat.type == "link" then
-      local target = log.assert(uv.fs_readlink(source))
-      local symlink_ok, err = uv.fs_symlink(target, destination)
-      log.assert(symlink_ok, "Could not copy symlink ", source, "to", destination, ":", err)
-    else
-      local source_path = Path:new(source)
-      if source_path:is_file() then
-        -- When the source is a file, then Path.copy() currently doesn't create
-        -- the potential non-existing parent directories of the destination.
-        create_all_parents(dest)
-      end
-      local success, result = pcall(source_path.copy, source_path, {
-        destination = dest,
-        recursive = true,
-        parents = true,
-      })
-      if not success then
-        log.error("Could not copy the file(s) from", source, "to", dest, ":", result)
-        return
-      end
-
-      -- It can happen that the Path.copy() function returns successfully but
-      -- the copy action still failed. In this case the copy() result contains
-      -- a nested table of Path instances for each file copied, and the success
-      -- result.
-      local flat_result = {}
-      flatten_path_copy_result(flat_result, result)
-      if not check_path_copy_result(flat_result) then
-        log.error("Could not copy the file(s) from", source, "to", dest, ":", flat_result)
-        return
-      end
+    local success, err = copy(source, dest, source_lstat.type)
+    if not success then
+      log.error("Could not copy the file(s) from", source, "to", dest, ":", err)
+      return
     end
 
     vim.schedule(function()
@@ -704,7 +719,8 @@ end
 ---@param noconfirm boolean?
 M.delete_node = function(path, callback, noconfirm)
   local _, name = utils.split_path(path)
-  local children_count = uv.fs_stat(path) == "directory" and count_children(path) or -1
+  local stat = uv.fs_stat(path)
+  local children_count = stat and stat.type == "directory" and count_children(path) or -1
   if noconfirm then
     delete(path, callback)
   else

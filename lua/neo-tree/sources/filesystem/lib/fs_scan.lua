@@ -12,7 +12,7 @@ local git = require("neo-tree.git")
 local git_utils = require("neo-tree.git.utils")
 local events = require("neo-tree.events")
 local nt = require("neo-tree")
-local async = require("plenary.async")
+local async = require("neo-tree.legacy.plenary.async.init")
 local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
 local M = {}
@@ -297,6 +297,8 @@ local function get_children_sync(path)
   return children
 end
 
+---@param path string
+---@param callback
 local function get_children_async(path, callback)
   local children = {}
   uv.fs_opendir(path, function(err, dir)
@@ -316,7 +318,7 @@ local function get_children_async(path, callback)
         for i, stat in ipairs(stats) do
           more = i == ENTRIES_BATCH_SIZE
           local child_path = utils.path_join(path, stat.name)
-          table.insert(children, { path = child_path, type = stat.type })
+          children[#children + 1] = { path = child_path, type = stat.type }
         end
         if more then
           return uv.fs_readdir(dir, readdir_batch)
@@ -349,7 +351,7 @@ local function scan_dir_sync(context, path)
   on_directory_loaded(context, path)
 end
 
---- async method
+---@async
 local function scan_dir_async(context, path)
   log.debug("scan_dir_async - start", path)
 
@@ -564,7 +566,7 @@ local handle_search_pattern = function(context)
     on_insert = function(err, path)
       if err then
         log.debug(err)
-      else
+      elseif path then
         file_items.create_item(context, path)
       end
     end,
@@ -767,14 +769,10 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   end
   async.util.join(scan_tasks)
 
-  local finalize = async.wrap(function(_context, _callback)
-    vim.schedule(function()
-      job_complete(context, true)
-      render_context(_context)
-      _callback()
-    end)
-  end, 2)
-  finalize(context)
+  vim.schedule(function()
+    job_complete(context, true)
+    render_context(context)
+  end)
 end
 
 ---Stop watchers for the current state

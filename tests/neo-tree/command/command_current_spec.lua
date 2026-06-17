@@ -1,7 +1,7 @@
 pcall(require, "luacov")
 
-local Path = require("plenary.path")
 local u = require("tests.utils")
+local utils = require("neo-tree.utils")
 local verify = require("tests.utils.verify")
 
 local run_in_current_command = function(command, expected_tree_node)
@@ -106,7 +106,7 @@ describe("Command", function()
       "`:Neotree current reveal_force_cwd reveal_file=xyz` should reveal file current window if cwd is a parent of file",
       function()
         local testfile = fs_tree.lookup["deepfile2"].abspath
-        local testfile_dir = Path:new(testfile):parent().filename
+        local testfile_dir = utils.split_path(testfile)
         vim.cmd(string.format("cd %s", testfile_dir))
         local cmd = "Neotree current reveal_force_cwd reveal_file=" .. testfile
         run_in_current_command(cmd, testfile)

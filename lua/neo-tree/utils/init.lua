@@ -1745,7 +1745,7 @@ M.prior_windows = {}
 ---Start an async command with uv.
 ---Placeholder before upgrading to vim.system
 ---@param cmd string[]
----@param opts uv.spawn.options? args, hide, and stdio are ignored
+---@param opts uv.spawn.options|{stdout: fun(err: string?, data: string?)?, stderr: fun(err: string?, data: string?)}? args, hide, and stdio are ignored.
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
 ---@return neotree.utils.Job?
 ---@return integer|string err
@@ -1754,17 +1754,16 @@ M.job = function(cmd, opts, on_exit)
   local stderr_chunks = {}
 
   local path = cmd[1]
-  local args = { unpack(cmd, 2) }
   local completed = false
   local exit_code
   local stdout = log.assert(uv.new_pipe(false))
   local stderr = log.assert(uv.new_pipe(false))
-  ---@type uv.spawn.options
-  local spawnopts = opts or {}
-  spawnopts.args = args
-  spawnopts.hide = true
-  spawnopts.stdio = { nil, stdout, stderr }
-  local handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
+  opts = opts or {}
+  opts.args = { unpack(cmd, 2) }
+  opts.hide = true
+  opts.stdio = { nil, stdout, stderr }
+  -- vim.print(opts)
+  local handle, pid_or_err = uv.spawn(path, opts, function(code, _)
     stdout:close()
     stderr:close()
     exit_code = code
@@ -1779,13 +1778,13 @@ M.job = function(cmd, opts, on_exit)
     return nil, pid_or_err
   end
 
-  stdout:read_start(function(err, data)
+  stdout:read_start(opts.stdout or function(err, data)
     log.assert(not err, err)
     if type(data) == "string" then
       stdout_chunks[#stdout_chunks + 1] = data
     end
   end)
-  stderr:read_start(function(err, data)
+  stderr:read_start(opts.stderr or function(err, data)
     log.assert(not err, err)
     if type(data) == "string" then
       stderr_chunks[#stderr_chunks + 1] = data
@@ -1797,9 +1796,17 @@ M.job = function(cmd, opts, on_exit)
     pid = pid_or_err,
     ---@param timeout_ms integer? Defaults to math.huge
     wait = function(timeout_ms)
-      vim.wait(timeout_ms or math.huge, function()
+      local completed_in_time, errnum = vim.wait(timeout_ms or math.huge, function()
         return completed
       end)
+      if not completed_in_time then
+        if errnum == -1 then
+          error("job timed out")
+        elseif errnum == -2 then
+          error("job was interrupted")
+        end
+        error("unknown")
+      end
       return {
         code = exit_code,
         stdout = stdout_chunks,
