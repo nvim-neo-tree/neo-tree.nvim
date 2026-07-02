@@ -341,7 +341,7 @@ local function copylink(source, destination)
   local target = log.assert(uv.fs_readlink(source))
   local symlink_ok, err = uv.fs_symlink(target, destination)
   if not symlink_ok then
-    return false, "Could not copy symlink ", source, "to", destination, ":", err
+    return false, ("Could not copy symlink %s to %s: %s"):format(source, destination, err)
   end
   return true
 end

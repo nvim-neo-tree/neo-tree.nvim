@@ -11,8 +11,12 @@ local function is_callable(fn)
 end
 
 ---because we can't store varargs
+---@param step function A special function which calls this function (see below)
+---@param thread thread
+---@param callback function?
+---@param ... any
 local function callback_or_next(step, thread, callback, ...)
-  local stat = select(1, ...)
+  local stat, returned_function, nargs = ...
 
   if not stat then
     error(string.format("The coroutine failed with this message: %s", select(2, ...)))
@@ -24,17 +28,14 @@ local function callback_or_next(step, thread, callback, ...)
     end
     callback(select(2, ...))
   else
-    local returned_function = select(2, ...)
-    local nargs = select(3, ...)
-
     assert(is_callable(returned_function), "type error :: expected func")
     returned_function(vararg.rotate(nargs, step, select(4, ...)))
   end
 end
 
 ---Executes a future with a callback when it is done
----@param async_function Future: the future to execute
----@param callback function: the callback to call when done
+---@param async_function function: the future to execute
+---@param callback function?: the callback to call when done
 local execute = function(async_function, callback, ...)
   assert(is_callable(async_function), "type error :: expected func")
 
@@ -51,24 +52,24 @@ end
 local add_leaf_function
 do
   ---A table to store all leaf async functions
-  _PlenaryLeafTable = setmetatable({}, {
+  local _NeotreeAsyncLeafFunctions = setmetatable({}, {
     __mode = "k",
   })
 
   add_leaf_function = function(async_func, argc)
     assert(
-      _PlenaryLeafTable[async_func] == nil,
+      _NeotreeAsyncLeafFunctions[async_func] == nil,
       "Async function should not already be in the table"
     )
-    _PlenaryLeafTable[async_func] = argc
+    _NeotreeAsyncLeafFunctions[async_func] = argc
   end
 
   function M.is_leaf_function(async_func)
-    return _PlenaryLeafTable[async_func] ~= nil
+    return _NeotreeAsyncLeafFunctions[async_func] ~= nil
   end
 
   function M.get_leaf_function_argc(async_func)
-    return _PlenaryLeafTable[async_func]
+    return _NeotreeAsyncLeafFunctions[async_func]
   end
 end
 

@@ -12,7 +12,8 @@ local git = require("neo-tree.git")
 local git_utils = require("neo-tree.git.utils")
 local events = require("neo-tree.events")
 local nt = require("neo-tree")
-local async = require("neo-tree.legacy.plenary.async.init")
+local async = require("neo-tree.legacy.plenary.async.async")
+local async_util = require("neo-tree.legacy.plenary.async.util")
 local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
 local M = {}
@@ -298,7 +299,7 @@ local function get_children_sync(path)
 end
 
 ---@param path string
----@param callback
+---@param callback function
 local function get_children_async(path, callback)
   local children = {}
   uv.fs_opendir(path, function(err, dir)
@@ -396,7 +397,7 @@ local function async_scan(context, path)
       table.insert(scan_tasks, scan_task)
     end
 
-    async.util.run_all(
+    async_util.run_all(
       scan_tasks,
       vim.schedule_wrap(function()
         job_complete(context)
@@ -722,6 +723,14 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async_dir_sca
   end
 end
 
+local finalize_async = async.wrap(function(context, callback)
+  vim.schedule(function()
+    job_complete(context, true)
+    render_context(context)
+    callback()
+  end)
+end, 2)
+
 ---@param state neotree.sources.filesystem.State
 ---@param parent_id string
 ---@param recursive boolean?
@@ -767,12 +776,9 @@ M.get_dir_items_async = function(state, parent_id, recursive)
     end
     table.insert(scan_tasks, scan_task)
   end
-  async.util.join(scan_tasks)
+  async_util.join(scan_tasks)
 
-  vim.schedule(function()
-    job_complete(context, true)
-    render_context(context)
-  end)
+  finalize_async(context)
 end
 
 ---Stop watchers for the current state

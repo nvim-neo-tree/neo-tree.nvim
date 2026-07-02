@@ -220,21 +220,25 @@ M.filter_files_external = function(
   ---@diagnostic disable-next-line: missing-fields
   local job = utils.job(vim.list_extend({ cmd }, args), {
     cwd = path,
-    stdout = function(err, line)
-      if not line then
+    stdout = function(err, out)
+      if not out then
         return
       end
       if item_count < limit and on_insert then
-        on_insert(err, line)
+        for line in utils.gsplit_plain(out, "\n") do
+          on_insert(err, line)
+        end
         item_count = item_count + 1
       end
     end,
-    stderr = function(err, line)
-      if not line then
+    stderr = function(err, out)
+      if not out then
         return
       end
       if item_count < limit and on_insert then
-        on_insert(err or line, line)
+        for line in utils.gsplit_plain(out, "\n") do
+          on_insert(err, line)
+        end
         -- item_count = item_count + 1
       end
     end,
@@ -245,7 +249,7 @@ M.filter_files_external = function(
   end)
 
   -- This ensures that only one job is running at a time
-  -- running_jobs:for_each(kill_job)
+  running_jobs:for_each(kill_job)
   running_jobs:add(job)
 end
 
