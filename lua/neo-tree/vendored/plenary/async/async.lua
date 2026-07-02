@@ -1,6 +1,6 @@
 local co = coroutine
-local vararg = require("neo-tree.legacy.plenary.vararg")
-local errors = require("neo-tree.legacy.plenary.errors")
+local vararg = require("neo-tree.vendored.plenary.vararg")
+local errors = require("neo-tree.vendored.plenary.errors")
 local traceback_error = errors.traceback_error
 
 local M = {}

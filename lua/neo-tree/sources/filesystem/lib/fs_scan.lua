@@ -12,8 +12,8 @@ local git = require("neo-tree.git")
 local git_utils = require("neo-tree.git.utils")
 local events = require("neo-tree.events")
 local nt = require("neo-tree")
-local async = require("neo-tree.legacy.plenary.async.async")
-local async_util = require("neo-tree.legacy.plenary.async.util")
+local async = require("neo-tree.vendored.plenary.async.async")
+local async_util = require("neo-tree.vendored.plenary.async.util")
 local ignored = require("neo-tree.sources.filesystem.lib.ignored")
 
 local M = {}

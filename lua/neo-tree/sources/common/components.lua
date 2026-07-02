@@ -122,7 +122,7 @@ end
 ---`sign_getdefined` based wrapper with compatibility
 ---@param severity string
 ---@return vim.fn.sign_getdefined.ret.item
-local get_legacy_sign = function(severity)
+local get_vendored_sign = function(severity)
   local sign = vim.fn.sign_getdefined("DiagnosticSign" .. severity)
   if vim.tbl_isempty(sign) then
     -- backwards compatibility...
@@ -167,10 +167,10 @@ local function get_diagnostic_sign(severity)
         texthl = "DiagnosticSign" .. severity,
       }
     elseif signs == true then
-      sign = get_legacy_sign(severity)
+      sign = get_vendored_sign(severity)
     end
   else -- before 0.10
-    sign = get_legacy_sign(severity)
+    sign = get_vendored_sign(severity)
   end
 
   if type(sign) ~= "table" then

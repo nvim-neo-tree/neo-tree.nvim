@@ -1,7 +1,7 @@
-local a = require("neo-tree.legacy.plenary.async.async")
-local vararg = require("neo-tree.legacy.plenary.vararg")
+local a = require("neo-tree.vendored.plenary.async.async")
+local vararg = require("neo-tree.vendored.plenary.vararg")
 -- local control = a.control
-local control = require("neo-tree.legacy.plenary.async.control")
+local control = require("neo-tree.vendored.plenary.async.control")
 local channel = control.channel
 
 local M = {}

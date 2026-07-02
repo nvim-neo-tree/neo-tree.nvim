@@ -1,4 +1,4 @@
-local a = require("neo-tree.legacy.plenary.async.async")
+local a = require("neo-tree.vendored.plenary.async.async")
 local tbl = require("plenary.tbl")
 
 local M = {}
