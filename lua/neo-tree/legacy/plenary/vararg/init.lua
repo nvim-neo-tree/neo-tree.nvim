@@ -1,3 +1,3 @@
 return {
-  rotate = require "plenary.vararg.rotate",
+  rotate = require("plenary.vararg.rotate"),
 }
