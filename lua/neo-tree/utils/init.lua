@@ -769,7 +769,11 @@ M.resolve_width = function(width)
   return math.floor(width)
 end
 
-M.force_new_split = function(current_position, escaped_path)
+---@param current_position neotree.State.CurrentPosition
+---@param escaped_path string
+---@return boolean result
+---@return string? err
+local force_new_split_old = function(current_position, escaped_path)
   local result, err
   local split_command = "vsplit"
   -- respect window position in user config when Neo-tree is the only window
@@ -793,103 +797,124 @@ M.force_new_split = function(current_position, escaped_path)
   return result, err
 end
 
----Open file in the appropriate window.
----@param state neotree.State
----@param path string The file to open
----@param open_cmd string? The vimcommand to use to open the file
----@param bufnr number|nil The buffer number to open
-M.open_file = function(state, path, open_cmd, bufnr)
-  open_cmd = open_cmd or "edit"
-  -- If the file is already open, switch to it.
-  bufnr = bufnr or M.find_buffer_by_name(path)
-  if bufnr <= 0 then
-    bufnr = nil
-  else
-    local buf_cmd_lookup =
-      { edit = "b", e = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
-    local cmd_for_buf = buf_cmd_lookup[open_cmd]
-    if cmd_for_buf then
-      open_cmd = cmd_for_buf
-    else
-      bufnr = nil
+---@param current_position neotree.State.CurrentPosition
+---@param escaped_path string unused in current neo-tree usage but kept around to not break API changes. change in 4.0
+---@param bufnr integer? this is provi
+---@return boolean result
+---@return string? err
+M.force_new_split = function(current_position, escaped_path, bufnr)
+  if not bufnr then
+    return force_new_split_old(current_position, escaped_path)
+  end
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  if bufname == "" then
+  end
+end
+
+do
+  local buf_cmd_lookup = { edit = "b", split = "sb", sp = "sb", vsplit = "vert sb", vs = "vert sb" }
+  ---Open file in the appropriate window.
+  ---@param state neotree.State
+  ---@param path string The file to open
+  ---@param open_cmd string? The vimcommand to use to open the file
+  ---@param bufnr number|nil The buffer number to open
+  M.open_file = function(state, path, open_cmd, bufnr)
+    if not M.truthy(path) then
+      return
     end
-  end
 
-  if not M.truthy(path) then
-    return
-  end
+    open_cmd = open_cmd or "edit"
+    -- If the file is already open, switch to it.
+    bufnr = bufnr or M.find_buffer_by_name(path)
 
-  local config = require("neo-tree").config
-  local relative = config.open_files_using_relative_paths
-  local path_to_open = relative and vim.fn.fnamemodify(path, ":.") or path
-  local arg1 = bufnr or path_to_open
-  local events = require("neo-tree.events")
-  local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
-    state = state,
-    path = path,
-    open_cmd = open_cmd,
-    bufnr = bufnr,
-  }) or {}
-  if event_result.handled then
-    events.fire_event(events.FILE_OPENED, path)
-    return
-  end
+    local events = require("neo-tree.events")
 
-  ---@return boolean result
-  ---@return string? err
-  local open_by_cmd = function()
-    local ok = pcall(vim.api.nvim_cmd, {
-      cmd = open_cmd,
-      args = { arg1 },
-      mods = { keepalt = config.keep_altfile },
-      magic = { file = false, bar = false },
-    })
-    if not ok then
-      return false, vim.v.errmsg
+    -- normalize open_cmd
+    local parsed_cmd = vim.api.nvim_parse_cmd(open_cmd)
+    open_cmd = assert(parsed_cmd.cmd, "could not parse open_cmd " .. open_cmd)
+    local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
+      state = state,
+      path = path,
+      open_cmd = open_cmd,
+      bufnr = bufnr,
+    }) or {}
+
+    if event_result.handled then
+      events.fire_event(events.FILE_OPENED, path)
+      return
     end
-    return true
-  end
 
-  ---@type boolean, string?
-  local result, err = true, nil
-  if state.current_position == "current" then
-    result, err = open_by_cmd()
-  else
-    local winid, is_neo_tree_window = M.get_appropriate_window(state)
-    vim.api.nvim_set_current_win(winid)
-    -- TODO: make this configurable, see issue #43
-    if is_neo_tree_window then
-      local width = vim.api.nvim_win_get_width(0)
-      if width == vim.o.columns then
-        -- Neo-tree must be the only window, restore it's status as a sidebar
-        width = M.get_value(state, "window.width", 40, false)
-        width = M.resolve_width(width)
+    local config = require("neo-tree").config
+    local relative = config.open_files_using_relative_paths
+    local path_to_open = relative and vim.fn.fnamemodify(path, ":.") or path
+    if bufnr == nil or bufnr <= 0 then
+      -- as mentioned in `:h open-file` (0.13 nightly only, atm), the best way to open a literal filepath and avoid
+      -- filepath escaping issues is to add the buffer first, then open the buffer by number.
+      bufnr = vim.fn.bufadd(path_to_open)
+    end
+
+    ---@return boolean result
+    ---@return string? err
+    local open_buf_by_cmd = function()
+      local open_buf_cmd = buf_cmd_lookup[open_cmd] or open_cmd
+      local parsed_buf_cmd = vim.api.nvim_parse_cmd(open_buf_cmd)
+
+      local nvim_cmd_arg = vim.tbl_deep_extend("force", parsed_buf_cmd, {
+        args = { bufnr },
+        mods = {
+          keepalt = config.keep_altfile,
+          split = parsed_cmd.mods.split,
+        },
+        magic = { file = false, bar = false },
+      })
+      local ok, err = pcall(vim.api.nvim_cmd, nvim_cmd_arg)
+      if not ok then
+        return false, err
       end
-      result, err = M.force_new_split(state.current_position, path_to_open)
-      vim.api.nvim_win_set_width(winid, width)
-    else
-      result, err = open_by_cmd()
+      return true
     end
-  end
 
-  if not result and string.find(err or "", "winfixbuf") and M.is_winfixbuf() then
-    local winid, is_neo_tree_window = M.get_appropriate_window(state, true)
-    -- Rescan window list to find a window that is not winfixbuf.
-    -- If found, retry executing command in that window,
-    -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
-    if not is_neo_tree_window and not M.is_winfixbuf(winid) then
-      vim.api.nvim_set_current_win(winid)
-      result, err = open_by_cmd()
+    ---@type boolean, string?
+    local result, err = true, nil
+    if state.current_position == "current" then
+      result, err = open_buf_by_cmd()
     else
-      result, err = M.force_new_split(state.current_position, path_to_open)
+      local winid, is_neo_tree_window = M.get_appropriate_window(state)
+      vim.api.nvim_set_current_win(winid)
+      -- TODO: make this configurable, see issue #43
+      if is_neo_tree_window then
+        local width = vim.api.nvim_win_get_width(0)
+        if width == vim.o.columns then
+          -- Neo-tree must be the only window, restore it's status as a sidebar
+          width = M.get_value(state, "window.width", 40, false)
+          width = M.resolve_width(width)
+        end
+        result, err = M.force_new_split(state.current_position, path_to_open, bufnr)
+        vim.api.nvim_win_set_width(winid, width)
+      else
+        result, err = open_buf_by_cmd()
+      end
     end
-  end
-  if result or err == "Vim(edit):E325: ATTENTION" then
-    -- fixes #321
-    vim.bo[0].buflisted = true
-    events.fire_event(events.FILE_OPENED, path)
-  else
-    log.error("Error opening file:", err)
+
+    if not result and string.find(err or "", "winfixbuf") and M.is_winfixbuf() then
+      local winid, is_neo_tree_window = M.get_appropriate_window(state, true)
+      -- Rescan window list to find a window that is not winfixbuf.
+      -- If found, retry executing command in that window,
+      -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
+      if not is_neo_tree_window and not M.is_winfixbuf(winid) then
+        vim.api.nvim_set_current_win(winid)
+        result, err = open_buf_by_cmd()
+      else
+        result, err = M.force_new_split(state.current_position, path_to_open, bufnr)
+      end
+    end
+    if result or err == "Vim(edit):E325: ATTENTION" then
+      -- fixes #321
+      vim.bo[0].buflisted = true
+      events.fire_event(events.FILE_OPENED, path)
+    else
+      log.error("Error opening file:", err)
+    end
   end
 end
 
