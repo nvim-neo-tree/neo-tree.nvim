@@ -40,7 +40,7 @@ This is open for debate, but here is the current style choices being observed:
 
 ### StyLua
 
-We use (StyLua)[https://github.com/JohnnyMorganz/StyLua] to enforce consistency
+We use [StyLua](https://github.com/JohnnyMorganz/StyLua) to enforce consistency
 in code. You should install it on your local machine. PRs will be checked with
 this tool.
 
