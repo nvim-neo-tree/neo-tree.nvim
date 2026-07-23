@@ -294,7 +294,7 @@ function compat.nvim_win_set_height(win, height)
     vim.api.nvim_win_resize(win, -1, height, { anchor = "left" })
   else
     ---@diagnostic disable-next-line: deprecated
-    vim.api.nvim_win_set_width(win, height)
+    vim.api.nvim_win_set_height(win, height)
   end
 end
 
