@@ -273,7 +273,6 @@ end
 compat.wo = new_win_opt_accessor()
 
 ---Wrapper for nvim_win_set_width that uses nvim_win_resize on Neovim 0.13+
----to support dynamic window resizing with proper anchoring.
 ---@param win integer Window ID, or 0 for current window
 ---@param width integer New width in columns
 function compat.nvim_win_set_width(win, width)
@@ -286,7 +285,6 @@ function compat.nvim_win_set_width(win, width)
 end
 
 ---Wrapper for nvim_win_set_height that uses nvim_win_resize on Neovim 0.13+
----to support dynamic window resizing with proper anchoring.
 ---@param win integer Window ID, or 0 for current window
 ---@param height integer New height in columns
 function compat.nvim_win_set_height(win, height)
