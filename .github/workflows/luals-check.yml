@@ -30,6 +30,9 @@ jobs:
         install_args: "github:neovim/neovim@${{matrix.neovim}}"
 
     - name: Run lua-language-server check
+      # nightly gets deprecated notices often so this prevents ci from looking like we're failing when we're just using
+      # a function that will only be deprecated on stable in months
+      continue-on-error: ${{ matrix.neovim == 'nightly' }}
       run: |
         mise use github:neovim/neovim@${{matrix.neovim}}
         mise run update-dependencies
