@@ -857,7 +857,7 @@ M.open_file = function(state, path, open_cmd, bufnr)
         width = M.resolve_width(width)
       end
       result, err = M.force_new_split(state.current_position, escaped_path)
-      vim.api.nvim_win_set_width(winid, width)
+      compat.nvim_win_set_width(winid, width)
     else
       ---@diagnostic disable-next-line: param-type-mismatch
       result, err = pcall(vim.cmd, command)

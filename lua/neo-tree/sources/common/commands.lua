@@ -6,6 +6,7 @@ local events = require("neo-tree.events")
 local inputs = require("neo-tree.ui.inputs")
 local popups = require("neo-tree.ui.popups")
 local log = require("neo-tree.log")
+local compat = require("neo-tree.utils._compat")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
 local async = require("plenary.async")
@@ -217,7 +218,7 @@ M.toggle_auto_expand_width = function(state)
     if (state.window.last_user_width or width) >= vim.api.nvim_win_get_width(0) then
       state.window.last_user_width = width
     end
-    vim.api.nvim_win_set_width(0, state.window.last_user_width)
+    compat.nvim_win_set_width(0, state.window.last_user_width)
     state.win_width = state.window.last_user_width
     state.longest_width_exact = 0
     log.trace("Collapse auto_expand_width.")

@@ -272,4 +272,17 @@ end
 ---@type vim.wo
 compat.wo = new_win_opt_accessor()
 
+---Wrapper for nvim_win_set_width that uses nvim_win_resize on Neovim 0.13+
+---to support dynamic window resizing with proper anchoring.
+---@param win integer Window ID, or 0 for current window
+---@param width integer New width in columns
+function compat.nvim_win_set_width(win, width)
+  if vim.fn.has("nvim-0.13") == 1 then
+    vim.api.nvim_win_resize(win, width, -1, { anchor = "left" })
+  else
+    ---@diagnostic disable-next-line: deprecated
+    vim.api.nvim_win_set_width(win, width)
+  end
+end
+
 return compat
