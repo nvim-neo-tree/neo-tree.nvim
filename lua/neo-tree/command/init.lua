@@ -70,7 +70,11 @@ local function handle_reveal(args, state)
     return
   end
 
-  local reveal_file_parent = assert(utils.split_path(args.reveal_file))
+  local reveal_file_parent = utils.split_path(args.reveal_file)
+  if not reveal_file_parent then
+    return
+  end
+
   if args.reveal_force_cwd then
     args.dir = reveal_file_parent
     do_show_or_focus(args, state, true)
