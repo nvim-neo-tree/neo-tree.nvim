@@ -858,9 +858,12 @@ do
     local open_buf_by_cmd = function()
       local open_buf_cmd = buf_cmd_lookup[open_cmd] or open_cmd
       local parsed_buf_cmd = vim.api.nvim_parse_cmd(open_buf_cmd)
+      local arg1 = parsed_buf_cmd.cmd:find("buffer", 1, true) and bufnr
+        or vim.api.nvim_buf_get_name(bufnr)
 
+      vim.print(arg1)
       local nvim_cmd_arg = vim.tbl_deep_extend("force", parsed_buf_cmd, {
-        args = { bufnr },
+        args = { arg1 },
         mods = {
           keepalt = config.keep_altfile,
           split = parsed_cmd.mods.split,
