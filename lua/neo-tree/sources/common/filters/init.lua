@@ -118,7 +118,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
     scroll_padding = 0
     width = vim.fn.winwidth(winid)
     row = height - 2
-    vim.api.nvim_win_set_height(winid, row)
+    compat.nvim_win_set_height(winid, row)
   end
 
   state.orig_tree = vim.deepcopy(state.tree)
@@ -188,7 +188,7 @@ M.show_filter = function(state, search_as_you_type, keep_filter_on_submit)
 
   local restore_height = vim.schedule_wrap(function()
     if vim.api.nvim_win_is_valid(winid) then
-      vim.api.nvim_win_set_height(winid, height)
+      compat.nvim_win_set_height(winid, height)
     end
   end)
 

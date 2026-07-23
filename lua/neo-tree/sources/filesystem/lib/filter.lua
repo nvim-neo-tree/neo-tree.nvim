@@ -44,7 +44,7 @@ M.show_filter = function(
     scroll_padding = 0
     local width = vim.fn.winwidth(winid)
     local row = height - 2
-    vim.api.nvim_win_set_height(winid, row)
+    compat.nvim_win_set_height(winid, row)
     popup_options = popups.popup_options(popup_msg, width, {
       relative = "win",
       winid = winid,
@@ -191,7 +191,7 @@ M.show_filter = function(
 
   local restore_height = vim.schedule_wrap(function()
     if vim.api.nvim_win_is_valid(winid) then
-      vim.api.nvim_win_set_height(winid, height)
+      compat.nvim_win_set_height(winid, height)
     end
   end)
   ---@class neotree.sources.filesystem.FuzzyFinder.BuiltinCommands : neotree.FuzzyFinder.BuiltinCommands
