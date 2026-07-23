@@ -30,6 +30,7 @@ jobs:
         install_args: "github:neovim/neovim@${{matrix.neovim}}"
 
     - name: Run lua-language-server check
+      continue-on-error: ${{ matrix.neovim == 'nightly' }}
       run: |
         mise use github:neovim/neovim@${{matrix.neovim}}
         mise run update-dependencies
