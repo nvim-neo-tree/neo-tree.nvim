@@ -1524,7 +1524,7 @@ render_tree = function(state)
     state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
     if should_auto_expand and desired_width > state.window.last_user_width then
       log.at.trace.format("auto_expand_width: on. Expanding width to %s.", state.longest_node)
-      vim.api.nvim_win_set_width(state.winid, desired_width)
+      _compat.nvim_win_set_width(state.winid, desired_width)
       state.win_width = desired_width
     end
   end
