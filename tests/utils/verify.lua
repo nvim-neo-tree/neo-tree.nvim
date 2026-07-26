@@ -14,24 +14,21 @@ verify.eventually = function(assertfunc, failmsg, timeout, ...)
 end
 
 local id = 0
----Waits until the next vim.schedule before running assertfunc
+---Blocks until the assertfunc is run on the next vim.schedule. Will throw the error thrown by the scheduled function.
 ---@param assertfunc function
 ---@param timeout integer?
----@param failmsg string
-verify.schedule = function(assertfunc, timeout, failmsg)
+verify.schedule = function(assertfunc, timeout)
   id = id + 1
   local scheduled_func_ran = false
-  local success = false
-  local args
+  local ok, err = false, nil
   vim.schedule(function()
-    args = { assertfunc() }
-    success = args[1]
+    ok, err = pcall(assertfunc)
     scheduled_func_ran = true
   end)
-  local notimeout, errcode = vim.wait(timeout or DEFAULT_TIMEOUT, function()
+  local notimeout = vim.wait(timeout or DEFAULT_TIMEOUT, function()
     return scheduled_func_ran
   end)
-  assert(success, failmsg)
+  assert(notimeout and ok, err)
 end
 
 verify.after = function(timeout, assertfunc, failmsg)

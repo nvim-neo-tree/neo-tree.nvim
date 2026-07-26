@@ -686,7 +686,7 @@ M.map = function(tbl, fn)
   return t
 end
 
----Finds an appropriate window to open a file from neo-tree
+---Finds an appropriate window to open a file from neo-tree.
 ---@param state neotree.State
 ---@param ignore_winfixbuf boolean?
 M.get_appropriate_window = function(state, ignore_winfixbuf)
@@ -769,11 +769,14 @@ M.resolve_width = function(width)
   return math.floor(width)
 end
 
+---Forces a split from Neo-tree. You must set the current window to a non-neo-tree buffer for this
+---to work.
+---@deprecated remove in v4.0, use split_from_neo_tree instead (takes bufnr instead of bufname).
 ---@param current_position neotree.State.CurrentPosition
----@param escaped_path string
+---@param escaped_path string The path to open
 ---@return boolean result
 ---@return string? err
-local force_new_split_old = function(current_position, escaped_path)
+M.force_new_split = function(current_position, escaped_path)
   local result, err
   local split_command = "vsplit"
   -- respect window position in user config when Neo-tree is the only window
@@ -797,18 +800,43 @@ local force_new_split_old = function(current_position, escaped_path)
   return result, err
 end
 
+---Forces a split from Neo-tree with the given buffer. You must set the current window to a non-neo-tree buffer for this
+---to work.
 ---@param current_position neotree.State.CurrentPosition
----@param escaped_path string unused in current neo-tree usage but kept around to not break API changes. change in 4.0
----@param bufnr integer? this is provi
+---@param bufnr integer
 ---@return boolean result
 ---@return string? err
-M.force_new_split = function(current_position, escaped_path, bufnr)
-  if not bufnr then
-    return force_new_split_old(current_position, escaped_path)
+M.split_from_neo_tree = function(current_position, bufnr)
+  local result, err
+  ---@type vim.api.keyset.cmd.mods
+  local mods = { vertical = not vim.tbl_contains({ "top", "bottom" }, current_position) }
+
+  -- split away from neo-tree
+  if vim.tbl_contains({ "left", "top" }, current_position) then
+    mods.split = "belowright"
+  elseif vim.tbl_contains({ "right", "bottom" }, current_position) then
+    mods.split = "aboveleft"
   end
+
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   if bufname == "" then
+    -- vim's default behavior is to overwrite [No Name] buffers.
+    -- We need to split first and then open the path to workaround this behavior.
+    result, err = pcall(vim.api.nvim_cmd, {
+      cmd = "split",
+      mods = mods,
+    })
+    if result then
+      vim.cmd.buffer(bufnr)
+    end
+  else
+    result, err = pcall(vim.api.nvim_cmd, {
+      cmd = "sbuffer",
+      args = { bufnr },
+      mods = mods,
+    })
   end
+  return result, err
 end
 
 do
@@ -861,7 +889,6 @@ do
       local arg1 = parsed_buf_cmd.cmd:find("buffer", 1, true) and bufnr
         or vim.api.nvim_buf_get_name(bufnr)
 
-      vim.print(arg1)
       local nvim_cmd_arg = vim.tbl_deep_extend("force", parsed_buf_cmd, {
         args = { arg1 },
         mods = {
@@ -870,11 +897,7 @@ do
         },
         magic = { file = false, bar = false },
       })
-      local ok, err = pcall(vim.api.nvim_cmd, nvim_cmd_arg)
-      if not ok then
-        return false, err
-      end
-      return true
+      return assert(pcall(vim.api.nvim_cmd, nvim_cmd_arg))
     end
 
     ---@type boolean, string?
@@ -892,8 +915,8 @@ do
           width = M.get_value(state, "window.width", 40, false)
           width = M.resolve_width(width)
         end
-        result, err = M.force_new_split(state.current_position, path_to_open, bufnr)
-        vim.api.nvim_win_set_width(winid, width)
+        result, err = M.split_from_neo_tree(state.current_position, bufnr)
+        compat.nvim_win_set_width(winid, width)
       else
         result, err = open_buf_by_cmd()
       end
@@ -908,7 +931,7 @@ do
         vim.api.nvim_set_current_win(winid)
         result, err = open_buf_by_cmd()
       else
-        result, err = M.force_new_split(state.current_position, path_to_open, bufnr)
+        result, err = M.split_from_neo_tree(state.current_position, bufnr)
       end
     end
     if result or err == "Vim(edit):E325: ATTENTION" then
