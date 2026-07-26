@@ -825,16 +825,16 @@ M.split_from_neo_tree = function(current_position, bufnr)
     result, err = pcall(vim.api.nvim_cmd, {
       cmd = "split",
       mods = mods,
-    })
+    }, {})
     if result then
       vim.cmd.buffer(bufnr)
     end
   else
     result, err = pcall(vim.api.nvim_cmd, {
       cmd = "sbuffer",
-      args = { bufnr },
+      args = { tostring(bufnr) },
       mods = mods,
-    })
+    }, {})
   end
   return result, err
 end
@@ -858,7 +858,7 @@ do
     local events = require("neo-tree.events")
 
     -- normalize open_cmd
-    local parsed_cmd = vim.api.nvim_parse_cmd(open_cmd)
+    local parsed_cmd = vim.api.nvim_parse_cmd(open_cmd, {})
     open_cmd = assert(parsed_cmd.cmd, "could not parse open_cmd " .. open_cmd)
     local event_result = events.fire_event(events.FILE_OPEN_REQUESTED, {
       state = state,
@@ -885,19 +885,20 @@ do
     ---@return string? err
     local open_buf_by_cmd = function()
       local open_buf_cmd = buf_cmd_lookup[open_cmd] or open_cmd
-      local parsed_buf_cmd = vim.api.nvim_parse_cmd(open_buf_cmd)
+      local parsed_buf_cmd = vim.api.nvim_parse_cmd(open_buf_cmd, {})
       local arg1 = parsed_buf_cmd.cmd:find("buffer", 1, true) and bufnr
         or vim.api.nvim_buf_get_name(bufnr)
 
       local nvim_cmd_arg = vim.tbl_deep_extend("force", parsed_buf_cmd, {
-        args = { arg1 },
+        args = { tostring(arg1) },
         mods = {
           keepalt = config.keep_altfile,
           split = parsed_cmd.mods.split,
         },
         magic = { file = false, bar = false },
       })
-      return assert(pcall(vim.api.nvim_cmd, nvim_cmd_arg))
+      nvim_cmd_arg.range = nil
+      return assert(pcall(vim.api.nvim_cmd, nvim_cmd_arg, {}))
     end
 
     ---@type boolean, string?
