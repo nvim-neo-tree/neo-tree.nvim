@@ -1742,17 +1742,59 @@ end
 ---@type table<integer, integer[]>
 M.prior_windows = {}
 
----Start an async command with uv.
+---@param on_line fun(err: string?, line: string?)
+---@param sep string
+---@return thread
+local chunk_to_lines = function(on_line, sep)
+  ---@param err string?
+  ---@param next_chunk string?
+  return coroutine.create(function(err, next_chunk)
+    local prev_line = nil
+    while type(next_chunk) == "string" do
+      local iter = M.gsplit_plain(next_chunk, sep)
+      if prev_line then
+        local first_line = iter()
+        if first_line then
+          prev_line = prev_line .. first_line
+          for line in iter do
+            on_line(err, prev_line)
+            prev_line = line
+          end
+        end
+      else
+        prev_line = iter()
+        if prev_line then
+          for line in iter do
+            on_line(err, prev_line)
+            prev_line = line
+          end
+        end
+      end
+      err, next_chunk = coroutine.yield()
+    end
+
+    if err or prev_line then
+      on_line(err, prev_line)
+    end
+  end)
+end
+
+---@class neotree.utils.JobParams : uv.spawn.options
+---@field stdout fun(err: string?, data: string?)?
+---@field stderr fun(err: string?, data: string?)?
+---@field stdout_by_line fun(err: string?, line: string?)?
+---@field stderr_by_line fun(err: string?, line: string?)?
+---@field stdout_sep string?
+---@field stderr_sep string?
+
+---Ergonomic wrapper around uv.spawn
 ---Placeholder before upgrading to vim.system
 ---@param cmd string[]
----@param opts uv.spawn.options|{stdout: fun(err: string?, data: string?)?, stderr: fun(err: string?, data: string?)}? args, hide, and stdio are ignored.
+---@param opts neotree.utils.JobParams? args, hide, and stdio are ignored.
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
 ---@return neotree.utils.Job?
----@return integer|string err
+---@return integer|string pid_or_err
 M.job = function(cmd, opts, on_exit)
-  local stdout_chunks = {}
-  local stderr_chunks = {}
-
   local path = cmd[1]
   local completed = false
   local exit_code
@@ -1762,20 +1804,34 @@ M.job = function(cmd, opts, on_exit)
   opts.args = { unpack(cmd, 2) }
   opts.hide = true
   opts.stdio = { nil, stdout, stderr }
-  -- vim.print(opts)
+  local stdout_chunks = {}
+  local stderr_chunks = {}
+
+  ---@type function[]
+  local on_exit_handlers = {}
+  ---@cast opts -neotree.utils.JobParams
   local handle, pid_or_err = uv.spawn(path, opts, function(code, _)
     stdout:close()
     stderr:close()
     exit_code = code
     completed = true
+    for _, fn in ipairs(on_exit_handlers) do
+      fn()
+    end
     if on_exit then
       on_exit(code, stdout_chunks, stderr_chunks)
     end
   end)
-  if not handle then
-    stdout:close()
-    stderr:close()
-    return nil, pid_or_err
+
+  if opts.stdout_by_line then
+    assert(not opts.stdout)
+    local consumer = chunk_to_lines(opts.stdout_by_line, opts.stdout_sep or "\n")
+    opts.stdout = function(err, data)
+      coroutine.resume(consumer, err, data)
+    end
+    on_exit_handlers[#on_exit_handlers + 1] = function()
+      coroutine.resume(consumer)
+    end
   end
 
   stdout:read_start(opts.stdout or function(err, data)
@@ -1784,12 +1840,34 @@ M.job = function(cmd, opts, on_exit)
       stdout_chunks[#stdout_chunks + 1] = data
     end
   end)
+
+  if opts.stderr_by_line then
+    assert(
+      not opts.stderr,
+      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
+    )
+    local consumer = chunk_to_lines(opts.stderr_by_line, opts.stderr_sep or "\n")
+    opts.stderr = function(err, data)
+      coroutine.resume(consumer, err, data)
+    end
+    on_exit_handlers[#on_exit_handlers + 1] = function()
+      coroutine.resume(consumer)
+    end
+  end
+
   stderr:read_start(opts.stderr or function(err, data)
     log.assert(not err, err)
     if type(data) == "string" then
       stderr_chunks[#stderr_chunks + 1] = data
     end
   end)
+
+  if not handle then
+    stdout:close()
+    stderr:close()
+    return nil, pid_or_err
+  end
+
   ---@class neotree.utils.Job
   local job = {
     handle = handle,
@@ -1816,5 +1894,10 @@ M.job = function(cmd, opts, on_exit)
   }
   return job, pid_or_err
 end
+
+---@class neotree.Utils._Private
+M._testing = {
+  chunk_to_lines = chunk_to_lines,
+}
 
 return M

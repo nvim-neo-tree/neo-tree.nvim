@@ -216,32 +216,29 @@ M.filter_files_external = function(
   if fd_supports_max_results then
     limit = math.huge -- `fd` manages limit on its own
   end
+  local command = vim.list_extend({ cmd }, args)
   local item_count = 0
   ---@diagnostic disable-next-line: missing-fields
-  local job = utils.job(vim.list_extend({ cmd }, args), {
+  local job = utils.job(command, {
     cwd = path,
-    stdout = function(err, out)
-      if not out then
+    stdout_by_line = on_insert and function(err, line)
+      if not line then
         return
       end
-      if item_count < limit and on_insert then
-        for line in utils.gsplit_plain(out, "\n") do
-          on_insert(err, line)
-        end
+      if item_count < limit then
+        on_insert(err, line)
         item_count = item_count + 1
       end
-    end,
-    stderr = function(err, out)
-      if not out then
+    end or nil,
+    stderr_by_line = on_insert and function(err, line)
+      if not line then
         return
       end
-      if item_count < limit and on_insert then
-        for line in utils.gsplit_plain(out, "\n") do
-          on_insert(err, line)
-        end
-        -- item_count = item_count + 1
+      if item_count < limit then
+        on_insert(err, line)
+        item_count = item_count + 1
       end
-    end,
+    end or nil,
   }, function(...)
     if on_exit then
       on_exit(...)
