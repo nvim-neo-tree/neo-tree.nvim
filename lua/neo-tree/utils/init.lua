@@ -771,7 +771,7 @@ end
 
 ---Forces a split from Neo-tree. You must set the current window to a non-neo-tree buffer for this
 ---to work.
----@deprecated remove in v4.0, use split_from_neo_tree instead (takes bufnr instead of bufname).
+---@deprecated remove in v4.0, use force_new_split2 instead (takes bufnr instead of bufname).
 ---@param current_position neotree.State.CurrentPosition
 ---@param escaped_path string The path to open
 ---@return boolean result
@@ -806,7 +806,7 @@ end
 ---@param bufnr integer
 ---@return boolean result
 ---@return string? err
-M.split_from_neo_tree = function(current_position, bufnr)
+M.force_new_split2 = function(current_position, bufnr)
   local result, err
   ---@type vim.api.keyset.cmd.mods
   local mods = { vertical = not vim.tbl_contains({ "top", "bottom" }, current_position) }
@@ -914,7 +914,7 @@ do
           width = M.get_value(state, "window.width", 40, false)
           width = M.resolve_width(width)
         end
-        result, err = M.split_from_neo_tree(state.current_position, bufnr)
+        result, err = M.force_new_split2(state.current_position, bufnr)
         compat.nvim_win_set_width(winid, width)
       else
         result, err = open_buf_by_cmd()
@@ -929,7 +929,7 @@ do
       -- If found, retry executing command in that window,
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
       if is_neo_tree_window or M.is_winfixbuf(winid) then
-        result, err = M.split_from_neo_tree(state.current_position, bufnr)
+        result, err = M.force_new_split2(state.current_position, bufnr)
       else
         vim.api.nvim_set_current_win(winid)
         result, err = open_buf_by_cmd()
