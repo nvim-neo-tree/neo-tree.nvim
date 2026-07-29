@@ -2,7 +2,6 @@ local NuiInput = require("nui.input")
 local nt = require("neo-tree")
 local popups = require("neo-tree.ui.popups")
 local events = require("neo-tree.events")
-local utils = require("neo-tree.utils")
 
 local M = {}
 

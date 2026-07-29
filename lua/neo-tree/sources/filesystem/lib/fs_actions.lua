@@ -13,37 +13,6 @@ local events = require("neo-tree.events")
 local log = require("neo-tree.log")
 local Path = require("plenary.path")
 
----@param unescaped string
----@return string escaped
----@nodiscard
-local escape_filename = function(unescaped)
-  if utils.is_windows then
-    ---filenames can't contain special names in windows
-    return unescaped
-  end
-
-  -- Escape backslashes first, then convert actual newlines
-  return (unescaped:gsub([[\]], [[\\]]):gsub("\n", [[\n]]))
-end
-
----@param escaped string
----@return string unescaped
----@nodiscard
-local unescape_filename = function(escaped)
-  if utils.is_windows then
-    ---filenames can't contain special names in windows
-    return escaped
-  end
-
-  -- Decode double backslashes and \n tokens simultaneously
-  local replacements = {
-    ["\\\\"] = "\\",
-    ["\\n"] = "\n",
-  }
-
-  return (escaped:gsub([[(\[\n])]], replacements))
-end
-
 local M = {}
 
 local internal_hooks = {}
@@ -113,6 +82,37 @@ local setup_file_completion = function(root, filter)
   _file_completion_root = root
   _file_completion_filter = filter
   return "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
+end
+
+---@param unescaped string
+---@return string escaped
+---@nodiscard
+local escape_filename = function(unescaped)
+  if utils.is_windows then
+    ---filenames can't contain special names in windows
+    return unescaped
+  end
+
+  -- Escape backslashes first, then convert actual newlines
+  return (unescaped:gsub([[\]], [[\\]]):gsub("\n", [[\n]]))
+end
+
+---@param escaped string
+---@return string unescaped
+---@nodiscard
+local unescape_filename = function(escaped)
+  if utils.is_windows then
+    ---filenames can't contain special names in windows
+    return escaped
+  end
+
+  -- Decode double backslashes and \n tokens simultaneously
+  local replacements = {
+    ["\\\\"] = "\\",
+    ["\\n"] = "\n",
+  }
+
+  return (escaped:gsub([[(\[\n])]], replacements))
 end
 
 ---@param path string
