@@ -78,7 +78,7 @@ end
 ---@param ignore { dotfiles: boolean?, gitignore: boolean? } If true, ignored from result. Default: false
 ---@param limit? integer | nil Maximim number of results. nil will return everything.
 ---@param find_args? string[] | table<string, string[]> Any additional options passed to command if any.
----@param on_insert? fun(err: string, line: string): any Executed for each line of stdout and stderr.
+---@param on_insert fun(err: string, line: string): any Executed for each line of stdout and stderr.
 ---@param on_exit? fun(return_val: number): any Executed at the end.
 M.filter_files_external = function(
   cmd,
@@ -221,24 +221,28 @@ M.filter_files_external = function(
   ---@diagnostic disable-next-line: missing-fields
   local job = utils.job(command, {
     cwd = path,
-    stdout_by_line = on_insert and function(err, line)
-      if not line then
-        return
-      end
-      if item_count < limit then
-        on_insert(err, line)
-        item_count = item_count + 1
-      end
-    end or nil,
-    stderr_by_line = on_insert and function(err, line)
-      if not line then
-        return
-      end
-      if item_count < limit then
-        on_insert(err, line)
-        item_count = item_count + 1
-      end
-    end or nil,
+    stdout_by_line = {
+      handler = function(err, line)
+        if not line then
+          return
+        end
+        if item_count < limit then
+          on_insert(err, line)
+          item_count = item_count + 1
+        end
+      end,
+    },
+    stderr_by_line = {
+      handler = function(err, line)
+        if not line then
+          return
+        end
+        if item_count < limit then
+          item_count = item_count + 1
+          on_insert(err, line)
+        end
+      end,
+    },
   }, function(...)
     if on_exit then
       on_exit(...)

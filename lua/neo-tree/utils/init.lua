@@ -1782,10 +1782,30 @@ end
 ---@class neotree.utils.JobParams : uv.spawn.options
 ---@field stdout fun(err: string?, data: string?)?
 ---@field stderr fun(err: string?, data: string?)?
----@field stdout_by_line fun(err: string?, line: string?)?
----@field stderr_by_line fun(err: string?, line: string?)?
----@field stdout_sep string?
----@field stderr_sep string?
+---@field stderr_by_line neotree.utils.JobParams.LineReader?
+---@field stdout_by_line neotree.utils.JobParams.LineReader?
+
+---@class neotree.utils.JobParams.LineReader
+---@field handler fun(err: string?, line: string?)
+---@field sep string?
+
+---@param line_reader neotree.utils.JobParams.LineReader
+---@return fun(err: string?, chunk: string?) reader
+---@return fun() on_exit
+local function create_on_line_handlers(line_reader)
+  local consumer = chunk_to_lines(line_reader.handler, line_reader.sep or "\n")
+
+  ---@param err string?
+  ---@param data string?
+  local reader = function(err, data)
+    coroutine.resume(consumer, err, data)
+  end
+  local on_exit = function()
+    coroutine.resume(consumer)
+  end
+
+  return reader, on_exit
+end
 
 ---Ergonomic wrapper around uv.spawn
 ---Placeholder before upgrading to vim.system
@@ -1800,15 +1820,34 @@ M.job = function(cmd, opts, on_exit)
   local exit_code
   local stdout = log.assert(uv.new_pipe(false))
   local stderr = log.assert(uv.new_pipe(false))
+
   opts = opts or {}
   opts.args = { unpack(cmd, 2) }
   opts.hide = true
   opts.stdio = { nil, stdout, stderr }
   local stdout_chunks = {}
   local stderr_chunks = {}
-
   ---@type function[]
   local on_exit_handlers = {}
+
+  if opts.stdout_by_line then
+    assert(
+      not opts.stdout,
+      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
+    )
+    opts.stdout, on_exit_handlers[#on_exit_handlers + 1] =
+      create_on_line_handlers(opts.stdout_by_line)
+  end
+
+  if opts.stderr_by_line then
+    assert(
+      not opts.stderr,
+      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
+    )
+    opts.stderr, on_exit_handlers[#on_exit_handlers + 1] =
+      create_on_line_handlers(opts.stderr_by_line)
+  end
+
   ---@cast opts -neotree.utils.JobParams
   local handle, pid_or_err = uv.spawn(path, opts, function(code, _)
     stdout:close()
@@ -1823,37 +1862,12 @@ M.job = function(cmd, opts, on_exit)
     end
   end)
 
-  if opts.stdout_by_line then
-    assert(not opts.stdout)
-    local consumer = chunk_to_lines(opts.stdout_by_line, opts.stdout_sep or "\n")
-    opts.stdout = function(err, data)
-      coroutine.resume(consumer, err, data)
-    end
-    on_exit_handlers[#on_exit_handlers + 1] = function()
-      coroutine.resume(consumer)
-    end
-  end
-
   stdout:read_start(opts.stdout or function(err, data)
     log.assert(not err, err)
     if type(data) == "string" then
       stdout_chunks[#stdout_chunks + 1] = data
     end
   end)
-
-  if opts.stderr_by_line then
-    assert(
-      not opts.stderr,
-      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
-    )
-    local consumer = chunk_to_lines(opts.stderr_by_line, opts.stderr_sep or "\n")
-    opts.stderr = function(err, data)
-      coroutine.resume(consumer, err, data)
-    end
-    on_exit_handlers[#on_exit_handlers + 1] = function()
-      coroutine.resume(consumer)
-    end
-  end
 
   stderr:read_start(opts.stderr or function(err, data)
     log.assert(not err, err)
