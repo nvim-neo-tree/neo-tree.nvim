@@ -203,17 +203,17 @@ M.execute = function(args, state_config_override)
     or nil
 
   local force_navigate = path_changed or args.reveal_file or git_base_changed or state.dirty
+  local cwd = args.dir or state.path or manager.get_cwd(state)
   if args.reveal_file then
     -- All set, now show or focus the window
     local reveal_file_parent = utils.split_path(args.reveal_file)
-    local cwd = args.dir or state.path or manager.get_cwd(state)
 
     if utils.is_subpath(cwd, args.reveal_file) then
       args.dir = cwd
     elseif args.reveal_force_cwd then
       args.dir = reveal_file_parent
     elseif args.dir then
-      -- cancel the reveal.
+      -- cancel reveal
       args.reveal_file = nil
     elseif reveal_file_parent then
       log.debug("Prompting for change cwd", args)
@@ -230,9 +230,8 @@ M.execute = function(args, state_config_override)
         end
       )
     end
-
-    args.dir = args.dir or cwd
   end
+  args.dir = args.dir or cwd
   do_show_or_focus(args, state, force_navigate)
 end
 
