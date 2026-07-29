@@ -875,7 +875,7 @@ do
     local config = require("neo-tree").config
     local relative = config.open_files_using_relative_paths
     local path_to_open = relative and vim.fn.fnamemodify(path, ":.") or path
-    if bufnr == nil or bufnr <= 0 then
+    if bufnr == nil or bufnr < 0 then
       -- as mentioned in `:h open-file` (0.13 nightly only, atm), the best way to open a literal filepath and avoid
       -- filepath escaping issues is to add the buffer first, then open the buffer by number.
       bufnr = vim.fn.bufadd(path_to_open)
@@ -903,9 +903,7 @@ do
 
     ---@type boolean, string?
     local result, err = true, nil
-    if state.current_position == "current" then
-      result, err = open_buf_by_cmd()
-    else
+    if state.current_position ~= "current" then
       local winid, is_neo_tree_window = M.get_appropriate_window(state)
       vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
@@ -921,6 +919,8 @@ do
       else
         result, err = open_buf_by_cmd()
       end
+    else
+      result, err = open_buf_by_cmd()
     end
 
     if not result and string.find(err or "", "winfixbuf") and M.is_winfixbuf() then
@@ -928,13 +928,14 @@ do
       -- Rescan window list to find a window that is not winfixbuf.
       -- If found, retry executing command in that window,
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
-      if not is_neo_tree_window and not M.is_winfixbuf(winid) then
+      if is_neo_tree_window or M.is_winfixbuf(winid) then
+        result, err = M.split_from_neo_tree(state.current_position, bufnr)
+      else
         vim.api.nvim_set_current_win(winid)
         result, err = open_buf_by_cmd()
-      else
-        result, err = M.split_from_neo_tree(state.current_position, bufnr)
       end
     end
+
     if result or err == "Vim(edit):E325: ATTENTION" then
       -- fixes #321
       vim.bo[0].buflisted = true
