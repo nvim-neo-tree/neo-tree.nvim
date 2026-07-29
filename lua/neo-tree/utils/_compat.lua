@@ -289,7 +289,7 @@ end
 ---@param height integer New height in columns
 function compat.nvim_win_set_height(win, height)
   if vim.fn.has("nvim-0.13") == 1 then
-    vim.api.nvim_win_resize(win, -1, height, { anchor = "left" })
+    vim.api.nvim_win_resize(win, -1, height, { anchor = "top" })
   else
     ---@diagnostic disable-next-line: deprecated
     vim.api.nvim_win_set_height(win, height)
