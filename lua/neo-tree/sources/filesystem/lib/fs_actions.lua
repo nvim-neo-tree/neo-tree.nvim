@@ -84,6 +84,37 @@ local setup_file_completion = function(root, filter)
   return "customlist,v:lua.require'neo-tree.sources.filesystem.lib.fs_actions'._file_completion"
 end
 
+---@param unescaped string
+---@return string escaped
+---@nodiscard
+local escape_filename = function(unescaped)
+  if utils.is_windows then
+    ---filenames can't contain special names in windows
+    return unescaped
+  end
+
+  -- Escape backslashes first, then convert actual newlines
+  return (unescaped:gsub([[\]], [[\\]]):gsub("\n", [[\n]]))
+end
+
+---@param escaped string
+---@return string unescaped
+---@nodiscard
+local unescape_filename = function(escaped)
+  if utils.is_windows then
+    ---filenames can't contain special names in windows
+    return escaped
+  end
+
+  -- Decode double backslashes and \n tokens simultaneously
+  local replacements = {
+    ["\\\\"] = "\\",
+    ["\\n"] = "\n",
+  }
+
+  return (escaped:gsub([[(\[\n])]], replacements))
+end
+
 ---@param path string
 local count_children = function(path)
   return #scan.scan_dir(path, {
@@ -269,10 +300,11 @@ local function get_unused_name(source, destination, input_root, on_new_filename,
   end
 
   local message = first_message or name .. " already exists. Please enter a new name: "
-  inputs.input(message, name, function(new_name)
+  inputs.input(message, escape_filename(name), function(new_name)
     if not new_name or #new_name == 0 then
       return
     end
+    new_name = unescape_filename(new_name)
     local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
     get_unused_name(source, new_path, input_root, on_new_filename)
   end, {}, setup_file_completion(input_root))
@@ -453,12 +485,13 @@ M.create_directory = function(in_directory, callback, input_root)
     base = vim.fn.fnamemodify(in_directory .. utils.path_separator, ":~")
   end
 
-  inputs.input("Enter name for new directory:", base, function(destinations)
+  inputs.input("Enter name for new directory:", escape_filename(base), function(destinations)
     if not destinations then
       return
     end
 
     for _, destination in ipairs(utils.brace_expand(destinations)) do
+      destination = destination and unescape_filename(destination)
       if not destination or destination == base then
         return
       end
@@ -515,12 +548,13 @@ M.create_node = function(in_directory, callback, input_root)
     dir_ending = dir_ending .. string.format(' or "%s"', utils.path_separator)
   end
   local msg = "Enter name for new file or directory (dirs end with a " .. dir_ending .. "):"
-  inputs.input(msg, base, function(destinations)
+  inputs.input(msg, escape_filename(base), function(destinations)
     if not destinations then
       return
     end
 
     for _, destination in ipairs(utils.brace_expand(destinations)) do
+      destination = destination and unescape_filename(destination)
       if not destination or destination == base then
         return
       end
@@ -896,12 +930,14 @@ end
 ---@param source string
 ---@param on_rename neotree.sources.filesystem.ActionCallbacks.OnRename?
 local rename_node = function(prompt, default_name, resolve_destination, source, on_rename)
-  inputs.input(prompt, default_name, function(new_name)
+  inputs.input(prompt, default_name and escape_filename(default_name), function(new_name)
     -- If cancelled
     if not new_name or new_name == "" then
       log.info("Operation canceled")
       return
     end
+
+    new_name = unescape_filename(new_name)
 
     local destination = resolve_destination(new_name)
 
