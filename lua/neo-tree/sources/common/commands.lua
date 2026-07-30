@@ -668,8 +668,17 @@ end
 
 ---@type neotree.TreeCommandVisual
 M.select_visual = function(state, selected_nodes)
+  local all_are_selected = true
   for _, node in ipairs(selected_nodes) do
-    state.selected[node.id] = not state.selected[node.id] or nil
+    if not state.selected[node.id] then
+      all_are_selected = false
+      break
+    end
+  end
+
+  local selected = not all_are_selected or nil
+  for _, node in ipairs(selected_nodes) do
+    state.selected[node.id] = selected
   end
   renderer.redraw(state)
   state._skip_consuming_selection = true
@@ -679,6 +688,17 @@ M.clear_selection = function(state)
   state.selected = {}
   log.info("Cleared selection")
   renderer.redraw(state)
+end
+
+M.invert_selection = M.select
+
+---@type neotree.TreeCommandVisual
+M.invert_selection_visual = function(state, selected_nodes)
+  for _, node in ipairs(selected_nodes) do
+    state.selected[node.id] = not state.selected[node.id] or nil
+  end
+  renderer.redraw(state)
+  state._skip_consuming_selection = true
 end
 
 ---Pastes all items from the clipboard to the current directory.

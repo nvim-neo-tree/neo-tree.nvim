@@ -70,6 +70,7 @@ local function create_state(tabid, sd, winid)
   ---@field id integer
   ---@field bufnr integer?
   ---@field dirty boolean
+  ---@field selected table<string, boolean?>
   ---@field position neotree.State.Position
   ---@field git_base_by_worktree table<string,string?>?
   ---@field sort table

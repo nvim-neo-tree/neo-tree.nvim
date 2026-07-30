@@ -970,6 +970,7 @@ local set_buffer_mappings = function(state)
   local mappings = state.window.mappings or {}
   local mapping_options = state.window.mapping_options or { noremap = true }
   local selection_cmd = require("neo-tree.sources.common.commands").select
+  local invert_selection_cmd = require("neo-tree.sources.common.commands").invert_selection
   for cmd, func in pairs(mappings) do
     ---@type neotree.TreeCommandVisual?
     local vfunc
@@ -1021,7 +1022,7 @@ local set_buffer_mappings = function(state)
         break
       end
       local fallback = utils.keycode(cmd)
-      local is_selection_command = func == selection_cmd
+      local is_selection_command = func == selection_cmd or func == invert_selection_cmd
       resolved_mappings[cmd] = {
         text = helptext,
         handler = function()
