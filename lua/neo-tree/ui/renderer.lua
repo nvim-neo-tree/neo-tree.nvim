@@ -903,13 +903,13 @@ create_tree = function(state)
 end
 
 ---@param state neotree.StateWithTree
----@return NuiTree.Node[]?
+---@return NuiTree.Node[]
 local get_visually_selected_nodes = function(state)
   if state.winid ~= vim.api.nvim_get_current_win() then
-    return nil
+    return {}
   end
   if not state.position.visual_selection then
-    return nil
+    return {}
   end
   sort_positions(state.position.visual_selection)
   local start_pos = state.position.visual_selection[1][2]
@@ -927,11 +927,29 @@ local get_visually_selected_nodes = function(state)
 end
 
 ---@param state neotree.StateWithTree
+---@return NuiTree.Node[]
 local get_tagged_selected_nodes = function(state)
   local selected_nodes = {}
   for id in pairs(state.selected) do
     selected_nodes[#selected_nodes + 1] = state.tree:get_node(id)
   end
+  return selected_nodes
+end
+
+---@class neotree.SelectedNodes
+---@field from_visual_selection NuiTree.Node[]?
+---@field from_tags NuiTree.Node[]
+---@field [integer] NuiTree.Node
+
+---@param state neotree.StateWithTree
+local get_selected_nodes = function(state)
+  local visually_selected_nodes = get_visually_selected_nodes(state)
+  local tagged_selected_nodes = get_tagged_selected_nodes(state)
+  ---@type neotree.SelectedNodes
+  local selected_nodes =
+    utils.unique(vim.list_extend(visually_selected_nodes, tagged_selected_nodes))
+  selected_nodes.from_tags = tagged_selected_nodes
+  selected_nodes.from_visual_selection = visually_selected_nodes
   return selected_nodes
 end
 
@@ -1037,10 +1055,7 @@ local set_buffer_mappings = function(state)
         keymap.set(state.bufnr, "v", cmd, function()
           vim.api.nvim_feedkeys(ESC_KEY, "i", true)
           vim.schedule(function()
-            local selected_nodes = get_visually_selected_nodes(state) or {}
-            if not is_selection_command then
-              vim.list_extend(selected_nodes, get_tagged_selected_nodes(state))
-            end
+            local selected_nodes = get_selected_nodes(state)
             if not utils.truthy(selected_nodes) then
               return
             end

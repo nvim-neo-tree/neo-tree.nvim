@@ -570,12 +570,13 @@ CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
 In neo-tree, nodes can be selected in 2 ways: either by visual selection in
 visual mode, or by tagging the nodes as "selected" with the `select` command.
 
-To create a mapping for a normal mode command that can operate on selected
-nodes, add a second command with `_visual` appended onto its name. When selected
-nodes exist (either due to visual selection or tagged), the `_visual` version of
-the command will be called with the state and the list of selected nodes.
+To create a command that can operate on selected nodes, add a second command
+with `_visual` appended onto its name. When a `_visual` command exists and
+selected nodes exist (either due to visual selection or nodes tagged as
+selected) the `_visual` command will be called with the current state and the
+list of selected nodes.
 
-For example, this is approximately how the built-in `delete` command is defined:
+For example, this is a simplified version of the `delete` command:
 
 >lua
     M.delete = function(state)
@@ -586,15 +587,21 @@ For example, this is approximately how the built-in `delete` command is defined:
 
     M.delete_visual = function(state, selected_nodes)
       local paths_to_delete = {}
-      for _, node_to_delete in pairs(selected_nodes) do
+      for _, node_to_delete in ipairs(selected_nodes) do
         table.insert(paths_to_delete, node_to_delete.path)
       end
-      fs_actions.delete_nodes(paths_to_delete)
+      fs_actions.delete_nodes(paths_to_delete, function()
+        -- unselect deleted nodes
+        for _, id in pairs(state.selected) do
+          local file_exists = uv.fs_lstat(id)
+          if not file_exists then state.selected[id] = nil end
+        end
+      end)
     end
 <
 
-Nodes tagged as selected will be unselected if the command completes without
-error.
+Additionally, you can index `selected_nodes` with `from_visual_selection` and
+`from_tags` to get the respective lists of nodes.
 
 CUSTOM MAPPINGS WITH ARGUMENTS               *neo-tree-custom-mappings-args*
 
