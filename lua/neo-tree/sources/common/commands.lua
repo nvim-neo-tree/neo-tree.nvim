@@ -659,8 +659,24 @@ M.show_file_details = function(state)
   popups.alert("File Details", lines)
 end
 
+local save_previous_selection_to_undo = function(state)
+  local copy = vim.deepcopy(state.selected)
+  state.undostack[#state.undostack + 1] = function()
+    state.selected = copy
+    local count = 0
+    for id in pairs(state.selected) do
+      if state.tree:get_node(id) then
+        count = count + 1
+      end
+    end
+    log.at.info.format("Restored selection of %s nodes", count)
+    renderer.redraw(state)
+  end
+end
+
 ---@param state neotree.StateWithTree
 M.select = function(state)
+  save_previous_selection_to_undo(state)
   local node = assert(state.tree:get_node())
   state.selected[node.id] = not state.selected[node.id] or nil
   renderer.redraw(state)
@@ -668,16 +684,37 @@ end
 
 ---@type neotree.TreeCommandVisual
 M.select_visual = function(state, selected_nodes)
+  save_previous_selection_to_undo(state)
+  local all_are_selected = true
   for _, node in ipairs(selected_nodes) do
-    state.selected[node.id] = not state.selected[node.id] or nil
+    if not state.selected[node.id] then
+      all_are_selected = false
+      break
+    end
+  end
+
+  local selected = not all_are_selected or nil
+  for _, node in ipairs(selected_nodes) do
+    state.selected[node.id] = selected
   end
   renderer.redraw(state)
-  state._skip_consuming_selection = true
 end
 
 M.clear_selection = function(state)
+  save_previous_selection_to_undo(state)
   state.selected = {}
   log.info("Cleared selection")
+  renderer.redraw(state)
+end
+
+M.invert_selection = M.select
+
+---@type neotree.TreeCommandVisual
+M.invert_selection_visual = function(state, selected_nodes)
+  save_previous_selection_to_undo(state)
+  for _, node in ipairs(selected_nodes) do
+    state.selected[node.id] = not state.selected[node.id] or nil
+  end
   renderer.redraw(state)
 end
 
@@ -719,6 +756,8 @@ M.paste_from_clipboard = function(state, callback)
         folder
       )
     elseif item.action == "cut" then
+      -- unselect the file.
+      state.selected[item.node.id] = nil
       fs_actions.move_node(
         item.node.path,
         folder .. utils.path_separator .. item.node.name,
@@ -763,6 +802,38 @@ M.move = function(state, callback)
   fs_actions.move_node(node.path, nil, callback, get_input_root(state))
 end
 
+---combines provided functions into a single function that calls all the given functions with the args from the returned
+---function
+---@param ... function
+local fn_chain = function(...)
+  local fns = {}
+  for i = 1, select("#", ...) do
+    local fn = select(i, ...)
+    if fn then
+      fns[#fns + 1] = fn
+    end
+  end
+  return function(...)
+    for _, fn in ipairs(fns) do
+      fn(...)
+    end
+  end
+end
+
+---@param state neotree.State
+---@return function
+local unselect_deleted_files_hook = function(state)
+  return function()
+    local uv = vim.uv or vim.loop
+    for id in pairs(state.selected) do
+      local file_exists = uv.fs_lstat(id)
+      if not file_exists then
+        -- was probably deleted.
+        state.selected[id] = nil
+      end
+    end
+  end
+end
 M.delete = function(state, callback)
   local node = assert(state.tree:get_node())
   if node.type ~= "file" and node.type ~= "directory" then
@@ -777,6 +848,8 @@ M.delete = function(state, callback)
     )
     return
   end
+
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.delete_node(node.path, callback)
 end
 
@@ -798,6 +871,7 @@ M.delete_visual = function(state, selected_nodes, callback)
       table.insert(paths_to_delete, node_to_delete.path)
     end
   end
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.delete_nodes(paths_to_delete, callback)
 end
 
@@ -816,6 +890,7 @@ M.trash = function(state, callback)
     )
     return
   end
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.trash_node(node.path, callback, state)
 end
 
@@ -837,6 +912,7 @@ M.trash_visual = function(state, selected_nodes, callback)
       table.insert(paths_to_trash, node_to_trash.path)
     end
   end
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.trash_nodes(paths_to_trash, callback, state)
 end
 
@@ -854,6 +930,7 @@ M.restore_from_trash = function(state, callback)
     )
     return
   end
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.restore_node_from_trash(node.path, callback)
 end
 
@@ -875,6 +952,7 @@ M.restore_from_trash_visual = function(state, selected_nodes, callback)
       table.insert(paths_to_restore, node_to_restore.path)
     end
   end
+  callback = fn_chain(unselect_deleted_files_hook(state), callback)
   fs_actions.restore_nodes_from_trash(paths_to_restore, callback)
 end
 

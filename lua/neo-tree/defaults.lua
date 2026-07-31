@@ -426,6 +426,7 @@ local config = {
         }
       },
       ["<Tab>"] = "select",
+      ["<C-S-i>"] = "invert_selection",
       ["<C-;>"] = "clear_selection",
       ["<space>"] = {
           "toggle_node",

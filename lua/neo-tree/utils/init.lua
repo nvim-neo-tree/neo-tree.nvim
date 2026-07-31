@@ -1508,8 +1508,9 @@ function M.is_hidden(path)
 end
 
 ---Returns a new list that is the result of dedeuplicating a list.
----@param list table The list to deduplicate.
----@return table table The list of unique values.
+---@generic T
+---@param list T[] The list to deduplicate.
+---@return T[] table The list of unique values.
 M.unique = function(list)
   local seen = {}
   local result = {}

@@ -187,6 +187,22 @@ HELP                                                            *neo-tree-help*
                pressing enter will not execute that command, it will just
                execute whatever the enter key is mapped to.
 
+SELECTION                                                  *neo-tree-selection*
+
+In neo-tree, nodes can either be selected by |visual-mode|, or be tagged as
+selected with the following commands:
+
+<tab>              = select  Toggles whether a node is tagged as selected. In
+                             Visual mode, tags all targeted nodes unless they
+                             were all already tagged, in which case they will
+                             all be untagged as selected.
+                             Supports visual selection. ~
+
+<C-S-i>  = invert_selection  Inverts the selection tags on targeted node(s).
+                             Supports visual selection. ~
+
+See |neo-tree-custom-mappings-selection| for how to write commands that use
+selected nodes.
 
 NAVIGATION                                                *neo-tree-navigation*
 
@@ -288,13 +304,6 @@ w = open_with_window_picker: Uses the `window-picker` plugin to select a window
 
 
 FILE ACTIONS                                            *neo-tree-file-actions*
-
-<tab>         = select       Toggles whether a node is considered "selected" for
-                             the next selection-supporting command Neo-tree
-                             performs. (e.g. delete/trash) See
-                             |neo-tree-custom-mappings-selection| for
-                             details.
-                             Supports visual selection. ~
 
 a    = add:                  Create a new file OR directory. Add a `/` to the
                              end of the name to make a directory. This command
@@ -566,35 +575,40 @@ specific to that source and will not work for others.
 CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
                                             *neo-tree-custom-mappings-selection*
 
-In neo-tree, nodes can be selected in 2 ways: either by visual selection in
-visual mode, or by tagging the nodes as "selected" with the `select` command.
+See |neo-tree-selection| for an overview on how selection works.
 
-To create a mapping that can operate on a selection of nodes, add a second
-command where the name is the same as the normal mode command, but with
-`_visual` added to the end. When selected nodes exist, the `_visual` version of
-the command will be called with a second argument - a list of the nodes that
-were selected when the command was called.
+To create a command that can operate on selected nodes, add a second command
+with `_visual` appended onto its name. When a `_visual` command exists and
+selected nodes exist (either due to visual selection or nodes tagged as
+selected) the `_visual` command will be called with the current state and the
+list of selected nodes.
 
-For example, this is approximately how the built-in `delete` command is defined:
+For example, this is a simplified version of the `delete` command:
 
 >lua
-    M.delete = function(state, callback)
+    M.delete = function(state)
       local tree = state.tree
       local node = tree:get_node()
-      fs_actions.delete_node(node.path, callback)
+      fs_actions.delete_node(node.path)
     end
 
-    M.delete_visual = function(state, selected_nodes, callback)
+    M.delete_visual = function(state, selected_nodes)
       local paths_to_delete = {}
-      for _, node_to_delete in pairs(selected_nodes) do
+      for _, node_to_delete in ipairs(selected_nodes) do
         table.insert(paths_to_delete, node_to_delete.path)
       end
-      fs_actions.delete_nodes(paths_to_delete, callback)
+      fs_actions.delete_nodes(paths_to_delete, function()
+        -- unselect deleted nodes
+        for _, id in pairs(state.selected) do
+          local file_exists = uv.fs_lstat(id)
+          if not file_exists then state.selected[id] = nil end
+        end
+      end)
     end
 <
 
-Nodes tagged as selected will be unselected if the command completes without
-error.
+Additionally, you can index `selected_nodes` with `from_visual_selection` and
+`from_tags` to get the respective lists of nodes.
 
 CUSTOM MAPPINGS WITH ARGUMENTS               *neo-tree-custom-mappings-args*
 
