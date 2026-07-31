@@ -187,14 +187,22 @@ HELP                                                            *neo-tree-help*
                pressing enter will not execute that command, it will just
                execute whatever the enter key is mapped to.
 
-HELP                                                            *neo-tree-selection*
+SELECTION                                                  *neo-tree-selection*
 
-<tab>         = select       Toggles whether a node is considered "selected" for
-                             the next selection-supporting command Neo-tree
-                             performs. (e.g. delete/trash) See
-                             |neo-tree-custom-mappings-selection| for
-                             details.
+In neo-tree, nodes can either be selected by |visual-mode|, or be tagged as
+selected with the following commands:
+
+<tab>              = select  Toggles whether a node is tagged as selected. In
+                             Visual mode, tags all targeted nodes unless they
+                             were all already tagged, in which case they will
+                             all be untagged as selected.
                              Supports visual selection. ~
+
+<C-S-i>  = invert_selection  Inverts the selection tags on targeted node(s).
+                             Supports visual selection. ~
+
+See |neo-tree-custom-mappings-selection| for how to write commands that use
+selected nodes.
 
 NAVIGATION                                                *neo-tree-navigation*
 
@@ -567,8 +575,7 @@ specific to that source and will not work for others.
 CUSTOM MAPPINGS WITH VISUAL MODE               *neo-tree-custom-mappings-visual*
                                             *neo-tree-custom-mappings-selection*
 
-In neo-tree, nodes can be selected in 2 ways: either by visual selection in
-visual mode, or by tagging the nodes as "selected" with the `select` command.
+See |neo-tree-selection| for an overview on how selection works.
 
 To create a command that can operate on selected nodes, add a second command
 with `_visual` appended onto its name. When a `_visual` command exists and
