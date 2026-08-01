@@ -1,6 +1,3 @@
-[settings]
-windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
-
 [env]
 NEOTREE_LUARC = ".luarc.json"
 MISE_BACKENDS_NEOVIM = "aqua:neovim/neovim"
@@ -73,45 +70,42 @@ update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
 update https://github.com/nvim-treesitter/nvim-treesitter nvim-treesitter
 """
 run_windows = """
-function Update-Repository {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$GitUrl,
-        [Parameter(Mandatory=$true)]
-        [string]$RepoName
-    )
+@echo off
+setlocal enabledelayedexpansion
+set DEPS_DIR={{vars.deps_dir}}
+if not exist "%DEPS_DIR%" mkdir "%DEPS_DIR%"
 
-    # Ensure the parent directory exists
-    $DepsDir = "{{vars.deps_dir}}"
-    if (-not (Test-Path -Path $DepsDir -PathType Container)) {
-        Write-Host "==> Creating dependency directory '$DepsDir'..."
-        New-Item -Path $DepsDir -ItemType Directory | Out-Null
-    }
+set URL[0]=https://github.com/3rd/image.nvim
+set NAME[0]=image.nvim
+set URL[1]=https://github.com/folke/snacks.nvim
+set NAME[1]=snacks.nvim
+set URL[2]=https://github.com/MunifTanjim/nui.nvim
+set NAME[2]=nui.nvim
+set URL[3]=https://github.com/nvim-tree/nvim-web-devicons
+set NAME[3]=nvim-web-devicons
+set URL[4]=https://github.com/nvim-lua/plenary.nvim
+set NAME[4]=plenary.nvim
+set URL[5]=https://github.com/s1n7ax/nvim-window-picker
+set NAME[5]=nvim-window-picker
+set URL[6]=https://github.com/nvim-treesitter/nvim-treesitter
+set NAME[6]=nvim-treesitter
 
-    $TargetDir = Join-Path -Path $DepsDir -ChildPath $RepoName
-
-    if (Test-Path -Path $TargetDir -PathType Container) {
-        Write-Host "==> Directory '$TargetDir' exists. Updating $RepoName..."
-        git -C $TargetDir fetch --tags -f
-        git -C $TargetDir pull | Out-Null 2>&1
-    } else {
-        Write-Host "==> Directory '$TargetDir' not found. Cloning repository '$GitUrl'..."
-        git clone $GitUrl $TargetDir
-        $cloneExitCode = $LASTEXITCODE
-        Write-Host "==> Successfully cloned '$RepoName'."
-    }
-}
-
-## 🛠️ Repository Update Calls
-
-# Call the function for each repository
-Update-Repository -GitUrl "https://github.com/3rd/image.nvim" -RepoName "image.nvim"
-Update-Repository -GitUrl "https://github.com/folke/snacks.nvim" -RepoName "snacks.nvim"
-Update-Repository -GitUrl "https://github.com/MunifTanjim/nui.nvim" -RepoName "nui.nvim"
-Update-Repository -GitUrl "https://github.com/nvim-tree/nvim-web-devicons" -RepoName "nvim-web-devicons"
-Update-Repository -GitUrl "https://github.com/nvim-lua/plenary.nvim" -RepoName "plenary.nvim"
-Update-Repository -GitUrl "https://github.com/s1n7ax/nvim-window-picker" -RepoName "nvim-window-picker"
-Update-Repository -GitUrl "https://github.com/nvim-treesitter/nvim-treesitter" -RepoName "nvim-treesitter"
+for /l %%i in (0,1,6) do (
+  set TARGET_DIR=!DEPS_DIR!\\!NAME[%%i]!
+  if exist "!TARGET_DIR!" (
+    echo ==> Directory '!TARGET_DIR!' exists. Updating !NAME[%%i]!...
+    git -C "!TARGET_DIR!" fetch --tags -f
+    git -C "!TARGET_DIR!" pull
+  ) else (
+    echo ==> Directory '!TARGET_DIR!' not found. Cloning repository !NAME[%%i]!...
+    git clone "!URL[%%i]!" "!TARGET_DIR!"
+  )
+  if !errorlevel! neq 0 (
+    echo Error: Failed to update/clone '!NAME[%%i]!'.
+  ) else (
+    echo ==> Successfully updated/cloned '!NAME[%%i]!'.
+  )
+)
 """
 
 [tasks.luals-check]
@@ -121,8 +115,9 @@ VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
 run_windows = """
-$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
-lua-language-server --configpath=$env:NEOTREE_LUARC --check .
+@echo off
+for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.VIMRUNTIME)" --cmd "qa"') do set VIMRUNTIME=%%i
+lua-language-server --configpath=%NEOTREE_LUARC% --check=.
 """
 wait_for = ['update-dependencies']
 
@@ -133,9 +128,10 @@ VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
 run_windows = """
-$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
-$env:PWD = Get-Location
-emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
+@echo off
+for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.VIMRUNTIME)" --cmd "quit"') do set VIMRUNTIME=%%i
+set PWD=%CD%
+emmylua_check -c %NEOTREE_LUARC% -i ".dependencies/**" -- .
 """
 wait_for = ['update-dependencies']
 
