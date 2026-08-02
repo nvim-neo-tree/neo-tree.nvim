@@ -24,89 +24,14 @@ run = [
 [tasks.format]
 run = "stylua --glob '*.lua' --glob '!defaults.lua' ."
 
-[vars]
-deps_dir = '.dependencies'
-
-[tasks.update-dependencies]
-alias = 'dependencies'
-run = """
-#!/usr/bin/env bash
-update() {
-  local git_url="$1"
-  local repo_name="$2"
-
-  mkdir -p "{{vars.deps_dir}}"
-
-  local target_dir="{{vars.deps_dir}}/$repo_name"
-  if [ -d "$target_dir" ]; then
-    echo "==> Directory '$target_dir' exists. Updating $repo_name..."
-    git -C $target_dir fetch --tags -f
-    git -C $target_dir pull
-
-    # Check the exit code of the subshell command
-    if [ $? -ne 0 ]; then
-      echo "Error: Failed to pull updates for '$repo_name'." >&2
-      return 1
-    fi
-    echo "==> Successfully updated '$repo_name'."
-
-  else
-    echo "==> Directory '$target_dir' not found. Cloning repository..."
-    git clone "$git_url" "$target_dir"
-
-    if [ $? -ne 0 ]; then
-      echo "Error: Failed to clone '$git_url'." >&2
-      return 1
-    fi
-    echo "==> Successfully cloned '$repo_name'."
-  fi
-}
-update https://github.com/3rd/image.nvim image.nvim
-update https://github.com/folke/snacks.nvim snacks.nvim
-update https://github.com/MunifTanjim/nui.nvim nui.nvim
-update https://github.com/nvim-tree/nvim-web-devicons nvim-web-devicons
-update https://github.com/nvim-lua/plenary.nvim plenary.nvim
-update https://github.com/s1n7ax/nvim-window-picker nvim-window-picker
-update https://github.com/nvim-treesitter/nvim-treesitter nvim-treesitter
-"""
-run_windows = """
-@echo off
-setlocal enabledelayedexpansion
-set DEPS_DIR={{vars.deps_dir}}
-if not exist "%DEPS_DIR%" mkdir "%DEPS_DIR%"
-
-set URL[0]=https://github.com/3rd/image.nvim
-set NAME[0]=image.nvim
-set URL[1]=https://github.com/folke/snacks.nvim
-set NAME[1]=snacks.nvim
-set URL[2]=https://github.com/MunifTanjim/nui.nvim
-set NAME[2]=nui.nvim
-set URL[3]=https://github.com/nvim-tree/nvim-web-devicons
-set NAME[3]=nvim-web-devicons
-set URL[4]=https://github.com/nvim-lua/plenary.nvim
-set NAME[4]=plenary.nvim
-set URL[5]=https://github.com/s1n7ax/nvim-window-picker
-set NAME[5]=nvim-window-picker
-set URL[6]=https://github.com/nvim-treesitter/nvim-treesitter
-set NAME[6]=nvim-treesitter
-
-for /l %%i in (0,1,6) do (
-  set TARGET_DIR=!DEPS_DIR!\\!NAME[%%i]!
-  if exist "!TARGET_DIR!" (
-    echo ==> Directory '!TARGET_DIR!' exists. Updating !NAME[%%i]!...
-    git -C "!TARGET_DIR!" fetch --tags -f
-    git -C "!TARGET_DIR!" pull
-  ) else (
-    echo ==> Directory '!TARGET_DIR!' not found. Cloning repository !NAME[%%i]!...
-    git clone "!URL[%%i]!" "!TARGET_DIR!"
-  )
-  if !errorlevel! neq 0 (
-    echo Error: Failed to update/clone '!NAME[%%i]!'.
-  ) else (
-    echo ==> Successfully updated/cloned '!NAME[%%i]!'.
-  )
-)
-"""
+[bootstrap.repos]
+".dependencies/image.nvim" = { url = "https://github.com/3rd/image.nvim" }
+".dependencies/snacks.nvim" = { url = "https://github.com/folke/snacks.nvim" }
+".dependencies/nui.nvim" = { url = "https://github.com/MunifTanjim/nui.nvim" }
+".dependencies/nvim-web-devicons" = { url = "https://github.com/nvim-tree/nvim-web-devicons" }
+".dependencies/plenary.nvim" = { url = "https://github.com/nvim-lua/plenary.nvim" }
+".dependencies/nvim-window-picker" = { url = "https://github.com/s1n7ax/nvim-window-picker" }
+".dependencies/nvim-treesitter" = { url = "https://github.com/nvim-treesitter/nvim-treesitter" }
 
 [tasks.luals-check]
 run = """
@@ -119,7 +44,6 @@ run_windows = """
 for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.VIMRUNTIME)" --cmd "qa"') do set VIMRUNTIME=%%i
 lua-language-server --configpath=%NEOTREE_LUARC% --check=.
 """
-wait_for = ['update-dependencies']
 
 [tasks.emmylua-check]
 run = """
@@ -133,7 +57,6 @@ for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.V
 set PWD=%CD%
 emmylua_check -c %NEOTREE_LUARC% -i ".dependencies/**" -- .
 """
-wait_for = ['update-dependencies']
 
 [tasks.clean]
 run = [
