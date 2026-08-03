@@ -371,8 +371,9 @@ end
 M.render_component = function(component, item, state, remaining_width)
   local component_func = state.components[component[1]]
   if component_func then
-    local success, component_data, wanted_width =
-      pcall(component_func, component, item, state, remaining_width)
+    local success, component_data, wanted_width = xpcall(function()
+      return component_func(component, item, state, remaining_width)
+    end, debug.traceback)
     if success then
       if component_data == nil then
         return { {} }

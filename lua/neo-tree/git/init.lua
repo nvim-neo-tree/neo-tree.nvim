@@ -710,6 +710,7 @@ M.find_existing_status_code = function(path, base_lookup)
     local base = base_lookup[worktree_root]
     local diff_status = base and worktree.status_diff[base]
     if diff_status then
+      vim.print(diff_status, worktree.status_diff)
       local diff_status_code =
         M._find_existing_status_code_in_git_status(diff_status, worktree_root, path)
       if diff_status_code then
