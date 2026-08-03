@@ -2,6 +2,8 @@ name: Lua Language Server Diagnostics
 on:
   pull_request: ~
   push:
+    paths:
+      - "**.lua"
     branches:
       - '*'
 
