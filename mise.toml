@@ -40,10 +40,10 @@ VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
 run_windows = [
-	{ task = "luals-check-pwsh" }
+	{ task = "luals-check-powershell" }
 ]
-[tasks.luals-check-pwsh]
-shell = "pwsh -NoProfile -Command"
+[tasks.luals-check-powershell]
+shell = "powershell -NoProfile -Command"
 run_windows = """
 $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 lua-language-server --configpath=$env:NEOTREE_LUARC --check .
@@ -56,10 +56,10 @@ VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
 run_windows = [
-{ task = "emmylua-check-pwsh" }
+{ task = "emmylua-check-powershell" }
 ]
-[tasks.emmylua-check-pwsh]
-shell = "pwsh -NoProfile -Command"
+[tasks.emmylua-check-powershell]
+shell = "powershell -NoProfile -Command"
 run = """
 $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 $env:PWD = Get-Location
