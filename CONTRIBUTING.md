@@ -32,8 +32,7 @@ git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter .dependen
 
 We have a [.lazy.lua](.lazy.lua), so lazy.nvim users can automatically use all
 of the local versions of the plugins by running `nvim` within the neo-tree.nvim
-folder. The use of `:h 'exrc'` is also supported on Neovim versions above 0.9,
-so we recommend setting 'exrc'.
+folder.
 
 <details>
     <summary>Using development versions of plugins with vim.pack:</summary>
