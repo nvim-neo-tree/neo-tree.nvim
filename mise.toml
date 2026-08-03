@@ -39,10 +39,14 @@ run = """
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
+run_windows = [
+	{ task = "luals-check-pwsh" }
+]
+[tasks.luals-check-pwsh]
+shell = "pwsh -NoProfile -Command"
 run_windows = """
-@echo off
-for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.VIMRUNTIME)" --cmd "qa"') do set VIMRUNTIME=%%i
-lua-language-server --configpath=%NEOTREE_LUARC% --check=.
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
+lua-language-server --configpath=$env:NEOTREE_LUARC --check .
 """
 
 [tasks.emmylua-check]
@@ -51,11 +55,15 @@ run = """
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
-run_windows = """
-@echo off
-for /f "tokens=*" %%i in ('nvim --clean --headless --cmd "lua io.write(vim.env.VIMRUNTIME)" --cmd "quit"') do set VIMRUNTIME=%%i
-set PWD=%CD%
-emmylua_check -c %NEOTREE_LUARC% -i ".dependencies/**" -- .
+run_windows = [
+{ task = "emmylua-check-pwsh" }
+]
+[tasks.emmylua-check-pwsh]
+shell = "pwsh -NoProfile -Command"
+run = """
+$env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
+$env:PWD = Get-Location
+emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
 """
 
 [tasks.clean]
