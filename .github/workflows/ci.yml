@@ -43,11 +43,12 @@ jobs:
           neovim: true
           version: "${{matrix.neovim}}" # use instead of mise b/c treesitter might work better?
       - name: "Install neovim and other deps"
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v4
+        with:
+          bootstrap: true
+          bootstrap_args: "--yes"
       - name: "Run tests"
         run: |
-          mise use tree-sitter
-          mise run update-dependencies
           mise test
 
       # - name: Upload coverage to Codecov

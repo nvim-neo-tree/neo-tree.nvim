@@ -4,7 +4,7 @@
     "libraryFiles": "Disable"
   },
   "runtime": {
-    "version": "LuaJIT",
+    "version": "5.1",
     "path": [
       "lua/?.lua",
       "lua/?/init.lua"
