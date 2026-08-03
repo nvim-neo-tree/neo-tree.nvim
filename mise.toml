@@ -56,7 +56,7 @@ VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
 run_windows = [
-{ task = "emmylua-check-powershell" }
+  { task = "emmylua-check-powershell" }
 ]
 [tasks.emmylua-check-powershell]
 shell = "powershell -NoProfile -Command"
