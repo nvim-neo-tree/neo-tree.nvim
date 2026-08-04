@@ -432,8 +432,10 @@ M.status_async = function(path, base_lookup, opts, callback)
           })
 
           if base then
-            git_diff.name_status_job(worktree_root, base, false, ctx, function(status)
-              change_worktree_git_status(worktree_root, ctx.git_status, base, status)
+            git_diff.name_status_job(worktree_root, base, false, ctx, function(ok, status)
+              if ok then
+                change_worktree_git_status(worktree_root, ctx.git_status, base, status)
+              end
               if status_existed then
                 callback(worktree_root)
               end
@@ -710,7 +712,6 @@ M.find_existing_status_code = function(path, base_lookup)
     local base = base_lookup[worktree_root]
     local diff_status = base and worktree.status_diff[base]
     if diff_status then
-      vim.print(diff_status, worktree.status_diff)
       local diff_status_code =
         M._find_existing_status_code_in_git_status(diff_status, worktree_root, path)
       if diff_status_code then
