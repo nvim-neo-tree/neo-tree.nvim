@@ -19,7 +19,7 @@ describe("Neo-tree should be able to track previous windows", function()
     verify.schedule(function()
       local prior_windows =
         require("neo-tree.utils").prior_windows[vim.api.nvim_get_current_tabpage()]
-      return assert.are.same(win, prior_windows[#prior_windows])
+      assert.are.same(win, prior_windows[#prior_windows])
     end)
   end)
 end)

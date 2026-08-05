@@ -60,45 +60,6 @@ local function do_show_or_focus(args, state, force_navigate)
     end
   end
 end
-local function handle_reveal(args, state)
-  args.reveal_file = utils.normalize_path(args.reveal_file)
-  -- Deal with cwd if we need to
-  local cwd = args.dir or state.path or manager.get_cwd(state)
-  if utils.is_subpath(cwd, args.reveal_file) then
-    args.dir = cwd
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  local reveal_file_parent = utils.split_path(args.reveal_file)
-  if not reveal_file_parent then
-    return
-  end
-
-  if args.reveal_force_cwd then
-    args.dir = reveal_file_parent
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  -- if dir doesn't have the reveal_file, ignore the reveal_file
-  if args.dir then
-    args.reveal_file = nil
-    do_show_or_focus(args, state, true)
-    return
-  end
-
-  log.debug("Prompting for change cwd", args)
-  -- force was not specified and the file does not belong to cwd, so we need to ask the user
-  inputs.confirm("File not in cwd. Change cwd to " .. reveal_file_parent .. "?", function(response)
-    if response == true then
-      args.dir = reveal_file_parent
-    else
-      args.reveal_file = nil
-    end
-    do_show_or_focus(args, state, true)
-  end)
-end
 
 ---@class neotree.command.execute.Args
 ---The action to execute
@@ -233,24 +194,44 @@ M.execute = function(args, state_config_override)
     or args.reveal_force_cwd
     -- implied reveal if follow_current_file
     or args.reveal == nil and state.follow_current_file and state.follow_current_file.enabled
-  local has_reveal_file = utils.truthy(args.reveal_file)
-  if args.reveal and not has_reveal_file then
+
+  if args.reveal and not utils.truthy(args.reveal_file) then
     args.reveal_file = manager.get_path_to_reveal()
-    has_reveal_file = utils.truthy(args.reveal_file)
   end
 
-  -- All set, now show or focus the window
-  local force_navigate = path_changed or has_reveal_file or git_base_changed or state.dirty
-  --if position_changed and args.position ~= "current" and current_position ~= "current" then
-  --  manager.close(args.source)
-  --end
-  if has_reveal_file then
-    handle_reveal(args, state)
-    return
+  args.reveal_file = utils.truthy(args.reveal_file) and utils.normalize_path(args.reveal_file)
+    or nil
+
+  local force_navigate = path_changed or args.reveal_file or git_base_changed or state.dirty
+  local cwd = args.dir or state.path or manager.get_cwd(state)
+  if args.reveal_file then
+    -- All set, now show or focus the window
+    local reveal_file_parent = utils.split_path(args.reveal_file)
+
+    if utils.is_subpath(cwd, args.reveal_file) then
+      args.dir = cwd
+    elseif args.reveal_force_cwd then
+      args.dir = reveal_file_parent
+    elseif args.dir then
+      -- cancel reveal
+      args.reveal_file = nil
+    elseif reveal_file_parent then
+      log.debug("Prompting for change cwd", args)
+      inputs.confirm(
+        "File not in cwd. Change cwd to " .. reveal_file_parent .. "?",
+        function(response)
+          if response == true then
+            args.dir = reveal_file_parent
+          else
+            -- cancel reveal
+            args.reveal_file = nil
+          end
+          do_show_or_focus(args, state, force_navigate)
+        end
+      )
+    end
   end
-  if not args.dir then
-    args.dir = state.path
-  end
+  args.dir = args.dir or cwd
   do_show_or_focus(args, state, force_navigate)
 end
 

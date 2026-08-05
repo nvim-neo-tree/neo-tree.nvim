@@ -432,8 +432,10 @@ M.status_async = function(path, base_lookup, opts, callback)
           })
 
           if base then
-            git_diff.name_status_job(worktree_root, base, false, ctx, function(status)
-              change_worktree_git_status(worktree_root, ctx.git_status, base, status)
+            git_diff.name_status_job(worktree_root, base, false, ctx, function(ok, status)
+              if ok then
+                change_worktree_git_status(worktree_root, ctx.git_status, base, status)
+              end
               if status_existed then
                 callback(worktree_root)
               end

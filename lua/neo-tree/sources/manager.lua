@@ -70,6 +70,7 @@ local function create_state(tabid, sd, winid)
   ---@field id integer
   ---@field bufnr integer?
   ---@field dirty boolean
+  ---@field selected table<string, boolean?> A table containing IDs of selected nodes as keys.
   ---@field position neotree.State.Position
   ---@field git_base_by_worktree table<string,string?>?
   ---@field sort table
@@ -85,7 +86,6 @@ local function create_state(tabid, sd, winid)
   ---@field orig_tree NuiTree?
   ---@field _ready boolean?
   ---@field _no_focus boolean?
-  ---@field _skip_consuming_selection boolean?
   ---@field loading boolean?
   ---window
   ---@field window neotree.State.Window?

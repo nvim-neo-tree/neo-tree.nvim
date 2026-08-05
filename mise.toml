@@ -1,6 +1,3 @@
-[settings]
-windows_default_inline_shell_args = "powershell -NoProfile -NoLogo -Command"
-
 [env]
 NEOTREE_LUARC = ".luarc.json"
 MISE_BACKENDS_NEOVIM = "aqua:neovim/neovim"
@@ -124,11 +121,15 @@ run = """
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 VIMRUNTIME="${VIMRUNTIME_PATH}" lua-language-server --configpath=$NEOTREE_LUARC --check=.
 """
+run_windows = [
+	{ task = "luals-check-powershell" }
+]
+[tasks.luals-check-powershell]
+shell = "powershell -NoProfile -Command"
 run_windows = """
 $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'qa')
 lua-language-server --configpath=$env:NEOTREE_LUARC --check .
 """
-wait_for = ['update-dependencies']
 
 [tasks.emmylua-check]
 run = """
@@ -136,12 +137,16 @@ run = """
 VIMRUNTIME_PATH=$(nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 VIMRUNTIME="${VIMRUNTIME_PATH}" emmylua_check -c $NEOTREE_LUARC -i ".dependencies/**" -- .
 """
-run_windows = """
+run_windows = [
+  { task = "emmylua-check-powershell" }
+]
+[tasks.emmylua-check-powershell]
+shell = "powershell -NoProfile -Command"
+run = """
 $env:VIMRUNTIME = (nvim --clean --headless --cmd 'lua io.write(vim.env.VIMRUNTIME)' --cmd 'quit')
 $env:PWD = Get-Location
 emmylua_check -c $env:NEOTREE_LUARC -i ".dependencies/**" -- .
 """
-wait_for = ['update-dependencies']
 
 [tasks.clean]
 run = [
