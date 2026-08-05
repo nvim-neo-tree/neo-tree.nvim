@@ -43,7 +43,7 @@ end
 ---@param base string
 ---@param skip_bubbling boolean?
 ---@param context neotree.git.JobContext
----@param on_parsed fun(status: neotree.git.Status)
+---@param on_parsed fun(success: boolean, status: neotree.git.Status)
 M.name_status_job = function(worktree_root, base, skip_bubbling, context, on_parsed)
   local cmd = make_git_diff_name_status_cmd(worktree_root, base)
   utils.job(cmd, nil, function(code, stdout_chunks)
