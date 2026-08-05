@@ -44,7 +44,6 @@ clone_sparse -b v3.x https://github.com/nvim-neo-tree/neo-tree.nvim.git
 
 echo "Installing core dependencies..."
 cd "${NEOTREE_DEPS_DIR}"
-clone_sparse https://github.com/nvim-lua/plenary.nvim.git
 clone_sparse https://github.com/MunifTanjim/nui.nvim.git
 
 if [ ${#OPTIONAL_PLUGINS[@]} -gt 0 ]; then

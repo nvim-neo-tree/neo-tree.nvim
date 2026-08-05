@@ -9,7 +9,7 @@ local log = require("neo-tree.log")
 local compat = require("neo-tree.utils._compat")
 local help = require("neo-tree.sources.common.help")
 local Preview = require("neo-tree.sources.common.preview")
-local async = require("plenary.async")
+local async = require("neo-tree.vendored.plenary.async.async")
 local git = require("neo-tree.git")
 local node_expander = require("neo-tree.sources.common.node_expander")
 

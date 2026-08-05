@@ -1803,64 +1803,163 @@ end
 ---@type table<integer, integer[]>
 M.prior_windows = {}
 
----Start an async command with uv.
+---@param on_line fun(err: string?, line: string?)
+---@param sep string
+---@return thread
+local chunk_to_lines = function(on_line, sep)
+  ---@param err string?
+  ---@param next_chunk string?
+  return coroutine.create(function(err, next_chunk)
+    local prev_line = nil
+    while type(next_chunk) == "string" do
+      local iter = M.gsplit_plain(next_chunk, sep)
+      if prev_line then
+        local first_line = iter()
+        if first_line then
+          prev_line = prev_line .. first_line
+          for line in iter do
+            on_line(err, prev_line)
+            prev_line = line
+          end
+        end
+      else
+        prev_line = iter()
+        if prev_line then
+          for line in iter do
+            on_line(err, prev_line)
+            prev_line = line
+          end
+        end
+      end
+      err, next_chunk = coroutine.yield()
+    end
+
+    if err or prev_line then
+      on_line(err, prev_line)
+    end
+  end)
+end
+
+---@class neotree.utils.JobParams : uv.spawn.options
+---@field stdout fun(err: string?, data: string?)?
+---@field stderr fun(err: string?, data: string?)?
+---@field stderr_by_line neotree.utils.JobParams.LineReader?
+---@field stdout_by_line neotree.utils.JobParams.LineReader?
+
+---@class neotree.utils.JobParams.LineReader
+---@field handler fun(err: string?, line: string?)
+---@field sep string?
+
+---@param line_reader neotree.utils.JobParams.LineReader
+---@return fun(err: string?, chunk: string?) reader
+---@return fun() on_exit
+local function create_on_line_handlers(line_reader)
+  local consumer = chunk_to_lines(line_reader.handler, line_reader.sep or "\n")
+
+  ---@param err string?
+  ---@param data string?
+  local reader = function(err, data)
+    coroutine.resume(consumer, err, data)
+  end
+  local on_exit = function()
+    coroutine.resume(consumer)
+  end
+
+  return reader, on_exit
+end
+
+---Ergonomic wrapper around uv.spawn
 ---Placeholder before upgrading to vim.system
 ---@param cmd string[]
----@param opts uv.spawn.options? args, hide, and stdio are ignored
+---@param opts neotree.utils.JobParams? args, hide, and stdio are ignored.
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
 ---@return neotree.utils.Job?
----@return integer|string err
+---@return integer|string pid_or_err
 M.job = function(cmd, opts, on_exit)
-  local stdout_chunks = {}
-  local stderr_chunks = {}
-
   local path = cmd[1]
-  local args = { unpack(cmd, 2) }
   local completed = false
   local exit_code
   local stdout = log.assert(uv.new_pipe(false))
   local stderr = log.assert(uv.new_pipe(false))
-  ---@type uv.spawn.options
-  local spawnopts = opts or {}
-  spawnopts.args = args
-  spawnopts.hide = true
-  spawnopts.stdio = { nil, stdout, stderr }
-  local handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
+
+  opts = opts or {}
+  opts.args = { unpack(cmd, 2) }
+  opts.hide = true
+  opts.stdio = { nil, stdout, stderr }
+  local stdout_chunks = {}
+  local stderr_chunks = {}
+  ---@type function[]
+  local on_exit_handlers = {}
+
+  if opts.stdout_by_line then
+    assert(
+      not opts.stdout,
+      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
+    )
+    opts.stdout, on_exit_handlers[#on_exit_handlers + 1] =
+      create_on_line_handlers(opts.stdout_by_line)
+  end
+
+  if opts.stderr_by_line then
+    assert(
+      not opts.stderr,
+      "cannot specify opts.stderr and opts.on_stderr_line at the same time. use one or the other"
+    )
+    opts.stderr, on_exit_handlers[#on_exit_handlers + 1] =
+      create_on_line_handlers(opts.stderr_by_line)
+  end
+
+  ---@cast opts -neotree.utils.JobParams
+  local handle, pid_or_err = uv.spawn(path, opts, function(code, _)
     stdout:close()
     stderr:close()
     exit_code = code
     completed = true
+    for _, fn in ipairs(on_exit_handlers) do
+      fn()
+    end
     if on_exit then
       on_exit(code, stdout_chunks, stderr_chunks)
     end
   end)
+
+  stdout:read_start(opts.stdout or function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stdout_chunks[#stdout_chunks + 1] = data
+    end
+  end)
+
+  stderr:read_start(opts.stderr or function(err, data)
+    log.assert(not err, err)
+    if type(data) == "string" then
+      stderr_chunks[#stderr_chunks + 1] = data
+    end
+  end)
+
   if not handle then
     stdout:close()
     stderr:close()
     return nil, pid_or_err
   end
 
-  stdout:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
-      stdout_chunks[#stdout_chunks + 1] = data
-    end
-  end)
-  stderr:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
-      stderr_chunks[#stderr_chunks + 1] = data
-    end
-  end)
   ---@class neotree.utils.Job
   local job = {
     handle = handle,
     pid = pid_or_err,
     ---@param timeout_ms integer? Defaults to math.huge
     wait = function(timeout_ms)
-      vim.wait(timeout_ms or math.huge, function()
+      local completed_in_time, errnum = vim.wait(timeout_ms or math.huge, function()
         return completed
       end)
+      if not completed_in_time then
+        if errnum == -1 then
+          error("job timed out")
+        elseif errnum == -2 then
+          error("job was interrupted")
+        end
+        error("unknown")
+      end
       return {
         code = exit_code,
         stdout = stdout_chunks,
@@ -1870,5 +1969,10 @@ M.job = function(cmd, opts, on_exit)
   }
   return job, pid_or_err
 end
+
+---@class neotree.Utils._Private
+M._testing = {
+  chunk_to_lines = chunk_to_lines,
+}
 
 return M

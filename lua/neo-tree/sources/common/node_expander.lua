@@ -37,7 +37,7 @@ end
 
 --- Recursively expands all nodes under the given node collecting all unloaded nodes
 --- Then run prefetcher on all unloaded nodes. Finally, expand loded nodes.
---- async method
+---@async
 ---@param node table a node to expand
 ---@param state neotree.State current state of the source
 local function expand_and_load(node, state, prefetcher)
@@ -51,7 +51,7 @@ end
 
 --- Expands given node recursively loading all descendant nodes if needed
 --- Nodes will be loaded using given prefetcher
---- async method
+---@async
 ---@param state neotree.State current state of the source
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`

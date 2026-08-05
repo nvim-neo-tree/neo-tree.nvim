@@ -17,8 +17,4 @@ return {
     "nvim-tree/nvim-web-devicons",
     dir = deps_dir .. "/nvim-web-devicons",
   },
-  {
-    "nvim-lua/plenary.nvim",
-    dir = deps_dir .. "/plenary.nvim",
-  },
 }
