@@ -983,9 +983,13 @@ local fs_normalize = compat.fs_normalize
 
 ---Normalize a path, to avoid errors when comparing paths.
 ---@param path string The path to be normalize.
+---@param opts vim.fs.normalize.Opts?
 ---@return string string The normalized path.
-M.normalize_path = function(path)
-  path = fs_normalize(path, { win = M.is_windows })
+M.normalize_path = function(path, opts)
+  path = fs_normalize(
+    path,
+    opts and vim.tbl_deep_extend("force", { win = M.is_windows }, opts) or { win = M.is_windows }
+  )
   if M.is_windows then
     -- Now use backslashes, as expected by the rest of Neo-Tree's code
     path = path:gsub("/", M.path_separator)
