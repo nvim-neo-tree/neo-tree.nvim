@@ -144,9 +144,32 @@ local on_directory_loaded = function(context, dir_path)
 
   folder.loaded = true
 
+  local target_path = folder.is_link and utils.path_join(folder.path, folder.link_to) or folder.path
+
+  -- A folder with a .git entry among its children is the root of its own worktree.
+  -- The tree root is already covered by the source, so only nested repositories are
+  -- left to register here.
+  if nt.config.enable_git_status and folder.path ~= state.path then
+    for _, child in ipairs(folder.children) do
+      if
+        vim.endswith(child.path, utils.path_separator .. ".git")
+        and not git.worktrees[target_path]
+      then
+        possible_worktree_roots[#possible_worktree_roots + 1] = target_path
+        -- try running a status (and potentially start tracking)
+        if nt.config.git_status_async then
+          git.status_async(target_path, nil, nt.config.git_status_async_options)
+        else
+          vim.schedule(function()
+            git.status(target_path, nil, false)
+          end)
+        end
+        break
+      end
+    end
+  end
+
   if state.use_libuv_file_watcher then
-    local target_path = folder.is_link and utils.path_join(folder.path, folder.link_to)
-      or folder.path
     -- git folders seem to throw off fs events constantly, ignore them this time.
     if target_path:find(".git", 1, true) then
       -- https://git-scm.com/docs/gitrepository-layout
@@ -165,23 +188,6 @@ local on_directory_loaded = function(context, dir_path)
         return
       end
     end
-    if nt.config.enable_git_status then
-      for i, child in ipairs(folder.children) do
-        if vim.endswith(child.path, ".git") and not git.worktrees[target_path] then
-          possible_worktree_roots[#possible_worktree_roots + 1] = target_path
-          -- try running a status (and potentially start tracking)
-          if nt.config.git_status_async then
-            git.status_async(target_path, nil, nt.config.git_status_async_options)
-          else
-            vim.schedule(function()
-              git.status(target_path, nil, false)
-            end)
-          end
-          break
-        end
-      end
-    end
-
     local fs_watch_callback = vim.schedule_wrap(function(err, fname)
       if err then
         log.error("file_event_callback: ", err)
