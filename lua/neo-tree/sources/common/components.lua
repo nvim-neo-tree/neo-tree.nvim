@@ -221,7 +221,7 @@ M.diagnostics = function(config, node, state)
     }
   else
     return {
-      text = severity:sub(1, 1),
+      text = to2char(severity:sub(1, 1)),
       highlight = "Diagnostic" .. severity,
     }
   end
