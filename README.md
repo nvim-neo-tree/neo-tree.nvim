@@ -71,8 +71,6 @@ This plugin relies upon these two excellent library plugins:
 
 - [MunifTanjim/nui.nvim](https://github.com/MunifTanjim/nui.nvim) for all UI
 components, including the tree!
-- [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for backend
-utilities, such as scanning the filesystem.
 
 There are also some optional plugins that work with Neo-tree:
 
@@ -101,7 +99,6 @@ vim.pack.add({
     version = vim.version.range('3')
   },
   -- dependencies
-  "https://github.com/nvim-lua/plenary.nvim",
   "https://github.com/MunifTanjim/nui.nvim",
   -- optional, but recommended
   "https://github.com/nvim-tree/nvim-web-devicons",
@@ -117,7 +114,6 @@ return {
     "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
     dependencies = {
-      "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
       "nvim-tree/nvim-web-devicons", -- optional, but recommended
     },
@@ -137,7 +133,6 @@ return {
     "nvim-neo-tree/neo-tree.nvim",
     branch = "v3.x",
     dependencies = {
-      "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
       "nvim-tree/nvim-web-devicons",
     },
@@ -186,7 +181,6 @@ use({
   "nvim-neo-tree/neo-tree.nvim",
   branch = "v3.x",
   requires = {
-    "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
     "nvim-tree/nvim-web-devicons", -- optional, but recommended
   }
@@ -208,7 +202,6 @@ add({
   source = 'nvim-neo-tree/neo-tree.nvim',
   checkout = 'v3.x',
   depends = {
-    "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
     "nvim-tree/nvim-web-devicons", -- optional, but recommended
   }
@@ -255,7 +248,6 @@ return {
   "nvim-neo-tree/neo-tree.nvim",
   branch = "v3.x",
   dependencies = {
-    "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
     "nvim-tree/nvim-web-devicons", -- optional, but recommended
   },
@@ -1059,9 +1051,9 @@ will find it easy to work with.
 One big difference between this plugin and the ones that came before it, which
 is also what finally pushed me over the edge into making a new plugin, is that
 we now have libraries to build upon that did not exist when other tree plugins
-were created. Most notably, [nui.nvim](https://github.com/MunifTanjim/nui.nvim)
-and [plenary.nvm](https://github.com/nvim-lua/plenary.nvim). Building upon
-shared libraries will go a long way in making neo-tree easy to maintain.
+were created. Most notably, [nui.nvim](https://github.com/MunifTanjim/nui.nvim).
+Building upon shared libraries will go a long way in making neo-tree easy to
+maintain.
 
 ### Stable
 

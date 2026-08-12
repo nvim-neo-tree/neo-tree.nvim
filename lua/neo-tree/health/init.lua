@@ -42,7 +42,6 @@ end
 
 function M.check()
   health.start("Required dependencies")
-  check_dependency("plenary", "nvim-lua/plenary.nvim")
   check_dependency("nui.tree", "MunifTanjim/nui.nvim")
 
   health.start("Optional icons")
