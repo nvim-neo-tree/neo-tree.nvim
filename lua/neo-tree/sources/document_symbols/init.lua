@@ -17,6 +17,44 @@ local get_state = function()
   return manager.get_state(M.name)
 end
 
+---Returns the state for this source in the current tab if it is actually open,
+---without creating a new state.
+---@return neotree.StateWithTree? state
+local get_active_state = function()
+  local tabid = vim.api.nvim_get_current_tabpage()
+  for _, state in ipairs(manager._get_all_states()) do
+    if state.name == M.name and state.tabid == tabid and renderer.window_exists(state) then
+      return state --[[@as neotree.StateWithTree]]
+    end
+  end
+  return nil
+end
+
+---Syncs the lsp window to the window the cursor is currently in, if it is a
+---suitable window to show symbols for. Does nothing if the current window is
+---the neo-tree window, a floating window, or does not contain a real file.
+---@param state neotree.StateWithTree
+local sync_lsp_window = function(state)
+  local winid = vim.api.nvim_get_current_win()
+  if winid == state.winid then
+    return
+  end
+  if utils.is_floating(winid) then
+    return
+  end
+  local bufnr = vim.api.nvim_win_get_buf(winid)
+  if vim.bo[bufnr].filetype == "neo-tree" then
+    return
+  end
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  if not utils.is_real_file(bufname) then
+    return
+  end
+  state.lsp_winid = winid
+  state.lsp_bufnr = bufnr
+  state.path = bufname
+end
+
 ---Refresh the source with debouncing
 ---@param args { afile: string }
 local refresh_debounced = function(args)
@@ -35,6 +73,9 @@ end
 local follow_symbol = function()
   local state = get_state()
   if state.lsp_bufnr ~= vim.api.nvim_get_current_buf() then
+    return
+  end
+  if not (state.lsp_winid and vim.api.nvim_win_is_valid(state.lsp_winid)) then
     return
   end
   local cursor = vim.api.nvim_win_get_cursor(state.lsp_winid)
@@ -62,9 +103,12 @@ end
 
 ---Navigate to the given path.
 M.navigate = function(state, path, path_to_reveal, callback, async)
-  state.lsp_winid, _ = utils.get_appropriate_window(state)
-  state.lsp_bufnr = vim.api.nvim_win_get_buf(state.lsp_winid)
-  state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
+  sync_lsp_window(state)
+  if not (state.lsp_winid and vim.api.nvim_win_is_valid(state.lsp_winid)) then
+    state.lsp_winid, _ = utils.get_appropriate_window(state)
+    state.lsp_bufnr = vim.api.nvim_win_get_buf(state.lsp_winid)
+    state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
+  end
 
   symbols.render_symbols(state, callback)
 end
@@ -114,6 +158,35 @@ M.setup = function(config, global_config)
       handler = refresh_debounced,
     })
   end
+
+  -- Keep the lsp window synced with the window the cursor is in, so that
+  -- jumping to symbols and following the cursor work after splitting or
+  -- moving between windows with <C-w>.
+  manager.subscribe(M.name, {
+    event = events.VIM_WIN_ENTER,
+    handler = function()
+      local state = get_active_state()
+      if state then
+        sync_lsp_window(state)
+      end
+    end,
+  })
+  manager.subscribe(M.name, {
+    event = events.VIM_WIN_CLOSED,
+    handler = function(args)
+      local state = get_active_state()
+      if not state then
+        return
+      end
+      local closed_winid = tonumber(args.afile) or tonumber(args.match)
+      if closed_winid and closed_winid == state.lsp_winid then
+        -- The window we were tracking is gone, clear it so that consumers
+        -- can fall back to deriving a new one.
+        state.lsp_winid = nil
+        state.lsp_bufnr = nil
+      end
+    end,
+  })
 
   if config.follow_cursor then
     manager.subscribe(M.name, {

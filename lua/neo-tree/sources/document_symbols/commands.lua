@@ -16,16 +16,38 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
+---Get a valid lsp window id, deriving a new one if the tracked window is
+---invalid (for example after it was closed with <C-w>q).
+---@param state neotree.StateWithTree
+---@return integer? winid
+local get_valid_lsp_winid = function(state)
+  if state.lsp_winid and vim.api.nvim_win_is_valid(state.lsp_winid) then
+    return state.lsp_winid
+  end
+  local winid, is_neo_tree = utils.get_appropriate_window(state)
+  if is_neo_tree then
+    return nil
+  end
+  state.lsp_winid = winid
+  state.lsp_bufnr = vim.api.nvim_win_get_buf(winid)
+  state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
+  return winid
+end
+
 ---@param node NuiTree.Node
 M.jump_to_symbol = function(state, node)
   node = node or state.tree:get_node()
   if node:get_depth() == 1 then
     return
   end
-  vim.api.nvim_set_current_win(state.lsp_winid)
+  local lsp_winid = get_valid_lsp_winid(state)
+  if not lsp_winid then
+    return
+  end
+  vim.api.nvim_set_current_win(lsp_winid)
   vim.api.nvim_set_current_buf(state.lsp_bufnr)
   local symbol_loc = node.extra.selection_range.start
-  vim.api.nvim_win_set_cursor(state.lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
+  vim.api.nvim_win_set_cursor(lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
 end
 
 ---Show symbol location without changing focus
@@ -40,15 +62,20 @@ M.show_symbol = function(state, node)
     return
   end
 
+  local lsp_winid = get_valid_lsp_winid(state)
+  if not lsp_winid then
+    return
+  end
+
   local neo_win = vim.api.nvim_get_current_win()
   local symbol_loc = node.extra.selection_range.start
 
   -- Jump to symbol in target window
-  vim.api.nvim_win_call(state.lsp_winid, function()
-    if vim.api.nvim_win_get_buf(state.lsp_winid) ~= state.lsp_bufnr then
-      vim.api.nvim_win_set_buf(state.lsp_winid, state.lsp_bufnr)
+  vim.api.nvim_win_call(lsp_winid, function()
+    if vim.api.nvim_win_get_buf(lsp_winid) ~= state.lsp_bufnr then
+      vim.api.nvim_win_set_buf(lsp_winid, state.lsp_bufnr)
     end
-    pcall(vim.api.nvim_win_set_cursor, state.lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
+    pcall(vim.api.nvim_win_set_cursor, lsp_winid, { symbol_loc[1] + 1, symbol_loc[2] })
   end)
 
   -- Restore focus to neo-tree
