@@ -12,7 +12,7 @@ tree-sitter = "latest"
 
 [tasks.test]
 run = """
-nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
+nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua',sequential=vim.fn.has('win32')==1})"
 """
 
 [tasks.test-docker]

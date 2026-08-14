@@ -1,8 +1,9 @@
+local utils = require("neo-tree.utils")
 local verify = {}
 
 local DEFAULT_TIMEOUT = 1000
 ---@param assertfunc function
----@param failmsg string
+---@param failmsg string|function
 ---@param timeout integer?
 verify.eventually = function(assertfunc, failmsg, timeout, ...)
   local success, args = false, { ... }
@@ -10,15 +11,13 @@ verify.eventually = function(assertfunc, failmsg, timeout, ...)
     success = assertfunc(unpack(args))
     return success
   end)
-  assert(success, failmsg)
+  assert(success, type(failmsg) == "function" and failmsg() or failmsg)
 end
 
-local id = 0
 ---Blocks until the assertfunc is run on the next vim.schedule. Will throw the error thrown by the scheduled function.
 ---@param assertfunc function
 ---@param timeout integer?
 verify.schedule = function(assertfunc, timeout)
-  id = id + 1
   local scheduled_func_ran = false
   local ok, err = false, nil
   vim.schedule(function()
@@ -66,11 +65,23 @@ verify.buf_name_endswith = function(buf_name, timeout)
   )
 end
 
+--TODO: revisit whether the tests this function allows through should actually require hard equality of paths (down to
+--perfect normalization).
+local path_equal = function(a, b)
+  if utils.is_windows and utils.windowize_path(a) == utils.windowize_path(b) then
+    return true
+  end
+  return a == b
+end
+
 ---@param timeout integer?
 verify.buf_name_is = function(buf_name, timeout)
   verify.eventually(function()
-    return buf_name == vim.api.nvim_buf_get_name(0)
-  end, string.format("Current buffer name is expected to be '%s' but is not", buf_name), timeout)
+    return path_equal(buf_name, vim.api.nvim_buf_get_name(0))
+  end, function()
+    local _, err = pcall(assert.are.equal, buf_name, vim.api.nvim_buf_get_name(0))
+    return err
+  end, timeout)
 end
 
 ---@param timeout integer?
@@ -117,11 +128,14 @@ verify.tree_node_is = function(source_name, expected_node_id, winid, timeout)
       return false
     end
     local node_id = node:get_id()
-    if node_id == expected_node_id then
-      return true
-    end
-    return false
-  end, string.format("Tree node '%s' not focused", expected_node_id), timeout)
+    return path_equal(node_id, expected_node_id)
+  end, function()
+    local state = assert(verify.get_state(source_name, winid))
+    local node = assert(state.tree.get_node(state.tree))
+    local node_id = node:get_id()
+    local ok, err = pcall(assert.are.equal, expected_node_id, node_id)
+    return err
+  end, timeout)
 end
 
 verify.filesystem_tree_node_is = function(expected_node_id, winid, timeout)
