@@ -1,12 +1,13 @@
 pcall(require, "luacov")
 
 local u = require("tests.utils")
+local uv = vim.uv or vim.loop
 local verify = require("tests.utils.verify")
 local git = require("neo-tree.git")
 local utils = require("neo-tree.utils")
 
 -- Registration spawns `git rev-parse` and `git status`, which is slow on CI runners.
-local TIMEOUT = 5000
+local TIMEOUT = 30 * 1000
 
 ---@param cwd string
 ---@param ... string
@@ -33,7 +34,19 @@ local function create_nested_repos()
   u.fs.write_file(inner_file, { "hello" })
   git_cmd(inner, "add", "tracked.txt")
 
-  return outer, inner, utils.normalize_path(inner_file)
+  -- we must resolve all of these paths to realpaths because: (gemini-generated output below)
+  -- On Windows hosted virtual machines in GitHub Actions, "RUNNER~1" is the 8.3 short-form MS-DOS path representation
+  -- for the user profile directory C:\Users\RUNNER 1 (often belonging to the default user runneradmin). This path
+  -- frequently appears in environment variables, temporary folders, or test assertions on GitHub-hosted Windows
+  -- runners.  Node.js methods like os.tmpdir() can intermittently return either the short-form (RUNNER~1) or long-form
+  -- path, which sometimes breaks path-matching unit tests in CI pipelines.
+  local outputs = { outer, inner, inner_file }
+  for i, path in ipairs(outputs) do
+    outputs[i] = utils.normalize_path(assert(uv.fs_realpath(path)))
+  end
+
+  outer, inner, inner_file = unpack(outputs)
+  return outer, inner, inner_file
 end
 
 describe("Filesystem git status for nested repositories", function()
@@ -63,16 +76,17 @@ describe("Filesystem git status for nested repositories", function()
         dir = outer,
         reveal_file = inner_file,
       })
+      verify.filesystem_tree_node_is(inner_file)
       return inner, inner_file
     end
 
     it("resolves the nested repository to its own worktree" .. suffix, function()
       local inner, inner_file = open_tree_revealing_the_nested_repo()
-      local inner_root = git.find_worktree_info(inner)
 
       verify.eventually(function()
-        return git.find_existing_worktree(inner_file) == inner_root
-      end, "the nested file should resolve to the nested worktree, not the outer one", TIMEOUT)
+        local actual_worktree_root = git.find_existing_worktree(inner_file)
+        return actual_worktree_root and actual_worktree_root == inner
+      end, "worktree root never resolved to " .. inner, TIMEOUT)
     end)
 
     it("does not report files of the nested repository as ignored" .. suffix, function()
@@ -84,7 +98,7 @@ describe("Filesystem git status for nested repositories", function()
       verify.eventually(function()
         local status = git.find_existing_status_code(inner_file, {})
         return status ~= nil and status ~= "!"
-      end, "the nested file kept the outer repository's ignored status", TIMEOUT)
+      end, "status code did not resolve properly", TIMEOUT)
     end)
   end
 end)

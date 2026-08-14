@@ -1,21 +1,37 @@
 local utils = require("neo-tree.utils")
 local verify = {}
+---@alias neotree.test.assertfunc fun(...):success: boolean, err: string?
+---@alias neotree.test.failmsg (fun():string)|string
 
 local DEFAULT_TIMEOUT = 1000
----@param assertfunc function
----@param failmsg string|function
+---@param failmsg neotree.test.failmsg
+---@return string
+local resolve_failmsg = function(failmsg)
+  if type(failmsg) == "function" then
+    return failmsg()
+  end
+  return failmsg
+end
+---@param assertfunc neotree.test.assertfunc
+---@param failmsg neotree.test.failmsg
 ---@param timeout integer?
 verify.eventually = function(assertfunc, failmsg, timeout, ...)
-  local success, args = false, { ... }
-  vim.wait(timeout or DEFAULT_TIMEOUT, function()
-    success = assertfunc(unpack(args))
-    return success
+  local args = { ... }
+  local success, last_err
+  ---@type boolean, boolean|-1|-2|nil
+  local notimeout = vim.wait(timeout or DEFAULT_TIMEOUT, function()
+    success, last_err = assertfunc(unpack(args))
+    return success, last_err
   end)
-  assert(success, type(failmsg) == "function" and failmsg() or failmsg)
+  local err = resolve_failmsg(last_err or failmsg)
+  if not notimeout then
+    err = "timeout: " .. err
+  end
+  assert(notimeout and success, err)
 end
 
 ---Blocks until the assertfunc is run on the next vim.schedule. Will throw the error thrown by the scheduled function.
----@param assertfunc function
+---@param assertfunc neotree.test.assertfunc
 ---@param timeout integer?
 verify.schedule = function(assertfunc, timeout)
   local scheduled_func_ran = false

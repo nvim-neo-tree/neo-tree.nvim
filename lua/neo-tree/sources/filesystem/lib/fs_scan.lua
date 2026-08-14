@@ -20,12 +20,10 @@ local M = {}
 --- how many entries to load per readdir
 local ENTRIES_BATCH_SIZE = 1000
 
----@type string[]
-local possible_worktree_roots = {}
-
 ---@param cwd string Filters what worktrees to view. Should be an ancestor of all the items.
 ---@param items neotree.FileItem[]
-local mark_gitignored = function(cwd, items)
+---@param possible_worktree_roots string[] Roots of newly-discovered nested repositories found while scanning.
+local mark_gitignored = function(cwd, items, possible_worktree_roots)
   if vim.in_fast_event() then
     log.warn("mark_gitignored cannot be called in a fast event", debug.traceback())
     return
@@ -63,7 +61,6 @@ local mark_gitignored = function(cwd, items)
       end
     end
   end
-  possible_worktree_roots = {}
 
   -- Sort by descending key length since we want to ensure that the most specific worktrees are matched first
   table.sort(roots_and_statuses, function(a, b)
@@ -155,7 +152,7 @@ local on_directory_loaded = function(context, dir_path)
         vim.endswith(child.path, utils.path_separator .. ".git")
         and not git.worktrees[target_path]
       then
-        possible_worktree_roots[#possible_worktree_roots + 1] = target_path
+        context.nested_worktree_roots[#context.nested_worktree_roots + 1] = target_path
         -- try running a status (and potentially start tracking)
         if nt.config.git_status_async then
           git.status_async(target_path, nil, nt.config.git_status_async_options)
@@ -253,7 +250,7 @@ local job_complete = function(context, skip_render_context)
   file_nesting.nest_items(context)
   ignored.mark_ignored(state, context.all_items)
   if should_check_gitignore(state) then
-    mark_gitignored(state.path, context.all_items)
+    mark_gitignored(state.path, context.all_items, context.nested_worktree_roots)
   end
   if not skip_render_context then
     vim.schedule(function()
@@ -678,6 +675,7 @@ end
 ---async
 ---@field paths_to_load string[]
 ---@field is_a_never_show_file fun(filename: string?):boolean
+---@field nested_worktree_roots string[] Roots of newly-discovered nested repositories found while scanning.
 
 ---@class neotree.sources.filesystem.State : neotree.State, neotree.Config.Filesystem
 ---@field path string
@@ -709,6 +707,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async_dir_sca
   context.path_to_reveal = path_to_reveal
   context.recursive = recursive
   context.callback = callback
+  context.nested_worktree_roots = {}
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory") --[[@as neotree.FileItem.Directory]]
   root.name = vim.fn.fnamemodify(root.path, ":~")
@@ -738,6 +737,7 @@ M.get_dir_items_async = function(state, parent_id, recursive)
   context.recursive = recursive
   context.callback = nil
   context.paths_to_load = {}
+  context.nested_worktree_roots = {}
 
   -- Create root folder
   local root = file_items.create_item(context, parent_id or state.path, "directory") --[[@as neotree.FileItem.Directory]]
