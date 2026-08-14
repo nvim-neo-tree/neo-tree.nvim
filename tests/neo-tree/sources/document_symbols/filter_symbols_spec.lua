@@ -84,7 +84,14 @@ describe("filter_symbols", function()
   it("passes through symbols without kind info", function()
     local syms = {
       make_sym("f", "Function"),
-      { id = "unknown", name = "unknown", type = "symbol", path = "/test.lua", children = {}, extra = {} },
+      {
+        id = "unknown",
+        name = "unknown",
+        type = "symbol",
+        path = "/test.lua",
+        children = {},
+        extra = {},
+      },
     }
     local got = symbols._filter_symbols(syms, { variable = true })
     assert.are.same(2, #got)

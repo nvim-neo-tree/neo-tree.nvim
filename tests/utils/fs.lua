@@ -60,6 +60,7 @@ function fs.create_fs_tree(fs_tree)
         item.abspath = Path:new(basedir, item.name):absolute()
         fs.write_file(item.abspath)
       end
+      item.abspath = require("neo-tree.utils").normalize_path(item.abspath)
     end
   end
 
