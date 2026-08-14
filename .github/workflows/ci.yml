@@ -47,6 +47,8 @@ jobs:
       - name: "Install neovim and other deps"
         uses: jdx/mise-action@v4
         with:
+          # pinning windows version until https://github.com/jdx/mise/discussions/12002 is resolved
+          version: "${{ matrix.os == 'windows-latest' && 'v2026.8.1' || '' }}"
           bootstrap: true
           bootstrap_args: "--yes"
       - name: "Run tests"
