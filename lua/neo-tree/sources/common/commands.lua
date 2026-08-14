@@ -1203,7 +1203,7 @@ M.vsplit_with_window_picker = function(state, toggle_directory)
 end
 
 -- Jump to any node by two characters.
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 M.quick_jump = function(state, toggle_directory)
   local nodes = renderer.get_all_visible_nodes(state.tree)
   local quick_jump_utils = require("neo-tree.sources.common.utils.quick-jump")

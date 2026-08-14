@@ -12,7 +12,7 @@ local common_filter = require("neo-tree.sources.common.filters")
 
 local M = {}
 
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 ---@param search_as_you_type boolean?
 ---@param fuzzy_finder_mode "directory"|boolean?
 ---@param use_fzy boolean?

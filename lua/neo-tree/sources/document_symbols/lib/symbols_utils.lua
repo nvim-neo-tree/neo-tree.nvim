@@ -150,7 +150,7 @@ end
 
 ---Callback function for lsp request
 ---@param lsp_resp table<integer, neotree.lsp.RespRaw> the response of the lsp clients
----@param state neotree.StateWithTree the state of the source
+---@param state neotree.State the state of the source
 local on_lsp_resp = function(lsp_resp, state)
   if lsp_resp == nil or type(lsp_resp) ~= "table" then
     return
@@ -189,7 +189,7 @@ end
 ---@diagnostic disable-next-line: deprecated
 local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
 
----@param state neotree.StateWithTree
+---@param state neotree.State
 ---@param callback function?
 M.render_symbols = function(state, callback)
   local bufnr = assert(state.lsp_bufnr, "document_symbols bufnr not set")

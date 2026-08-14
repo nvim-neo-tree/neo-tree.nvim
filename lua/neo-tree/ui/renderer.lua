@@ -1558,6 +1558,8 @@ end
 ---Draws the given nodes on the screen.
 ---@param nodes NuiTree.Node[] The nodes to draw.
 ---@param state neotree.State The current state of the source.
+---@param parent_id nil
+---@overload fun(nodes: NuiTree.Node[], state: neotree.StateWithTree, parent_id: string)
 draw = function(nodes, state, parent_id)
   -- If we are going to redraw, preserve the current set of expanded nodes.
   local expanded_nodes = {}
@@ -1643,7 +1645,7 @@ end
 
 ---Shows the given items as a tree.
 ---@param sourceItems table? The list of items to transform.
----@param state neotree.StateWithTree The current state of the plugin.
+---@param state neotree.State The current state of the plugin.
 ---@param parentId string? The id of the parent node to display these nodes at
 ---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)
@@ -1732,6 +1734,7 @@ M.show_nodes = function(sourceItems, state, parentId, callback)
     local nodes = create_nodes(sourceItems, state, level)
     draw(nodes, state, parentId)
   else
+    ---@cast state neotree.StateWithTree
     -- this was a force grouping of a lazy loaded folder
     state.win_width = utils.get_inner_win_width(state.winid)
     render_tree(state)
