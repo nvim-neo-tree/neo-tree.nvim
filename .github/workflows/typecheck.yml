@@ -1,0 +1,69 @@
+name: Language Server Diagnostics
+on:
+  pull_request: ~
+  push:
+    paths:
+      - "**.lua"
+    branches:
+      - '*'
+
+
+jobs:
+  luals-check:
+    env:
+      MISE_AUTO_INSTALL_DISABLE_TOOLS: cargo-binstall,cargo:emmylua_ls,cargo:emmylua_check
+    strategy:
+      matrix:
+        neovim: ["0.12", "nightly"]
+        lua: ["luajit", "5.1"]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - uses: luarocks/gh-actions-lua@v13
+      with:
+        luaVersion: ${{matrix.lua}}
+
+    - name: Install tools
+      uses: jdx/mise-action@v4
+      with:
+        install: true
+
+    - name: Run lua-language-server check
+      # nightly gets deprecated notices often so this prevents ci from looking like we're failing when we're just using
+      # a function that will only be deprecated on stable in months
+      continue-on-error: ${{ matrix.neovim == 'nightly' }}
+      run: |
+        mise bootstrap --yes --only repos
+        mise use github:neovim/neovim@${{matrix.neovim}}
+        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run luals-check
+  emmylua-check:
+    env:
+      MISE_AUTO_INSTALL_DISABLE_TOOLS: lua-language-server
+    strategy:
+      matrix:
+        neovim: ["0.12", "nightly"]
+        lua: ["luajit", "5.1"]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - uses: luarocks/gh-actions-lua@v13
+      with:
+        luaVersion: ${{matrix.lua}}
+
+    - name: Install tools
+      uses: jdx/mise-action@v4
+      with:
+        install: true
+
+    - name: Run emmylua_check
+      continue-on-error: true
+      run: |
+        mise bootstrap --yes --only repos
+        mise use github:neovim/neovim@${{matrix.neovim}}
+        NEOTREE_LUARC=".github/workflows/.luarc-${{ matrix.lua }}.json" mise run emmylua-check
