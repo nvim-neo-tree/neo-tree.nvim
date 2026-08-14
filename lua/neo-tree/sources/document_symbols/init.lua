@@ -105,12 +105,17 @@ end
 M.navigate = function(state, path, path_to_reveal, callback, async)
   sync_lsp_window(state)
   if not (state.lsp_winid and vim.api.nvim_win_is_valid(state.lsp_winid)) then
-    state.lsp_winid, _ = utils.get_appropriate_window(state)
-    state.lsp_bufnr = vim.api.nvim_win_get_buf(state.lsp_winid)
-    state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
+    local winid, is_neo_tree = utils.get_appropriate_window(state)
+    if not is_neo_tree then
+      state.lsp_winid = winid
+      state.lsp_bufnr = vim.api.nvim_win_get_buf(winid)
+      state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
+    end
   end
 
-  symbols.render_symbols(state, callback)
+  if state.lsp_bufnr then
+    symbols.render_symbols(state, callback)
+  end
 end
 
 ---@class neotree.Config.LspKindDisplay
