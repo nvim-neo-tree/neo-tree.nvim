@@ -532,7 +532,7 @@ local function sync_scan(context, path_to_scan)
   end
 end
 
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 ---@param parent_id string?
 ---@param path_to_reveal string?
 ---@param callback function
@@ -540,7 +540,7 @@ M.get_items_sync = function(state, parent_id, path_to_reveal, callback)
   M.get_items(state, parent_id, path_to_reveal, callback, false)
 end
 
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 ---@param parent_id string?
 ---@param path_to_reveal string?
 ---@param callback function
@@ -673,9 +673,10 @@ end
 ---@field paths_to_load string[]
 ---@field is_a_never_show_file fun(filename: string?):boolean
 
----@class neotree.sources.filesystem.State : neotree.StateWithTree, neotree.Config.Filesystem
----@field git_ignored neotree.FileItem[]
+---@class neotree.sources.filesystem.State : neotree.State, neotree.Config.Filesystem
 ---@field path string
+
+---@class neotree.sources.filesystem.StateWithTree : neotree.StateWithTree, neotree.sources.filesystem.State
 
 ---@param state neotree.sources.filesystem.State
 ---@param parent_id string?
@@ -720,7 +721,7 @@ M.get_items = function(state, parent_id, path_to_reveal, callback, async_dir_sca
   end
 end
 
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 ---@param parent_id string
 ---@param recursive boolean?
 M.get_dir_items_async = function(state, parent_id, recursive)

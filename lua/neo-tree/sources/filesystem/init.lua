@@ -21,9 +21,9 @@ local wrap = function(func)
   return utils.wrap(func, M.name)
 end
 
----@return neotree.sources.filesystem.State
+---@return neotree.sources.filesystem.StateWithTree
 local get_state = function(tabid)
-  return manager.get_state(M.name, tabid) --[[@as neotree.sources.filesystem.State]]
+  return manager.get_state(M.name, tabid) --[[@as neotree.sources.filesystem.StateWithTree]]
 end
 
 local follow_internal = function(callback, force_show, async)
@@ -192,6 +192,7 @@ M._navigate_internal = function(state, path, path_to_reveal, callback, async)
 end
 
 ---Navigate to the given path.
+---@param state neotree.sources.filesystem.State
 ---@param path string? Path to navigate to. If empty, will navigate to the cwd.
 ---@param path_to_reveal string? Node to focus after the items are loaded.
 ---@param callback function? Callback to call after the items are loaded.
@@ -203,7 +204,7 @@ M.navigate = function(state, path, path_to_reveal, callback, async)
   end, 100, utils.debounce_strategy.CALL_FIRST_AND_LAST)
 end
 
----@param state neotree.State
+---@param state neotree.sources.filesystem.State
 M.reset_search = function(state, refresh, open_current_node)
   log.trace("reset_search")
   -- Cancel any pending search
@@ -490,7 +491,7 @@ M.setup = function(config, global_config)
 end
 
 ---Expands or collapses the current node.
----@param state neotree.sources.filesystem.State
+---@param state neotree.sources.filesystem.StateWithTree
 ---@param node NuiTree.Node
 ---@param path_to_reveal string?
 ---@param skip_redraw boolean?
@@ -532,7 +533,7 @@ M.toggle_directory = function(state, node, path_to_reveal, skip_redraw, recursiv
 end
 
 M.prefetcher = {
-  ---@param state neotree.sources.filesystem.State
+  ---@param state neotree.sources.filesystem.StateWithTree
   ---@param node NuiTree.Node
   prefetch = function(state, node)
     if node.type ~= "directory" then
