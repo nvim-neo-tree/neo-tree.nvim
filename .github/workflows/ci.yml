@@ -8,14 +8,11 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  MISE_AUTO_INSTALL: "false"
-
 jobs:
   stylua-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check formatting
         uses: JohnnyMorganz/stylua-action@v4
@@ -39,7 +36,7 @@ jobs:
           - neovim: "stable"
             os: "windows-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
