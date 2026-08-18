@@ -7,7 +7,7 @@ local git = require("neo-tree.git")
 local utils = require("neo-tree.utils")
 
 -- Registration spawns `git rev-parse` and `git status`, which is slow on CI runners.
-local TIMEOUT = 30 * 1000
+local TIMEOUT = 45 * 1000
 
 ---@param cwd string
 ---@param ... string
