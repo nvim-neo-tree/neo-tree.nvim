@@ -620,10 +620,6 @@ M.find_worktree_info = function(path, callback)
       end
       local info = process_output(path, stdout_lines)
       local git_dir, worktree_root, superproject_worktree_root = unpack(info)
-      if not git_dir and not worktree_root then
-        callback(nil, "unknown error? this only seems to happen in ci")
-        return
-      end
       callback(worktree_root, git_dir, superproject_worktree_root)
     end)
     return

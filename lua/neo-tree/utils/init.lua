@@ -1854,10 +1854,12 @@ M.job = function(cmd, opts, on_exit)
   end
 
   stdout:read_start(function(err, data)
-    if type(data) == "string" then
-      stdout_chunks[#stdout_chunks + 1] = data
-    else
+    if err then
       log.error(err)
+    elseif type(data) == "string" then
+      stdout_chunks[#stdout_chunks + 1] = data
+      return
+    else
       stdout:close()
       stdout_closed = true
       try_finish()
@@ -1865,10 +1867,11 @@ M.job = function(cmd, opts, on_exit)
   end)
 
   stderr:read_start(function(err, data)
-    if type(data) == "string" then
+    if err then
+      log.error(err)
+    elseif type(data) == "string" then
       stderr_chunks[#stderr_chunks + 1] = data
     else
-      log.error(err)
       stderr:close()
       stderr_closed = true
       try_finish()
