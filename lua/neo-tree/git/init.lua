@@ -585,9 +585,9 @@ end
 
 ---Finds the worktree root and the corresponding git directory, already normalized.
 ---@param path string? Defaults to cwd.
----@param callback fun(worktree_root: string?, git_dir: string?, superproject_worktree_root: string?)? Async if provided.
----@return string? git_dir
+---@param callback fun(worktree_root: string?, git_dir_or_err: string?, superproject_worktree_root: string?)? Async if provided.
 ---@return string? worktree_root
+---@return string? git_dir_or_err
 ---@return string? superproject_worktree_root
 M.find_worktree_info = function(path, callback)
   path = path or log.assert(uv.cwd())
@@ -610,6 +610,7 @@ M.find_worktree_info = function(path, callback)
     log.assert(type(callback) == "function", "callback for find_worktree_info should be a function")
     utils.job(rev_parse_cmd, nil, function(code, stdout_chunks, stderr_chunks)
       if code ~= 0 then
+        callback(nil, table.concat(stderr_chunks, ""))
         return
       end
       local full_stdout = table.concat(stdout_chunks, "")
@@ -626,7 +627,7 @@ M.find_worktree_info = function(path, callback)
 
   local ok, rev_parse_lines = utils.execute_command(rev_parse_cmd)
   if not ok then
-    return
+    return nil, table.concat(rev_parse_lines, "\n")
   end
   local info = process_output(path, rev_parse_lines)
   local git_dir, worktree_root, superproject_worktree_root = unpack(info)

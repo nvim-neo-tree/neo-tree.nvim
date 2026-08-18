@@ -7,7 +7,7 @@ local M = {}
 
 ---Get a table of all git statuses in the current repo, along with all parent paths.
 ---The paths are the keys of the table, and all the values are 'true'.
----@param state neotree.StateWithTree
+---@param state neotree.State
 M.get_git_status = function(state)
   if state.loading then
     return

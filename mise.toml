@@ -4,15 +4,11 @@ MISE_BACKENDS_NEOVIM = "aqua:neovim/neovim"
 
 [tools]
 lua-language-server = "3"
-cargo-binstall = "latest"
-"cargo:emmylua_ls" = "latest"
-"cargo:emmylua_check" = "latest"
-"github:EmmyLuaLs/emmylua-analyzer-rust" = "latest"
 tree-sitter = "latest"
 
 [tasks.test]
 run = """
-nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua'})"
+nvim --headless --noplugin -u tests/mininit.lua -c "lua require('plenary.test_harness').test_directory('tests/neo-tree/', {minimal_init='tests/mininit.lua',sequential=vim.fn.has('win32')==1})"
 """
 
 [tasks.test-docker]
@@ -23,6 +19,21 @@ run = [
 
 [tasks.format]
 run = "stylua --glob '*.lua' --glob '!defaults.lua' ."
+
+# https://mise.jdx.dev/dev-tools/backends/github.html#multiple-assets-from-the-same-release
+[tool_alias]
+emmylua_check = "github:EmmyLuaLs/emmylua-analyzer-rust"
+emmylua_ls = "github:EmmyLuaLs/emmylua-analyzer-rust"
+
+[tools.emmylua_check]
+version = "latest"
+matching = "emmylua_check"
+rename_exe = "emmylua_check"
+
+[tools.emmylua_ls]
+version = "latest"
+matching = "emmylua_ls"
+rename_exe = "emmylua_ls"
 
 [bootstrap.repos]
 ".dependencies/image.nvim" = { url = "https://github.com/3rd/image.nvim" }

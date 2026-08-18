@@ -3,6 +3,9 @@ pcall(require, "luacov")
 local ns_id = require("neo-tree.ui.highlights").ns_id
 local u = require("tests.utils")
 local events = require("neo-tree.events")
+local displayable_path = function(path)
+  return vim.fn.fnamemodify(path, ":~")
+end
 
 describe("ui/icons", function()
   local req_switch = u.get_require_switch()
@@ -56,7 +59,7 @@ describe("ui/icons", function()
       local bufnr = vim.api.nvim_win_get_buf(winid)
 
       u.assert_buf_lines(bufnr, {
-        string.format("  %s", fs_tree.abspath):sub(1, 42),
+        string.format("  %s", displayable_path(fs_tree.abspath)):sub(1, 42),
         "    baz",
         "    foo",
         "   * 1.md",
@@ -71,7 +74,7 @@ describe("ui/icons", function()
       wait()
 
       u.assert_buf_lines(bufnr, {
-        string.format("  %s", fs_tree.abspath):sub(1, 42),
+        string.format("  %s", displayable_path(fs_tree.abspath)):sub(1, 42),
         "   󰉖 baz",
         "    foo",
         "   │  bar",
@@ -93,7 +96,7 @@ describe("ui/icons", function()
       local bufnr = vim.api.nvim_win_get_buf(winid)
 
       u.assert_buf_lines(bufnr, {
-        vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
+        vim.fn.strcharpart(string.format("  %s", displayable_path(fs_tree.abspath)), 0, 40),
         "    baz",
         "    foo",
         "    1.md",
@@ -108,7 +111,7 @@ describe("ui/icons", function()
       wait()
 
       u.assert_buf_lines(bufnr, {
-        vim.fn.strcharpart(string.format("  %s", fs_tree.abspath), 0, 40),
+        vim.fn.strcharpart(string.format("  %s", displayable_path(fs_tree.abspath)), 0, 40),
         "   󰉖 baz",
         "    foo",
         "   │  bar",
@@ -154,7 +157,7 @@ describe("ui/icons", function()
       local bufnr = vim.api.nvim_win_get_buf(winid)
 
       u.assert_buf_lines(bufnr, {
-        string.format(" o %s", fs_tree.abspath):sub(1, 40),
+        string.format(" o %s", displayable_path(fs_tree.abspath)):sub(1, 40),
         "   c baz",
         "   c foo",
         "   f 1.md",
@@ -169,7 +172,7 @@ describe("ui/icons", function()
       wait()
 
       u.assert_buf_lines(bufnr, {
-        string.format(" o %s", fs_tree.abspath):sub(1, 40),
+        string.format(" o %s", displayable_path(fs_tree.abspath)):sub(1, 40),
         "   e baz",
         "   o foo",
         "   │ c bar",
@@ -191,7 +194,7 @@ describe("ui/icons", function()
       local bufnr = vim.api.nvim_win_get_buf(winid)
 
       u.assert_buf_lines(bufnr, {
-        vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
+        vim.fn.strcharpart(string.format(" o %s", displayable_path(fs_tree.abspath)), 0, 40),
         "   c baz",
         "   c foo",
         "    1.md",
@@ -206,7 +209,7 @@ describe("ui/icons", function()
       wait()
 
       u.assert_buf_lines(bufnr, {
-        vim.fn.strcharpart(string.format(" o %s", fs_tree.abspath), 0, 40),
+        vim.fn.strcharpart(string.format(" o %s", displayable_path(fs_tree.abspath)), 0, 40),
         "   e baz",
         "   o foo",
         "   │ c bar",
