@@ -7,7 +7,8 @@ local git = require("neo-tree.git")
 local utils = require("neo-tree.utils")
 
 -- Registration spawns `git rev-parse` and `git status`, which is slow on CI runners.
-local TIMEOUT = 45 * 1000
+-- Timeout determined by seeing how long successful runs take (usually 20 seconds or less)
+local TIMEOUT = 30 * 1000
 
 ---@param cwd string
 ---@param ... string
@@ -98,7 +99,7 @@ describe("Filesystem git status for nested repositories", function()
       verify.eventually(function()
         local status = git.find_existing_status_code(inner_file, {})
         return status ~= nil and status ~= "!"
-      end, "status code did not resolve properly", TIMEOUT)
+      end, "status code did not resolve properly for " .. inner_file, TIMEOUT)
     end)
   end
 end)
