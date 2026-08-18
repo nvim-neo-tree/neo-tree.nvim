@@ -1804,7 +1804,6 @@ end
 M.prior_windows = {}
 
 ---Start an async command with uv.
----Placeholder before upgrading to vim.system
 ---@param cmd string[]
 ---@param opts uv.spawn.options? args, hide, and stdio are ignored
 ---@param on_exit fun(code: integer, stdout_chunks: string[], stderr_chunks: string[])?
@@ -1818,22 +1817,36 @@ M.job = function(cmd, opts, on_exit)
   local args = { unpack(cmd, 2) }
   local completed = false
   local exit_code
+
+  -- Track pipe reader states
+  local stdout_closed = false
+  local stderr_closed = false
+  local process_exited = false
+
   local stdout = log.assert(uv.new_pipe(false))
   local stderr = log.assert(uv.new_pipe(false))
+
+  local function try_finish()
+    if process_exited and stdout_closed and stderr_closed then
+      completed = true
+      if on_exit then
+        on_exit(exit_code, stdout_chunks, stderr_chunks)
+      end
+    end
+  end
+
   ---@type uv.spawn.options
   local spawnopts = opts or {}
   spawnopts.args = args
   spawnopts.hide = true
   spawnopts.stdio = { nil, stdout, stderr }
+
   local handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
-    stdout:close()
-    stderr:close()
     exit_code = code
-    completed = true
-    if on_exit then
-      on_exit(code, stdout_chunks, stderr_chunks)
-    end
+    process_exited = true
+    try_finish()
   end)
+
   if not handle then
     stdout:close()
     stderr:close()
@@ -1841,17 +1854,30 @@ M.job = function(cmd, opts, on_exit)
   end
 
   stdout:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
+    if err then
+      log.error(err)
+    elseif type(data) == "string" then
       stdout_chunks[#stdout_chunks + 1] = data
+      return
+    else
+      stdout:close()
+      stdout_closed = true
+      try_finish()
     end
   end)
+
   stderr:read_start(function(err, data)
-    log.assert(not err, err)
-    if type(data) == "string" then
+    if err then
+      log.error(err)
+    elseif type(data) == "string" then
       stderr_chunks[#stderr_chunks + 1] = data
+    else
+      stderr:close()
+      stderr_closed = true
+      try_finish()
     end
   end)
+
   ---@class neotree.utils.Job
   local job = {
     handle = handle,

@@ -1,6 +1,6 @@
 local utils = require("neo-tree.utils")
 local verify = {}
----@alias neotree.test.assertfunc fun(...):success: boolean, err: string?
+---@alias neotree.test.assertfunc fun(...):success: any, err: string?
 ---@alias neotree.test.failmsg (fun():string)|string
 
 local DEFAULT_TIMEOUT = 1000
