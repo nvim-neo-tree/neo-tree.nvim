@@ -231,6 +231,7 @@ M.setup = function(config, global_config)
             if not current_state or not current_state.tree then
               return
             end
+            ---@cast current_state neotree.StateWithTree
             -- Verify we're still in the right buffer
             if vim.api.nvim_get_current_buf() ~= current_state.bufnr then
               return
