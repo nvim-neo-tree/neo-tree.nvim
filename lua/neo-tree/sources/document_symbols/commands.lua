@@ -4,6 +4,7 @@ local utils = require("neo-tree.utils")
 local manager = require("neo-tree.sources.manager")
 local inputs = require("neo-tree.ui.inputs")
 local filters = require("neo-tree.sources.common.filters")
+local log = require("neo-tree.log")
 
 ---@class neotree.sources.DocumentSymbols.Commands : neotree.sources.Common.Commands
 ---@field [string] neotree.TreeCommand
@@ -16,22 +17,33 @@ M.show_debug_info = function(state)
   print(vim.inspect(state))
 end
 
----Tries to assign a valid lsp window id to the state, deriving a new one if the tracked window is
----invalid (for example after it was closed with <C-w>q).
+---Tries to assign a valid lsp window id to the state, creating a new window with the last known buffer if needed.
 ---@param state neotree.StateWithTree
----@return boolean valid
 local assign_valid_lsp_winid = function(state)
   if state.lsp_winid and vim.api.nvim_win_is_valid(state.lsp_winid) then
     return true
   end
-  local winid, is_neo_tree = utils.get_appropriate_window(state)
-  if is_neo_tree then
+  -- if the buffer still exists, the user probably wants to open it.
+  local buf = state.lsp_bufnr
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
     return false
   end
-  state.lsp_winid = winid
-  state.lsp_bufnr = vim.api.nvim_win_get_buf(winid)
+
+  utils.open_file(state, vim.api.nvim_buf_get_name(buf), "edit", buf)
+  ---@type number?
+  local new_win = nil
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.api.nvim_win_get_buf(win) == buf then
+      new_win = win
+    end
+  end
+
+  if not new_win then
+    return false
+  end
+  state.lsp_winid = new_win
+  state.lsp_bufnr = vim.api.nvim_win_get_buf(state.lsp_winid)
   state.path = vim.api.nvim_buf_get_name(state.lsp_bufnr)
-  return true
 end
 
 ---@param node NuiTree.Node
@@ -40,10 +52,12 @@ M.jump_to_symbol = function(state, node)
   if node:get_depth() == 1 then
     return
   end
-  local valid = assign_valid_lsp_winid(state)
-  if not valid then
+
+  if not assign_valid_lsp_winid(state) then
+    log.warn("Cannot find the corresponding LSP buffer")
     return
   end
+
   vim.api.nvim_set_current_win(state.lsp_winid)
   vim.api.nvim_set_current_buf(state.lsp_bufnr)
   local symbol_loc = node.extra.selection_range.start
@@ -51,7 +65,7 @@ M.jump_to_symbol = function(state, node)
 end
 
 ---Show symbol location without changing focus
----@param state table
+---@param state neotree.StateWithTree
 ---@param node NuiTree.Node|nil
 M.show_symbol = function(state, node)
   if not state or not state.tree then
@@ -62,15 +76,14 @@ M.show_symbol = function(state, node)
     return
   end
 
-  local valid = assign_valid_lsp_winid(state)
-  if not valid then
+  if not assign_valid_lsp_winid(state) then
+    log.warn("Cannot find the corresponding LSP buffer")
     return
   end
 
-  local neo_win = vim.api.nvim_get_current_win()
   local symbol_loc = node.extra.selection_range.start
 
-  local lsp_winid = state.lsp_winid
+  local lsp_winid = assert(state.lsp_winid)
   -- Jump to symbol in target window
   vim.api.nvim_win_call(lsp_winid, function()
     if vim.api.nvim_win_get_buf(lsp_winid) ~= state.lsp_bufnr then
@@ -80,6 +93,7 @@ M.show_symbol = function(state, node)
   end)
 
   -- Restore focus to neo-tree
+  local neo_win = assert(state.winid, "expected state to have a winid")
   if vim.api.nvim_win_is_valid(neo_win) then
     vim.api.nvim_set_current_win(neo_win)
   end

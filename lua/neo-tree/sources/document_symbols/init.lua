@@ -72,6 +72,9 @@ end
 ---Internal function to follow the cursor
 local follow_symbol = function()
   local state = get_state()
+  if not state.tree then
+    return
+  end
   if state.lsp_bufnr ~= vim.api.nvim_get_current_buf() then
     return
   end
@@ -188,7 +191,6 @@ M.setup = function(config, global_config)
         -- The window we were tracking is gone, clear it so that consumers
         -- can fall back to deriving a new one.
         state.lsp_winid = nil
-        state.lsp_bufnr = nil
       end
     end,
   })
