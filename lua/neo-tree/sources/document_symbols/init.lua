@@ -33,7 +33,7 @@ end
 ---Syncs the lsp window to the window the cursor is currently in, if it is a
 ---suitable window to show symbols for. Does nothing if the current window is
 ---the neo-tree window, a floating window, or does not contain a real file.
----@param state neotree.StateWithTree
+---@param state neotree.State
 local sync_lsp_window = function(state)
   local winid = vim.api.nvim_get_current_win()
   if winid == state.winid then
