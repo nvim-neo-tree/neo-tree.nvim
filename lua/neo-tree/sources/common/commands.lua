@@ -707,7 +707,15 @@ M.clear_selection = function(state)
   renderer.redraw(state)
 end
 
-M.invert_selection = M.select
+---@type neotree.TreeCommandVisual
+M.invert_selection = function(state)
+  save_previous_selection_to_undo(state)
+
+  for _, node in ipairs(renderer.get_all_visible_nodes(state.tree)) do
+    state.selected[node.id] = not state.selected[node.id] or nil
+  end
+  renderer.redraw(state)
+end
 
 ---@type neotree.TreeCommandVisual
 M.invert_selection_visual = function(state, selected_nodes)
