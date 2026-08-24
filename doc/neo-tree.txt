@@ -189,20 +189,28 @@ HELP                                                            *neo-tree-help*
 
 SELECTION                                                  *neo-tree-selection*
 
-In neo-tree, nodes can either be selected by |visual-mode|, or be tagged as
-selected with the following commands:
+In Neo-tree, nodes are considered selected if they are:
+- targeted by |visual-mode| selection
+- tagged as `selected`.
+
+(Additionally, if there are any nodes tagged as `selected`, then the node under
+the cursor counts too, even in Normal mode.)
+
+Nodes can be tagged as `selected` using the following commands:
 
 <tab>              = select  Toggles whether a node is tagged as selected. In
                              Visual mode, tags all targeted nodes unless they
                              were all already tagged, in which case they will
-                             all be untagged as selected.
+                             all be untagged.
                              Supports visual selection. ~
 
 <C-S-i>  = invert_selection  Inverts the selection tags on targeted node(s).
+                             In Normal mode, targets all visible nodes.
                              Supports visual selection. ~
 
 See |neo-tree-custom-mappings-selection| for how to write commands that use
-selected nodes.
+selected nodes. Due to limitations of the current keymap system, there is
+currently no way to write your own commands that do selection.
 
 NAVIGATION                                                *neo-tree-navigation*
 
