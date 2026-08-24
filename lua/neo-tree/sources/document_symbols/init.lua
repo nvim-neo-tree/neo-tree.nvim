@@ -35,14 +35,22 @@ end
 ---the neo-tree window, a floating window, or does not contain a real file.
 ---@param state neotree.State
 local sync_lsp_window = function(state)
-  local winid = vim.api.nvim_get_current_win()
-  if winid == state.winid then
+  if not state.follow_current_file.enabled then
+    -- keep the window as long as it exists
+    local lsp_winid = state.lsp_winid
+    if lsp_winid and vim.api.nvim_win_is_valid(lsp_winid) then
+      return
+    end
+  end
+
+  local curwin = vim.api.nvim_get_current_win()
+  if curwin == state.winid then
     return
   end
-  if utils.is_floating(winid) then
+  if utils.is_floating(curwin) then
     return
   end
-  local bufnr = vim.api.nvim_win_get_buf(winid)
+  local bufnr = vim.api.nvim_win_get_buf(curwin)
   if vim.bo[bufnr].filetype == "neo-tree" then
     return
   end
@@ -50,7 +58,7 @@ local sync_lsp_window = function(state)
   if not utils.is_real_file(bufname) then
     return
   end
-  state.lsp_winid = winid
+  state.lsp_winid = curwin
   state.lsp_bufnr = bufnr
   state.path = bufname
 end
@@ -132,6 +140,7 @@ end
 ---@class (exact) neotree.Config.DocumentSymbols : neotree.Config.Source
 ---@field follow_cursor boolean?
 ---@field follow_tree_cursor boolean?
+---@field follow_current_file { enabled: boolean }?
 ---@field client_filters neotree.lsp.ClientFilter?
 ---@field custom_kinds table<integer, string>?
 ---@field kinds table<string, neotree.Config.LspKindDisplay>?
@@ -208,8 +217,8 @@ M.setup = function(config, global_config)
     })
   end
 
-  -- Set up follow_tree_cursor: show symbol on cursor move in document_symbols buffer
   if config.follow_tree_cursor then
+    -- show symbol on cursor move in document_symbols buffer
     manager.subscribe(M.name, {
       event = events.NEO_TREE_BUFFER_ENTER,
       handler = function()
@@ -236,6 +245,12 @@ M.setup = function(config, global_config)
             if vim.api.nvim_get_current_buf() ~= current_state.bufnr then
               return
             end
+
+            local lsp_winid = current_state.lsp_winid
+            if not lsp_winid or not vim.api.nvim_win_is_valid(lsp_winid) then
+              return
+            end
+
             local commands = require("neo-tree.sources.document_symbols.commands")
             commands.show_symbol(current_state)
           end,

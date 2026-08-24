@@ -373,6 +373,9 @@ function M.check_config(config)
         validate("window", git_status.window, schema.Window)
       end)
       validate("document_symbols", cfg.document_symbols, function(ds)
+        validate("follow_current_file", ds.follow_current_file, function(follow_current_file)
+          validate("enabled", follow_current_file.enabled, "boolean")
+        end)
         validate("follow_cursor", ds.follow_cursor, "boolean")
         validate("client_filters", ds.client_filters, { "string", "table" }) -- TODO: More specific validation
         validate("custom_kinds", ds.custom_kinds, "table") -- TODO: More specific validation

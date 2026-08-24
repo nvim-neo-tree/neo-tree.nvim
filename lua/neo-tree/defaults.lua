@@ -699,7 +699,12 @@ local config = {
   },
   document_symbols = {
     follow_cursor = false,
-    follow_tree_cursor = false, -- Automatically show symbol location when moving cursor in the tree
+    follow_tree_cursor = true, -- Automatically show symbol location when moving cursor in the tree
+    follow_current_file = {
+      -- true: display the document symbols of the last applicable file the cursor entered.
+      -- false: display the document symbols of the first applicable file the cursor entered (until it closes).
+      enabled = true,
+    },
     client_filters = "first",
     ignore_symbols = {}, -- LSP symbol kind names to hide, e.g. { "Variable", "Field" }
     renderers = {
