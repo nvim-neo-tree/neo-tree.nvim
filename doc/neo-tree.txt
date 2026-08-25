@@ -1846,20 +1846,22 @@ property: `diagnostics_lookup`, which is a table where the keys are file names
 and the values are tables with diagnostic counts by severity level.
 
 "vim_buffer_changed" ~
-Fired on the following autocmd events: |BufDelete|, |BufWritePost|,
-|BufFilePost|, |BufNew|
+Fired on |BufWritePost|
+
+"vim_buffer_deleted" ~
+Fired on |BufWipeout| and |BufDelete|
 
 "vim_buffer_enter" ~
-Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
+Fired on |BufEnter| and |BufWinEnter|
 
 "vim_dir_changed" ~
-Fired on the |DirChanged| autocmd event
+Fired on |DirChanged|
 
 "vim_win_enter" ~
-Fired on the |WinEnter| autocmd event
+Fired on |WinEnter|
 
 "vim_colorscheme" ~
-Fired on the |ColorScheme| autocmd event
+Fired on |ColorScheme|
 
 
 You can also define your own with:
