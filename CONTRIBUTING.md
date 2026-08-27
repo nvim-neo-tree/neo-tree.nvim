@@ -3,6 +3,33 @@
 Contributions are welcome! To keep everything clean and tidy, please follow the
 guidelines below.
 
+## Commit Messages/PR Titles
+
+We follow the [**Conventional** Commits
+](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+
+Referencing this project's past commits/PRs may help you get the idea. The
+optional scope for this project is usually the affected source or module, i.e.
+`feat(filesystem): add awesome feature that does xyz`.
+
+Whether each commit in a pull request needs to follow Conventional Commits is up
+to you. If each commit follows Conventional Commits, the PR will be rebased onto
+main. Otherwise, the PR will be squashed into main, so your PR title should
+follow Conventional Commits since that will be the squashed commit message.
+
+## Pull Requests
+
+The in-development branch is `main` and all PRs should target this branch. After
+a short testing period, it will be merged to the current release branch.
+
+### AI Usage
+
+For PRs where AI/LLMs are used for any significant work, it's nice to disclose
+what models are being used, especially if LLMs are being used to write the PR
+text which the maintainers have to read/interface with. We have no policy
+against full-on vibecoding, but giving maintainers more context as to what
+they're dealing with is greatly appreciated.
+
 # Development setup
 
 [mise](https://github.com/jdx/mise) is our command runner of choice, largely
@@ -67,8 +94,6 @@ packadddev({
 
 </details>
 
-
-
 ```bash
 # Run the minimal init.lua to open neovim on any version
 nvim -u tests/mininit.lua
@@ -91,32 +116,36 @@ mise test-docker
 
 ## Code Style
 
-This is open for debate, but here is the current style choices being observed:
+Largely, your code just has to look like the surrounding code. Here are the
+current style choices being observed:
 
-- snake_case for all variables and functions
+- snake_case for all variables and functions.
+    - flatcase is also acceptable, especially if the naming is inspired
+    by lua's own methods (`to{something}`) or just subjectively
+    looks nicer than snake_case
 - unless it is a class, then use PascalCase
 - other OOP things, like method names should use camelCase
 
+Types are currently named following a rough convention of flatcase for scoping,
+then PascalCase for the actual type and fields:
+
+`neotree(.module.path).TheActualType(.SubfieldName)`
+
+For example:
+
+```lua
+---@type neotree.Config
+
+---@type neotree.Config.Filesystem.FollowCurrentFile
+
+---@type neotree.sources.filesystem.InternalClass
+```
+
+
 ### StyLua
 
-We use [StyLua](https://github.com/JohnnyMorganz/StyLua) to enforce consistency
-in code. You should install it on your local machine. PRs will be checked with
-this tool.
-
-## Commit Messages
-
-We use **semantic**, aka **conventional** commit messages. The official guide
-can be found here: https://www.conventionalcommits.org/en/v1.0.0/
-
-You can also just take a look at the commit history to get the idea. The
-optional scope for this project would usually be the source, i.e.
-`feat(filesystem): add awesome feature that does xyz`.
-
-## Branching
-
-The default branch is set to `main` and all Pull Requests should target this
-branch. After a short testing period, it will be merged to the current release
-branch.
+We use [StyLua](https://github.com/JohnnyMorganz/StyLua) to enforce code
+formatting consistency. PRs will be checked with this tool.
 
 ## Documentation
 
@@ -130,8 +159,8 @@ current strategy is to maintain:
   It should include references to the help file for more information:
   `:h neo-tree-setup`
 - Whether something should be mentioned in the README or just in the help file
-  is a completely subjective judgement call that is made on a case by case basis
-  based on how many people are likely to be interested in that information.
+  is a subjective judgement call based on how many people are likely to be
+  interested in that information.
 - The vim help file [doc/neo-tree.txt](doc/neo-tree.txt) is the definitive
   reference and should contain all information needed to configure and use the
   plugin.
