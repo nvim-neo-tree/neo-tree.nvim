@@ -51,7 +51,10 @@ View [mise.toml](./mise.toml) for tasks and their implementation.
 To setup your development environment, please run:
 
 ```bash
-# Install dependencies
+# If prompted:
+mise trust
+
+# Install development dependencies
 mise bootstrap
 ```
 
@@ -59,13 +62,13 @@ Alternatively, if `mise` doesn't work for you:
 
 ```bash
 mkdir .dependencies
-git clone --depth 1 https://github.com/3rd/image.nvim .dependencies/image.nvim
-git clone --depth 1 https://github.com/folke/snacks.nvim .dependencies/snacks.nvim
-git clone --depth 1 https://github.com/MunifTanjim/nui.nvim .dependencies/nui.nvim
 git clone --depth 1 https://github.com/nvim-tree/nvim-web-devicons .dependencies/nvim-web-devicons
 git clone --depth 1 https://github.com/nvim-lua/plenary.nvim .dependencies/plenary.nvim
-git clone --depth 1 https://github.com/s1n7ax/nvim-window-picker .dependencies/nvim-window-picker
-git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter .dependencies/nvim-treesitter
+# git clone --depth 1 https://github.com/s1n7ax/nvim-window-picker .dependencies/nvim-window-picker
+# git clone --depth 1 https://github.com/3rd/image.nvim .dependencies/image.nvim
+# git clone --depth 1 https://github.com/folke/snacks.nvim .dependencies/snacks.nvim
+# git clone --depth 1 https://github.com/MunifTanjim/nui.nvim .dependencies/nui.nvim
+# git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter .dependencies/nvim-treesitter
 ```
 
 We have a [.lazy.lua](.lazy.lua), so lazy.nvim users can automatically use all
