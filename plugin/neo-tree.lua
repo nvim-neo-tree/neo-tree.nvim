@@ -94,6 +94,9 @@ vim.api.nvim_create_autocmd("WinClosed", {
     local visible_winids = vim.api.nvim_tabpage_list_wins(0)
     local other_panes = {}
     local utils = require("neo-tree.utils")
+    if closing_win and utils.is_floating(closing_win) then
+      return
+    end
     for _, winid in ipairs(visible_winids) do
       if not utils.is_floating(winid) and winid ~= closing_win then
         other_panes[#other_panes + 1] = winid
