@@ -2161,6 +2161,21 @@ Neo-tree features a clipboard that you can copy, cut, and paste nodes with (by
 default, with y, x, and p respectively). You can also clear a clipboard with
 <C-R> by default.
 
+A clipboard maps node ids to entries shaped like the table below. Entries only
+hold the node fields the clipboard needs rather than whole |NuiTree| nodes, so
+that a clipboard is always serializable:
+>lua
+    {
+      action = "copy", -- or "cut"
+      node = {
+        id = "/path/to/file",
+        name = "file",
+        path = "/path/to/file",
+        type = "file",
+      },
+    }
+<
+
 CLIPBOARD SYNC                                         *neo-tree-clipboard-sync*
 
 Neo-tree's clipboard can be synced globally (across all Neo-trees within the
