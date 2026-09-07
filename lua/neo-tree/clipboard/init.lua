@@ -5,9 +5,15 @@ local renderer = require("neo-tree.ui.renderer")
 
 local M = {}
 
----@class neotree.clipboard.Node
----@field action string
----@field node NuiTree.Node
+---@class (exact) neotree.clipboard.NodeInfo
+---@field id string
+---@field name string
+---@field path string?
+---@field type string?
+
+---@class (exact) neotree.clipboard.Node
+---@field action "copy"|"cut"
+---@field node neotree.clipboard.NodeInfo
 
 ---@alias neotree.clipboard.Contents table<string, neotree.clipboard.Node?>
 

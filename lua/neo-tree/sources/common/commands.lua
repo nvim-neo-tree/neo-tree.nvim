@@ -226,13 +226,24 @@ M.toggle_auto_expand_width = function(state)
   renderer.redraw(state)
 end
 
+---@param node NuiTree.Node
+---@return neotree.clipboard.NodeInfo
+local clipboard_node_info = function(node)
+  return {
+    id = node.id,
+    name = node.name,
+    path = node.path,
+    type = node.type,
+  }
+end
+
 ---@param state neotree.State
 local copy_node_to_clipboard = function(state, node)
   local existing = state.clipboard[node.id]
   if existing and existing.action == "copy" then
     state.clipboard[node.id] = nil
   else
-    state.clipboard[node.id] = { action = "copy", node = node }
+    state.clipboard[node.id] = { action = "copy", node = clipboard_node_info(node) }
     log.info("Copied " .. node.name .. " to clipboard")
   end
   events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, {
@@ -272,7 +283,7 @@ local cut_node_to_clipboard = function(state, node)
   if existing and existing.action == "cut" then
     state.clipboard[node.id] = nil
   else
-    state.clipboard[node.id] = { action = "cut", node = node }
+    state.clipboard[node.id] = { action = "cut", node = clipboard_node_info(node) }
     log.info("Cut " .. node.name .. " to clipboard")
   end
   events.fire_event(events.NEO_TREE_CLIPBOARD_CHANGED, {
