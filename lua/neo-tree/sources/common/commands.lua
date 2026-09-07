@@ -221,6 +221,12 @@ M.toggle_auto_expand_width = function(state)
     compat.nvim_win_set_width(0, state.window.last_user_width)
     state.win_width = state.window.last_user_width
     state.longest_width_exact = 0
+    -- longest_node is a high-water mark that only otherwise resets on a full
+    -- tree rebuild (show_nodes). Without resetting it here too, a stale,
+    -- inflated value from a previous expand cycle (e.g. picked up from a
+    -- transient width blip while a floating popup was open) keeps padding
+    -- future auto-expand widths even after collapsing.
+    state.longest_node = 0
     log.trace("Collapse auto_expand_width.")
   end
   renderer.redraw(state)
