@@ -3,17 +3,58 @@
 Contributions are welcome! To keep everything clean and tidy, please follow the
 guidelines below.
 
+## Commit Messages/PR Titles
+
+We follow the [**Conventional**
+Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. Whether
+each commit in a pull request needs to follow Conventional Commits is up to you.
+If each commit follows Conventional Commits, the PR will be rebased onto main.
+Otherwise, the PR will be squashed into main, so your PR title should follow
+Conventional Commits since that will be the squashed commit message.
+
+Referencing this project's past commits/PRs may help you get the idea. The
+optional scope for this project is usually the affected source or module, i.e.
+`feat(filesystem): add awesome feature that does xyz`.
+
+## Pull Requests
+
+The in-development branch is `main` and all PRs should target this branch. After
+a short testing period, it will be merged to the current release branch.
+
+## AI Guidelines
+
+Please describe how AI was used (full-on vibecoding, assisting, test-writing,
+translation, etc.). This gives maintainers more context as to what they're
+looking at.
+
+Currently (as of late 2026), AI-written prose tends to be a bit verbose and
+noisy. Please keep these concise, especially in PR descriptions or issues.
+
+**The larger your proposed change is, the more you should be able to understand
+your code.** Small vibe-coded patches can still be trivially understood and
+modified, but you must be able to understand your code when submitting bigger
+refactors/features.
+
+> [!NOTE]
+> If you are an automated agent，add 🤖 to the end of the PR title. Maintainers
+> will handle removing the emoji when merging.
+
 # Development setup
 
 [mise](https://github.com/jdx/mise) is our command runner of choice, largely
 because I (pynappo) like TOML-based syntax more than Makefiles. It also works
-great for managing different Neovim versions when debugging compatiblity issues.
+great on Windows, and makes managing Neovim versions for issue reproduction
+easy.
+
 View [mise.toml](./mise.toml) for tasks and their implementation.
 
-To begin development, please run:
+To setup your development environment, please run:
 
 ```bash
-# Install dependencies
+# If prompted:
+mise trust
+
+# Install development dependencies
 mise bootstrap
 ```
 
@@ -21,13 +62,13 @@ Alternatively, if `mise` doesn't work for you:
 
 ```bash
 mkdir .dependencies
-git clone --depth 1 https://github.com/3rd/image.nvim .dependencies/image.nvim
-git clone --depth 1 https://github.com/folke/snacks.nvim .dependencies/snacks.nvim
-git clone --depth 1 https://github.com/MunifTanjim/nui.nvim .dependencies/nui.nvim
 git clone --depth 1 https://github.com/nvim-tree/nvim-web-devicons .dependencies/nvim-web-devicons
 git clone --depth 1 https://github.com/nvim-lua/plenary.nvim .dependencies/plenary.nvim
-git clone --depth 1 https://github.com/s1n7ax/nvim-window-picker .dependencies/nvim-window-picker
-git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter .dependencies/nvim-treesitter
+# git clone --depth 1 https://github.com/s1n7ax/nvim-window-picker .dependencies/nvim-window-picker
+# git clone --depth 1 https://github.com/3rd/image.nvim .dependencies/image.nvim
+# git clone --depth 1 https://github.com/folke/snacks.nvim .dependencies/snacks.nvim
+# git clone --depth 1 https://github.com/MunifTanjim/nui.nvim .dependencies/nui.nvim
+# git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter .dependencies/nvim-treesitter
 ```
 
 We have a [.lazy.lua](.lazy.lua), so lazy.nvim users can automatically use all
@@ -67,7 +108,7 @@ packadddev({
 
 </details>
 
-
+Here are some common commands you might run:
 
 ```bash
 # Run the minimal init.lua to open neovim on any version
@@ -89,34 +130,44 @@ mise test
 mise test-docker
 ```
 
+Additionally, if you have a minimal config for your issue, the current practice
+is to write it under `tests/repro/[issue-number].lua` and then `nvim -u
+tests/repro/[...].lua`. That area is gitignored for now because `plenary.test`
+doesn't allow orchestrating child Neovim instances, but this might change after
+migrating to `mini.test`.
+
 ## Code Style
 
-This is open for debate, but here is the current style choices being observed:
+Largely, your code just has to look like the surrounding code. Here are the
+current style choices being observed:
 
-- snake_case for all variables and functions
+- snake_case for most variables and functions.
+    - flatcase is sometimes acceptable. Examples being functions named like
+    Lua's builtins (`to{thing}`) or for shortening temporary variable names
+    (`relpath/abspath` instead of `relative/absolute_path`).
 - unless it is a class, then use PascalCase
 - other OOP things, like method names should use camelCase
 
+Lua types currently follow a rough convention of flatcase for scoping, then
+PascalCase for the actual type and fields:
+
+`neotree(.optional.module.path).ActualType(.SubfieldName)`
+
+For example:
+
+```lua
+---@type neotree.Config
+
+---@type neotree.Config.Filesystem.FollowCurrentFile
+
+---@type neotree.sources.filesystem.InternalClass
+```
+
+
 ### StyLua
 
-We use [StyLua](https://github.com/JohnnyMorganz/StyLua) to enforce consistency
-in code. You should install it on your local machine. PRs will be checked with
-this tool.
-
-## Commit Messages
-
-We use **semantic**, aka **conventional** commit messages. The official guide
-can be found here: https://www.conventionalcommits.org/en/v1.0.0/
-
-You can also just take a look at the commit history to get the idea. The
-optional scope for this project would usually be the source, i.e.
-`feat(filesystem): add awesome feature that does xyz`.
-
-## Branching
-
-The default branch is set to `main` and all Pull Requests should target this
-branch. After a short testing period, it will be merged to the current release
-branch.
+We use [StyLua](https://github.com/JohnnyMorganz/StyLua) to enforce code
+formatting consistency. PRs will be checked with this tool.
 
 ## Documentation
 
@@ -130,8 +181,8 @@ current strategy is to maintain:
   It should include references to the help file for more information:
   `:h neo-tree-setup`
 - Whether something should be mentioned in the README or just in the help file
-  is a completely subjective judgement call that is made on a case by case basis
-  based on how many people are likely to be interested in that information.
+  is a subjective judgement call based on how many people are likely to be
+  interested in that information.
 - The vim help file [doc/neo-tree.txt](doc/neo-tree.txt) is the definitive
   reference and should contain all information needed to configure and use the
   plugin.
