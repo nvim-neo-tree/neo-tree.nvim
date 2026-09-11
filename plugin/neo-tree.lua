@@ -90,13 +90,16 @@ vim.api.nvim_create_autocmd("WinClosed", {
   group = augroup,
   desc = "close_if_last_window autocmd",
   callback = function(args)
+    local is_force_quie = vim.v.cmdbang
     local closing_win = tonumber(args.match)
     local visible_winids = vim.api.nvim_tabpage_list_wins(0)
     local other_panes = {}
     local utils = require("neo-tree.utils")
+
     if closing_win and utils.is_floating(closing_win) then
       return
     end
+
     for _, winid in ipairs(visible_winids) do
       if not utils.is_floating(winid) and winid ~= closing_win then
         other_panes[#other_panes + 1] = winid
@@ -131,9 +134,13 @@ vim.api.nvim_create_autocmd("WinClosed", {
       return
     end
     local mod = utils.get_opened_buffers()
-    log.debug("close_if_last_window, modified files found:", vim.inspect(mod))
+    if is_force_quie then
+      log.debug("close_if_last_window, discarding modified files found:", vim.inspect(mod))
+    else
+      log.debug("close_if_last_window, modified files found:", vim.inspect(mod))
+    end
     for filename, buf_info in pairs(mod) do
-      if buf_info.modified then
+      if not is_force_quie and buf_info.modified then
         local buf_name, message
         if vim.startswith(filename, "[No Name]#") then
           buf_name = string.sub(filename, 11)
