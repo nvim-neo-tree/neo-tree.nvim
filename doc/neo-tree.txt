@@ -189,20 +189,28 @@ HELP                                                            *neo-tree-help*
 
 SELECTION                                                  *neo-tree-selection*
 
-In neo-tree, nodes can either be selected by |visual-mode|, or be tagged as
-selected with the following commands:
+In Neo-tree, nodes are considered selected if they are:
+- targeted by |visual-mode| selection
+- tagged as `selected`.
+
+(Additionally, if there are any nodes tagged as `selected`, then the node under
+the cursor counts too, even in Normal mode.)
+
+Nodes can be tagged as `selected` using the following commands:
 
 <tab>              = select  Toggles whether a node is tagged as selected. In
                              Visual mode, tags all targeted nodes unless they
                              were all already tagged, in which case they will
-                             all be untagged as selected.
+                             all be untagged.
                              Supports visual selection. ~
 
 <C-S-i>  = invert_selection  Inverts the selection tags on targeted node(s).
+                             In Normal mode, targets all visible nodes.
                              Supports visual selection. ~
 
 See |neo-tree-custom-mappings-selection| for how to write commands that use
-selected nodes.
+selected nodes. Due to limitations of the current keymap system, there is
+currently no way to write your own commands that do selection.
 
 NAVIGATION                                                *neo-tree-navigation*
 
@@ -1846,20 +1854,22 @@ property: `diagnostics_lookup`, which is a table where the keys are file names
 and the values are tables with diagnostic counts by severity level.
 
 "vim_buffer_changed" ~
-Fired on the following autocmd events: |BufDelete|, |BufWritePost|,
-|BufFilePost|, |BufNew|
+Fired on |BufWritePost|
+
+"vim_buffer_deleted" ~
+Fired on |BufWipeout| and |BufDelete|
 
 "vim_buffer_enter" ~
-Fired on the following autocmd events: |BufEnter|, |BufWinEnter|
+Fired on |BufEnter| and |BufWinEnter|
 
 "vim_dir_changed" ~
-Fired on the |DirChanged| autocmd event
+Fired on |DirChanged|
 
 "vim_win_enter" ~
-Fired on the |WinEnter| autocmd event
+Fired on |WinEnter|
 
 "vim_colorscheme" ~
-Fired on the |ColorScheme| autocmd event
+Fired on |ColorScheme|
 
 
 You can also define your own with:
@@ -2150,6 +2160,21 @@ CLIPBOARD                                                   *neo-tree-clipboard*
 Neo-tree features a clipboard that you can copy, cut, and paste nodes with (by
 default, with y, x, and p respectively). You can also clear a clipboard with
 <C-R> by default.
+
+A clipboard maps node ids to entries shaped like the table below. Entries only
+hold the node fields the clipboard needs rather than whole |NuiTree| nodes, so
+that a clipboard is always serializable:
+>lua
+    {
+      action = "copy", -- or "cut"
+      node = {
+        id = "/path/to/file",
+        name = "file",
+        path = "/path/to/file",
+        type = "file",
+      },
+    }
+<
 
 CLIPBOARD SYNC                                         *neo-tree-clipboard-sync*
 

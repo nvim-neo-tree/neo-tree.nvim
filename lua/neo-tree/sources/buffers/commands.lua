@@ -21,13 +21,17 @@ end
 
 M.buffer_delete = function(state)
   local node = state.tree:get_node()
-  if node then
-    if node.type == "message" then
-      return
-    end
-    vim.api.nvim_buf_delete(node.extra.bufnr, { force = false, unload = false })
-    refresh()
+  if not node then
+    return
   end
+  if node.type == "message" then
+    return
+  end
+  local bufnr = node.extra and node.extra.bufnr
+  if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
+    vim.api.nvim_buf_delete(bufnr, { force = false, unload = false })
+  end
+  refresh()
 end
 
 ---Marks node as copied, so that it can be pasted somewhere else.
