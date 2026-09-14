@@ -90,7 +90,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
   group = augroup,
   desc = "close_if_last_window autocmd",
   callback = function(args)
-    local is_force_quie = vim.v.cmdbang
+    local is_force_quit = vim.v.cmdbang
     local closing_win = tonumber(args.match)
     local visible_winids = vim.api.nvim_tabpage_list_wins(0)
     local other_panes = {}
@@ -134,13 +134,13 @@ vim.api.nvim_create_autocmd("WinClosed", {
       return
     end
     local mod = utils.get_opened_buffers()
-    if is_force_quie then
+    if is_force_quit then
       log.debug("close_if_last_window, discarding modified files found:", vim.inspect(mod))
     else
       log.debug("close_if_last_window, modified files found:", vim.inspect(mod))
     end
     for filename, buf_info in pairs(mod) do
-      if not is_force_quie and buf_info.modified then
+      if not is_force_quit and buf_info.modified then
         local buf_name, message
         if vim.startswith(filename, "[No Name]#") then
           buf_name = string.sub(filename, 11)
