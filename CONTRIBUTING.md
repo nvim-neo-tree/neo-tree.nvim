@@ -6,9 +6,8 @@ guidelines below.
 ## Commit Messages/PR Titles
 
 We follow the [**Conventional**
-Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. Whether
-each commit in a pull request needs to follow Conventional Commits is up to you.
-If each commit follows Conventional Commits, the PR will be rebased onto main.
+Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. If each
+commit in a PR follows Conventional Commits, the PR will be rebased onto main.
 Otherwise, the PR will be squashed into main, so your PR title should follow
 Conventional Commits since that will be the squashed commit message.
 
@@ -23,12 +22,12 @@ a short testing period, it will be merged to the current release branch.
 
 ## AI Guidelines
 
-Please describe how AI was used (full-on vibecoding, assisting, test-writing,
-translation, etc.). This gives maintainers more context as to what they're
-looking at.
+When submitting PRs, we recommend describing how AI was used (full-on vibe coding,
+assisting, test-writing, translation, etc.).
 
 Currently (as of late 2026), AI-written prose tends to be a bit verbose and
-noisy. Please keep these concise, especially in PR descriptions or issues.
+noisy. Please keep these concise, especially in PR descriptions, code comments,
+or issues.
 
 **The larger your proposed change is, the more you should be able to understand
 your code.** Small vibe-coded patches can still be trivially understood and
