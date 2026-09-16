@@ -1649,6 +1649,14 @@ end
 ---@param parentId string? The id of the parent node to display these nodes at
 ---@param callback function? The id of the parent node to display these nodes at
 M.show_nodes = function(sourceItems, state, parentId, callback)
+  -- Async callbacks (e.g. document_symbols LSP responses) can fire after the
+  -- user has switched tabs. State is tab-local, so rendering into the current
+  -- tab would draw the tree in the wrong place and clash with the buffer name
+  -- the state's own tab already owns (E95). Skip the render entirely; the
+  -- state stays dirty and is re-rendered when its tab is current again.
+  if state.tabid and vim.api.nvim_get_current_tabpage() ~= state.tabid then
+    return
+  end
   --local id = string.format("show_nodes %s:%s [%s]", state.name, state.force_float, state.tabid)
   --utils.debounce(id, function()
   if not sourceItems then
