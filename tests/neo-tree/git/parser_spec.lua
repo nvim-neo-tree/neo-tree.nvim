@@ -15,6 +15,7 @@ describe("git parser", function()
       "1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 7500412f150f61942cf346e35ce17ffa88d07cf3 dir1/staged_add.txt",
       "1 M. N... 100644 100644 100644 846c1fabd482d05b6e1039e970bcb6b73d640dc2 0058a29e63ae9dbfc1d3c64a20c56282c2219b33 dir1/staged_modify.txt",
       "1 .D N... 100644 100644 000000 3d86a78393c13896aaa5e167a6175042d9bf4dd2 3d86a78393c13896aaa5e167a6175042d9bf4dd2 dir1/unstaged_delete.txt",
+      "u UU N... 100644 100644 100644 100644 846c1fabd482d05b6e1039e970bcb6b73d640dc2 0058a29e63ae9dbfc1d3c64a20c56282c2219b33 3d86a78393c13896aaa5e167a6175042d9bf4dd2 dir1/unmerged.txt",
       "? .gitignore",
       "? dir1/dir2/dir3/untracked.txt",
     }
@@ -34,6 +35,7 @@ describe("git parser", function()
       assert.are.same({
         [from_git_root(".gitignore")] = "?",
         [from_git_root("dir1/unstaged_delete.txt")] = ".D",
+        [from_git_root("dir1/unmerged.txt")] = "UU",
         [from_git_root("dir1/rename_new.txt")] = "R.",
         [from_git_root("dir1/staged_add.txt")] = "A.",
         [from_git_root("dir1/staged_modify.txt")] = "M.",
@@ -44,9 +46,53 @@ describe("git parser", function()
         [from_git_root("dir1/dir2/dir3/untracked.txt")] = "?",
 
         ---parent bubbling
-        [from_git_root("dir1")] = { "?" },
+        [from_git_root("dir1")] = { "U" },
         [from_git_root("dir1/dir2")] = { "?" },
         [from_git_root("dir1/dir2/dir3")] = { "?" },
+      }, status)
+    end
+
+    local restore = test_utils.os_to_windows(false)
+    it("on unix", test)
+    test_utils.os_to_windows(true)
+    it("on windows", test)
+    restore()
+  end)
+
+  describe("parses v2 output with sha256 hashes", function()
+    local porcelain_v2_status = {
+      "#comment",
+      "1 MM N... 100644 100644 100644 109d711d57a4f9683fde9128389928002162a490109d711d57a4f9683fde9128 42c6fcc404e517043706028825185095d0c4742142c6fcc404e5170437060288 dir1/dir2/dir3/mixed_modify.txt",
+      "1 .M N... 100644 100644 100644 01a6f1c971e9294a240b3115bac66cbfce11f7d801a6f1c971e9294a240b3115 01a6f1c971e9294a240b3115bac66cbfce11f7d801a6f1c971e9294a240b3115 dir1/dir2/unstaged_modify.txt",
+      "2 R. N... 100644 100644 100644 2448337202c660fbfa4656098d0f26e57c28d7962448337202c660fbfa465609 2448337202c660fbfa4656098d0f26e57c28d7962448337202c660fbfa465609 R100 dir1/rename_new.txt",
+      "dir1/rename_old.txt",
+      "u UU N... 100644 100644 100644 100644 846c1fabd482d05b6e1039e970bcb6b73d640dc2846c1fabd482d05b6e1039e9 0058a29e63ae9dbfc1d3c64a20c56282c2219b330058a29e63ae9dbfc1d3c64a 3d86a78393c13896aaa5e167a6175042d9bf4dd23d86a78393c13896aaa5e167 dir1/unmerged.txt",
+      "? .gitignore",
+    }
+
+    local test = function()
+      local iter = coroutine.wrap(function()
+        for _, s in ipairs(porcelain_v2_status) do
+          coroutine.yield(s)
+        end
+      end)
+      local worktree_root = utils.is_windows and "C:\\" or "/asdf"
+      local status = git_parser.parse_status_porcelain(2, worktree_root, iter)
+      ---@param path string
+      local from_git_root = function(path)
+        return utils.path_join(worktree_root, path)
+      end
+      assert.are.same({
+        [from_git_root(".gitignore")] = "?",
+        [from_git_root("dir1/rename_new.txt")] = "R.",
+        [from_git_root("dir1/unmerged.txt")] = "UU",
+        [from_git_root("dir1/dir2/unstaged_modify.txt")] = ".M",
+        [from_git_root("dir1/dir2/dir3/mixed_modify.txt")] = "MM",
+
+        ---parent bubbling
+        [from_git_root("dir1")] = { "U" },
+        [from_git_root("dir1/dir2")] = { "M" },
+        [from_git_root("dir1/dir2/dir3")] = { "M" },
       }, status)
     end
 

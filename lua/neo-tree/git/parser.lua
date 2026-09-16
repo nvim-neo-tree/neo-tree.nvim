@@ -174,7 +174,11 @@ M.parse_status_porcelain = function(
 
     local hash_length = 40
     if line then
-      local start_of_hash = 32
+      -- unmerged entries have an extra file mode before the hashes, so the first
+      -- hash starts one field later than for ordinary changed entries:
+      -- 1 <XY> <sub> <mH> <mI> <mW> <hH> ...
+      -- u <XY> <sub> <m1> <m2> <m3> <mW> <h1> ...
+      local start_of_hash = line:byte(1, 1) == ENTRY_BYTE_UNMERGED and 39 or 32
       local SPACE_BYTE = (" "):byte()
       local line_type_byte = line:byte(1, 1)
       if
