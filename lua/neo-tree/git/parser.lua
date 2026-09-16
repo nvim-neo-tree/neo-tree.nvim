@@ -8,10 +8,9 @@ local remove_trailing_unix_slash = function(path)
   return path:sub(-1, -1) == "/" and path:sub(1, -2) or path
 end
 
-local COMMENT_BYTE = ("#"):byte()
-local TYPE_ONE_BYTE = ("1"):byte()
-local TYPE_TWO_BYTE = ("2"):byte()
-local UNMERGED_BYTE = ("u"):byte()
+local ENTRY_BYTE_CHANGED = ("1"):byte()
+local ENTRY_BYTE_RENAMED_OR_COPIED = ("2"):byte()
+local ENTRY_BYTE_UNMERGED = ("u"):byte()
 local UNTRACKED_BYTE = ("?"):byte()
 local IGNORED_BYTE = ("!"):byte()
 local parent_cache = setmetatable({}, { __mode = "kv" })
@@ -172,62 +171,74 @@ M.parse_status_porcelain = function(
       end
       line = status_iter()
     end
+
+    local hash_length = 40
+    if line then
+      local start_of_hash = 32
+      local SPACE_BYTE = (" "):byte()
+      local line_type_byte = line:byte(1, 1)
+      if
+        vim.tbl_contains(
+          { ENTRY_BYTE_CHANGED, ENTRY_BYTE_RENAMED_OR_COPIED, ENTRY_BYTE_UNMERGED },
+          line_type_byte
+        )
+      then
+        -- the line should look like this:
+        -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
+        -- to support SHA256, we have to check whether these hashes are 64 or 40 characters long.
+        -- to do so, check where the space between hashes is:
+        if line:byte(start_of_hash + 40) == SPACE_BYTE then
+          hash_length = 40
+        elseif line:byte(start_of_hash + 64) == SPACE_BYTE then
+          hash_length = 64
+        else
+          error("Could not determine length of hashes in porcelain=v2 output, line: " .. line)
+        end
+      end
+    end
+
+    -- Example status:
+    -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
+    -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
+    -- 1 MM N... 100644 100644 100644 4417f3aca512ffdf247662e2c611ee03ff9255cc 29c0e9846cd6410a44c4ca3fdaf5623818bd2838 modified_mixed.txt
+    -- 1 M. N... 100644 100644 100644 f784736eecdd43cd8eb665615163cfc6506fca5f 8d6fad5bd11ac45c7c9e62d4db1c427889ed515b modified_staged.txt
+    -- 1 .M N... 100644 100644 100644 c9e1e027aa9430cb4ffccccf45844286d10285c1 c9e1e027aa9430cb4ffccccf45844286d10285c1 modified_unstaged.txt
+    -- 1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 89cae60d74c222609086441e29985f959b6ec546 new_staged_file.txt
+    -- 2 R. N... 100644 100644 100644 3454a7dc6b93d1098e3c3f3ec369589412abdf99 3454a7dc6b93d1098e3c3f3ec369589412abdf99 R100 renamed_staged_new.txt
+    -- renamed_staged_old.txt
+    -- 1 .T N... 100644 100644 120000 192f10ed8c11efb70155e8eb4cae6ec677347623 192f10ed8c11efb70155e8eb4cae6ec677347623 type_change.txt
+    -- ? .gitignore
+    -- ? untracked.txt
+    -- ! ignored.txt
+
+    -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
+    -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
+
+    -- 114 for sha1, 162 for sha256
+    local index_after_hashes = 32 + 2 * (hash_length + 1)
+
+    -- u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>
+
+    -- 162 for sha1, 234 for sha256
+    local index_after_unmerged_hashes = 39 + 3 * (hash_length + 1)
+
     while line do
-      -- Example status:
-      -- 1 D. N... 100644 000000 000000 ade2881afa1dcb156a3aa576024aa0fecf789191 0000000000000000000000000000000000000000 deleted_staged.txt
-      -- 1 .D N... 100644 100644 000000 9c13483e67ceff219800303ec7af39c4f0301a5b 9c13483e67ceff219800303ec7af39c4f0301a5b deleted_unstaged.txt
-      -- 1 MM N... 100644 100644 100644 4417f3aca512ffdf247662e2c611ee03ff9255cc 29c0e9846cd6410a44c4ca3fdaf5623818bd2838 modified_mixed.txt
-      -- 1 M. N... 100644 100644 100644 f784736eecdd43cd8eb665615163cfc6506fca5f 8d6fad5bd11ac45c7c9e62d4db1c427889ed515b modified_staged.txt
-      -- 1 .M N... 100644 100644 100644 c9e1e027aa9430cb4ffccccf45844286d10285c1 c9e1e027aa9430cb4ffccccf45844286d10285c1 modified_unstaged.txt
-      -- 1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 89cae60d74c222609086441e29985f959b6ec546 new_staged_file.txt
-      -- 2 R. N... 100644 100644 100644 3454a7dc6b93d1098e3c3f3ec369589412abdf99 3454a7dc6b93d1098e3c3f3ec369589412abdf99 R100 renamed_staged_new.txt
-      -- renamed_staged_old.txt
-      -- 1 .T N... 100644 100644 120000 192f10ed8c11efb70155e8eb4cae6ec677347623 192f10ed8c11efb70155e8eb4cae6ec677347623 type_change.txt
-      -- ? .gitignore
-      -- ? untracked.txt
-      -- ! ignored.txt
-
-      -- 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-      -- 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><sep><origPath>
-
       local line_type_byte = line:byte(1, 1)
       local abspath, XY
-      if line_type_byte == TYPE_ONE_BYTE then
+      if line_type_byte == ENTRY_BYTE_CHANGED then
         XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local mH = line:sub(11, 16)
-        -- local mI = line:sub(18, 23)
-        -- local mW = line:sub(25, 30)
-        -- local hH = line:sub(32, 71)
-        -- local hI = line:sub(73, 112)
-        local path = line:sub(114)
+        local path = line:sub(index_after_hashes)
         abspath = git_root_dir .. path
-      elseif line_type_byte == TYPE_TWO_BYTE then
+      elseif line_type_byte == ENTRY_BYTE_RENAMED_OR_COPIED then
         XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local mH = line:sub(11, 16)
-        -- local mI = line:sub(18, 23)
-        -- local mW = line:sub(25, 30)
-        -- local hH = line:sub(32, 71)
-        -- local hI = line:sub(73, 112)
-        -- local rest = line:sub(114)
-        -- local Xscore = rest:sub(1, first_space - 1)
-        local first_space = line:find(" ", 114, true)
-        local path = line:sub(first_space + 1)
+        local space_after_score = line:find(" ", index_after_hashes, true)
+        local path = line:sub(space_after_score + 1)
         abspath = git_root_dir .. path
         -- ignore the original path
         status_iter()
-      elseif line_type_byte == UNMERGED_BYTE then
+      elseif line_type_byte == ENTRY_BYTE_UNMERGED then
         XY = line:sub(3, 4)
-        -- local submodule_state = line:sub(6, 9)
-        -- local m1 = line:sub(11, 16)
-        -- local m2 = line:sub(18, 23)
-        -- local m3 = line:sub(25, 30)
-        -- local mW = line:sub(32, 37)
-        -- local h1 = line:sub(39, 78)
-        -- local h2 = line:sub(80, 119)
-        -- local h3 = line:sub(121, 160)
-        local path = line:sub(162)
+        local path = line:sub(index_after_unmerged_hashes)
         abspath = git_root_dir .. path
 
         unmerged[#unmerged + 1] = #paths + 1
@@ -297,6 +308,7 @@ M.parse_status_porcelain = function(
       typechanged,
       renamed,
       copied,
+      -- this is for the "."
       {},
     }
     for i, s in ipairs(statuses) do
