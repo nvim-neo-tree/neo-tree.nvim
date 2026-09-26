@@ -310,30 +310,68 @@ local function get_unused_name(source, destination, input_root, on_new_filename,
   end, {}, setup_file_completion(input_root))
 end
 
----Move node
----@generic S : string
----@generic D : string?
----@param source S
----@param destination D
----@param callback fun(source: S, destination: D|S)
----@param input_root string
-M.move_node = function(source, destination, callback, input_root)
-  log.trace("Moving node:", source, "to", destination, ", using root directory:", input_root)
-  local _, name = utils.split_path(source)
-  get_unused_name(source, destination or source, input_root, function(dest)
-    local parent_of_dest, _ = utils.split_path(dest)
+do
+  ---Resolves a user-typed destination the way `mv` does when run from the source's
+  ---parent directory: relative paths are taken from there, `..` is resolved, and an
+  ---existing directory target means "move into it".
+  ---@param source string Absolute path of the node being moved
+  ---@param input string Raw user input
+  ---@return string dest Absolute path to move `source` to
+  ---@return boolean needs_confirm Whether an existing file at `dest` must be confirmed for overwrite
+  local function move_resolve(source, input)
+    local parent_of_source, name = utils.split_path(source)
+    local is_absolute = vim.startswith(input, "/")
+      or (utils.is_windows and input:match("^%a:[/\\]") ~= nil)
+
+    local dest
+    if is_absolute or input:sub(1, 1) == "~" then
+      dest = utils.normalize_path(input)
+    elseif input == "" or input == "." then
+      -- Empty or "." means the node's own directory: keep the same name.
+      dest = utils.path_join(parent_of_source, name)
+    else
+      dest = utils.normalize_path(parent_of_source .. utils.path_separator .. input)
+    end
+
+    local dest_stat = uv.fs_stat(dest)
+    if dest_stat and dest_stat.type == "directory" then
+      -- `mv a b/` moves a into b, unless b is a itself.
+      if not same_file(dest_stat, uv.fs_stat(source)) then
+        dest = utils.path_join(dest, name)
+      end
+      return dest, false
+    end
+
+    -- The target is an existing file: it can only be replaced without asking when
+    -- the rename is a no-op, e.g. a case-only rename on Windows/macOS.
+    local needs_confirm = dest_stat ~= nil and not rename_is_safe(source, dest)
+    return dest, needs_confirm
+  end
+
+  ---Checks whether moving `source` to `dest` would be a no-op or destroy the source.
+  ---Logs a warning and returns false when the move must not proceed.
+  ---@param source string
+  ---@param dest string
+  ---@return boolean allowed
+  local function move_allowed(source, dest)
+    local parent_of_dest = utils.split_path(dest)
     if source == parent_of_dest then
       log.warn("Cannot move " .. source .. " to itself")
-      return
+      return false
     end
 
-    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, destination) then
+    if uv.fs_stat(source).type == "directory" and utils.is_descendant(source, dest) then
       log.warn("Cannot move " .. source .. " to its own descendant " .. parent_of_dest)
-      return
+      return false
     end
+    return true
+  end
 
-    -- Resolve user-inputted relative paths out of the absolute paths
-    dest = utils.normalize_path(dest)
+  ---Performs the actual rename of `source` to `dest`, firing the before/after move events.
+  ---@param source string
+  ---@param dest string
+  ---@param callback fun(source: string, destination: string)?
+  local function move_do(source, dest, callback)
     local complete = vim.schedule_wrap(function()
       rename_buffer(source, dest)
       events.fire_event(events.FILE_MOVED, {
@@ -355,6 +393,7 @@ M.move_node = function(source, destination, callback, input_root)
         complete()
       end)
     end
+
     local event_result = events.fire_event(events.BEFORE_FILE_MOVE, {
       source = source,
       destination = dest,
@@ -365,7 +404,78 @@ M.move_node = function(source, destination, callback, input_root)
       return
     end
     move_file()
-  end, 'Move "' .. name .. '" to:')
+  end
+
+  ---Moves `source` once a destination string is known, asking for confirmation first
+  ---if that destination would overwrite an existing file.
+  ---@param source string
+  ---@param input string Raw user input for the destination
+  ---@param callback fun(source: string, destination: string)?
+  local function move_with_prompt(source, input, callback)
+    local dest, needs_confirm = move_resolve(source, input)
+    if not move_allowed(source, dest) then
+      return
+    end
+
+    if not needs_confirm then
+      move_do(source, dest, callback)
+      return
+    end
+
+    local parent_of_source, name = utils.split_path(source)
+    local dest_parent, dest_name = utils.split_path(dest)
+    local location = dest_parent == parent_of_source and "" or (' in "%s"'):format(dest_parent)
+    local overwrite_prompt = ('"%s"%s already exists, overwrite it with "%s"? '):format(
+      dest_name,
+      location,
+      name
+    )
+    inputs.confirm(overwrite_prompt, function(confirmed)
+      if not confirmed then
+        log.info("Move cancelled")
+        return
+      end
+      move_do(source, dest, callback)
+    end)
+  end
+
+  ---Prompts the user for a destination, then moves `source` there.
+  ---@param source string
+  ---@param input_root string Root used for path completion in the prompt
+  ---@param on_input fun(input: string) Called once the user submits a non-empty destination
+  local function prompt_move_destination(source, input_root, on_input)
+    local _, name = utils.split_path(source)
+    assert(name)
+    inputs.input('Move "' .. name .. '" to:', escape_filename(name), function(value)
+      if value and #value > 0 then
+        on_input(unescape_filename(value))
+      end
+    end, {}, setup_file_completion(input_root))
+  end
+
+  ---Move node
+  ---@generic S : string
+  ---@generic D : string?
+  ---@param source S
+  ---@param destination D
+  ---@param callback fun(source: S, destination: D|S)
+  ---@param input_root string
+  M.move_node = function(source, destination, callback, input_root)
+    log.trace("Moving node:", source, "to", destination, ", completion root:", input_root)
+    if not utils.split_path(source) then
+      log.warn("Cannot move " .. source .. ": no parent directory")
+      return
+    end
+
+    if destination == nil then
+      prompt_move_destination(source, input_root, function(input)
+        move_with_prompt(source, input, callback)
+      end)
+      return
+    end
+
+    move_with_prompt(source, destination, callback)
+  end
 end
 
 ---Plenary path.copy() when used to copy a recursive structure, can return a nested
