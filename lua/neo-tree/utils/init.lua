@@ -898,7 +898,9 @@ do
         magic = { file = false, bar = false },
       })
       nvim_cmd_arg.range = nil
-      return assert(pcall(vim.api.nvim_cmd, nvim_cmd_arg, {}))
+      -- Return the failure instead of raising it: the caller retries a
+      -- winfixbuf window in another window or a new split.
+      return pcall(vim.api.nvim_cmd, nvim_cmd_arg, {})
     end
 
     ---@type boolean, string?
