@@ -525,6 +525,49 @@ M.create_directory = function(in_directory, callback, input_root)
   end, {}, setup_file_completion(input_root))
 end
 
+---@param path string
+---@param is_dir boolean
+---@param callback fun(path: string)?
+---@return boolean success
+local create_file = function(path, is_dir, callback)
+  if uv.fs_stat(path) then
+    log.warn("File already exists")
+    return true
+  end
+
+  local complete = vim.schedule_wrap(function()
+    events.fire_event(events.FILE_ADDED, path)
+    if callback then
+      callback(path)
+    end
+  end)
+  local event_result = events.fire_event(events.BEFORE_FILE_ADD, path) or {}
+  if event_result.handled then
+    complete()
+    return true
+  end
+
+  create_all_parents(path)
+  if is_dir then
+    uv.fs_mkdir(path, 493)
+  else
+    local open_mode = uv.constants.O_CREAT + uv.constants.O_WRONLY + uv.constants.O_TRUNC
+    local fd = uv.fs_open(path, open_mode, 420)
+    if not fd then
+      if not uv.fs_stat(path) then
+        log.error("Could not create file " .. path)
+        return false
+      else
+        log.warn("Failed to complete file creation of " .. path)
+      end
+    else
+      uv.fs_close(fd)
+    end
+  end
+  complete()
+  return true
+end
+
 --- Create Node
 ---@param in_directory string the directory to default to
 ---@param callback fun(destination: string)
@@ -568,41 +611,9 @@ M.create_node = function(in_directory, callback, input_root)
       end
 
       destination = utils.normalize_path(destination)
-      if uv.fs_stat(destination) then
-        log.warn("File already exists")
+      if not create_file(destination, is_dir, callback) then
         return
       end
-
-      local complete = vim.schedule_wrap(function()
-        events.fire_event(events.FILE_ADDED, destination)
-        if callback then
-          callback(destination)
-        end
-      end)
-      local event_result = events.fire_event(events.BEFORE_FILE_ADD, destination) or {}
-      if event_result.handled then
-        complete()
-        return
-      end
-
-      create_all_parents(destination)
-      if is_dir then
-        uv.fs_mkdir(destination, 493)
-      else
-        local open_mode = uv.constants.O_CREAT + uv.constants.O_WRONLY + uv.constants.O_TRUNC
-        local fd = uv.fs_open(destination, open_mode, 420)
-        if not fd then
-          if not uv.fs_stat(destination) then
-            log.error("Could not create file " .. destination)
-            return
-          else
-            log.warn("Failed to complete file creation of " .. destination)
-          end
-        else
-          uv.fs_close(fd)
-        end
-      end
-      complete()
     end
   end, {}, setup_file_completion(input_root))
 end
@@ -944,6 +955,24 @@ local rename_node = function(prompt, default_name, resolve_destination, source, 
     if not rename_is_safe(source, destination) then
       log.warn(destination, " already exists, canceling")
       return
+    end
+
+    local wants_dir = vim.tbl_contains({ utils.path_separator, "/" }, destination:sub(#destination))
+    if wants_dir then
+      -- check if we're renaming an empty file
+      local lstat = uv.fs_lstat(source)
+      if lstat and lstat.size == 0 and lstat.type == "file" then
+        local src = vim.fn.fnamemodify(source, ":~:.")
+        local dest = vim.fn.fnamemodify(destination, ":~:.")
+        local confirmed = inputs.confirm(
+          ("Delete empty file %s and create a directory %s instead?"):format(src, dest)
+        )
+        if confirmed then
+          delete(source)
+          create_file(destination, true)
+          return
+        end
+      end
     end
 
     local complete = vim.schedule_wrap(function()
