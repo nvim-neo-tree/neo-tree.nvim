@@ -320,11 +320,9 @@ do
   ---@return boolean needs_confirm Whether an existing file at `dest` must be confirmed for overwrite
   local function move_resolve(source, input)
     local parent_of_source, name = utils.split_path(source)
-    local is_absolute = vim.startswith(input, "/")
-      or (utils.is_windows and input:match("^%a:[/\\]") ~= nil)
 
     local dest
-    if is_absolute or input:sub(1, 1) == "~" then
+    if utils.abspath_prefix(input) or input:sub(1, 1) == "~" then
       dest = utils.normalize_path(input)
     elseif input == "" or input == "." then
       -- Empty or "." means the node's own directory: keep the same name.
@@ -339,7 +337,7 @@ do
       if not same_file(dest_stat, uv.fs_stat(source)) then
         dest = utils.path_join(dest, name)
       end
-      return dest, false
+      dest_stat = uv.fs_stat(dest)
     end
 
     -- The target is an existing file: it can only be replaced without asking when
@@ -422,13 +420,13 @@ do
       return
     end
 
-    local parent_of_source, name = utils.split_path(source)
+    local parent_of_source = utils.split_path(source)
     local dest_parent, dest_name = utils.split_path(dest)
     local location = dest_parent == parent_of_source and "" or (' in "%s"'):format(dest_parent)
     local overwrite_prompt = ('"%s"%s already exists, overwrite it with "%s"? '):format(
       dest_name,
       location,
-      name
+      source
     )
     inputs.confirm(overwrite_prompt, function(confirmed)
       if not confirmed then
