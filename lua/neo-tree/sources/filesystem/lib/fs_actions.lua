@@ -278,9 +278,65 @@ local function create_all_parents(path)
   create_parent_folders(parent_path)
 end
 
+local displayable_path = function(path)
+  return escape_filename(vim.fn.fnamemodify(path, ":~:."))
+end
+
+---Given raw user input which could result in the user wanting one of two reasonable paths, disambiguate the two based
+---on a Neo-tree config setting.
+---@param root string? nil if the input should always be treated as absolute. otherwise, the input should be checked as
+---@param path_input string raw input, could be absolute.
+---@nodiscard
+---@return string disambiguated_absolute_path
+local function disambiguiate_user_inputted_path(root, path_input)
+  local expanded_path = utils.normalize_path(path_input, { expand_env = true })
+  if not utils.abspath_prefix(expanded_path) then
+    expanded_path = utils.path_join(root or "/", expanded_path)
+  end
+  -- resolved path with path input treated as relative to root
+  local literal_path = root and utils.normalize_path(root .. utils.path_separator .. path_input)
+    or utils.normalize_path(path_input)
+
+  if literal_path ~= expanded_path then
+    local user_preference_setting = require("neo-tree").config.filesystem.input_path_preference
+    if user_preference_setting == "expanded" then
+      return expanded_path
+    elseif user_preference_setting == "literal" then
+      return literal_path
+    else
+      if user_preference_setting ~= "prompt" then
+        log.warn(
+          "filesystem.input_path_preference was set to invalid value, defaulting to 'prompt'"
+        )
+      end
+      local choices = { expanded_path, literal_path }
+      local msg =
+        "The expanded path differs from the literal interpretation, which path did you mean?"
+      if literal_path:find("\n", 1, true) or expanded_path:find("\n", 1, true) then
+        msg = msg .. "(newlines are displayed as \\n)"
+      end
+      local preferred = vim.fn.confirm(
+        msg,
+        table.concat({
+          ("Expanded: %s"):format(displayable_path(expanded_path)),
+          ("Literal: %s"):format(displayable_path(literal_path)),
+          "Cancel",
+        }, "\n"),
+        1
+      )
+      local preferred_choice = choices[preferred]
+      if not preferred_choice then
+        error("No valid path chosen, cancelling")
+      end
+      return preferred_choice
+    end
+  end
+  return literal_path
+end
+
 -- Gets a non-existing filename from the user and executes the callback with it.
----@param source string
----@param destination string
+---@param source string Absolute path
+---@param destination string Absolute path
 ---@param input_root string
 ---@param on_new_filename fun(string)
 ---@param first_message string?
@@ -305,7 +361,7 @@ local function get_unused_name(source, destination, input_root, on_new_filename,
       return
     end
     new_name = unescape_filename(new_name)
-    local new_path = parent_path and parent_path .. utils.path_separator .. new_name or new_name
+    local new_path = disambiguiate_user_inputted_path(parent_path, new_name)
     get_unused_name(source, new_path, input_root, on_new_filename)
   end, {}, setup_file_completion(input_root))
 end
