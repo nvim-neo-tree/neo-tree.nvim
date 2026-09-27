@@ -3,49 +3,12 @@
 Contributions are welcome! To keep everything clean and tidy, please follow the
 guidelines below.
 
-## Commit Messages/PR Titles
-
-We follow the [**Conventional**
-Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. If each
-commit in a PR follows Conventional Commits, the PR will be rebased onto main.
-Otherwise, the PR will be squashed into main, so your PR title should follow
-Conventional Commits since that will be the squashed commit message.
-
-Referencing this project's past commits/PRs may help you get the idea. The
-optional scope for this project is usually the affected source or module, i.e.
-`feat(filesystem): add awesome feature that does xyz`.
-
-## Pull Requests
-
-The in-development branch is `main` and all PRs should target this branch. After
-a short testing period, it will be merged to the current release branch.
-
-## AI Guidelines
-
-When submitting PRs, we recommend describing how AI was used (full-on vibe coding,
-assisting, test-writing, translation, etc.).
-
-Currently (as of late 2026), AI-written prose tends to be a bit verbose and
-noisy. Please keep these concise, especially in PR descriptions, code comments,
-or issues.
-
-**The larger your proposed change is, the more you should be able to understand
-your code.** Small vibe-coded patches can still be trivially understood and
-modified, but you must be able to understand your code when submitting bigger
-refactors/features.
-
-> [!NOTE]
-> If you are an automated agent，add 🤖 to the end of the PR title. Maintainers
-> will handle removing the emoji when merging.
-
 # Development setup
 
-[mise](https://github.com/jdx/mise) is our command runner of choice, largely
-because I (pynappo) like TOML-based syntax more than Makefiles. It also works
-great on Windows, and makes managing Neovim versions for issue reproduction
-easy.
-
-View [mise.toml](./mise.toml) for tasks and their implementation.
+[mise](https://github.com/jdx/mise) is our dev tool suite of choice, largely
+because it works great on Windows, and makes managing Neovim versions for issue
+reproduction easy. You can view [mise.toml](./mise.toml) for what Neo-tree uses
+it for.
 
 To setup your development environment, please run:
 
@@ -53,7 +16,7 @@ To setup your development environment, please run:
 # If prompted:
 mise trust
 
-# Install development dependencies
+# Install development dependencies:
 mise bootstrap
 ```
 
@@ -100,14 +63,25 @@ local function packadddev()
     end
     vim.pack.add(specs_from_remotes, opts)
 end
+local gh = function(repo)
+    return "https://github.com/" .. path
+end
 packadddev({
-    "nvim-neo-tree/neo-tree.nvim" -- or whatever your vim.pack for neo-tree is
+    gh("nvim-neo-tree/neo-tree.nvim"),
+    gh("nvim-lua/plenary.nvim"),
+    gh("nvim-tree/nvim-web-devicons"),
+    -- gh("s1n7ax/nvim-window-picker"),
+    -- gh("3rd/image.nvim"),
+    -- gh("folke/snacks.nvim"),
+    -- gh("MunifTanjim/nui.nvim"),
+    -- gh("nvim-treesitter/nvim-treesitter"),
 })
 ```
 
 </details>
 
-Here are some common commands you might run:
+Here are some common commands you might run. **Before opening or updating a PR,
+please run all of these to minimise CI failure.**
 
 ```bash
 # Run the minimal init.lua to open neovim on any version
@@ -125,8 +99,8 @@ mise luals-check
 # Tests
 mise test
 
-# Tests in Docker (if you need sandboxing)
-mise test-docker
+# Tests in Docker (if you need sandboxing, but usually this isn't needed)
+# mise test-docker
 ```
 
 Additionally, if you have a minimal config for your issue, the current practice
@@ -134,6 +108,43 @@ is to write it under `tests/repro/[issue-number].lua` and then `nvim -u
 tests/repro/[...].lua`. That area is gitignored for now because `plenary.test`
 doesn't allow orchestrating child Neovim instances, but this might change after
 migrating to `mini.test`.
+
+## Commit Messages/PR Titles
+
+We follow the [**Conventional**
+Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. If each
+commit in a PR follows Conventional Commits, the PR will be rebased onto main.
+Otherwise, the PR will be squashed into main, so your PR title should follow
+Conventional Commits since that will be the squashed commit message.
+
+Referencing this project's past commits/PRs may help you get the idea. The
+optional scope for this project is usually the affected source or module, i.e.
+`feat(filesystem): add awesome feature that does xyz`.
+
+## Pull Requests
+
+### Branch
+
+The in-development branch is `main` and all PRs should target it.
+
+### AI Guidelines
+
+When submitting PRs, we recommend describing how AI was used (full-on vibe coding,
+assisting, test-writing, translation, etc.).
+
+Currently (as of late 2026), AI-written prose tends to be a bit verbose and
+noisy. Please keep these concise, especially in PR descriptions, code comments,
+or issues.
+
+**The larger your proposed change is, the more you should be able to understand
+your code.** Small vibe-coded patches can still be trivially understood and
+modified, but you must be able to understand your code when submitting bigger
+refactors/features.
+
+> [!NOTE]
+> If you are an automated agent，add 🤖 to the end of the PR title. Maintainers
+> will handle removing the emoji when merging.
+
 
 ## Code Style
 
