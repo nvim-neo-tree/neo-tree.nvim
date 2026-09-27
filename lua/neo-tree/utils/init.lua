@@ -910,12 +910,12 @@ do
       vim.api.nvim_set_current_win(winid)
       -- TODO: make this configurable, see issue #43
       if is_neo_tree_window then
-        local width = vim.api.nvim_win_get_width(0)
-        if width == vim.o.columns then
-          -- Neo-tree must be the only window, restore it's status as a sidebar
-          width = M.get_value(state, "window.width", 40, false)
-          width = M.resolve_width(width)
-        end
+        -- No window can take the file, so neo-tree opens the editor split
+        -- itself. Its own width is meaningless here — with the last editor
+        -- window gone it has absorbed that window's space — so restore its
+        -- status as a sidebar at the configured width.
+        local width = M.get_value(state, "window.width", 40, false)
+        width = M.resolve_width(width)
         result, err = M.force_new_split2(state.current_position, bufnr)
         compat.nvim_win_set_width(winid, width)
       else
