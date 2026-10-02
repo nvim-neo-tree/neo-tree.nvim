@@ -701,11 +701,8 @@ local delete = function(path, callback)
       _type = "directory"
     end
   else
+    -- Do not follow links: recursive deletion could remove the target's contents.
     _type = stat.type
-    if _type == "link" then
-      local target_file = uv.fs_stat(path)
-      _type = target_file and target_file.type or _type
-    end
   end
 
   local event_result = events.fire_event(events.BEFORE_FILE_DELETE, path) or {}
