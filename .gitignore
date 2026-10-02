@@ -49,3 +49,5 @@ luacov.*.out
 
 tests/repro
 .repro
+.mcp*
+tmp
