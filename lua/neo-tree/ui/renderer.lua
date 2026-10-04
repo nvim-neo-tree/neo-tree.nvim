@@ -105,7 +105,6 @@ local start_resize_monitor = function()
   resize_monitor_timer = vim.defer_fn(check_window_size, interval)
 end
 
-
 ---Safely closes the window and deletes the buffer associated with the state
 ---@param state neotree.State State of the source to close
 ---@param focus_prior_window boolean | nil if true or nil, focus the window that was previously focused
