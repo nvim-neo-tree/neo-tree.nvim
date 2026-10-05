@@ -699,10 +699,11 @@ local config = {
   },
   document_symbols = {
     follow_cursor = false,
-    follow_tree_cursor = true, -- Automatically show symbol location when moving cursor in the tree
+    follow_tree_cursor = false, -- Automatically show symbol location when moving cursor in the tree
     follow_current_file = {
-      -- true: display the document symbols of the last applicable file the cursor entered.
-      -- false: display the document symbols of the first applicable file the cursor entered (until it closes).
+      -- true: displays symbols based on the latest focused window with an LSP-enabled buffer.
+      -- false: displays symbols for the first focused window with an LSP-enabled buffer (usually the window that was
+      -- current when `:Neo-tree document_symbols` was first invoked), until that window closes.
       enabled = true,
     },
     client_filters = "first",
