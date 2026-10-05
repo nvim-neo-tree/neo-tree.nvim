@@ -61,7 +61,7 @@ local start_resize_monitor = function()
     log.warn("Invalid resize_timer_interval:", interval)
     return
   end
-  if resize_monitor_timer then
+  if resize_monitor_timer and not resize_monitor_timer:is_closing() then
     return
   end
   local manager = require("neo-tree.sources.manager")
@@ -92,17 +92,17 @@ local start_resize_monitor = function()
         else
           speed_up_loops = 0
         end
-        vim.defer_fn(check_window_size, this_interval)
+        resize_monitor_timer = vim.defer_fn(check_window_size, this_interval)
       else
         log.trace("No windows exist, stopping resize monitor")
       end
     else
       log.debug("Error checking window size:", err)
-      vim.defer_fn(check_window_size, math.max(interval * 5, 1000))
+      resize_monitor_timer = vim.defer_fn(check_window_size, math.max(interval * 5, 1000))
     end
   end
 
-  vim.defer_fn(check_window_size, interval)
+  resize_monitor_timer = vim.defer_fn(check_window_size, interval)
 end
 
 ---Safely closes the window and deletes the buffer associated with the state
