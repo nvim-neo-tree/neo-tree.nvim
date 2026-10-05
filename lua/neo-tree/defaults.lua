@@ -700,6 +700,12 @@ local config = {
   document_symbols = {
     follow_cursor = false,
     follow_tree_cursor = false, -- Automatically show symbol location when moving cursor in the tree
+    follow_current_file = {
+      -- true: displays symbols based on the latest focused window with an LSP-enabled buffer.
+      -- false: displays symbols for the first focused window with an LSP-enabled buffer (usually the window that was
+      -- current when `:Neo-tree document_symbols` was first invoked), until that window closes.
+      enabled = true,
+    },
     client_filters = "first",
     ignore_symbols = {}, -- LSP symbol kind names to hide, e.g. { "Variable", "Field" }
     renderers = {
