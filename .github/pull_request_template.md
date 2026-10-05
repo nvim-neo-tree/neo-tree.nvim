@@ -1,5 +1,6 @@
 ## 🗒 Checklist 🗒
-- [ ] I have read and followed the [CONTRIBUTING.md](../CONTRIBUTING.md).
+- [ ] I have read and followed the
+[CONTRIBUTING.md](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/CONTRIBUTING.md).
 - [ ] I used AI (or AI-assistance) for this change. ()
 
 <!--
