@@ -1,6 +1,7 @@
 ## 🗒 Checklist 🗒
-- [ ] I have read and followed the [CONTRIBUTING.md](../CONTRIBUTING.md).
-- [ ] I used AI (or AI-assistance) for this change. ()
+- [ ] I have read and followed the
+[CONTRIBUTING.md](https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/CONTRIBUTING.md).
+- [ ] I used AI (or AI-assistance) for this change.
 
 <!--
 The AI-assistance checkbox is for transparency. If checked, you can optionally describe what model/agent harness was
