@@ -1841,9 +1841,13 @@ M.job = function(cmd, opts, on_exit)
   spawnopts.hide = true
   spawnopts.stdio = { nil, stdout, stderr }
 
-  local handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
+  local handle, pid_or_err
+  handle, pid_or_err = uv.spawn(path, spawnopts, function(code, _)
     exit_code = code
     process_exited = true
+    if handle and not handle:is_closing() then
+      handle:close()
+    end
     try_finish()
   end)
 
