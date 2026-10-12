@@ -30,7 +30,7 @@ describe("Clipboard sync", function()
   end)
 
   describe("Global", function()
-    it("should work", function()
+    it("should sync copying and clearing across tabs", function()
       require("neo-tree").setup({
         clipboard = {
           sync = "global",
@@ -40,20 +40,35 @@ describe("Clipboard sync", function()
       vim.cmd("Neotree")
       u.wait_for_neo_tree()
       local state = assert(verify.get_state())
-      local wait1 = u.changedtick_waiter()
-      u.feedkeys("y")
-      wait1()
-      assert(next(state.clipboard))
+      local first_win = vim.api.nvim_get_current_win()
 
       vim.cmd("tabnew")
       vim.cmd("Neotree")
       u.wait_for_neo_tree()
       local other_state = assert(verify.get_state())
-      assert(next(other_state.clipboard))
-      local wait2 = u.changedtick_waiter(0, 1)
-      u.feedkeys("y")
-      wait2()
       assert(not next(other_state.clipboard))
+
+      vim.api.nvim_set_current_win(first_win)
+      local wait1 = u.changedtick_waiter()
+      u.feedkeys("y")
+      wait1()
+      assert(next(state.clipboard))
+      verify.eventually(function()
+        return next(other_state.clipboard) ~= nil
+      end, "copy was not synchronized to the existing tab")
+      u.eq(state.clipboard, other_state.clipboard)
+
+      vim.cmd("tabnew")
+      vim.cmd("Neotree")
+      u.wait_for_neo_tree()
+      local new_state = assert(verify.get_state())
+      u.eq(state.clipboard, new_state.clipboard)
+
+      require("neo-tree.sources.common.commands").clear_clipboard(new_state)
+      assert(not next(new_state.clipboard))
+      verify.eventually(function()
+        return not next(state.clipboard) and not next(other_state.clipboard)
+      end, "clear was not synchronized to the existing tabs")
     end)
   end)
 

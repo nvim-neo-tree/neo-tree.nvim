@@ -18,6 +18,7 @@ end
 
 function GlobalBackend:save(state)
   self.clipboards[state.name] = state.clipboard
+  return true
 end
 
 function GlobalBackend:load(state)
