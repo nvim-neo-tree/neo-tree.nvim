@@ -122,6 +122,7 @@ M.mark_ignored = function(state, items)
               item.filtered_by = item.filtered_by or {}
               item.filtered_by.ignore_file = path
               item.filtered_by.ignored = ignored
+              break
             end
           end
         end
