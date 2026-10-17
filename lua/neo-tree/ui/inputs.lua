@@ -83,28 +83,28 @@ end
 ---@param callback? fun(confirmed: boolean)
 ---@return boolean? confirmed_if_no_callback
 M.confirm = function(message, callback)
-  if callback then
-    if nt.config.use_popups_for_input then
-      local popup_options = popups.popup_options(message, 10)
-
-      ---@class NuiInput
-      local input = NuiInput(popup_options, {
-        prompt = " y/n: ",
-        on_close = function()
-          callback(false)
-        end,
-        on_submit = function(value)
-          callback(value == "y" or value == "Y")
-        end,
-      })
-
-      input.prompt_type = "confirm"
-      M.show_input(input)
-    else
-      callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
-    end
-  else
+  if not callback then
     return vim.fn.confirm(message, "&Yes\n&No") == 1
+  end
+
+  if nt.config.use_popups_for_input then
+    local popup_options = popups.popup_options(message, 10)
+
+    ---@class NuiInput
+    local input = NuiInput(popup_options, {
+      prompt = " y/n: ",
+      on_close = function()
+        callback(false)
+      end,
+      on_submit = function(value)
+        callback(value == "y" or value == "Y")
+      end,
+    })
+
+    input.prompt_type = "confirm"
+    M.show_input(input)
+  else
+    callback(vim.fn.confirm(message, "&Yes\n&No") == 1)
   end
 end
 
