@@ -347,6 +347,7 @@ end
 ---@field search_limit integer?
 ---@field follow_current_file neotree.Config.Filesystem.FollowCurrentFile?
 ---@field hijack_netrw_behavior neotree.Config.HijackNetrwBehavior?
+---@field input_path_preference "prompt"|"expanded"|"literal"
 ---@field use_libuv_file_watcher boolean?
 ---@field renderers neotree.Config.Filesystem.Renderers?
 ---@field window neotree.Config.Filesystem.Window?
