@@ -1534,7 +1534,16 @@ render_tree = function(state)
     state._in_pre_render = false
     local textoffset = vim.fn.getwininfo(state.winid)[1].textoff or 0
     local desired_width = state.longest_node + textoffset
-    state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
+    -- Only capture the baseline width once. Overwriting it on every render
+    -- pass means that after auto-expand has already grown the window, the
+    -- next render treats the *expanded* width as the new baseline, which
+    -- lets newly-eligible columns (e.g. type/last_modified, gated by
+    -- required_width) keep pushing the window wider on each subsequent
+    -- render, and leaves nothing to restore to when auto-expand is toggled
+    -- back off.
+    if not state.window.last_user_width then
+      state.window.last_user_width = vim.api.nvim_win_get_width(state.winid)
+    end
     if should_auto_expand and desired_width > state.window.last_user_width then
       log.at.trace.format("auto_expand_width: on. Expanding width to %s.", state.longest_node)
       _compat.nvim_win_set_width(state.winid, desired_width)
