@@ -323,4 +323,111 @@ describe("document_symbols commands", function()
       vim.fn.delete(test_file)
     end)
   end)
+
+  describe("lsp_winid", function()
+    local function open_symbols_with_state(test_file, opts)
+      vim.cmd("edit " .. test_file)
+      local main_win = vim.api.nvim_get_current_win()
+      local main_buf = vim.api.nvim_get_current_buf()
+      u.wait_for(function()
+        return #vim.lsp.get_clients({ bufnr = main_buf }) > 0
+      end)
+
+      require("neo-tree").setup({
+        sources = { "document_symbols" },
+        default_source = "document_symbols",
+        document_symbols = opts or {},
+      })
+      vim.cmd("Neotree document_symbols right")
+      u.wait_for_neo_tree()
+
+      local manager = require("neo-tree.sources.manager")
+      local state
+      u.wait_for(function()
+        state = manager.get_state("document_symbols")
+        return state and state.tree and state.tree:get_node() ~= nil
+      end)
+      return state, main_win, main_buf
+    end
+
+    it("should follow the current window when switching windows with <C-w>", function()
+      local test_file = vim.fn.tempname() .. ".lua"
+      local lines = {
+        "-- Test file",
+        "",
+        "function test_function()",
+        "  return 42",
+        "end",
+      }
+      vim.fn.writefile(lines, test_file)
+
+      local state, main_win = open_symbols_with_state(test_file)
+      assert.are.equal(main_win, state.lsp_winid, "lsp_winid should start at the main window")
+
+      -- Focus the main (code) window
+      vim.cmd("wincmd h")
+      assert.are.equal(main_win, vim.api.nvim_get_current_win())
+      vim.api.nvim_exec_autocmds("WinEnter", {})
+      vim.wait(50)
+
+      -- Focus should still be the main window and lsp_winid should follow it
+      assert.are.equal(main_win, state.lsp_winid, "lsp_winid should remain the main window")
+
+      -- Split the main window into a new window showing the same buffer
+      vim.cmd("split")
+      local split_win = vim.api.nvim_get_current_win()
+      assert.are_not.equal(main_win, split_win)
+      vim.api.nvim_exec_autocmds("WinEnter", {})
+      vim.wait(50)
+
+      -- lsp_winid should now point at the newly focused split window
+      assert.are.equal(
+        split_win,
+        state.lsp_winid,
+        "lsp_winid should follow the current window after :split"
+      )
+
+      vim.fn.delete(test_file)
+    end)
+
+    it("should not error when the tracked lsp window is closed with <C-w>q", function()
+      local test_file = vim.fn.tempname() .. ".lua"
+      local lines = {
+        "-- Test file",
+        "",
+        "function test_function()",
+        "  return 42",
+        "end",
+      }
+      vim.fn.writefile(lines, test_file)
+
+      local state, main_win = open_symbols_with_state(test_file)
+      assert.are.equal(main_win, state.lsp_winid, "lsp_winid should start at the main window")
+
+      -- Move to the main window and close it
+      vim.cmd("wincmd h")
+      assert.are.equal(main_win, vim.api.nvim_get_current_win())
+      vim.cmd("q")
+      vim.wait(50)
+
+      -- The tracked window is gone, lsp_winid should have been cleared
+      local still_valid = state.lsp_winid ~= nil and vim.api.nvim_win_is_valid(state.lsp_winid)
+      assert.is_false(still_valid, "lsp_winid should not point at a closed window")
+
+      -- Focus the neo-tree window again and make sure jump_to_symbol does not error
+      vim.cmd("wincmd l")
+      vim.cmd("normal! j")
+      u.wait_for(function()
+        local node = state.tree:get_node()
+        return node and node:get_depth() > 1
+      end)
+      local commands = require("neo-tree.sources.document_symbols.commands")
+      -- Should not throw even though the original lsp window is gone
+      assert.has_no.errors(function()
+        commands.jump_to_symbol(state)
+      end)
+
+      vim.fn.delete(test_file)
+    end)
+  end)
 end)
