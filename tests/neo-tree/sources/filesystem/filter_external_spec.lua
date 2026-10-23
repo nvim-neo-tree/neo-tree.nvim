@@ -34,7 +34,7 @@ describe("Filesystem search", function()
         if err then
           errors[#errors + 1] = err
         elseif path then
-          results[#results + 1] = vim.fn.fnamemodify(path, ":t")
+          results[#results + 1] = path
         end
       end,
       on_exit = function(code)
@@ -47,6 +47,9 @@ describe("Filesystem search", function()
     end))
     assert.are.equal(0, exit_code)
     assert.are.same({}, errors)
+    for i, path in ipairs(results) do
+      results[i] = vim.fn.fnamemodify(path, ":t")
+    end
     table.sort(results)
     return results
   end
