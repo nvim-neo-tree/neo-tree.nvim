@@ -366,17 +366,27 @@ M.find_files = function(opts)
   local full_path_words = opts.find_by_full_path_words
   local regex, glob = nil, nil
   local fuzzy_finder_mode = opts.fuzzy_finder_mode
+  local find_command = get_find_command(opts)
 
-  glob = opts.term
-  if glob:sub(1) ~= "*" then
-    glob = "*" .. glob
-  end
-  if glob:sub(-1) ~= "*" then
-    glob = glob .. "*"
+  if
+    (find_command == "fd" or find_command == "fdfind")
+    and not full_path_words
+    and not opts.term:find("[*?%[%]{}\\]")
+  then
+    -- fd's glob mode only folds ASCII case; regex mode supports Unicode.
+    regex = opts.term:gsub("([\\.^$|?*+(){}%[%]])", "\\%1")
+  else
+    glob = opts.term
+    if glob:sub(1) ~= "*" then
+      glob = "*" .. glob
+    end
+    if glob:sub(-1) ~= "*" then
+      glob = glob .. "*"
+    end
   end
 
   M.filter_files_external(
-    get_find_command(opts),
+    find_command,
     opts.path,
     glob,
     regex,

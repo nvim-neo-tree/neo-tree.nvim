@@ -3,6 +3,7 @@ NEOTREE_LUARC = ".luarc.json"
 MISE_BACKENDS_NEOVIM = "aqua:neovim/neovim"
 
 [tools]
+fd = "10"
 lua-language-server = "3"
 tree-sitter = "latest"
 
