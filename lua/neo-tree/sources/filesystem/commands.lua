@@ -156,7 +156,10 @@ end
 ---@param state neotree.StateWithTree
 ---@param reverse boolean?
 local focus_next_git_modified = function(state, reverse)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   local current_path = node:get_id()
   local _, worktree_info = require("neo-tree.git").find_existing_worktree(current_path)
   if not utils.truthy(worktree_info) then
