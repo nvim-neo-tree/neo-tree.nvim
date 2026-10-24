@@ -2,6 +2,8 @@ local u = require("tests.utils")
 local verify = require("tests.utils.verify")
 local renderer = require("neo-tree.ui.renderer")
 local UniversalBackend = require("neo-tree.clipboard.sync.universal")
+local clipboard = require("neo-tree.clipboard")
+local uv = vim.uv or vim.loop
 
 describe("Universal clipboard", function()
   local test = u.fs.init_test({
@@ -11,6 +13,10 @@ describe("Universal clipboard", function()
   })
 
   test.setup()
+
+  local original_new_fs_event = uv.new_fs_event
+  local original_update_states = clipboard.update_states
+  local event_test_dir
 
   ---Closes the fs_event handles the backend opens while loading, so that they
   ---do not outlive the test.
@@ -24,8 +30,60 @@ describe("Universal clipboard", function()
   end
 
   after_each(function()
+    uv.new_fs_event = original_new_fs_event
+    clipboard.update_states = original_update_states
     close_handles()
+    if event_test_dir then
+      u.fs.remove_dir(event_test_dir, true)
+      event_test_dir = nil
+    end
     u.clear_environment()
+  end)
+
+  it("synchronizes the first external update to a newly created clipboard file", function()
+    event_test_dir = u.fs.create_temp_dir()
+    local reader = assert(UniversalBackend:new({ dir = event_test_dir }))
+    local state = { name = "first_event", clipboard = {} }
+    local on_event
+    uv.new_fs_event = function()
+      local closed = false
+      return {
+        start = function(_, _, _, callback)
+          on_event = callback
+          return 0
+        end,
+        is_active = function()
+          return not closed
+        end,
+        is_closing = function()
+          return closed
+        end,
+        close = function()
+          closed = true
+        end,
+      }
+    end
+    local updates = 0
+    clipboard.update_states = function()
+      updates = updates + 1
+    end
+
+    local loaded, err = reader:load(state)
+    assert.is_nil(err)
+    assert.is_nil(loaded)
+    assert.is_nil(reader.last_stat_seen)
+
+    local contents = { file = { action = "copy", node = { id = "file", name = "file" } } }
+    u.fs.write_file(reader:get_filename(state), {
+      vim.json.encode({ state_name = state.name, contents = contents }),
+    })
+    assert.is_function(on_event)
+    on_event(nil)
+    assert.are.equal(1, updates)
+    u.eq(contents, reader:load(state))
+
+    on_event(nil)
+    assert.are.equal(1, updates)
   end)
 
   it("should save a clipboard that survives a round-trip through json", function()

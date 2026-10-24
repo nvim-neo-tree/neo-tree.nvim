@@ -85,7 +85,8 @@ function UniversalBackend:_watch_file(filename)
       return
     end
 
-    local last_write_from_here = self.saving or stat.mtime.nsec == self.last_stat_seen.mtime.nsec
+    local last_write_from_here = self.saving
+      or (self.last_stat_seen and stat.mtime.nsec == self.last_stat_seen.mtime.nsec)
     self.last_stat_seen = stat
     if last_write_from_here then
       return
