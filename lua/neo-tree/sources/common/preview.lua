@@ -490,7 +490,10 @@ end
 
 ---@param state neotree.State
 Preview.show = function(state)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
 
   if instance then
     instance:findWindow(state)
