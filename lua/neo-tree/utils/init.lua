@@ -872,25 +872,31 @@ do
       return
     end
 
+    if bufnr < 0 then
+      bufnr = nil
+    end
     local config = require("neo-tree").config
     local relative = config.open_files_using_relative_paths
     local path_to_open = relative and vim.fn.fnamemodify(path, ":.") or path
-    if bufnr == nil or bufnr < 0 then
-      -- as mentioned in `:h open-file` (0.13 nightly only, atm), the best way to open a literal filepath and avoid
-      -- filepath escaping issues is to add the buffer first, then open the buffer by number.
-      bufnr = vim.fn.bufadd(path_to_open)
+    if path_to_open:sub(1, 1) == "+" then
+      -- A leading + is parsed as an Ex command even when file magic is disabled.
+      path_to_open = "." .. M.path_separator .. path_to_open
     end
 
     ---@return boolean result
     ---@return string? err
     local open_buf_by_cmd = function()
-      local open_buf_cmd = buf_cmd_lookup[open_cmd] or open_cmd
+      -- Let :edit reuse empty unnamed buffers when opening a new file.
+      local open_buf_cmd = (bufnr and buf_cmd_lookup[open_cmd]) or open_cmd
       local parsed_buf_cmd = vim.api.nvim_parse_cmd(open_buf_cmd, {})
-      local arg1 = parsed_buf_cmd.cmd:find("buffer", 1, true) and bufnr
-        or vim.api.nvim_buf_get_name(bufnr)
+      local arg1 = path_to_open
+      if bufnr then
+        arg1 = parsed_buf_cmd.cmd:find("buffer", 1, true) and tostring(bufnr)
+          or vim.api.nvim_buf_get_name(bufnr)
+      end
 
       local nvim_cmd_arg = vim.tbl_deep_extend("force", parsed_buf_cmd, {
-        args = { tostring(arg1) },
+        args = { arg1 },
         mods = {
           keepalt = config.keep_altfile,
           split = parsed_cmd.mods.split,
@@ -914,7 +920,8 @@ do
           width = M.get_value(state, "window.width", 40, false)
           width = M.resolve_width(width)
         end
-        result, err = M.force_new_split2(state.current_position, bufnr)
+        result, err =
+          M.force_new_split2(state.current_position, bufnr or vim.fn.bufadd(path_to_open))
         compat.nvim_win_set_width(winid, width)
       else
         result, err = open_buf_by_cmd()
@@ -929,7 +936,8 @@ do
       -- If found, retry executing command in that window,
       -- otherwise, all windows are either neo-tree or winfixbuf so we make a new split.
       if is_neo_tree_window or M.is_winfixbuf(winid) then
-        result, err = M.force_new_split2(state.current_position, bufnr)
+        result, err =
+          M.force_new_split2(state.current_position, bufnr or vim.fn.bufadd(path_to_open))
       else
         vim.api.nvim_set_current_win(winid)
         result, err = open_buf_by_cmd()
