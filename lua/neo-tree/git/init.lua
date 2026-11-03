@@ -270,15 +270,25 @@ M.status = function(path, base_lookup, skip_bubbling, status_opts)
   local raw_status_text = vim.fn.system(status_cmd)
   assert(vim.v.shell_error == 0, raw_status_text)
 
+  -- HEAD or the baseline can change without changing the working-tree status.
+  skip_bubbling = not not skip_bubbling
+  local base = base_lookup and base_lookup[worktree_root]
+  local git_status_over_base
+  if base then
+    git_status_over_base = git_diff.diff_name_status(worktree_root, base, skip_bubbling)
+  end
+
   local last_status_text = raw_status_text_cache[worktree_root]
   local status_text = raw_status_text:gsub("\001", "\000") -- to make the following cache check work
   if status_text == last_status_text then
-    -- return the current status
-    return M.worktrees[worktree_root].status, worktree_root
+    local worktree = assert(M.worktrees[worktree_root])
+    if base then
+      worktree.status_diff[base] = git_status_over_base
+    end
+    return worktree.status, worktree_root, git_status_over_base
   end
   raw_status_text_cache[worktree_root] = status_text
 
-  skip_bubbling = not not skip_bubbling
   local status_iter = utils.gsplit_plain(status_text, "\000")
   local git_status = parser.parse_status_porcelain(
     status_porcelain_version,
@@ -287,25 +297,11 @@ M.status = function(path, base_lookup, skip_bubbling, status_opts)
     skip_bubbling
   )
 
-  local git_status_over_base
-  if base_lookup and base_lookup[worktree_root] then
-    git_status_over_base = require("neo-tree.git.diff").diff_name_status(
-      worktree_root,
-      base_lookup[worktree_root],
-      skip_bubbling
-    )
-  end
-  change_worktree_git_status(
-    worktree_root,
-    git_status,
-    base_lookup and base_lookup[worktree_root],
-    git_status_over_base,
-    {
-      tracked = true,
-      ignored = true,
-      untracked = true,
-    }
-  )
+  change_worktree_git_status(worktree_root, git_status, base, git_status_over_base, {
+    tracked = true,
+    ignored = true,
+    untracked = true,
+  })
   return git_status, worktree_root, git_status_over_base
 end
 
