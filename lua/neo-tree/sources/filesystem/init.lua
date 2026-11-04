@@ -254,6 +254,15 @@ M.reset_search = function(state, refresh, open_current_node)
   end
 end
 
+---Navigate so that path is revealed, then focus it.
+---@param state neotree.sources.filesystem.State
+---@param path string
+local navigate_and_focus = function(state, path)
+  M.navigate(state, nil, path, function()
+    renderer.focus_node(state, path, true)
+  end)
+end
+
 M.show_new_children = function(state, node_or_path)
   local node = node_or_path
   if node_or_path == nil then
@@ -265,7 +274,7 @@ M.show_new_children = function(state, node_or_path)
       local parent_path, _ = utils.split_path(node_or_path)
       node = state.tree:get_node(parent_path)
       if node == nil then
-        M.navigate(state, nil, node_or_path)
+        navigate_and_focus(state, node_or_path)
         return
       end
     end
@@ -278,7 +287,7 @@ M.show_new_children = function(state, node_or_path)
     return
   end
 
-  M.navigate(state, nil, node_or_path)
+  navigate_and_focus(state, node_or_path)
 end
 
 M.focus_destination_children = function(state, move_from, destination)
