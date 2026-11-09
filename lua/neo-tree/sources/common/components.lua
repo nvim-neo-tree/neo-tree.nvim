@@ -619,8 +619,8 @@ M.indent = function(config, node, state)
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
 
-  -- From this row's own ancestors, as nui redraws only the rows that changed. nodes.by_id, not
-  -- tree:get_node(), which mid-render builds nui's line cache from stale row heights.
+  -- Not carried over from the previous row, as nui can redraw just the changed rows (3d425a7).
+  -- Reads nodes.by_id, as tree:get_node() mid-render builds nui's line cache from stale heights.
   local skip_marker = {}
   local current = node
   while current do
