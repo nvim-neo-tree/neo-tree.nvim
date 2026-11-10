@@ -19,7 +19,7 @@ end
 ---@param node NuiTree.Node
 M.jump_to_symbol = function(state, node)
   node = node or state.tree:get_node()
-  if node:get_depth() == 1 then
+  if not node or node:get_depth() == 1 then
     return
   end
   vim.api.nvim_set_current_win(state.lsp_winid)
@@ -58,8 +58,8 @@ M.show_symbol = function(state, node)
 end
 
 M.rename = function(state)
-  local node = assert(state.tree:get_node())
-  if node:get_depth() == 1 then
+  local node = state.tree:get_node()
+  if not node or node:get_depth() == 1 then
     return
   end
   local old_name = node.name

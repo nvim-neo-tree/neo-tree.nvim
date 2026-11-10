@@ -25,7 +25,10 @@ local node_expander = require("neo-tree.sources.common.node_expander")
 local function get_folder_node(state)
   local tree = state.tree
   local node = tree:get_node()
-  local last_id = assert(node):get_id()
+  if not node then
+    return
+  end
+  local last_id = node:get_id()
 
   while node do
     local insert_as_local = state.config.insert_as
@@ -145,13 +148,20 @@ end
 ---@param node table? A single node to expand (defaults to node under the cursor)
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_subnodes = function(state, node, prefetcher)
-  M.expand_all_nodes(state, node or state.tree:get_node(), prefetcher)
+  node = node or state.tree:get_node()
+  if not node then
+    return
+  end
+  M.expand_all_nodes(state, node, prefetcher)
 end
 
 ---@param callback function
 M.close_node = function(state, callback)
   local tree = state.tree
-  local node = assert(tree:get_node())
+  local node = tree:get_node()
+  if not node then
+    return
+  end
   local parent_node = tree:get_node(node:get_parent_id())
   local target_node
 
@@ -177,7 +187,10 @@ end
 
 M.close_all_subnodes = function(state)
   local tree = state.tree
-  local node = assert(tree:get_node())
+  local node = tree:get_node()
+  if not node then
+    return
+  end
   local parent_node = assert(tree:get_node(node:get_parent_id()))
   local target_node
 
@@ -254,8 +267,8 @@ end
 ---Marks node as copied, so that it can be pasted somewhere else.
 ---@param state neotree.State
 M.copy_to_clipboard = function(state, callback)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   copy_node_to_clipboard(state, node)
@@ -293,7 +306,10 @@ end
 
 ---Marks node as cut, so that it can be pasted (moved) somewhere else.
 M.cut_to_clipboard = function(state, callback)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   cut_node_to_clipboard(state, node)
   if callback then
     callback()
@@ -318,8 +334,8 @@ end
 
 ---@param state neotree.State
 M.git_add_file = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   local path = node:get_id()
@@ -328,8 +344,8 @@ M.git_add_file = function(state)
 end
 
 M.git_unstage_file = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   local path = node:get_id()
@@ -338,8 +354,8 @@ M.git_unstage_file = function(state)
 end
 
 M.git_toggle_file_stage = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   local path = node:get_id()
@@ -449,8 +465,8 @@ M.git_undo_last_commit = function(state)
 end
 
 M.git_revert_file = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   local path = node:get_id()
@@ -614,8 +630,8 @@ end
 
 local default_filetime_format = "%Y-%m-%d %I:%M %p"
 M.show_file_details = function(state)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   ---@cast node neotree.FileNode
@@ -687,8 +703,11 @@ end
 
 ---@param state neotree.StateWithTree
 M.select = function(state)
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   save_previous_selection_to_undo(state)
-  local node = assert(state.tree:get_node())
   state.selected[node.id] = not state.selected[node.id] or nil
   renderer.redraw(state)
 end
@@ -740,7 +759,11 @@ end
 ---Pastes all items from the clipboard to the current directory.
 ---@param callback fun(node: NuiTree.Node?, destination: string) The callback to call when the command is done. Called with the parent node as the argument.
 M.paste_from_clipboard = function(state, callback)
-  local folder = get_folder_node(state):get_id()
+  local folder_node = get_folder_node(state)
+  if not folder_node then
+    return
+  end
+  local folder = folder_node:get_id()
   -- Convert to list so to make it easier to pop items from the stack.
   local clipboard_list = {}
   for _, item in pairs(state.clipboard) do
@@ -804,8 +827,8 @@ end
 ---Copies a node to a new location, using typed input.
 ---@param callback fun(parent_node: NuiTree.Node)
 M.copy = function(state, callback)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   fs_actions.copy_node(node.path, nil, callback, get_input_root(state))
@@ -814,8 +837,8 @@ end
 ---Moves a node to a new location, using typed input.
 ---@param callback fun(parent_node: NuiTree.Node)
 M.move = function(state, callback)
-  local node = assert(state.tree:get_node())
-  if node.type == "message" then
+  local node = state.tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   fs_actions.move_node(node.path, nil, callback, get_input_root(state))
@@ -854,7 +877,10 @@ local unselect_deleted_files_hook = function(state)
   end
 end
 M.delete = function(state, callback)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `delete` command can only be used on files and directories")
     return
@@ -896,7 +922,10 @@ end
 
 ---@param callback fun(path: string)
 M.trash = function(state, callback)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `trash` command can only be used on files and directories")
     return
@@ -936,7 +965,10 @@ M.trash_visual = function(state, selected_nodes, callback)
 end
 
 M.restore_from_trash = function(state, callback)
-  local node = assert(state.tree:get_node())
+  local node = state.tree:get_node()
+  if not node then
+    return
+  end
   if node.type ~= "file" and node.type ~= "directory" then
     log.warn("The `restore_from_trash` command can only be used on files and directories")
     return
@@ -1026,8 +1058,8 @@ end
 ---@param toggle_directory fun(node: NuiTree.Node)?
 M.toggle_node = function(state, toggle_directory, node)
   local tree = state.tree
-  node = node or assert(tree:get_node())
-  if not utils.is_expandable(node) then
+  node = node or tree:get_node()
+  if not node or not utils.is_expandable(node) then
     return
   end
   if node.type == "directory" and toggle_directory then
@@ -1048,8 +1080,8 @@ end
 ---Expands or collapses the current node.
 M.toggle_directory = function(state, toggle_directory)
   local tree = state.tree
-  local node = assert(tree:get_node())
-  if node.type ~= "directory" then
+  local node = tree:get_node()
+  if not node or node.type ~= "directory" then
     return
   end
   M.toggle_node(state, toggle_directory)
@@ -1154,8 +1186,8 @@ end
 
 M.rename = function(state, callback)
   local tree = state.tree
-  local node = assert(tree:get_node())
-  if node.type == "message" then
+  local node = tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   fs_actions.rename_node(node.path, callback)
@@ -1163,8 +1195,8 @@ end
 
 M.rename_basename = function(state, callback)
   local tree = state.tree
-  local node = assert(tree:get_node())
-  if node.type == "message" then
+  local node = tree:get_node()
+  if not node or node.type == "message" then
     return
   end
   fs_actions.rename_node_basename(node.path, callback)
