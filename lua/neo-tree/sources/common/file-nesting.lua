@@ -54,9 +54,11 @@ extension_matcher.get_nesting_callback = function(item)
   if utils.truthy(rule) then
     return function(inner_item, siblings)
       return {
-        parent = inner_item,
-        children = extension_matcher.get_children(inner_item, siblings, rule),
-        priority = rule._priority,
+        {
+          parent = inner_item,
+          children = extension_matcher.get_children(inner_item, siblings, rule),
+          priority = rule._priority,
+        },
       }
     end
   end
