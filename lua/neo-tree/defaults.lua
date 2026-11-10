@@ -640,6 +640,14 @@ local config = {
                           -- "open_current",-- netrw disabled, opening a directory opens within the
                                             -- window like netrw would, regardless of window.position
                           -- "disabled",    -- netrw left alone, neo-tree does not handle opening dirs
+
+    -- When an inputted path with `~` & environment variable expansion resolves differently from
+    -- the path resolved without expansion, which path should Neo-tree use?
+    -- Example: say you input `~/foo`, it could be `/home/$USER/foo` or `./~/foo`:
+    -- = "literal",  -- Neo-tree will interpret it as ./~/foo (default)
+    -- = "expanded", -- Neo-tree will interpret it as /home/$USER/foo
+    -- = "prompt",   -- Neo-tree will ask which one to go with.
+    input_path_preference = "prompt",
     use_libuv_file_watcher = false, -- This will use the OS level file watchers to detect changes
                                     -- instead of relying on nvim autocmd events.
   },
