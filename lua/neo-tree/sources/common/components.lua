@@ -621,11 +621,12 @@ M.indent = function(config, node, state)
 
   -- Not carried over from the previous row, as nui can redraw just the changed rows (3d425a7).
   -- Reads nodes.by_id, as tree:get_node() mid-render builds nui's line cache from stale heights.
-  local skip_marker = {}
-  local current = node
-  while current do
-    skip_marker[current.level] = current.is_last_child
-    current = state.tree.nodes.by_id[current:get_parent_id()]
+  local skip_marker = { [level] = node.is_last_child }
+  local parent_id = node:get_parent_id()
+  while parent_id do
+    local parent = state.tree.nodes.by_id[parent_id]
+    skip_marker[parent.level] = parent.is_last_child
+    parent_id = parent:get_parent_id()
   end
 
   local indent = {}
