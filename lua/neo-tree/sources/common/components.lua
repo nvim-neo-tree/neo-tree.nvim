@@ -585,13 +585,7 @@ end
 
 ---@param config neotree.Component.Common.Indent
 M.indent = function(config, node, state)
-  if not state.skip_marker_at_level then
-    state.skip_marker_at_level = {}
-  end
-
   local strlen = vim.fn.strdisplaywidth
-  local skip_marker = state.skip_marker_at_level
-  ---@cast skip_marker -nil
   local indent_size = config.indent_size or 2
   local padding = config.padding or 0
   local level = node.level
@@ -625,7 +619,16 @@ M.indent = function(config, node, state)
   local indent_marker = config.indent_marker or "│"
   local last_indent_marker = config.last_indent_marker or "└"
 
-  skip_marker[level] = node.is_last_child
+  -- Not carried over from the previous row, as nui can redraw just the changed rows (3d425a7).
+  -- Reads nodes.by_id, as tree:get_node() mid-render builds nui's line cache from stale heights.
+  local skip_marker = { [level] = node.is_last_child }
+  local parent_id = node:get_parent_id()
+  while parent_id do
+    local parent = state.tree.nodes.by_id[parent_id]
+    skip_marker[parent.level] = parent.is_last_child
+    parent_id = parent:get_parent_id()
+  end
+
   local indent = {}
   if padding > 0 then
     table.insert(indent, { text = string.rep(" ", padding) })

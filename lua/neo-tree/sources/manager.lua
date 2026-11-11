@@ -100,7 +100,6 @@ local function create_state(tabid, sd, winid)
   ---@field sort_field_provider fun(node: NuiTree.Node):any
   ---@field explicitly_opened_nodes table<string, boolean?>?
   ---@field filtered_items neotree.Config.Filesystem.FilteredItems?
-  ---@field skip_marker_at_level table<integer, boolean?>?
   ---@field group_empty_dirs boolean?
   ---optional mapping args
   ---@field fallback string?
