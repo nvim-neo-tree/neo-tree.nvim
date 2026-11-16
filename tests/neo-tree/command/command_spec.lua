@@ -163,6 +163,78 @@ describe("Command", function()
       })
       verify.filesystem_tree_node_is(testfile)
     end)
+
+    -- A file outside cwd must not open the tree until the confirm callback
+    -- runs. Opening immediately uses the confirm popup as the current window.
+    local function reveal_outside_cwd(confirmed)
+      local utils = require("neo-tree.utils")
+      local outside_dir = u.fs.create_temp_dir()
+      local outside_file = utils.normalize_path(outside_dir .. "/file.md")
+      u.fs.write_file(outside_file, { "hi" })
+      outside_dir = utils.normalize_path(outside_dir)
+      local project_dir = utils.normalize_path(fs_tree.abspath)
+
+      local inputs = require("neo-tree.ui.inputs")
+      local original_confirm = inputs.confirm
+      local captured
+      inputs.confirm = function(message, callback)
+        assert(type(message) == "string" and message:find("File not in cwd", 1, true), message)
+        captured = callback
+      end
+
+      local ok, err = pcall(function()
+        u.editfile(outside_file)
+        local file_win = vim.api.nvim_get_current_win()
+        local file_buf = vim.api.nvim_get_current_buf()
+        local win_count = #vim.api.nvim_list_wins()
+
+        vim.cmd("Neotree reveal")
+
+        assert(captured, "expected a cwd confirm before rendering")
+        assert.are.same(file_win, vim.api.nvim_get_current_win())
+        assert.are.same(file_buf, vim.api.nvim_win_get_buf(file_win))
+        assert.are.same(win_count, #vim.api.nvim_list_wins())
+        for _, winid in ipairs(vim.api.nvim_list_wins()) do
+          assert.are_not.equal("neo-tree", vim.bo[vim.api.nvim_win_get_buf(winid)].filetype)
+        end
+
+        inputs.confirm = original_confirm
+        original_confirm = nil
+        captured(confirmed)
+
+        u.wait_for_neo_tree()
+        assert.are.same(file_buf, vim.api.nvim_win_get_buf(file_win))
+        verify.window_handle_is_not(file_win)
+        verify.buf_name_endswith("neo-tree filesystem [1]")
+
+        local state = assert(verify.get_state("filesystem"))
+        if confirmed then
+          verify.filesystem_tree_node_is(outside_file)
+          assert.are.same(outside_dir, utils.normalize_path(state.path))
+        else
+          assert.are.same(project_dir, utils.normalize_path(state.path))
+          local node = state.tree:get_node()
+          assert.are_not.equal(outside_file, node and node:get_id())
+        end
+      end)
+
+      if original_confirm then
+        inputs.confirm = original_confirm
+      end
+      vim.cmd("tcd " .. fs_tree.abspath)
+      u.fs.remove_dir(outside_dir, true)
+      if not ok then
+        error(err, 2)
+      end
+    end
+
+    it("`:Neotree reveal` waits to root at the file directory when cwd confirm is yes", function()
+      reveal_outside_cwd(true)
+    end)
+
+    it("`:Neotree reveal` waits to root at the cwd when cwd confirm is no", function()
+      reveal_outside_cwd(false)
+    end)
   end)
 
   for _, follow_current_file in ipairs({ true, false }) do
