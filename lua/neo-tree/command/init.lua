@@ -229,6 +229,9 @@ M.execute = function(args, state_config_override)
           do_show_or_focus(args, state, force_navigate)
         end
       )
+      -- The confirm popup is current until the user answers. Rendering now
+      -- opens the tree in that popup, which then closes the tree with it.
+      return
     end
   end
   args.dir = args.dir or cwd
