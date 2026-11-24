@@ -180,7 +180,8 @@ M.buffer_enter_event = function()
       return
     end
 
-    local bufname = vim.api.nvim_buf_get_name(0)
+    local bufnr = vim.api.nvim_get_current_buf()
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
     log.debug("redirecting buffer", bufname, " to new split")
     vim.cmd("b#")
     local win_width = vim.api.nvim_win_get_width(current_winid)
@@ -188,10 +189,12 @@ M.buffer_enter_event = function()
     -- highlighting in the buffer. I also prevents errors with diagnostics
     -- trying to work with the buffer as it's being closed.
     vim.schedule(function()
-      -- try to delete the buffer, only because if it was new it would take
-      -- on options from the neo-tree window that are undesirable.
-      ---@diagnostic disable-next-line: param-type-mismatch
-      pcall(vim.cmd, "bdelete " .. bufname)
+      -- Only clean up buffers without windows. Deleting a displayed buffer
+      -- can close its editor window and trigger close_if_last_window.
+      if #vim.fn.win_findbuf(bufnr) == 0 then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        pcall(vim.cmd, "bdelete " .. bufnr)
+      end
       local fake_state = {
         window = {
           position = position,
