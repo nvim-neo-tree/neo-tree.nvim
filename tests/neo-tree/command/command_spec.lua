@@ -83,6 +83,27 @@ describe("Command", function()
     u.clear_environment()
   end)
 
+  it("keeps the editor and tree windows when cycling buffers in the sidebar", function()
+    require("neo-tree").setup({ close_if_last_window = false })
+    u.editfile(fs_tree.lookup["topfile1"].abspath)
+    local editor_win = vim.api.nvim_get_current_win()
+    local editor_buf = vim.api.nvim_get_current_buf()
+    run_focus_command("Neotree filesystem focus left")
+    local tree_win = vim.api.nvim_get_current_win()
+    local tree_buf = vim.api.nvim_get_current_buf()
+
+    vim.cmd("bprevious")
+    local redirected = false
+    vim.schedule(function()
+      redirected = true
+    end)
+    assert(vim.wait(500, function()
+      return redirected
+    end))
+    assert.equals(editor_buf, vim.api.nvim_win_get_buf(editor_win))
+    assert.equals(tree_buf, vim.api.nvim_win_get_buf(tree_win))
+  end)
+
   describe("with reveal:", function()
     it("`:Neotree float reveal` should reveal the current file in the floating window", function()
       local cmd = "Neotree float reveal"
