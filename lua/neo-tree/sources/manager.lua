@@ -57,6 +57,11 @@ end
 ---@field tree NuiTree
 ---@field _in_pre_render boolean?
 
+---@class neotree.State.Sort
+---@field label string
+---@field direction integer
+---@field explicit boolean?
+
 ---@param tabid integer
 ---@param sd table
 ---@param winid integer?
@@ -73,7 +78,7 @@ local function create_state(tabid, sd, winid)
   ---@field selected table<string, boolean?> A table containing IDs of selected nodes as keys.
   ---@field position neotree.State.Position
   ---@field git_base_by_worktree table<string,string?>?
-  ---@field sort table
+  ---@field sort neotree.State.Sort
   ---@field clipboard neotree.clipboard.Contents
   ---@field undostack fun()[]
   ---@field current_position neotree.State.CurrentPosition?

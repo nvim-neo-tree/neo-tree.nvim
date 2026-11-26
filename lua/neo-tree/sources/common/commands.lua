@@ -521,6 +521,7 @@ local function set_sort(state, label)
     sort.label = label
     sort.direction = -1
   end
+  sort.explicit = true
   state.sort = sort
 end
 
