@@ -253,6 +253,10 @@ local config = {
       use_filtered_colors = true, -- Whether to use a different highlight when the file is filtered (hidden, dotfile, etc.).
       use_git_status_colors = true,
       highlight = "NeoTreeFileName",
+      show_sort_icon = true, -- When to show the sort-by-name icon on the root node in "current" view.
+                             -- Takes values in { true (always when sorting by name), false (never),
+                             -- "after_sort" (only after calling a sort command),
+                             -- "descending" (only when sorting by name descending) }.
     },
     git_status = {
       symbols = {

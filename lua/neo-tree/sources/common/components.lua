@@ -508,6 +508,11 @@ M.modified = function(config, node, state)
   end
 end
 
+---@alias neotree.Component.Common.Name.ShowSortIcon
+---|boolean
+---|"after_sort"
+---|"descending"
+
 ---@class (exact) neotree.Component.Common.Name : neotree.Component
 ---@field [1] "name"?
 ---@field trailing_slash boolean?
@@ -515,6 +520,21 @@ end
 ---@field use_filtered_colors boolean? Whether to use the same highlight as filtered_by when the item is filtered.
 ---@field highlight_opened_files boolean|"all"?
 ---@field right_padding integer?
+---@field show_sort_icon neotree.Component.Common.Name.ShowSortIcon?
+
+---@param show_sort_icon neotree.Component.Common.Name.ShowSortIcon?
+---@param sort neotree.State.Sort
+---@return boolean
+local function should_show_sort_icon(show_sort_icon, sort)
+  if show_sort_icon == false then
+    return false
+  elseif show_sort_icon == "after_sort" then
+    return sort.explicit == true
+  elseif show_sort_icon == "descending" then
+    return sort.direction == -1
+  end
+  return true
+end
 
 ---@param config neotree.Component.Common.Name
 M.name = function(config, node, state)
@@ -529,7 +549,12 @@ M.name = function(config, node, state)
 
   if node:get_depth() == 1 and node.type ~= "message" then
     highlight = highlights.ROOT_NAME
-    if state.current_position == "current" and state.sort and state.sort.label == "Name" then
+    if
+      state.current_position == "current"
+      and state.sort
+      and state.sort.label == "Name"
+      and should_show_sort_icon(config.show_sort_icon, state.sort)
+    then
       local icon = state.sort.direction == 1 and "▲" or "▼"
       text = text .. "  " .. icon
     end
